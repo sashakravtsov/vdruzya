@@ -221,7 +221,7 @@ def avatar_upload(request):
         me.updated_at = _now()
         me.save(update_fields=["avatar_path", "updated_at"])
         messages.success(request, "Аватар обновлён.")
-    return redirect("profile.edit")
+    return redirect("/profile/edit?section=picture")
 
 
 @login_required
