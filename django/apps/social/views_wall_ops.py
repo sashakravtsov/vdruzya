@@ -1,13 +1,12 @@
 """Wall ops: edit + show — short FBVs."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.social.forms import CommentForm, PostForm
 from apps.social.models import Post, SocialProfile
-from apps.social.services import attach_wall_notes, feed_queryset, now, profile_of, wall_owner_id
+from apps.social.services import attach_wall_notes, bump_news, feed_queryset, now, profile_of, wall_owner_id
 
 
 @login_required
@@ -42,7 +41,7 @@ def post_edit(request, post_id):
             obj.media_path = path
             obj.kind = "photo"
             obj.save(update_fields=["media_path", "kind"])
-        cache.delete(f"news:{me.id}:60")
+        bump_news()
         messages.success(request, "Запись обновлена.")
         return redirect(nxt)
     return render(

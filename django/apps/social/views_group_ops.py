@@ -1,7 +1,6 @@
 """Group ops FBVs — edit, members, message, deletes, invite, events. Keep short."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
@@ -12,7 +11,7 @@ from apps.social.models import (
     CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember,
     Notification, SocialProfile,
 )
-from apps.social.services import can_manage_group_comment, is_group_admin, now, profile_of
+from apps.social.services import bump_news, can_manage_group_comment, is_group_admin, now, profile_of
 
 
 def _admin(me, group):
@@ -39,7 +38,7 @@ def group_edit(request, pk):
             obj.cover_path = save_image(pic, "groups")
         obj.updated_at = now()
         obj.save()
-        cache.delete(f"news:{me.id}:60")
+        bump_news()
         messages.success(request, "Группа обновлена.")
         return redirect(obj)
     return render(request, "social/group_edit.html", {"group": group, "form": form, "me": me})
@@ -123,7 +122,7 @@ def group_post_delete(request, pk, post_id):
         return redirect("groups.show", pk=pk)
     CommunityPostComment.objects.filter(post=post).delete()
     post.delete()
-    cache.delete(f"news:{me.id}:60")
+    bump_news()
     messages.success(request, "Запись удалена.")
     return redirect("groups.show", pk=pk)
 
@@ -290,7 +289,7 @@ def group_post(request, pk):
             if p.kind == "text":
                 p.kind = "photo"
             p.save(update_fields=["media_path", "kind"])
-        cache.delete(f"news:{me.id}:60")
+        bump_news()
         messages.success(req, "Запись в группе опубликована.")
         if p.topic == "wall":
             return redirect(f"/groups/{pk}#topic-{p.id}")
@@ -309,6 +308,7 @@ def group_comment(request, pk, post_id):
         CommunityPostComment.objects.create(
             post=post, social_user=me, body=form.cleaned_data["body"], created_at=now(),
         )
+        bump_news()
     if post.topic == "wall":
         return redirect(f"/groups/{pk}#c-{post.id}")
     return redirect(f"/groups/{pk}?topic={post.id}#c-{post.id}")
@@ -356,7 +356,7 @@ def group_join(request, pk):
     if group.join_mode == "open" and group.privacy != "closed":
         CommunityMember.objects.create(community=group, social_user=me, role="member", created_at=now())
         messages.success(request, f"Вы в группе «{group.name}».")
-        cache.delete(f"news:{me.id}:60")
+        bump_news()
     else:
         CommunityJoinRequest.objects.get_or_create(
             community=group, social_user=me,
@@ -378,6 +378,6 @@ def group_leave(request, pk):
         messages.error(request, "Нельзя выйти: вы единственный администратор.")
         return redirect("groups.show", pk=pk)
     row.delete()
-    cache.delete(f"news:{me.id}:60")
+    bump_news()
     messages.success(request, f"Вы вышли из «{group.name}».")
     return redirect("groups")

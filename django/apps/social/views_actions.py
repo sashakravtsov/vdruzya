@@ -11,7 +11,7 @@ from apps.social.models import (
     Reaction,
     SocialProfile,
 )
-from apps.social.services import now as _now, profile_of
+from apps.social.services import bump_news, now as _now, profile_of
 
 
 @login_required
@@ -71,7 +71,7 @@ def post_create(request):
             post.media_path = path
             post.kind = "photo"
             post.save(update_fields=["media_path", "kind"])
-        cache.delete(f"news:{me.id}:60")
+        bump_news()
         messages.success(req, "Запись опубликована.")
         return redirect(req.POST.get("next") or target)
 
@@ -82,7 +82,6 @@ def post_create(request):
 @require_POST
 def status_update(request):
     from apps.social.forms import StatusForm
-    from django.core.cache import cache
     me = profile_of(request.user)
     form = StatusForm(request.POST)
     if me and form.is_valid():
@@ -95,7 +94,7 @@ def status_update(request):
                 social_user=me, body=headline, visibility="public",
                 kind="status", topic="status", created_at=_now(), updated_at=_now(),
             )
-        cache.delete(f"news:{me.id}:60")
+        bump_news()
         messages.success(request, "Статус обновлён.")
     return redirect(request.POST.get("next") or "feed")
 
@@ -113,6 +112,7 @@ def comment_create(request, post_id):
         c = form.save(commit=False)
         c.post, c.social_user, c.created_at = post, me, _now()
         c.save()
+        bump_news()
     nxt = request.POST.get("next") or reverse("feed")
     if "#" not in nxt:
         nxt = f"{nxt}#c-{post_id}"
@@ -186,6 +186,7 @@ def comment_delete(request, comment_id):
     if not can_manage_wall_comment(me, c):
         return redirect(request.POST.get("next") or "feed")
     c.delete()
+    bump_news()
     return redirect(request.POST.get("next") or "feed")
 
 

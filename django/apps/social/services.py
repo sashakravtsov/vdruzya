@@ -329,10 +329,20 @@ def _add_photos(items, blocked, fids, limit):
         })
 
 
+def bump_news():
+    """Invalidate News Feed cache for every viewer (posts/comments change)."""
+    from django.core.cache import cache
+    try:
+        cache.incr("news:ver")
+    except ValueError:
+        cache.set("news:ver", 1, None)
+
+
 def news_items(viewer=None, limit=40):
     """FB-2006 News Feed: friends' circle + own groups. Status/picture → Mini-Feed."""
     from django.core.cache import cache
-    key = f"news:{getattr(viewer, 'id', 0)}:{limit}"
+    ver = cache.get("news:ver") or 0
+    key = f"news:{getattr(viewer, 'id', 0)}:{limit}:v{ver}"
     cached = cache.get(key)
     if cached is not None:
         return cached
