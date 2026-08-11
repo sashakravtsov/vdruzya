@@ -8,7 +8,7 @@
         <div class="profile-box wall-box">
             <h4>Стена</h4>
             <div class="profile-box-body">
-                {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path %}
+                {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path comment_preview=0 comment_expand=1 %}
                 <p class="muted"><a href="{% url 'feed' %}">← к ленте</a></p>
             </div>
         </div>

@@ -62,16 +62,11 @@
         <div class="profile-box photo-comments">
             <h4>Комментарии{% if comments %} ({{ comments|length }}){% endif %}</h4>
             <div class="profile-box-body">
-                {% for c in comments %}
-                {% url 'albums.photos.comment.delete' album.id photo.id c.id as del_url %}
-                {% if is_owner or me and me.id == c.social_user_id %}
-                {% include "social/_comment_row.html" with c=c can_delete=1 delete_url=del_url %}
+                {% if comments %}
+                {% comment_thread comments preview=0 kind="photo" album=album photo=photo %}
                 {% else %}
-                {% include "social/_comment_row.html" with c=c can_delete=0 delete_url=del_url %}
-                {% endif %}
-                {% empty %}
                 <p class="muted">Комментариев пока нет.</p>
-                {% endfor %}
+                {% endif %}
 
                 {% if me %}
                 {% url 'albums.photos.comment' album.id photo.id as c_action %}

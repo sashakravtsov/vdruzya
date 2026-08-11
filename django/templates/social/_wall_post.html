@@ -42,22 +42,19 @@
                 <div class="actions">
                     {% if me %}
                     {% if not wall_owner %}
-                    <form method="post" action="{% url 'posts.react' post.id %}" class="inline">{% csrf_token %}
+                    <form method="post" action="{% url 'posts.react' post.id %}" class="inline wall-act">{% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
-                        <button type="submit" class="linkish">Мне нравится</button>
+                        <button type="submit" class="linkish"><span class="ico ico-thumb" aria-hidden="true"></span>Мне нравится</button>
                     </form>
-                    ({{ post.likes|default:0 }})
+                    <span class="muted">({{ post.likes|default:0 }})</span>
                     ·
                     {% endif %}
-                    <a href="#c-{{ post.id }}">Комментировать</a>{% if post.n_comments %} ({{ post.n_comments }}){% endif %}
+                    <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment" aria-hidden="true"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
                     {% else %}
-                    {% if not wall_owner %}★ {{ post.likes|default:0 }} · {% endif %}комм. {{ post.n_comments|default:0 }}
+                    {% if not wall_owner %}<span class="ico ico-thumb" aria-hidden="true"></span> {{ post.likes|default:0 }} · {% endif %}<span class="ico ico-comment" aria-hidden="true"></span> {{ post.n_comments|default:0 }}
                     {% endif %}
                 </div>
-                {% for c in post.comments.all %}
-                {% url 'comments.delete' c.id as del_url %}
-                {% include "social/_comment_row.html" with c=c can_delete=me|can_manage_comment:c delete_url=del_url next=next %}
-                {% endfor %}
+                {% comment_thread post.comments.all preview=comment_preview|default_if_none:2 kind="wall" expand=comment_expand %}
                 {% if comment_form and me %}
                 {% url 'comments.store' post.id as c_action %}
                 {% include "social/_comment_compose.html" with action=c_action compose_id=post.id form=comment_form next=next %}

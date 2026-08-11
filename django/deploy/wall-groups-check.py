@@ -72,11 +72,28 @@ def main():
         fail("wall comment not saved")
     ok("wall comment")
 
+    # FB-2006: last 2 comments shown; older behind «Показать предыдущие»
+    for i, text in enumerate(("probe c0", "probe c1", "probe c2"), start=1):
+        post(f"/posts/{wall.id}/comment", {"body": text, "next": "/feed"})
+    r = get("/feed")
+    body = r.content.decode()
+    if "ico-comment" not in body or "ico-thumb" not in body:
+        fail("classic action icons missing on feed")
+    if "Показать предыдущие комментарии" not in body:
+        fail("many-comments collapse missing")
+    if "probe c0" not in body:
+        fail("older comment should be in collapsed block")
+    if "probe c2" not in body:
+        fail("recent comment should be visible")
+    ok("icons + many-comments collapse")
+
     # Profile wall: note attribution + compose
     r = get(f"/profile/{me.id}")
     body = r.content.decode()
     if r.status_code != 200 or "Стена" not in body:
         fail("profile wall")
+    if "ico-comment" not in body:
+        fail("comment icon missing on profile wall")
     ok("profile wall")
 
     r = get("/groups")

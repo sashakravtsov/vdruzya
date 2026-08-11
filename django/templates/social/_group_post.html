@@ -33,7 +33,7 @@
                     {% if p.body %}{{ p.body|linebreaksbr }}{% endif %}
                     {% with extras=p.media.all %}
                     {% if extras %}
-                    <div class="group-photo-grid wall-media">
+                    <div class="wall-media-grid">
                         {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
                     </div>
                     {% elif p.media_url %}
@@ -43,23 +43,16 @@
                 </div>
                 <div class="actions">
                     {% if is_member %}
-                    <form method="post" action="{% url 'groups.react' group.id p.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish">Мне нравится</button>
+                    <form method="post" action="{% url 'groups.react' group.id p.id %}" class="inline wall-act">{% csrf_token %}
+                        <button type="submit" class="linkish"><span class="ico ico-thumb" aria-hidden="true"></span>Мне нравится</button>
                     </form>
-                    ({{ p.likes|default:0 }})
-                    · <a href="#c-{{ p.id }}">Комментировать</a>{% if p.n_comments %} ({{ p.n_comments }}){% endif %}
+                    <span class="muted">({{ p.likes|default:0 }})</span>
+                    · <a class="wall-act" href="#c-{{ p.id }}"><span class="ico ico-comment" aria-hidden="true"></span>Комментировать</a>{% if p.n_comments %} <span class="muted">({{ p.n_comments }})</span>{% endif %}
                     {% else %}
-                    ★ {{ p.likes|default:0 }} · комм. {{ p.n_comments|default:0 }}
+                    <span class="ico ico-thumb" aria-hidden="true"></span> {{ p.likes|default:0 }} · <span class="ico ico-comment" aria-hidden="true"></span> {{ p.n_comments|default:0 }}
                     {% endif %}
                 </div>
-                {% for c in p.comments.all %}
-                {% url 'groups.comments.delete' group.id c.id as del_url %}
-                {% if is_admin or me and me.id == c.social_user_id %}
-                {% include "social/_comment_row.html" with c=c can_delete=1 delete_url=del_url %}
-                {% else %}
-                {% include "social/_comment_row.html" with c=c can_delete=0 delete_url=del_url %}
-                {% endif %}
-                {% endfor %}
+                {% comment_thread p.comments.all preview=2 kind="group" group=group %}
                 {% if is_member %}
                 {% url 'groups.comment' group.id p.id as c_action %}
                 {% include "social/_comment_compose.html" with action=c_action compose_id=p.id form=comment_form %}

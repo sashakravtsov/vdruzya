@@ -1,0 +1,15 @@
+{# Classic FB: last `preview` comments visible; older behind «Показать предыдущие». #}
+{% if older_n %}
+<details class="wall-comments-more"{% if expand %} open{% endif %}>
+    <summary>
+        <span class="ico ico-comment" aria-hidden="true"></span>
+        Показать предыдущие комментарии ({{ older_n }})
+    </summary>
+    {% for item in older %}
+    {% include "social/_comment_row.html" with c=item.c can_delete=item.can_delete delete_url=item.delete_url next=next %}
+    {% endfor %}
+</details>
+{% endif %}
+{% for item in recent %}
+{% include "social/_comment_row.html" with c=item.c can_delete=item.can_delete delete_url=item.delete_url next=next %}
+{% endfor %}
