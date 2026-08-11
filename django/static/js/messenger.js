@@ -156,7 +156,10 @@
     const body = document.createElement('div');
     body.className = 'chat-body';
     if (d.body && d.body !== '[фото]') {
-      body.appendChild(document.createTextNode(d.body || ''));
+      String(d.body || '').split(/\r?\n/).forEach((part, i) => {
+        if (i) body.appendChild(document.createElement('br'));
+        body.appendChild(document.createTextNode(part));
+      });
     }
     if (d.attachment_url) {
       const img = document.createElement('img');

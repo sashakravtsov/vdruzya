@@ -18,6 +18,6 @@ __all__ = [
     "CommunityPostPoll", "CommunityPollOption", "CommunityPollVote",
     "Community", "CommunityMember", "CommunityPost", "CommunityPostComment", "CommunityPostReaction",
     "CommunityPostMedia", "CommunityJoinRequest",
-    "Conversation", "ConversationMember", "Message", "Notification", "StickerPack", "Sticker",
+    "Conversation", "ConversationMember", "Message", "Notification",
     "Album", "Photo", "Event", "EventAttendee",
 ]

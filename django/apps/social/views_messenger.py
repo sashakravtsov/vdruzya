@@ -73,8 +73,7 @@ def messenger(request):
         except (Http404, TypeError, ValueError):
             messages.error(request, "Диалог недоступен.")
             return redirect("messenger")
-    elif conversations and not compose:
-        active = conversations[0]
+    # Do not auto-open first thread — mark-unread would be undone by mark_read.
 
     if active:
         active.display_name = ch.label(active, me)
@@ -226,7 +225,7 @@ def messenger_bulk(request):
         n = ch.mark_unread_many(me, ids)
         if n:
             messages.info(request, f"Непрочитанных: {n}.")
-        return redirect("messenger")
+        return redirect("/messenger?folder=unread")
     if action == "purge":
         n = ch.purge_many(me, ids)
         if n:
@@ -274,7 +273,7 @@ def messenger_spam(request, me, conv):
 @ch.member_post
 def messenger_unread(request, me, conv):
     ch.mark_unread(me, conv)
-    return redirect("messenger")
+    return redirect("/messenger?folder=unread")
 
 
 @ch.member_post

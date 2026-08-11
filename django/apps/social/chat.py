@@ -158,9 +158,35 @@ def mark_unread_many(me, conversation_ids: list[int]) -> int:
 
 def mark_all_read(me) -> int:
     t = now()
-    n = ConversationMember.objects.filter(social_user=me, archived_at__isnull=True).update(last_read_at=t)
+    qs = ConversationMember.objects.filter(social_user=me, archived_at__isnull=True)
+    ids = list(qs.values_list("conversation_id", flat=True))
+    n = qs.update(last_read_at=t)
+    if ids:
+        Message.objects.filter(conversation_id__in=ids, read_at__isnull=True).exclude(social_user=me).update(read_at=t)
+    Notification.objects.filter(social_user=me, type="message", seen=False).update(seen=True)
     cache.delete(f"nav:{me.id}")
     return n
+
+
+def unread_count(me) -> int:
+    """Nav badge — same filter as inbox(unread_only=True)."""
+    last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
+    my_read = ConversationMember.objects.filter(
+        conversation_id=OuterRef("pk"), social_user=me,
+    ).values("last_read_at")[:1]
+    return (
+        Conversation.objects.filter(members__social_user=me, members__archived_at__isnull=True)
+        .annotate(
+            last_from_id=Subquery(last.values("social_user_id")[:1]),
+            last_at=Subquery(last.values("created_at")[:1]),
+            my_read_at=Subquery(my_read),
+        )
+        .exclude(last_from_id=me.id)
+        .filter(last_from_id__isnull=False, last_at__isnull=False)
+        .filter(Q(my_read_at__isnull=True) | Q(last_at__gt=F("my_read_at")))
+        .distinct()
+        .count()
+    )
 
 
 def report_spam(me, conv: Conversation) -> SocialProfile | None:
