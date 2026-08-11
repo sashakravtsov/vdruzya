@@ -12,8 +12,8 @@ django.setup()
 
 from django.test import Client
 from apps.accounts.models import User
-from apps.social.models import Community, CommunityMember, CommunityPost, Post, SocialProfile
-from apps.social.services import now, profile_of
+from apps.social.models import Community, CommunityPost, Post
+from apps.social.services import profile_of
 
 
 def fail(msg):
