@@ -21,4 +21,8 @@ class PgJSON(Field):
         return value
 
     def get_prep_value(self, value):
+        if value is None:
+            return None
+        if isinstance(value, (dict, list)):
+            return json.dumps(value, ensure_ascii=False)
         return value
