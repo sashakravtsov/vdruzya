@@ -15,7 +15,9 @@ from django.test import Client
 from apps.accounts.models import User
 from apps.social.models import Education, Post, SocialProfile
 from apps.social.profile_page import can_write_wall
-from apps.social.services import can_manage_wall_post, friend_ids, now, profile_of, wall_posts_for
+from apps.social.services import (
+    can_manage_wall_post, friend_count, friend_ids, now, profile_of, wall_posts_for,
+)
 
 
 def ok(label):
@@ -48,6 +50,9 @@ def main():
     assert f'name="wall_to" value="{me.id}"'.encode() in r.content
     assert "Мне нравится".encode() not in r.content  # pre-2009 profile wall
     assert "Друзья в ".encode() not in r.content
+    n_friends = len(friend_ids(me))
+    assert friend_count(me) == n_friends
+    assert f"Друзья ({n_friends})".encode() in r.content
     ok("own profile wall tab")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
