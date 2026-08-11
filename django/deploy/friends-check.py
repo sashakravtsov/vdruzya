@@ -189,6 +189,14 @@ def main():
         assert r.status_code == 200
         ok("profile friends")
 
+        # classic poke
+        _link(me, other)
+        r = c.post(f"/profile/{other.id}/poke", {}, secure=True)
+        assert r.status_code in (301, 302)
+        from apps.social.models import Notification
+        assert Notification.objects.filter(social_user=other, type="poke", url=f"/profile/{me.id}").exists()
+        ok("poke")
+
         guest = Client(HTTP_HOST="vdruzya.ru")
         from apps.social.friendship import ensure_invite_code
         code = ensure_invite_code(me)
@@ -203,6 +211,8 @@ def main():
         ids = [me.id, other.id, mid.id]
         Friendship.objects.filter(user_id__in=ids, friend_id__in=ids).delete()
         Block.objects.filter(blocker_id__in=ids, blocked_id__in=ids).delete()
+        from apps.social.models import Notification
+        Notification.objects.filter(social_user_id__in=ids, type="poke").delete()
         SocialProfile.objects.filter(pk__in=[other.id, mid.id]).delete()
         User.objects.filter(pk__in=[other_user.id, mid_user.id]).delete()
 
