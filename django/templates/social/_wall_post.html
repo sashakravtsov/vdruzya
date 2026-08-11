@@ -39,18 +39,20 @@
                 </div>
                 <div class="actions">
                     {% if me %}
+                    {% if not wall_owner %}
                     <form method="post" action="{% url 'posts.react' post.id %}" class="inline">{% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
                         <button type="submit" class="linkish">Мне нравится</button>
                     </form>
                     ({{ post.likes|default:0 }})
                     ·
+                    {% endif %}
                     <a href="#c-{{ post.id }}">Комментировать</a>{% if post.n_comments %} ({{ post.n_comments }}){% endif %}
                     {% if feed_actions %}
                     · <a href="{% url 'posts.show' post.id %}">открыть</a>
                     {% endif %}
                     {% else %}
-                    ★ {{ post.likes|default:0 }} · комм. {{ post.n_comments|default:0 }}
+                    {% if not wall_owner %}★ {{ post.likes|default:0 }} · {% endif %}комм. {{ post.n_comments|default:0 }}
                     {% endif %}
                 </div>
                 {% for c in post.comments.all %}
