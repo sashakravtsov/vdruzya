@@ -134,3 +134,15 @@ def mood_ru(value):
         return ""
     return _MOOD.get(str(value), str(value))
 
+
+@register.filter
+def can_manage_post(me, post):
+    from apps.social.services import can_manage_wall_post
+    return can_manage_wall_post(me, post)
+
+
+@register.filter
+def can_manage_comment(me, comment):
+    from apps.social.services import can_manage_wall_comment
+    return can_manage_wall_comment(me, comment)
+

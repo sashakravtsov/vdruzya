@@ -13,7 +13,8 @@ django.setup()
 from django.test import Client
 
 from apps.accounts.models import User
-from apps.social.services import profile_of, wall_posts_for
+from apps.social.models import Post, SocialProfile
+from apps.social.services import can_manage_wall_post, friend_ids, now, profile_of, wall_posts_for
 
 
 def ok(label):
@@ -80,6 +81,35 @@ def main():
 
     list(wall_posts_for(me, 5, viewer=me))
     ok("wall_posts_for visibility")
+
+    other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
+    assert other, "need a friend for wall-owner delete"
+    t = now()
+    note = Post.objects.create(
+        social_user=other,
+        body="__profile_check_wall_note__",
+        topic=f"wall:{me.id}",
+        visibility="friends",
+        kind="text",
+        created_at=t,
+        updated_at=t,
+    )
+    assert can_manage_wall_post(me, note)
+    assert can_manage_wall_post(other, note)
+    stranger = SocialProfile.objects.exclude(id__in={me.id, other.id}).first()
+    if stranger:
+        assert not can_manage_wall_post(stranger, note)
+
+    r = c.get(f"/profile/{me.id}", secure=True)
+    assert b"__profile_check_wall_note__" in r.content
+    assert f'action="/posts/{note.id}/delete"'.encode() in r.content
+    assert f'/posts/{note.id}/edit'.encode() not in r.content
+    ok("wall note visible; owner delete UI, no edit")
+
+    r = c.post(f"/posts/{note.id}/delete", {"next": f"/profile/{me.id}"}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not Post.objects.filter(pk=note.id).exists()
+    ok("wall owner deletes guest note")
 
     print("ALL profile probes passed")
     return 0

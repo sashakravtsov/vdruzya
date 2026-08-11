@@ -74,6 +74,36 @@ def feed_queryset(viewer=None):
     )
 
 
+def wall_owner_id(post) -> int | None:
+    """Profile id whose wall this post lives on (wall notes + own wall posts)."""
+    topic = getattr(post, "topic", None) or ""
+    if topic.startswith("wall:"):
+        try:
+            return int(topic.split(":", 1)[1])
+        except (TypeError, ValueError):
+            return None
+    return getattr(post, "social_user_id", None)
+
+
+def can_manage_wall_post(me, post) -> bool:
+    """Author or wall owner may remove the post (classic FB)."""
+    if not me or not post:
+        return False
+    if post.social_user_id == me.id:
+        return True
+    oid = wall_owner_id(post)
+    return bool(oid and oid == me.id)
+
+
+def can_manage_wall_comment(me, comment) -> bool:
+    if not me or not comment:
+        return False
+    if comment.social_user_id == me.id:
+        return True
+    post = comment.post
+    return can_manage_wall_post(me, post)
+
+
 def wall_posts_for(profile, limit=20, viewer=None):
     """Own posts (not notes on others' walls) + notes written on this wall."""
     key = f"wall:{profile.id}"
@@ -132,8 +162,6 @@ def mini_feed(profile, limit=8):
         items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     return items[:limit]
-
-
 
 
 def _visible_group_q(member_ids):

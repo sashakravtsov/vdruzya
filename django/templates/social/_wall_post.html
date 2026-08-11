@@ -7,10 +7,12 @@
                 <div class="header">
                     <a href="{% url 'profile' post.social_user.id %}"><b>{{ post.social_user.name }}</b></a>
                     {% if post.created_at %}<span class="muted"> · {{ post.created_at|timesince }} назад</span>{% endif %}
-                    {% if me and me.id == post.social_user_id %}
+                    {% if me|can_manage_post:post %}
                     <span class="wallpost-edit">
+                        {% if me.id == post.social_user_id %}
                         <a href="{% url 'posts.edit' post.id %}">ред.</a>
                         ·
+                        {% endif %}
                         <form method="post" action="{% url 'posts.delete' post.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="next" value="{{ next }}">
                             <button type="submit" class="linkish muted">удалить</button>
@@ -68,7 +70,7 @@
                 {% for c in post.comments.all %}
                 <div class="wall-comment muted">
                     <a href="{% url 'profile' c.social_user.id %}">{{ c.social_user.name }}</a>: {{ c.body }}
-                    {% if me and me.id == c.social_user_id or me and me.id == post.social_user_id %}
+                    {% if me|can_manage_comment:c %}
                     <form method="post" action="{% url 'comments.delete' c.id %}" class="inline">{% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
                         <button type="submit" class="linkish muted">×</button>

@@ -171,9 +171,10 @@ def poke(request, pk):
 @login_required
 @require_POST
 def post_delete(request, post_id):
+    from apps.social.services import can_manage_wall_post
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
-    if not me or post.social_user_id != me.id:
+    if not can_manage_wall_post(me, post):
         messages.error(request, "Нельзя удалить.")
         return redirect(request.POST.get("next") or "feed")
     Comment.objects.filter(post=post).delete()
@@ -186,9 +187,10 @@ def post_delete(request, post_id):
 @login_required
 @require_POST
 def comment_delete(request, comment_id):
+    from apps.social.services import can_manage_wall_comment
     me = profile_of(request.user)
-    c = get_object_or_404(Comment, pk=comment_id)
-    if not me or (c.social_user_id != me.id and c.post.social_user_id != me.id):
+    c = get_object_or_404(Comment.objects.select_related("post"), pk=comment_id)
+    if not can_manage_wall_comment(me, c):
         return redirect(request.POST.get("next") or "feed")
     c.delete()
     return redirect(request.POST.get("next") or "feed")
