@@ -112,8 +112,8 @@ def main():
     r2 = c.get(f"/profile/{other.id}?tab=friends", secure=True)
     assert r2.status_code == 200
     right = r2.content.split(b'class="profile-right"', 1)[-1]
-    assert b"<h4>Друзья" in right
-    assert b"<h4>Общие друзья" not in right
+    assert "<h4>Друзья".encode() in right
+    assert "<h4>Общие друзья".encode() not in right
     ok("friend profile: friends tab lists friends")
 
     r = c.post("/profile/edit?section=basic", {
