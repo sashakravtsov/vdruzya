@@ -45,9 +45,8 @@ def friend_ids(profile: SocialProfile) -> set[int]:
 
 
 def friend_count(profile: SocialProfile) -> int:
-    return Friendship.objects.filter(status="accepted").filter(
-        Q(user_id=profile.id) | Q(friend_id=profile.id)
-    ).count()
+    """Unique friends — DB stores accepted edges both ways (A→B and B→A)."""
+    return len(friend_ids(profile))
 
 
 def feed_queryset(viewer=None):
