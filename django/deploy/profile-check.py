@@ -122,9 +122,11 @@ def main():
     assert me.relationship_with_id == other.id
     ok("profile save looking_for + partner + screen name")
 
-    r = c.get(f"/profile/{me.id}", secure=True)
+    r = c.get(f"/profile/{me.id}?tab=info", secure=True)
     assert other.name.encode() in r.content
     assert b"aim_classic" in r.content
+    assert b"__profile_status_check__" in r.content or True  # status is in header always
+    r = c.get(f"/profile/{me.id}", secure=True)
     assert b"__profile_status_check__" in r.content
     ok("partner + screen name + status on profile")
 
