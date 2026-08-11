@@ -40,7 +40,7 @@ def main():
     assert "Стена".encode() in r.content
     assert "Группы".encode() in r.content
     assert b'name="headline"' in r.content  # status in header
-    assert b"<h4>Статус</h4>" not in r.content
+    assert "<h4>Статус</h4>".encode() not in r.content
     ok("own profile wall tab")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
