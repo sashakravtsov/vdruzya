@@ -14,7 +14,7 @@ from django.test import Client
 
 from apps.accounts.models import User
 from apps.social.models import Post, SocialProfile
-from apps.social.profile_page import can_view_full, can_write_wall
+from apps.social.profile_page import can_write_wall
 from apps.social.services import can_manage_wall_post, friend_ids, now, profile_of, wall_posts_for
 
 
