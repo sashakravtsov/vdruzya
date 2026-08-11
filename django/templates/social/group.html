@@ -158,14 +158,16 @@
                     {% endif %}
                     {% for e in events %}
                     <div class="event-row">
-                        <b>{{ e.title }}</b>
-                        <div class="muted">{{ e.place }} · {{ e.starts_at }}</div>
+                        <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
+                        <div class="muted">{{ e.place }} · {{ e.starts_at|date:"j E Y, H:i" }}</div>
                         {% if user.is_authenticated %}
                         <form method="post" action="{% url 'events.rsvp' e.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="going">
                             <input type="hidden" name="next" value="{{ request.path }}#events">
                             <button type="submit" class="linkish">Пойду</button>
                         </form>
+                        ·
+                        <a href="{% url 'events.show' e.id %}">открыть</a>
                         {% endif %}
                     </div>
                     {% empty %}

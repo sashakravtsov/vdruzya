@@ -6,6 +6,7 @@ from . import views_group_ops as gops
 from . import views_meta as meta
 from . import views_albums as albums
 from . import views_friends as friends
+from . import views_events as events
 from . import views_messenger as msg
 from . import views_wall_ops as wall
 
@@ -72,8 +73,10 @@ urlpatterns = [
     path("albums/<int:album_id>/delete", albums.album_delete, name="albums.delete"),
     path("compose/album-photos", albums.compose_album_photos, name="compose.album-photos"),
     path("profile/<int:pk>/albums", albums.profile_albums, name="profile.albums"),
-    path("events", browse.events, name="events"),
-    path("events/<int:event_id>/rsvp", browse.event_rsvp, name="events.rsvp"),
+    path("events", events.events_home, name="events"),
+    path("events/<int:event_id>", events.event_show, name="events.show"),
+    path("events/<int:event_id>/rsvp", events.event_rsvp, name="events.rsvp"),
+    path("events/<int:event_id>/invite", events.event_invite, name="events.invite"),
     path("profile/edit", act.profile_edit, name="profile.edit"),
     path("profile/status", act.status_update, name="profile.status"),
     path("profile/education", act.education_add, name="profile.education"),

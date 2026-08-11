@@ -53,7 +53,11 @@ class Event(models.Model):
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255)
     place = models.CharField(max_length=255, default="")
+    description = models.TextField(default="", blank=True)
     starts_at = models.DateTimeField()
+    host = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, null=True, blank=True, related_name="hosted_events",
+    )
     community = models.ForeignKey(Community, models.DO_NOTHING, null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
@@ -63,13 +67,17 @@ class Event(models.Model):
         db_table = "events"
         ordering = ["starts_at"]
 
+    def get_absolute_url(self):
+        return f"/events/{self.pk}"
+
 
 class EventAttendee(models.Model):
     id = models.BigAutoField(primary_key=True)
     event = models.ForeignKey(Event, models.DO_NOTHING, related_name="attendees")
     social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="event_rsvps")
-    status = models.CharField(max_length=40, default="going")
+    status = models.CharField(max_length=40, default="going")  # going | maybe | declined
     created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False

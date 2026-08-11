@@ -242,11 +242,15 @@ def group_event_create(request, pk):
         if starts and getattr(starts, "tzinfo", None):
             starts = starts.replace(tzinfo=None)
     if title and starts:
-        t = now()
-        Event.objects.create(
-            community=group, title=title, place=place, starts_at=starts, created_at=t, updated_at=t,
+        from apps.social import events as ev
+        event = ev.create_event(
+            me, title=title, place=place, starts_at=starts, community=group,
         )
-        messages.success(request, "Событие создано.")
+        if event:
+            ev.set_rsvp(me, event, "going")
+            messages.success(request, "Событие создано.")
+        else:
+            messages.error(request, "Не удалось создать событие.")
     else:
         messages.error(request, "Укажите название и дату.")
     return redirect("groups.show", pk=pk)

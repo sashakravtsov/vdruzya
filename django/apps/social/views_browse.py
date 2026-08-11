@@ -163,34 +163,3 @@ def profile_slug_redirect(request, slug):
     p = get_object_or_404(SocialProfile.objects.only("id"), slug=slug)
     qs = request.GET.urlencode()
     return redirect(f"{p.get_absolute_url()}{'?' + qs if qs else ''}", permanent=True)
-
-
-@login_required
-def events(request):
-    from apps.social.models import Event, EventAttendee
-    me = profile_of(request.user)
-    if request.method == "POST" and me:
-        title = (request.POST.get("title") or "").strip()
-        place = (request.POST.get("place") or "").strip() or "—"
-        starts = request.POST.get("starts_at")
-        if title and starts:
-            Event.objects.create(title=title, place=place, starts_at=starts)
-            messages.success(request, "Событие добавлено.")
-            return redirect("events")
-    items = Event.objects.annotate(going=Count("attendees")).order_by("starts_at")[:50]
-    my = set(EventAttendee.objects.filter(social_user=me).values_list("event_id", flat=True)) if me else set()
-    return render(request, "social/events.html", {"events": items, "my": my, "me": me})
-
-
-@login_required
-@require_POST
-def event_rsvp(request, event_id):
-    from apps.social.models import Event, EventAttendee
-    me = profile_of(request.user)
-    event = get_object_or_404(Event, pk=event_id)
-    row = EventAttendee.objects.filter(event=event, social_user=me).first()
-    if row:
-        row.delete()
-    elif me:
-        EventAttendee.objects.create(event=event, social_user=me, status="going", created_at=_now())
-    return redirect(request.POST.get("next") or "events")

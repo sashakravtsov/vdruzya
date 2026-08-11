@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ event.title }} — События — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="events-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ event.title }}</h1>
+        <div class="subtitle"><a href="{% url 'events' %}" style="color:#fff">← события</a></div>
+    </div>
+    <div id="content" class="friends-content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <div class="friends-main">
+            <div class="profile-box">
+                <h4>Событие</h4>
+                <div class="profile-box-body">
+                    <table class="infotable">
+                        <tr><td class="label">Когда:</td><td>{{ event.starts_at|date:"l, j E Y, H:i" }}</td></tr>
+                        <tr><td class="label">Где:</td><td>{{ event.place|default:"—" }}</td></tr>
+                        {% if event.host %}<tr><td class="label">Хост:</td><td><a href="{% url 'profile' event.host.id %}">{{ event.host.name }}</a></td></tr>{% endif %}
+                        {% if event.community %}<tr><td class="label">Группа:</td><td><a href="{% url 'groups.show' event.community.id %}">{{ event.community.name }}</a></td></tr>{% endif %}
+                    </table>
+                    {% if event.description %}<p style="margin-top:8px">{{ event.description|linebreaksbr }}</p>{% endif %}
+
+                    <p style="margin-top:10px">
+                        <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="status" value="going">
+                            <button type="submit" class="inputsubmit{% if status == 'going' %} is-on{% endif %}">Иду</button>
+                        </form>
+                        <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="status" value="maybe">
+                            <button type="submit" class="inputsubmit">{% if status == 'maybe' %}✓ {% endif %}Возможно</button>
+                        </form>
+                        <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="status" value="declined">
+                            <button type="submit" class="linkish">{% if status == 'declined' %}✓ {% endif %}Не иду</button>
+                        </form>
+                    </p>
+                    <p class="muted">{{ n_going }} идут · {{ n_maybe }} возможно</p>
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Идут ({{ n_going }})</h4>
+                <div class="profile-box-body">
+                    {% for p in going %}
+                    <div class="classic-person-row">
+                        <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                            {% avatar p 32 %}
+                            <span><b>{{ p.name }}</b></span>
+                        </a>
+                    </div>
+                    {% empty %}<p class="muted">Пока никто не подтвердил.</p>{% endfor %}
+                </div>
+            </div>
+
+            {% if maybe %}
+            <div class="profile-box">
+                <h4>Возможно ({{ n_maybe }})</h4>
+                <div class="profile-box-body">
+                    {% for p in maybe %}
+                    <div class="classic-person-row">
+                        <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                            {% avatar p 32 %}
+                            <span><b>{{ p.name }}</b></span>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="friends-side">
+            {% if is_host and invite_friends %}
+            <div class="profile-box">
+                <h4>Пригласить друзей</h4>
+                <div class="profile-box-body">
+                    <form method="post" action="{% url 'events.invite' event.id %}">{% csrf_token %}
+                        {% for f in invite_friends %}
+                        <label class="classic-person-row classic-person-row-side" style="display:block;cursor:pointer">
+                            <input type="checkbox" name="friends" value="{{ f.id }}">
+                            {% avatar f 32 %}
+                            <b>{{ f.name }}</b>
+                        </label>
+                        {% endfor %}
+                        <p style="margin-top:8px"><input type="submit" class="inputsubmit" value="Пригласить"></p>
+                    </form>
+                </div>
+            </div>
+            {% elif is_host %}
+            <div class="profile-box">
+                <h4>Пригласить друзей</h4>
+                <div class="profile-box-body"><p class="muted">Все друзья уже приглашены или в списке.</p></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

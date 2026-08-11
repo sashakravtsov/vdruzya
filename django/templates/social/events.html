@@ -1,33 +1,60 @@
 {% extends "layout.html" %}
+{% load vd %}
 {% block title %}События — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="events-page">
     <div id="header"><h1>События</h1></div>
-    <div id="content">
+    <div id="content" class="people-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <nav class="page-tabs" aria-label="События">
+            <a class="page-tab{% if tab == 'upcoming' %} is-active{% endif %}" href="{% url 'events' %}">Ближайшие</a>
+            <a class="page-tab{% if tab == 'going' %} is-active{% endif %}" href="?tab=going">Я иду</a>
+            <a class="page-tab{% if tab == 'invited' %} is-active{% endif %}" href="?tab=invited">Приглашения</a>
+            <a class="page-tab{% if tab == 'hosting' %} is-active{% endif %}" href="?tab=hosting">Мои</a>
+            <a class="page-tab{% if tab == 'past' %} is-active{% endif %}" href="?tab=past">Прошедшие</a>
+        </nav>
+
         <div class="profile-box">
             <h4>Создать событие</h4>
             <div class="profile-box-body">
                 <form method="post">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
-                        <tr><td class="label">Название:</td><td><input class="inputtext" name="title" required></td></tr>
-                        <tr><td class="label">Место:</td><td><input class="inputtext" name="place"></td></tr>
+                        <tr><td class="label">Название:</td><td><input class="inputtext" name="title" required maxlength="255"></td></tr>
+                        <tr><td class="label">Место:</td><td><input class="inputtext" name="place" maxlength="255"></td></tr>
                         <tr><td class="label">Когда:</td><td><input class="inputtext" type="datetime-local" name="starts_at" required></td></tr>
+                        <tr><td class="label">Описание:</td><td><textarea class="inputtext" name="description" rows="3" style="width:100%"></textarea></td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
                     </table>
                 </form>
             </div>
         </div>
+
         <div class="profile-box">
-            <h4>Ближайшие</h4>
+            <h4>{% if tab == 'past' %}Прошедшие{% elif tab == 'going' %}Я иду{% elif tab == 'invited' %}Приглашения{% elif tab == 'hosting' %}Мои события{% else %}Ближайшие{% endif %}</h4>
             <div class="profile-box-body">
                 {% for e in events %}
-                <div class="event-row">
-                    <b>{{ e.title }}</b>
-                    <div class="muted">{{ e.place }} · {{ e.starts_at }} · {{ e.going }} идут</div>
-                    <form method="post" action="{% url 'events.rsvp' e.id %}" class="inline">{% csrf_token %}
-                        <button class="linkish" type="submit">{% if e.id in my %}Не пойду{% else %}Пойду{% endif %}</button>
-                    </form>
+                <div class="classic-person-row classic-person-row-friend">
+                    <a class="classic-person-name" href="{% url 'events.show' e.id %}">
+                        <span>
+                            <b>{{ e.title }}</b>
+                            <span class="classic-person-sub">
+                                {{ e.starts_at|date:"j E Y, H:i" }}
+                                {% if e.place %} · {{ e.place }}{% endif %}
+                                · {{ e.n_going }} идут{% if e.n_maybe %}, {{ e.n_maybe }} возможно{% endif %}
+                                {% if e.host %} · {{ e.host.name }}{% endif %}
+                            </span>
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post" action="{% url 'events.rsvp' e.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="status" value="going">
+                            <button class="linkish" type="submit">{% if e.my_status == 'going' %}✓ Иду{% else %}Пойду{% endif %}</button>
+                        </form>
+                        ·
+                        <a href="{% url 'events.show' e.id %}">подробнее</a>
+                    </span>
                 </div>
                 {% empty %}<p class="muted">Нет событий.</p>{% endfor %}
             </div>
