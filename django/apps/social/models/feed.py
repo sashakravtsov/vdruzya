@@ -34,12 +34,8 @@ class Post(models.Model):
 
     @property
     def sticker_url(self):
-        if not self.sticker:
-            return ""
-        if "://" in self.sticker:
-            return self.sticker
-        from apps.social.media import media_url
-        return media_url(self.sticker) or ""
+        from apps.social.media import sticker_url as _url
+        return _url(self.sticker)
 
 class PostMedia(models.Model):
     id = models.BigAutoField(primary_key=True)

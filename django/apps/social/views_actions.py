@@ -244,3 +244,73 @@ def message_send(request, conversation_id):
 
         transaction.on_commit(_push)
     return redirect(f"/messenger?c={conversation_id}")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def block_toggle(request, pk):
+    from apps.social import friendship as fr
+    from apps.social.models import Block
+    me, other = profile_of(request.user), get_object_or_404(SocialProfile, pk=pk)
+    if me and me.id != other.id:
+        if Block.objects.filter(blocker=me, blocked=other).exists():
+            fr.unblock_user(me, other)
+            messages.info(request, "Пользователь разблокирован.")
+        else:
+            fr.block_user(me, other)
+            messages.info(request, "Пользователь заблокирован.")
+    return redirect("profile", pk=pk)
+
+
+@login_required
+@require_POST
+def education_add(request):
+    from apps.social.forms import EducationForm
+    me, form = profile_of(request.user), EducationForm(request.POST)
+    if me and form.is_valid():
+        row = form.save(commit=False)
+        row.social_user = me
+        row.save()
+        messages.success(request, "Образование добавлено.")
+    return redirect("profile.edit")
+
+
+@login_required
+@require_POST
+def experience_add(request):
+    from apps.social.forms import ExperienceForm
+    me, form = profile_of(request.user), ExperienceForm(request.POST)
+    if me and form.is_valid():
+        row = form.save(commit=False)
+        row.social_user = me
+        row.description = row.description or ""
+        row.save()
+        messages.success(request, "Опыт добавлен.")
+    return redirect("profile.edit")
+
+
+@login_required
+@require_POST
+def sticker_send(request, conversation_id):
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+    from apps.social.models import Sticker
+
+    me = profile_of(request.user)
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    sticker = get_object_or_404(Sticker, pk=request.POST.get("sticker_id"), is_active=True)
+    if me:
+        body = sticker.phrase or sticker.title
+        m = Message.objects.create(
+            conversation=conv, social_user=me, body=body, message_type="sticker",
+            sticker_id=sticker.id, created_at=_now(),
+        )
+        Conversation.objects.filter(pk=conv.pk).update(updated_at=_now())
+        layer = get_channel_layer()
+        if layer:
+            async_to_sync(layer.group_send)(
+                f"chat_{conversation_id}",
+                {"type": "chat.message", "body": m.body, "name": me.name, "id": m.id},
+            )
+    return redirect(f"/messenger?c={conversation_id}")

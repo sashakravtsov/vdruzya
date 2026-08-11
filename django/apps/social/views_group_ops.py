@@ -9,7 +9,8 @@ from django.views.decorators.http import require_POST, require_http_methods
 from apps.social.forms import CommunityPostForm, GroupForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPollOption, CommunityPost,
-    CommunityPostComment, Conversation, ConversationMember, Event, Notification, SocialProfile,
+    CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember, Event,
+    Notification, SocialProfile,
 )
 from apps.social.polls import vote_group_option
 from apps.social.services import now, profile_of
@@ -278,3 +279,104 @@ def member_manage(request, pk, user_id):
         row.save(update_fields=["role"])
         messages.success(request, "Роль обновлена.")
     return redirect("groups.members", pk=pk)
+
+
+@login_required
+@require_POST
+def group_post(request, pk):
+    from apps.social.attach import attach_group
+    from apps.social.polls import attach_group_poll
+    from apps.social.throttle import throttle
+    from apps.social.wall_meta import MOOD_KEYS
+
+    @throttle("gposts", 20, 60)
+    def _go(req):
+        me, group = profile_of(req.user), get_object_or_404(Community, pk=pk)
+        is_mem = _member(me, group)
+        is_admin = _admin(me, group)
+        if group.posting_policy == "admins" and not is_admin:
+            messages.error(req, "Писать могут только администраторы.")
+            return redirect("groups.show", pk=pk)
+        if group.posting_policy != "everyone" and not is_mem:
+            messages.error(req, "Сначала вступите в группу.")
+            return redirect("groups.show", pk=pk)
+        form = CommunityPostForm(req.POST, req.FILES)
+        if not form.is_valid():
+            return redirect("groups.show", pk=pk)
+        p = form.save(commit=False)
+        p.community, p.social_user = group, me
+        p.topic = form.cleaned_data.get("board") or "discussion"
+        p.posted_as_community = bool(is_admin and req.POST.get("as_community"))
+        mood = form.cleaned_data.get("mood") or ""
+        p.mood = mood if mood in MOOD_KEYS else None
+        p.emoji = (form.cleaned_data.get("emoji") or "").strip()[:16] or None
+        labels = [x.strip() for x in (form.cleaned_data.get("poll_options") or "").splitlines() if x.strip()]
+        files = list(req.FILES.getlist("photo"))
+        albums = req.POST.getlist("album_photos")
+        p.created_at = p.updated_at = now()
+        p.body = (p.body or "").strip()
+        if len(labels) >= 2:
+            p.kind = "poll"
+        elif files or albums:
+            p.kind = "photo"
+        else:
+            p.kind = "text"
+        p.save()
+        if p.kind == "poll":
+            attach_group_poll(p, labels)
+        path = attach_group(p, files, me, albums)
+        if path:
+            p.media_path = path
+            if p.kind == "text":
+                p.kind = "photo"
+            p.save(update_fields=["media_path", "kind"])
+        cache.delete(f"news:{me.id}:60")
+        messages.success(req, "Запись в группе опубликована.")
+        if p.topic == "wall":
+            return redirect(f"/groups/{pk}#topic-{p.id}")
+        return redirect(f"/groups/{pk}?topic={p.id}#board")
+
+    return _go(request)
+
+
+@login_required
+@require_POST
+def group_comment(request, pk, post_id):
+    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
+    post = get_object_or_404(CommunityPost, pk=post_id, community=group)
+    body = (request.POST.get("body") or "").strip()
+    if me and _member(me, group) and body:
+        CommunityPostComment.objects.create(post=post, social_user=me, body=body, created_at=now())
+    if post.topic == "wall":
+        return redirect(f"/groups/{pk}#topic-{post.id}")
+    return redirect(f"/groups/{pk}?topic={post.id}#board")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def group_react(request, pk, post_id):
+    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
+    post = get_object_or_404(CommunityPost, pk=post_id, community=group)
+    if me and _member(me, group):
+        row = CommunityPostReaction.objects.filter(post=post, social_user=me, type="like").first()
+        if row:
+            row.delete()
+        else:
+            CommunityPostReaction.objects.create(post=post, social_user=me, type="like", created_at=now())
+    return redirect("groups.show", pk=pk)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def join_accept(request, pk, request_id):
+    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
+    if not _admin(me, group):
+        messages.error(request, "Только админ группы.")
+        return redirect("groups.show", pk=pk)
+    req = get_object_or_404(CommunityJoinRequest, pk=request_id, community=group, status="pending")
+    CommunityMember.objects.get_or_create(community=group, social_user_id=req.social_user_id, defaults={"role": "member"})
+    CommunityJoinRequest.objects.filter(pk=req.pk).update(status="accepted")
+    messages.success(request, "Заявка принята.")
+    return redirect("groups.show", pk=pk)

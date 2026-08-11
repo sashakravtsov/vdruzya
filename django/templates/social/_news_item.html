@@ -1,0 +1,63 @@
+{% load vd %}
+<div class="news-item news-{{ item.kind }}">
+    {% if item.kind == 'joined' %}
+        <span class="news-icon ico-group" aria-hidden="true"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            вступил(а) в группу
+            <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>.
+            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+        </div>
+    {% elif item.kind == 'created' %}
+        <span class="news-icon ico-group" aria-hidden="true"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            создал(а) группу.
+            <div class="news-card">
+                <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>
+                {% if item.group.category %}<div class="muted">{{ item.group.category|ru_label }}</div>{% endif %}
+                {% if item.group.short_description or item.group.description %}
+                <div class="muted">Инфо: {{ item.group.short_description|default:item.group.description|truncatewords:24 }}</div>
+                {% endif %}
+            </div>
+            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+        </div>
+    {% elif item.kind == 'group_post' %}
+        <span class="news-icon ico-note" aria-hidden="true"></span>
+        <div class="news-body">
+            {% if item.post.posted_as_community %}
+            <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>
+            {% else %}
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            написал(а) в
+            <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+            {% endif %}
+            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+            <div class="news-card">
+                <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
+                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                {% if item.post.media_url %}<p><img src="{{ item.post.media_url }}" alt="" class="news-photo"></p>{% endif %}
+                {% if item.post.kind == 'poll' and item.post.poll %}
+                <div class="muted">Опрос · {{ item.post.poll.options.all|length }} вариант(ов)</div>
+                {% endif %}
+            </div>
+            <div class="wall-actions muted">
+                ★ {{ item.post.likes|default:0 }} · комм. {{ item.post.n_comments|default:0 }}
+                <form method="post" action="{% url 'groups.react' item.group.id item.post.id %}" class="inline">{% csrf_token %}
+                    <button type="submit" class="linkish">Нравится</button>
+                </form>
+            </div>
+        </div>
+    {% elif item.kind == 'photos' %}
+        <span class="news-icon ico-note" aria-hidden="true"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            добавил(а) фото в альбом
+            <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>.
+            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.photo.url %}
+            <div class="news-photo-row"><img src="{{ item.photo.url }}" alt="" class="news-photo"></div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

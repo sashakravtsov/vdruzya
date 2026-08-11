@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 from . import views_actions as act
 from . import views_browse as browse
-from . import views_extra as extra
 from . import views_group_ops as gops
 from . import views_legal as legal
 from . import views_meta as meta
@@ -30,12 +29,12 @@ urlpatterns = [
     path("groups/<int:pk>/events", gops.group_event_create, name="groups.events"),
     path("groups/<int:pk>/members/<int:user_id>/manage", gops.member_manage, name="groups.members.manage"),
     path("groups/<int:pk>/message", gops.group_message, name="groups.message"),
-    path("groups/<int:pk>/join/<int:request_id>/accept", extra.join_accept, name="groups.join.accept"),
+    path("groups/<int:pk>/join/<int:request_id>/accept", gops.join_accept, name="groups.join.accept"),
     path("groups/<int:pk>/join/<int:request_id>/reject", gops.join_reject, name="groups.join.reject"),
-    path("groups/<int:pk>/posts", extra.group_post, name="groups.posts"),
+    path("groups/<int:pk>/posts", gops.group_post, name="groups.posts"),
     path("groups/<int:pk>/posts/<int:post_id>/edit", gops.group_post_edit, name="groups.posts.edit"),
-    path("groups/<int:pk>/posts/<int:post_id>/comment", extra.group_comment, name="groups.comment"),
-    path("groups/<int:pk>/posts/<int:post_id>/react", extra.group_react, name="groups.react"),
+    path("groups/<int:pk>/posts/<int:post_id>/comment", gops.group_comment, name="groups.comment"),
+    path("groups/<int:pk>/posts/<int:post_id>/react", gops.group_react, name="groups.react"),
     path("groups/<int:pk>/posts/<int:post_id>/poll", gops.group_poll_vote, name="groups.posts.poll"),
     path("groups/<int:pk>/posts/<int:post_id>/delete", gops.group_post_delete, name="groups.posts.delete"),
     path("groups/<int:pk>/comments/<int:comment_id>/delete", gops.group_comment_delete, name="groups.comments.delete"),
@@ -46,7 +45,7 @@ urlpatterns = [
     path("messenger", views.messenger, name="messenger"),
     path("messenger/start/<int:pk>", more.messenger_start, name="messenger.start"),
     path("messenger/<int:conversation_id>/message", act.message_send, name="messages.store"),
-    path("messenger/<int:conversation_id>/sticker", extra.sticker_send, name="messages.sticker"),
+    path("messenger/<int:conversation_id>/sticker", act.sticker_send, name="messages.sticker"),
     path("activity", views.activity, name="activity"),
     path("notifications", views.activity, name="notifications"),
     path("notifications/<int:notification_id>/read", views.notification_read, name="notifications.read"),
@@ -67,10 +66,10 @@ urlpatterns = [
     path("events/<int:event_id>/rsvp", more.event_rsvp, name="events.rsvp"),
     path("profile/edit", act.profile_edit, name="profile.edit"),
     path("profile/status", act.status_update, name="profile.status"),
-    path("profile/education", extra.education_add, name="profile.education"),
-    path("profile/experience", extra.experience_add, name="profile.experience"),
+    path("profile/education", act.education_add, name="profile.education"),
+    path("profile/experience", act.experience_add, name="profile.experience"),
     path("profile/avatar", act.avatar_upload, name="profile.avatar"),
-    path("profile/<int:pk>/block", extra.block_toggle, name="profile.block"),
+    path("profile/<int:pk>/block", act.block_toggle, name="profile.block"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),
     path("profile/<int:pk>/follow", act.follow_toggle, name="follow.toggle"),
     path("profile/<int:pk>", views.profile, name="profile"),
