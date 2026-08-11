@@ -22,10 +22,10 @@
                     </table>
                     {% if event.description %}<p style="margin-top:8px">{{ event.description|linebreaksbr }}</p>{% endif %}
 
-                    <p style="margin-top:10px">
+                    <div style="margin-top:10px">
                         <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="going">
-                            <button type="submit" class="inputsubmit{% if status == 'going' %} is-on{% endif %}">Иду</button>
+                            <button type="submit" class="inputsubmit">{% if status == 'going' %}✓ {% endif %}Иду</button>
                         </form>
                         <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="maybe">
@@ -35,7 +35,7 @@
                             <input type="hidden" name="status" value="declined">
                             <button type="submit" class="linkish">{% if status == 'declined' %}✓ {% endif %}Не иду</button>
                         </form>
-                    </p>
+                    </div>
                     <p class="muted">{{ n_going }} идут · {{ n_maybe }} возможно</p>
                 </div>
             </div>

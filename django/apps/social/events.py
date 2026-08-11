@@ -42,15 +42,20 @@ def get_event(pk):
 
 
 def annotate_counts(qs):
+    # Avoid DISTINCT over SocialProfile JSON columns (PG has no json equality).
     return qs.annotate(
-        n_going=Count("attendees", filter=Q(attendees__status="going"), distinct=True),
-        n_maybe=Count("attendees", filter=Q(attendees__status="maybe"), distinct=True),
+        n_going=Count("attendees", filter=Q(attendees__status="going")),
+        n_maybe=Count("attendees", filter=Q(attendees__status="maybe")),
     )
 
 
 def list_events(me, tab="upcoming"):
     """Tabs: upcoming | past | hosting | going | invited."""
-    qs = annotate_counts(Event.objects.select_related("host", "community"))
+    qs = annotate_counts(
+        Event.objects.select_related("host", "community").defer(
+            "host__looking_for", "host__languages",
+        )
+    )
     t = now()
     if tab == "past":
         return qs.filter(starts_at__lt=t).order_by("-starts_at")[:50]

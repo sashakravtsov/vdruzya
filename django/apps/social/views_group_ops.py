@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from apps.social.forms import CommunityPostForm, GroupForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPollOption, CommunityPost,
-    CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember, Event,
+    CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember,
     Notification, SocialProfile,
 )
 from apps.social.polls import vote_group_option
