@@ -46,6 +46,7 @@
                         <div class="req-row">
                             <span class="news-icon ico-group" aria-hidden="true"></span>
                             <a href="{% url 'profile' r.user.id %}">{{ r.user.name }}</a>
+                            {% if r.mutual %}<span class="muted">({{ r.mutual }})</span>{% endif %}
                             <form method="post" action="{% url 'friends.accept' r.user.id %}" class="inline">{% csrf_token %}
                                 <button type="submit" class="linkish">принять</button>
                             </form>

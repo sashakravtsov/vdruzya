@@ -110,17 +110,32 @@ def group_show(request, pk):
 
 @login_required
 def search(request):
+    from apps.social import friendship as fr
+    from apps.social.models import Block, Post
+
     q = (request.GET.get("q") or "").strip()
+    me = profile_of(request.user)
     people = groups_qs = posts = []
     if q:
-        people = (
+        ban = set()
+        if me:
+            ban |= set(Block.objects.filter(blocker=me).values_list("blocked_id", flat=True))
+            ban |= set(Block.objects.filter(blocked=me).values_list("blocker_id", flat=True))
+            ban.add(me.id)
+        people = list(
             SocialProfile.objects.annotate(sim=TrigramSimilarity("name", q))
             .filter(Q(sim__gt=0.2) | Q(slug__icontains=q) | Q(city__icontains=q))
+            .exclude(id__in=ban)
             .order_by("-sim")[:20]
         )
+        if me:
+            rel = fr.relations_for(me, [p.id for p in people])
+            for p in people:
+                n = fr.mutual_count(me, p)
+                p.rel = rel.get(p.id)
+                p.mutual = fr.mutual_label(n) if n else ""
         groups_qs = Community.objects.filter(Q(name__icontains=q) | Q(slug__icontains=q))[:20]
         query = SearchQuery(q, config="simple", search_type="websearch")
-        from apps.social.models import Post
         posts = (
             Post.objects.annotate(
                 rank=SearchRank("search_vector", query),
@@ -132,7 +147,7 @@ def search(request):
         )
     return render(
         request, "social/search.html",
-        {"q": q, "people": people, "groups": groups_qs, "posts": posts},
+        {"q": q, "people": people, "groups": groups_qs, "posts": posts, "me": me},
     )
 
 

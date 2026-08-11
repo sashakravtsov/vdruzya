@@ -29,6 +29,10 @@ def _page_int(raw, default=1):
         return default
 
 
+def _pending(me, limit=40):
+    return fr.annotate_mutuals(me, list(fr.pending_to(me)[:limit])) if me else []
+
+
 @login_required
 def people(request):
     """Find Friends — suggested / requests / search (My Friends lives on /friends)."""
@@ -40,16 +44,17 @@ def people(request):
         tab = "suggested"
     q = (request.GET.get("q") or "").strip()
     city = (request.GET.get("city") or "").strip()
+    school = (request.GET.get("school") or "").strip()
     gender = (request.GET.get("gender") or "").strip()
     workplace = (request.GET.get("workplace") or "").strip()
-    pending = list(fr.pending_to(me)[:40]) if me else []
+    pending = _pending(me)
     outgoing = list(fr.pending_from(me)[:40]) if me and tab == "requests" else []
     sugg = fr.suggestions(me, 24) if me and tab == "suggested" else []
     results = None
-    searching = bool(q or city or gender or workplace)
+    searching = bool(q or city or school or gender or workplace)
     if tab == "search" and searching and me:
         results = fr.find_people(
-            me, q=q, city=city, gender=gender, workplace=workplace,
+            me, q=q, city=city, school=school, gender=gender, workplace=workplace,
             page=_page_int(request.GET.get("p")),
         )
         rel = fr.relations_for(me, [p.id for p in results])
@@ -60,10 +65,10 @@ def people(request):
     return render(
         request, "social/people.html",
         {
-            "me": me, "tab": tab, "q": q, "city": city, "gender": gender, "workplace": workplace,
-            "pending": pending, "outgoing": outgoing, "suggestions": sugg, "results": results,
-            "searching": searching,
-            "invite_url": fr.invite_url(me, request) if me else "",
+            "me": me, "tab": tab, "q": q, "city": city, "school": school,
+            "gender": gender, "workplace": workplace,
+            "pending": pending, "outgoing": outgoing, "suggestions": sugg,
+            "results": results, "searching": searching,
         },
     )
 
@@ -85,28 +90,33 @@ def friends_home(request):
     return render(
         request, "social/friends.html",
         {
-            "me": me,
-            "q": q,
-            "city": city,
-            "sort": sort,
-            "friends": friends,
-            "friends_total": total,
-            "page_obj": page,
-            "pending": list(fr.pending_to(me)[:40]) if me else [],
+            "me": me, "q": q, "city": city, "sort": sort,
+            "friends": friends, "friends_total": total, "page_obj": page,
+            "pending": _pending(me),
             "outgoing": list(fr.pending_from(me)[:40]) if me else [],
             "suggestions": fr.suggestions(me, 12) if me else [],
             "blocked": list(fr.blocked_by(me)[:40]) if me else [],
-            "invite_url": fr.invite_url(me, request) if me else "",
         },
     )
 
 
-@login_not_required
+@login_required
 def profile_friends(request, pk):
     owner = get_profile(pk)
-    me = profile_of(request.user) if request.user.is_authenticated else None
+    me = profile_of(request.user)
     if me and me.id != owner.id and fr.is_blocked(me, owner):
         return _forbid_block(request, owner)
+    if not fr.can_see_friends(me, owner):
+        return render(
+            request, "social/friends_user.html",
+            {
+                "owner": owner, "friends": [], "me": me, "q": "", "page_obj": None,
+                "friends_total": len(friend_ids(owner)),
+                "is_own": bool(me and me.id == owner.id),
+                "private": True,
+            },
+            status=403,
+        )
     q = (request.GET.get("q") or "").strip()
     fids = friend_ids(owner)
     qs = SocialProfile.objects.filter(id__in=fids).order_by("name")
@@ -125,6 +135,7 @@ def profile_friends(request, pk):
             "owner": owner, "friends": items, "me": me, "q": q, "page_obj": page,
             "friends_total": len(fids),
             "is_own": bool(me and me.id == owner.id),
+            "private": False,
         },
     )
 

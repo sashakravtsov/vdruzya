@@ -5,7 +5,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 
-from apps.social.models import Block, CommunityMember, Friendship, SocialProfile
+from apps.social.models import Block, CommunityMember, Education, Friendship, SocialProfile
 from apps.social.services import friend_ids, now
 
 
@@ -65,6 +65,16 @@ def pending_from(me):
         .select_related("friend")
         .order_by("-id")
     )
+
+
+def annotate_mutuals(me, rows, *, who="user"):
+    """Attach mutual / mutual_n on Friendship rows for Confirm Friends UI."""
+    for row in rows:
+        other = getattr(row, who)
+        n = mutual_count(me, other)
+        row.mutual_n = n
+        row.mutual = mutual_label(n) if n else ""
+    return rows
 
 
 def blocked_by(me):
@@ -332,21 +342,29 @@ def apply_invite(request, me, code=None):
     return inviter
 
 
-def apply_invite_cookie(request, me):
-    return apply_invite(request, me)
-
-
 def other_or_404(pk):
     return get_object_or_404(SocialProfile, pk=pk)
 
 
-def find_people(me, *, q="", city="", gender="", workplace="", page=1, per=24):
+def can_see_friends(viewer, owner) -> bool:
+    """Early FB: own list always; others only if friends (or self)."""
+    if not owner:
+        return False
+    if not viewer:
+        return False
+    if viewer.id == owner.id:
+        return True
+    return owner.id in friend_ids(viewer)
+
+
+def find_people(me, *, q="", city="", school="", gender="", workplace="", page=1, per=24):
     """Classic Find Friends search (both-way blocks excluded)."""
     ban = set(Block.objects.filter(blocker=me).values_list("blocked_id", flat=True))
     ban |= set(Block.objects.filter(blocked=me).values_list("blocker_id", flat=True))
     qs = SocialProfile.objects.exclude(id=me.id).exclude(id__in=ban)
     q = (q or "").strip()
     city = (city or "").strip()
+    school = (school or "").strip()
     gender = (gender or "").strip()
     workplace = (workplace or "").strip()
     if q:
@@ -356,7 +374,12 @@ def find_people(me, *, q="", city="", gender="", workplace="", page=1, per=24):
         )
     if city:
         qs = qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))
-    if gender in ("male", "female", "other"):
+    if school:
+        ids = Education.objects.filter(institution__icontains=school).values_list(
+            "social_user_id", flat=True
+        )
+        qs = qs.filter(id__in=ids)
+    if gender in ("male", "female"):
         qs = qs.filter(gender=gender)
     if workplace:
         qs = qs.filter(workplace__icontains=workplace)

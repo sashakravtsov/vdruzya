@@ -57,7 +57,8 @@
                         {% avatar r.user 50 %}
                         <span>
                             <b>{{ r.user.name }}</b>
-                            {% if r.user.headline %}<span class="classic-person-sub">{{ r.user.headline }}</span>
+                            {% if r.mutual %}<span class="classic-person-sub">{{ r.mutual }}</span>
+                            {% elif r.user.headline %}<span class="classic-person-sub">{{ r.user.headline }}</span>
                             {% elif r.user.city %}<span class="classic-person-sub">{{ r.user.city }}</span>{% endif %}
                         </span>
                     </a>
@@ -113,6 +114,10 @@
                     <td><input class="inputtext" type="text" name="city" value="{{ city }}" placeholder="Город или родной город" autocomplete="off"></td>
                 </tr>
                 <tr>
+                    <td class="label">Школа:</td>
+                    <td><input class="inputtext" type="text" name="school" value="{{ school }}" placeholder="Школа / вуз" autocomplete="off"></td>
+                </tr>
+                <tr>
                     <td class="label">Работа:</td>
                     <td><input class="inputtext" type="text" name="workplace" value="{{ workplace }}" placeholder="Место работы" autocomplete="off"></td>
                 </tr>
@@ -123,7 +128,6 @@
                             <option value="">любой</option>
                             <option value="male"{% if gender == 'male' %} selected{% endif %}>мужской</option>
                             <option value="female"{% if gender == 'female' %} selected{% endif %}>женский</option>
-                            <option value="other"{% if gender == 'other' %} selected{% endif %}>другой</option>
                         </select>
                         <input class="inputsubmit" type="submit" value="Найти">
                         {% if searching %}<a href="?tab=search">сбросить</a>{% endif %}
@@ -132,7 +136,7 @@
             </table>
         </form>
         {% if not searching %}
-        <p class="muted">Укажите имя, город, работу или пол — как в классическом Find Friends.</p>
+        <p class="muted">Укажите имя, город, школу или работу — как в классическом Find Friends.</p>
         {% elif results %}
         <div class="profile-box">
             <h4>Результаты</h4>
@@ -158,9 +162,9 @@
         </div>
         {% if results.has_other_pages %}
         <p class="people-top-links">
-            {% if results.has_previous %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;workplace={{ workplace|urlencode }}&amp;gender={{ gender|urlencode }}&amp;p={{ results.previous_page_number }}">« назад</a>{% endif %}
+            {% if results.has_previous %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;school={{ school|urlencode }}&amp;workplace={{ workplace|urlencode }}&amp;gender={{ gender|urlencode }}&amp;p={{ results.previous_page_number }}">« назад</a>{% endif %}
             стр. {{ results.number }} / {{ results.paginator.num_pages }}
-            {% if results.has_next %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;workplace={{ workplace|urlencode }}&amp;gender={{ gender|urlencode }}&amp;p={{ results.next_page_number }}">вперёд »</a>{% endif %}
+            {% if results.has_next %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;school={{ school|urlencode }}&amp;workplace={{ workplace|urlencode }}&amp;gender={{ gender|urlencode }}&amp;p={{ results.next_page_number }}">вперёд »</a>{% endif %}
         </p>
         {% endif %}
         {% else %}

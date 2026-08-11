@@ -34,9 +34,8 @@ def feed(request):
     from apps.social.services import news_items, shared_with, upcoming_birthdays
     me = profile_of(request.user)
     page = Paginator(news_items(me, 60), 20).get_page(request.GET.get("p"))
-    pending = (
-        Friendship.objects.filter(friend=me, status="pending").select_related("user")[:8] if me else []
-    )
+    from apps.social import friendship as fr
+    pending = fr.annotate_mutuals(me, list(fr.pending_to(me)[:8])) if me else []
     popular = (
         Community.objects.annotate(n=Count("memberships", distinct=True))
         .filter(Q(privacy="public") | Q(privacy=""))
@@ -65,17 +64,15 @@ def profile(request, pk):
     from apps.social.albums import visible_q
     from apps.social.views_albums import albums_for_profile
     from apps.social import friendship as fr
+
     user = get_profile(pk)
     me = profile_of(request.user) if request.user.is_authenticated else None
     if me and me.id != user.id and fr.is_blocked(me, user):
         return render(request, "social/profile_blocked.html", {"who": user, "me": me}, status=403)
-    friends = accepted_friends(user, 6)
-    friend_count = len(friend_ids(user))
-    communities = Community.objects.filter(memberships__social_user=user).distinct()[:12]
-    albums = albums_for_profile(user, me, 4)
-    posts = wall_posts_for(user, 20, viewer=me)
+
     relation = blocked = None
     can_wall = bool(me and me.id == user.id)
+    can_see = fr.can_see_friends(me, user)
     if me and me.id != user.id:
         relation = Friendship.objects.filter(Q(user=me, friend=user) | Q(user=user, friend=me)).first()
         blocked = Block.objects.filter(blocker=me, blocked=user).exists()
@@ -83,8 +80,13 @@ def profile(request, pk):
         mutual = fr.mutual_count(me, user)
         mutual_text = fr.mutual_label(mutual) if mutual else ""
     else:
-        mutual = 0
-        mutual_text = ""
+        mutual, mutual_text = 0, ""
+
+    friend_count = len(friend_ids(user))
+    friends = accepted_friends(user, 6) if can_see else []
+    communities = Community.objects.filter(memberships__social_user=user).distinct()[:12]
+    albums = albums_for_profile(user, me, 4)
+    posts = wall_posts_for(user, 20, viewer=me)
     album_photos = list(
         Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]
     ) if me and can_wall else []
@@ -96,8 +98,7 @@ def profile(request, pk):
             "profile": user, "me": me, "is_own": bool(me and me.id == user.id),
             "friends": friends, "communities": communities,
             "albums": albums, "posts": posts, "relation": relation, "blocked": blocked,
-            "mutual": mutual,
-            "mutual_text": mutual_text,
+            "mutual": mutual, "mutual_text": mutual_text,
             "education": Education.objects.filter(social_user=user)[:10],
             "experiences": Experience.objects.filter(social_user=user)[:10],
             "stats": {
@@ -108,6 +109,7 @@ def profile(request, pk):
             "form": PostForm() if can_wall else None,
             "comment_form": CommentForm() if me else None,
             "can_wall": can_wall,
+            "can_see_friends": can_see,
             "album_photos": album_photos,
             "mini": mini_feed(user),
         },

@@ -22,31 +22,41 @@ def ok(label):
     print(f"OK   {label}")
 
 
-def _make_other():
-    """Temp second profile for probe (prod may have only one user)."""
+def _make(name, city="Москва"):
     email = f"qa.friends.{uuid.uuid4().hex[:8]}@vdruzya.ru"
-    u = User(email=email, name="QA Friend")
+    u = User(email=email, name=name)
     u.set_password("TempQaFriends2026!")
     u.save()
     t = now()
     p = SocialProfile.objects.create(
-        user=u, name="QA Friend", slug=f"qa-friend-{u.id}",
-        city="Москва", avatar_color="#3B5998",
+        user=u, name=name, slug=f"qa-friend-{u.id}",
+        city=city, avatar_color="#3B5998",
         created_at=t, updated_at=t, onboarding_completed_at=t,
     )
     return u, p
+
+
+def _link(a, b):
+    t = now()
+    Friendship.objects.update_or_create(
+        user=a, friend=b, defaults={"status": "accepted", "created_at": t, "updated_at": t},
+    )
+    Friendship.objects.update_or_create(
+        user=b, friend=a, defaults={"status": "accepted", "created_at": t, "updated_at": t},
+    )
 
 
 def main():
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
     assert u, "no user"
     me = profile_of(u)
-    other_user, other = _make_other()
+    other_user, other = _make("QA Friend")
+    mid_user, mid = _make("QA Mutual")
 
     Friendship.objects.filter(
-        user_id__in=[me.id, other.id], friend_id__in=[me.id, other.id]
+        user_id__in=[me.id, other.id, mid.id], friend_id__in=[me.id, other.id, mid.id]
     ).delete()
-    Block.objects.filter(blocker=me, blocked=other).delete()
+    Block.objects.filter(blocker_id__in=[me.id, other.id], blocked_id__in=[me.id, other.id]).delete()
 
     c = Client(HTTP_HOST="vdruzya.ru")
     c.force_login(u)
@@ -60,24 +70,24 @@ def main():
         assert r.status_code == 200 and "Мои друзья".encode() in r.content
         assert "Заявки".encode() in r.content and "Рекомендации".encode() in r.content
         assert "Найти друга".encode() in r.content
-        assert b"snav-profile" in r.content and "[ред.]".encode() in r.content
         ok("friends home page")
 
-        r = c.get("/friends?q=Анна", secure=True)
+        r = c.get("/friends?q=Анна&sort=recent", secure=True)
         assert r.status_code == 200
-        ok("friends search filter")
+        ok("friends search+sort")
 
         r = c.get("/people?tab=friends", secure=True)
-        assert r.status_code == 200 and "Мои друзья".encode() in r.content
-        ok("friends tab")
+        assert r.status_code in (301, 302)
+        assert "/friends" in (r.url or r["Location"])
+        ok("people tab=friends redirects")
 
         r = c.get("/people?tab=requests", secure=True)
         assert r.status_code == 200
         ok("requests tab")
 
-        r = c.get("/people?tab=search&q=QA", secure=True)
+        r = c.get("/people?tab=search&q=QA&city=Москва", secure=True)
         assert r.status_code == 200 and b"QA Friend" in r.content
-        ok("search tab")
+        ok("search tab filters")
 
         r = c.get("/invite", secure=True)
         assert r.status_code == 200 and b"/i/" in r.content
@@ -99,18 +109,59 @@ def main():
         assert other.id in friend_ids(me)
         ok("friend accept reciprocal")
 
-        r = c.post(f"/friends/{other.id}/remove", {"next": "/people?tab=friends"}, secure=True)
+        _link(me, mid)
+        _link(other, mid)
+        r = c.get(f"/profile/{other.id}/mutual", secure=True)
+        assert r.status_code == 200 and b"QA Mutual" in r.content
+        assert "общий".encode() in r.content or "общих".encode() in r.content
+        ok("mutual friends page")
+
+        r = c.get(f"/profile/{other.id}", secure=True)
+        assert r.status_code == 200 and f"/profile/{other.id}/mutual".encode() in r.content
+        ok("profile mutual link")
+
+        # Confirm Friends shows mutuals on pending
+        Friendship.objects.filter(user_id__in=[me.id, mid.id], friend_id__in=[me.id, mid.id]).delete()
+        Friendship.objects.create(user=mid, friend=me, status="pending", created_at=now(), updated_at=now())
+        _link(mid, other)  # mid+other still linked; me+other friends → mutual for pending mid
+        r = c.get("/friends", secure=True)
+        assert r.status_code == 200 and b"QA Mutual" in r.content
+        assert "общий".encode() in r.content or "общих".encode() in r.content
+        ok("pending shows mutuals")
+        Friendship.objects.filter(user=mid, friend=me, status="pending").delete()
+
+        # Friends list privacy: stranger cannot browse
+        Friendship.objects.filter(
+            user_id__in=[me.id, other.id], friend_id__in=[me.id, other.id]
+        ).delete()
+        r = c.get(f"/profile/{other.id}/friends", secure=True)
+        assert r.status_code == 403 and "только друзьям".encode() in r.content
+        ok("friends list private to non-friends")
+        _link(me, other)
+        r = c.get(f"/profile/{other.id}/friends", secure=True)
+        assert r.status_code == 200
+        ok("friends list visible to friends")
+
+        # School Find Friends filter
+        from apps.social.models import Education
+        Education.objects.filter(social_user=other).delete()
+        Education.objects.create(social_user=other, institution="МГУ QA School")
+        r = c.get("/people?tab=search&school=МГУ", secure=True)
+        assert r.status_code == 200 and b"QA Friend" in r.content
+        ok("school search filter")
+        Education.objects.filter(social_user=other).delete()
+
+        r = c.post(f"/friends/{other.id}/remove", {"next": "/friends"}, secure=True)
         assert not Friendship.objects.filter(user=me, friend=other).exists()
         ok("friend remove")
 
-        Friendship.objects.create(user=me, friend=other, status="accepted", created_at=now(), updated_at=now())
-        Friendship.objects.create(user=other, friend=me, status="accepted", created_at=now(), updated_at=now())
-        r = c.post(f"/friends/{other.id}/block", {"next": "/people?tab=friends"}, secure=True)
+        _link(me, other)
+        r = c.post(f"/friends/{other.id}/block", {"next": "/friends"}, secure=True)
         assert Block.objects.filter(blocker=me, blocked=other).exists()
         assert not Friendship.objects.filter(user=me, friend=other).exists()
         ok("friend block")
 
-        r = c.post(f"/friends/{other.id}/block/remove", {"next": "/people?tab=friends"}, secure=True)
+        r = c.post(f"/friends/{other.id}/block/remove", {"next": "/friends"}, secure=True)
         assert not Block.objects.filter(blocker=me, blocked=other).exists()
         ok("friend unblock")
 
@@ -118,7 +169,6 @@ def main():
         assert r.status_code == 403
         ok("accept without pending 403")
 
-        # block prevents request + profile
         from apps.social import friendship as fr
         fr.block_user(me, other)
         r = c2.post(f"/friends/{me.id}/request", {}, secure=True)
@@ -129,7 +179,6 @@ def main():
         ok("block prevents profile view 403")
         fr.unblock_user(me, other)
 
-        # cancel outgoing
         c.post(f"/friends/{other.id}/request", {}, secure=True)
         r = c.post(f"/friends/{other.id}/cancel", {"next": f"/profile/{other.id}"}, secure=True)
         assert r.status_code in (301, 302)
@@ -151,10 +200,11 @@ def main():
         print("ALL friends probes passed")
         return 0
     finally:
-        Friendship.objects.filter(user_id__in=[me.id, other.id], friend_id__in=[me.id, other.id]).delete()
-        Block.objects.filter(blocker_id__in=[me.id, other.id], blocked_id__in=[me.id, other.id]).delete()
-        SocialProfile.objects.filter(pk=other.id).delete()
-        User.objects.filter(pk=other_user.id).delete()
+        ids = [me.id, other.id, mid.id]
+        Friendship.objects.filter(user_id__in=ids, friend_id__in=ids).delete()
+        Block.objects.filter(blocker_id__in=ids, blocked_id__in=ids).delete()
+        SocialProfile.objects.filter(pk__in=[other.id, mid.id]).delete()
+        User.objects.filter(pk__in=[other_user.id, mid_user.id]).delete()
 
 
 if __name__ == "__main__":

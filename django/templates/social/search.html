@@ -31,9 +31,15 @@
                         {% avatar p 50 %}
                         <span>
                             <b>{{ p.name }}</b>
-                            {% if p.city %}<span class="classic-person-sub">{{ p.city }}</span>{% endif %}
+                            {% if p.mutual %}<span class="classic-person-sub">{{ p.mutual }}</span>
+                            {% elif p.city %}<span class="classic-person-sub">{{ p.city }}</span>{% endif %}
                         </span>
                     </a>
+                    {% if me %}
+                    <span class="classic-inline-actions">
+                        {% include "partials/friend_actions.html" with p=p r=p.rel %}
+                    </span>
+                    {% endif %}
                 </div>
                 {% empty %}<p class="muted">Никого не найдено.</p>{% endfor %}
             </div>

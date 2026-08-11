@@ -82,7 +82,11 @@
                     <div class="classic-person-row classic-person-row-side">
                         <a class="classic-person-name" href="{% url 'profile' r.user.id %}">
                             {% avatar r.user 32 %}
-                            <span><b>{{ r.user.name }}</b></span>
+                            <span>
+                                <b>{{ r.user.name }}</b>
+                                {% if r.mutual %}<span class="classic-person-sub">{{ r.mutual }}</span>
+                                {% elif r.user.city %}<span class="classic-person-sub">{{ r.user.city }}</span>{% endif %}
+                            </span>
                         </a>
                         <span class="classic-inline-actions classic-inline-actions-stack">
                             <form method="post" action="{% url 'friends.accept' r.user.id %}">{% csrf_token %}

@@ -75,7 +75,7 @@
                 <h4>Друзья{% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
                 <div class="profile-box-body">
                     <p>{% if profile.city %}Друзья · {{ profile.city|tag }}: {% endif %}<b>{{ stats.friends }}</b></p>
-                    {% if friends %}
+                    {% if can_see_friends and friends %}
                     <div class="profile-friend-grid">
                         {% for f in friends %}
                         <a class="profile-friend-tile" href="{% url 'profile' f.id %}">
@@ -85,8 +85,10 @@
                         {% endfor %}
                     </div>
                     <p><a href="{% if is_own %}{% url 'friends' %}{% else %}{% url 'profile.friends' profile.id %}{% endif %}">Смотреть всех</a></p>
-                    {% else %}
+                    {% elif can_see_friends %}
                     <p class="muted">Список друзей пуст.</p>
+                    {% else %}
+                    <p class="muted">Список друзей доступен только друзьям.</p>
                     {% endif %}
                 </div>
             </div>
