@@ -7,8 +7,6 @@ from django.views.decorators.http import require_POST
 from apps.social.forms import CommentForm, MessageForm, PostForm, ProfileForm
 from apps.social.models import (
     Comment,
-    Conversation,
-    Message,
     Post,
     Reaction,
     SavedPost,
@@ -207,27 +205,104 @@ def avatar_upload(request):
 @require_POST
 @transaction.atomic
 def message_send(request, conversation_id):
-    from asgiref.sync import async_to_sync
-    from channels.layers import get_channel_layer
+    from apps.social import chat as ch
+    from apps.social.throttle import throttle
+
+    @throttle("msg", 40, 60)
+    def _go(req):
+        me = profile_of(req.user)
+        if not me:
+            return redirect("messenger")
+        try:
+            conv = ch.require_member(me, conversation_id)
+        except Exception:
+            messages.error(req, "Диалог недоступен.")
+            return redirect("messenger")
+        form = MessageForm(req.POST)
+        if not form.is_valid():
+            messages.error(req, "Напишите текст сообщения.")
+            return redirect(f"/messenger?c={conversation_id}")
+        m = ch.post_message(me, conv, form.cleaned_data["body"])
+        transaction.on_commit(lambda: ch.broadcast(m))
+        return redirect(f"/messenger?c={conversation_id}")
+
+    return _go(request)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def sticker_send(request, conversation_id):
+    from apps.social import chat as ch
+    from apps.social.models import Sticker
+    from apps.social.throttle import throttle
+
+    @throttle("msg", 40, 60)
+    def _go(req):
+        me = profile_of(req.user)
+        if not me:
+            return redirect("messenger")
+        try:
+            conv = ch.require_member(me, conversation_id)
+        except Exception:
+            messages.error(req, "Диалог недоступен.")
+            return redirect("messenger")
+        sticker = get_object_or_404(Sticker, pk=req.POST.get("sticker_id"), is_active=True)
+        m = ch.post_sticker(me, conv, sticker)
+        transaction.on_commit(lambda: ch.broadcast(m))
+        return redirect(f"/messenger?c={conversation_id}")
+
+    return _go(request)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def messenger_start(request, pk):
+    from apps.social import chat as ch
 
     me = profile_of(request.user)
-    conv = get_object_or_404(Conversation, pk=conversation_id)
-    form = MessageForm(request.POST)
-    if form.is_valid() and me:
-        m = form.save(commit=False)
-        m.conversation, m.social_user, m.message_type, m.created_at = conv, me, "text", _now()
-        m.save()
-        Conversation.objects.filter(pk=conv.pk).update(updated_at=_now())
-        payload = {"type": "chat.message", "body": m.body, "name": me.name, "id": m.id}
-        layer = get_channel_layer()
+    other = get_object_or_404(SocialProfile, pk=pk)
+    err = ch.can_dm(me, other)
+    if err:
+        messages.error(request, err)
+        return redirect(request.POST.get("next") or "messenger")
+    conv = ch.dm_find_or_create(me, other)
+    return redirect(f"/messenger?c={conv.id}")
 
-        def _push():
-            if layer:
-                async_to_sync(layer.group_send)(f"chat_{conversation_id}", payload)
 
-        transaction.on_commit(_push)
-    return redirect(f"/messenger?c={conversation_id}")
+@login_required
+@require_POST
+@transaction.atomic
+def messenger_compose(request):
+    from apps.social import chat as ch
+    from apps.social.forms import ComposeMessageForm
+    from apps.social.friendship import friends_of
+    from apps.social.throttle import throttle
 
+    @throttle("msg", 40, 60)
+    def _go(req):
+        me = profile_of(req.user)
+        if not me:
+            return redirect("messenger")
+        friends = list(friends_of(me, limit=200))
+        form = ComposeMessageForm(friends, req.POST)
+        if not form.is_valid():
+            messages.error(req, "Выберите друга.")
+            return redirect("/messenger?compose=1")
+        other = get_object_or_404(SocialProfile, pk=int(form.cleaned_data["to"]))
+        err = ch.can_dm(me, other)
+        if err:
+            messages.error(req, err)
+            return redirect("/messenger?compose=1")
+        conv = ch.dm_find_or_create(me, other)
+        body = (form.cleaned_data.get("body") or "").strip()
+        if body:
+            m = ch.post_message(me, conv, body)
+            transaction.on_commit(lambda: ch.broadcast(m))
+        return redirect(f"/messenger?c={conv.id}")
+
+    return _go(request)
 
 @login_required
 @require_POST
@@ -271,53 +346,4 @@ def experience_add(request):
         row.save()
         messages.success(request, "Опыт добавлен.")
     return redirect("profile.edit")
-
-
-@login_required
-@require_POST
-def sticker_send(request, conversation_id):
-    from asgiref.sync import async_to_sync
-    from channels.layers import get_channel_layer
-    from apps.social.models import Sticker
-
-    me = profile_of(request.user)
-    conv = get_object_or_404(Conversation, pk=conversation_id)
-    sticker = get_object_or_404(Sticker, pk=request.POST.get("sticker_id"), is_active=True)
-    if me:
-        body = sticker.phrase or sticker.title
-        m = Message.objects.create(
-            conversation=conv, social_user=me, body=body, message_type="sticker",
-            sticker_id=sticker.id, created_at=_now(),
-        )
-        Conversation.objects.filter(pk=conv.pk).update(updated_at=_now())
-        layer = get_channel_layer()
-        if layer:
-            async_to_sync(layer.group_send)(
-                f"chat_{conversation_id}",
-                {"type": "chat.message", "body": m.body, "name": me.name, "id": m.id},
-            )
-    return redirect(f"/messenger?c={conversation_id}")
-
-@login_required
-@require_POST
-@transaction.atomic
-def messenger_start(request, pk):
-    from apps.social.models import ConversationMember
-    me = profile_of(request.user)
-    other = get_object_or_404(SocialProfile, pk=pk)
-    if not me or me.id == other.id:
-        return redirect("messenger")
-    mine = set(ConversationMember.objects.filter(social_user=me).values_list("conversation_id", flat=True))
-    shared = mine & set(ConversationMember.objects.filter(social_user=other).values_list("conversation_id", flat=True))
-    if shared:
-        cid = min(shared)
-    else:
-        now = _now()
-        conv = Conversation.objects.create(created_at=now, updated_at=now)
-        ConversationMember.objects.bulk_create([
-            ConversationMember(conversation=conv, social_user=me),
-            ConversationMember(conversation=conv, social_user=other),
-        ])
-        cid = conv.id
-    return redirect(f"/messenger?c={cid}")
 

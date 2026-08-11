@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'vdruzya-dj-v20';
+const CACHE_VERSION = 'vdruzya-dj-v21';
 const PRECACHE_URLS = [
     '/offline.html',
     '/favicon.svg',
@@ -56,49 +56,4 @@ self.addEventListener('fetch', (event) => {
             ),
         );
     }
-});
-
-self.addEventListener('push', (event) => {
-    let payload = {
-        title: 'ВДрузья',
-        body: 'Новое уведомление',
-        url: '/notifications',
-    };
-    if (event.data) {
-        try {
-            payload = { ...payload, ...event.data.json() };
-        } catch {
-            payload.body = event.data.text();
-        }
-    }
-    event.waitUntil(
-        self.registration.showNotification(payload.title, {
-            body: payload.body,
-            icon: '/favicon-192x192.png',
-            badge: '/favicon-32x32.png',
-            tag: payload.type ? `vdruzya-${payload.type}` : 'vdruzya-notification',
-            data: { url: payload.url || '/notifications' },
-        }),
-    );
-});
-
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    const targetUrl = event.notification.data?.url || '/notifications';
-    const absoluteUrl = new URL(targetUrl, self.location.origin).href;
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-            for (const client of clients) {
-                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-                    if ('navigate' in client) {
-                        return client.navigate(absoluteUrl).then(() => client.focus());
-                    }
-                    return client.focus();
-                }
-            }
-            if (self.clients.openWindow) {
-                return self.clients.openWindow(absoluteUrl);
-            }
-        }),
-    );
 });

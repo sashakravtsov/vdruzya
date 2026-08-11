@@ -148,7 +148,19 @@ class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
         fields = ("body",)
-        widgets = {"body": _in(style="width:80%")}
+        widgets = {"body": _ta(2, placeholder="Написать сообщение…", style="width:80%")}
+
+
+class ComposeMessageForm(forms.Form):
+    to = forms.ChoiceField(choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
+    body = forms.CharField(
+        required=False,
+        widget=_ta(3, placeholder="Сообщение…", style="width:100%"),
+    )
+
+    def __init__(self, friends, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["to"].choices = [("", "— выберите друга —")] + [(str(p.id), p.name) for p in friends]
 
 
 class AlbumForm(forms.ModelForm):

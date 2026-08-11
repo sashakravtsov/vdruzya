@@ -7,7 +7,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
             return await self.close()
-        self.cid = self.scope["url_route"]["kwargs"]["cid"]
+        self.cid = int(self.scope["url_route"]["kwargs"]["cid"])
         if not await self._member(user):
             return await self.close()
         self.group = f"chat_{self.cid}"
@@ -24,26 +24,25 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
         payload = await self._store(body)
         if payload:
-            await self.channel_layer.group_send(self.group, {"type": "chat.message", **payload})
+            await self.channel_layer.group_send(self.group, payload)
 
     async def chat_message(self, event):
         await self.send_json(event)
 
     @database_sync_to_async
     def _member(self, user):
-        from apps.social.models import ConversationMember
+        from apps.social import chat as ch
         from apps.social.services import profile_of
-        me = profile_of(user)
-        return bool(me and ConversationMember.objects.filter(conversation_id=self.cid, social_user=me).exists())
+        return ch.is_member(profile_of(user), self.cid)
 
     @database_sync_to_async
     def _store(self, body):
-        from apps.social.models import ConversationMember, Message
-        from apps.social.services import now, profile_of
+        from apps.social import chat as ch
+        from apps.social.services import profile_of
         me = profile_of(self.scope["user"])
-        if not me or not ConversationMember.objects.filter(conversation_id=self.cid, social_user=me).exists():
+        if not me or not ch.is_member(me, self.cid):
             return None
-        m = Message.objects.create(
-            conversation_id=self.cid, social_user=me, body=body, message_type="text", created_at=now()
-        )
-        return {"body": m.body, "name": me.name, "id": m.id}
+        from apps.social.models import Conversation
+        conv = Conversation.objects.get(pk=self.cid)
+        m = ch.post_message(me, conv, body)
+        return ch.ws_payload(m)

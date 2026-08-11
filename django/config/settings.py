@@ -190,10 +190,6 @@ DEFAULT_FROM_EMAIL = _from if "<" in _from else f"ВДрузья <{_from}>"
 SERVER_EMAIL = env("SERVER_EMAIL", default=_from).strip("'\"")
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST else "django.core.mail.backends.console.EmailBackend"
 
-VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
-VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
-VAPID_SUBJECT = env("VAPID_SUBJECT", default="")
-
 LEGAL_OPERATOR_NAME = env("LEGAL_OPERATOR_NAME", default="").strip("'\"")
 LEGAL_OPERATOR_SHORT = env("LEGAL_OPERATOR_SHORT", default="").strip("'\"")
 LEGAL_INN = env("LEGAL_INN", default="").strip("'\"")

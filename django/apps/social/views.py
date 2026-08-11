@@ -7,10 +7,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page, never_cache
 from django.views.decorators.http import require_POST
 
-from apps.social.forms import CommentForm, MessageForm, PostForm
+from apps.social.forms import CommentForm, PostForm
 from apps.social.models import (
-    Community, Conversation, ConversationMember, Friendship, Message, Notification,
-    Post, SocialProfile,
+    Community, Friendship, Notification, Post, SocialProfile,
 )
 from apps.social.services import accepted_friends, get_profile, now as _now, profile_of
 
@@ -115,22 +114,62 @@ def profile(request, pk):
 @login_required
 @never_cache
 def messenger(request):
+    from django.contrib import messages as flash
+    from django.http import Http404
+    from apps.social import chat as ch
+    from apps.social.forms import ComposeMessageForm, MessageForm
+    from apps.social.friendship import friends_of
     from apps.social.models import Sticker
+
     me = profile_of(request.user)
-    conv_ids = ConversationMember.objects.filter(social_user=me).values_list("conversation_id", flat=True)
-    conversations = Conversation.objects.filter(id__in=conv_ids).order_by("-updated_at", "-id")[:40]
+    if not me:
+        return redirect("home")
+
+    conversations = ch.inbox(me)
+    active = None
     active_id = request.GET.get("c")
-    active = get_object_or_404(Conversation, id=active_id) if active_id else conversations.first()
-    messages_qs = Message.objects.filter(conversation=active).select_related("social_user")[:100] if active else []
-    if active and me:
-        ConversationMember.objects.filter(conversation=active, social_user=me).update(last_read_at=_now())
-        cache.delete(f"nav:{me.id}")
+    compose = request.GET.get("compose") or request.GET.get("new")
+    if active_id:
+        try:
+            active = ch.require_member(me, int(active_id))
+        except (Http404, TypeError, ValueError):
+            flash.error(request, "Диалог недоступен.")
+            return redirect("messenger")
+    elif conversations and not compose:
+        active = conversations[0]
+
+    if active:
+        active.display_name = ch.label(active, me)
+        active.peer = ch.peer(active, me)
+        before = request.GET.get("before")
+        try:
+            chat_messages, has_older = ch.thread(active, before_id=before)
+        except (TypeError, ValueError):
+            chat_messages, has_older = ch.thread(active)
+        ch.mark_read(me, active)
+        for c in conversations:
+            if c.id == active.id:
+                c.unread = False
+    else:
+        chat_messages, has_older = [], False
+
+    friends = list(friends_of(me, limit=200))
     return render(
         request, "social/messenger.html",
         {
-            "conversations": conversations, "active": active, "messages": messages_qs,
-            "me": me, "form": MessageForm(),
-            "stickers": Sticker.objects.filter(is_active=True).order_by("sort_order")[:24],
+            "conversations": conversations,
+            "active": active,
+            "chat_messages": chat_messages,
+            "has_older": has_older,
+            "me": me,
+            "form": MessageForm(),
+            "compose_form": ComposeMessageForm(friends),
+            "compose_mode": bool(compose),
+            "friends": friends,
+            "stickers": (
+                list(Sticker.objects.filter(is_active=True).order_by("sort_order")[:24])
+                if active else []
+            ),
         },
     )
 

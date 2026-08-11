@@ -41,6 +41,7 @@ urlpatterns = [
     path("groups/<slug:slug>", browse.group_slug_redirect, name="groups.slug"),
     path("g/<slug:slug>", browse.group_slug_redirect, name="groups.vanity"),
     path("messenger", views.messenger, name="messenger"),
+    path("messenger/compose", act.messenger_compose, name="messenger.compose"),
     path("messenger/start/<int:pk>", act.messenger_start, name="messenger.start"),
     path("messenger/<int:conversation_id>/message", act.message_send, name="messages.store"),
     path("messenger/<int:conversation_id>/sticker", act.sticker_send, name="messages.sticker"),
