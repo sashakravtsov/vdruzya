@@ -91,6 +91,16 @@ class SocialProfile(models.Model):
             return ", ".join(map(str, data))
         return str(data or "")
 
+    def looking_for_label(self) -> str:
+        raw = self.looking_for
+        if not isinstance(raw, list) or not raw:
+            return ""
+        labels = {
+            "friendship": "Дружба", "dating": "Знакомства",
+            "relationship": "Отношения", "networking": "Нетворкинг",
+        }
+        return ", ".join(labels.get(str(x), str(x)) for x in raw)
+
 class Friendship(models.Model):
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="friendships_out")

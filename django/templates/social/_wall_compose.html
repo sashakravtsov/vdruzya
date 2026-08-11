@@ -8,7 +8,7 @@
         <span class="wallposter-go">
             <input type="submit" class="inputsubmit" value="{{ submit|default:'Опубликовать' }}">
         </span>
-        {% if form.visibility and not wall_to or form.photo or show_as_community or form.poll_options or album_photos %}
+        {% if form.visibility and not wall_to or form.photo or show_as_community or form.poll_options and not hide_poll or album_photos %}
         <details class="compose-more">
             <summary class="linkish">ещё</summary>
             {% if form.visibility and not wall_to %}
@@ -20,7 +20,7 @@
             {% if show_as_community %}
             <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
             {% endif %}
-            {% if form.poll_options %}{{ form.poll_options }}{% endif %}
+            {% if form.poll_options and not hide_poll %}{{ form.poll_options }}{% endif %}
             {% if album_photos %}
             <div class="album-pick">
                 {% for ph in album_photos %}

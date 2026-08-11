@@ -8,6 +8,14 @@ register = template.Library()
 from apps.social.categories import LABELS as _GROUP_LABELS
 
 _LABELS = {
+    "friendship": "Дружба",
+    "dating": "Знакомства",
+    "relationship": "Отношения",
+    "networking": "Нетворкинг",
+    "day_month": "День и месяц",
+    "full": "Полная дата",
+    "age": "Только возраст",
+    "hide": "Скрыть",
     "male": "Мужской",
     "female": "Женский",
     "other": "Другой",

@@ -16,8 +16,8 @@ from apps.social.services import now as _now, profile_of
 
 @login_required
 def profile_edit(request):
-    from apps.social.forms import EducationForm
-    from apps.social.models import Education
+    from apps.social.forms import EducationForm, ExperienceForm
+    from apps.social.models import Education, Experience
     me = profile_of(request.user)
     form = ProfileForm(request.POST or None, instance=me)
     if request.method == "POST" and form.is_valid():
@@ -33,7 +33,9 @@ def profile_edit(request):
             "form": form,
             "me": me,
             "edu_form": EducationForm(),
+            "exp_form": ExperienceForm(),
             "education": Education.objects.filter(social_user=me)[:20],
+            "experiences": Experience.objects.filter(social_user=me)[:20],
         },
     )
 
@@ -234,5 +236,39 @@ def education_add(request):
         row.social_user = me
         row.save()
         messages.success(request, "Образование добавлено.")
+    return redirect("profile.edit")
+
+
+@login_required
+@require_POST
+def education_delete(request, pk):
+    from apps.social.models import Education
+    me = profile_of(request.user)
+    Education.objects.filter(pk=pk, social_user=me).delete()
+    messages.info(request, "Запись удалена.")
+    return redirect("profile.edit")
+
+
+@login_required
+@require_POST
+def experience_add(request):
+    from apps.social.forms import ExperienceForm
+    me, form = profile_of(request.user), ExperienceForm(request.POST)
+    if me and form.is_valid():
+        row = form.save(commit=False)
+        row.social_user = me
+        row.description = row.description or ""
+        row.save()
+        messages.success(request, "Работа добавлена.")
+    return redirect("profile.edit")
+
+
+@login_required
+@require_POST
+def experience_delete(request, pk):
+    from apps.social.models import Experience
+    me = profile_of(request.user)
+    Experience.objects.filter(pk=pk, social_user=me).delete()
+    messages.info(request, "Запись удалена.")
     return redirect("profile.edit")
 

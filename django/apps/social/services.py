@@ -91,19 +91,45 @@ def wall_posts_for(profile, limit=20, viewer=None):
         )
         .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
     )
+    if viewer and viewer.id == profile.id:
+        pass
+    elif viewer:
+        friend = profile.id in friend_ids(viewer)
+        vis = Q(visibility="public") | Q(social_user=viewer)
+        if friend:
+            vis |= Q(visibility="friends") | Q(visibility="")
+        qs = qs.filter(vis).exclude(visibility="private")
+        qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
+    else:
+        qs = qs.filter(Q(visibility="public") | Q(visibility="")).exclude(visibility="private")
     return qs.order_by("-id")[:limit]
-
 
 
 def mini_feed(profile, limit=8):
     """FB Mini-Feed: recent activity of one person."""
+    from apps.social.models import Photo
+
     items = []
     for p in Post.objects.filter(social_user=profile).order_by("-id")[:limit]:
-        items.append({"kind": "post", "at": p.created_at, "post": p})
+        kind = "wall" if (p.topic or "").startswith("wall:") else "post"
+        items.append({"kind": kind, "at": p.created_at, "post": p})
     for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:
         items.append({"kind": "joined", "at": m.created_at, "group": m.community})
     for g in Community.objects.filter(creator=profile).order_by("-id")[:4]:
         items.append({"kind": "created", "at": g.created_at, "group": g})
+    for ph in (
+        Photo.objects.filter(album__social_user=profile).exclude(path="")
+        .select_related("album").order_by("-id")[:limit]
+    ):
+        items.append({"kind": "photo", "at": ph.created_at, "photo": ph, "album": ph.album})
+    for f in (
+        Friendship.objects.filter(status="accepted")
+        .filter(Q(user=profile) | Q(friend=profile))
+        .select_related("user", "friend")
+        .order_by("-updated_at", "-id")[:limit]
+    ):
+        other = f.friend if f.user_id == profile.id else f.user
+        items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     return items[:limit]
 

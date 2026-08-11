@@ -59,7 +59,7 @@ def feed(request):
 
 @login_not_required
 def profile(request, pk):
-    from apps.social.models import Album, Block, Education, Photo
+    from apps.social.models import Album, Block, Education, Experience, Photo
     from apps.social.services import friend_ids, mini_feed, wall_posts_for
     from apps.social.albums import visible_q
     from apps.social.views_albums import albums_for_profile
@@ -82,6 +82,17 @@ def profile(request, pk):
     else:
         mutual, mutual_text = 0, ""
 
+    education = list(Education.objects.filter(social_user=user)[:10])
+    experiences = list(Experience.objects.filter(social_user=user)[:10])
+    networks = []
+    if user.city:
+        networks.append(user.city)
+    for e in education[:3]:
+        if e.institution and e.institution not in networks:
+            networks.append(e.institution)
+    if user.workplace and user.workplace not in networks:
+        networks.append(user.workplace)
+
     friend_count = len(friend_ids(user))
     friends = accepted_friends(user, 6) if can_see else []
     communities = Community.objects.filter(memberships__social_user=user).distinct()[:12]
@@ -99,7 +110,7 @@ def profile(request, pk):
             "friends": friends, "communities": communities,
             "albums": albums, "posts": posts, "relation": relation, "blocked": blocked,
             "mutual": mutual, "mutual_text": mutual_text,
-            "education": Education.objects.filter(social_user=user)[:10],
+            "education": education, "experiences": experiences, "networks": networks,
             "stats": {
                 "friends": friend_count,
                 "photos": n_photos,
