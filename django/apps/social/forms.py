@@ -39,7 +39,7 @@ def _has_media(form):
     raw, files = form.data, form.files
     photos = files.getlist("photo") if files and hasattr(files, "getlist") else []
     albums = raw.getlist("album_photos") if hasattr(raw, "getlist") else []
-    return bool(photos or albums or (form.cleaned_data.get("poll_options") or "").strip())
+    return bool(photos or albums)
 
 
 class ProfileForm(forms.ModelForm):
@@ -194,12 +194,8 @@ class ProfileForm(forms.ModelForm):
 
 
 class PostForm(forms.ModelForm):
-    """Classic FB wall: text + photo + optional poll."""
+    """Classic FB wall: text + photo."""
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
-    poll_options = forms.CharField(
-        required=False, label="Опрос",
-        widget=_ta(2, placeholder="Варианты с новой строки (от 2) — необязательно"),
-    )
 
     class Meta:
         model = Post
@@ -229,7 +225,6 @@ class CommentForm(forms.ModelForm):
 
 class MessageForm(forms.ModelForm):
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
-    reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
 
     class Meta:
         model = Message
@@ -349,10 +344,6 @@ class GroupForm(forms.ModelForm):
 
 class CommunityPostForm(forms.ModelForm):
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
-    poll_options = forms.CharField(
-        required=False, label="Опрос",
-        widget=_ta(2, placeholder="Варианты с новой строки (от 2) — необязательно"),
-    )
     board = forms.ChoiceField(
         choices=[("discussion", "Доска обсуждений"), ("wall", "Стена группы")],
         initial="discussion",

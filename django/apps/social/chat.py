@@ -129,16 +129,6 @@ def restore(me, conv: Conversation):
     restore_many(me, [conv.id])
 
 
-def purge_many(me, conversation_ids: list[int]) -> int:
-    """Hard-remove from mailbox (classic Delete) — membership gone until revive on DM reply."""
-    n = ConversationMember.objects.filter(
-        social_user=me, conversation_id__in=conversation_ids,
-    ).delete()[0]
-    if n:
-        cache.delete(f"nav:{me.id}")
-    return n
-
-
 def is_archived(me, conv: Conversation) -> bool:
     return ConversationMember.objects.filter(
         conversation=conv, social_user=me, archived_at__isnull=False,
@@ -187,13 +177,6 @@ def unread_count(me) -> int:
         .distinct()
         .count()
     )
-
-
-def report_spam(me, conv: Conversation) -> SocialProfile | None:
-    """Classic Report as Spam: archive thread; return DM peer for optional block."""
-    p = peer(conv, me)
-    leave(me, conv)
-    return p
 
 
 def set_title(me, conv: Conversation, title: str):
@@ -330,10 +313,7 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, arch
 
 
 def _msg_qs(conv, q=""):
-    qs = (
-        Message.objects.filter(conversation=conv)
-        .select_related("social_user", "reply_to", "reply_to__social_user")
-    )
+    qs = Message.objects.filter(conversation=conv).select_related("social_user")
     q = (q or "").strip()
     if q:
         qs = qs.filter(body__icontains=q)
@@ -457,25 +437,18 @@ def _save_attach(upload):
 
 def post_message(
     me, conv: Conversation, body: str = "", *,
-    message_type="text", reply_to_id=None, upload=None,
-    copy_from: Message | None = None,
+    message_type="text", upload=None,
 ) -> Message:
     body = (body or "").strip()
     path, aname, amime = _save_attach(upload)
-    if copy_from and copy_from.attachment_path and not path:
-        path, aname, amime = copy_from.attachment_path, copy_from.attachment_name, copy_from.attachment_mime
     if not body and not path and message_type == "text":
         raise ValueError("empty")
-    reply = None
-    if reply_to_id:
-        reply = Message.objects.filter(pk=int(reply_to_id), conversation=conv).first()
     t = now()
     m = Message.objects.create(
         conversation=conv,
         social_user=me,
         body=(body or ("[фото]" if path else ""))[:4000],
         message_type="photo" if path and message_type == "text" else message_type,
-        reply_to=reply,
         attachment_path=path,
         attachment_name=aname,
         attachment_mime=amime,
@@ -487,19 +460,6 @@ def post_message(
     _invalidate_members(conv.id)
     notify_peers(me, conv, m)
     return m
-
-
-def forward_message(me, message_id, other: SocialProfile) -> tuple[Message, Conversation]:
-    src = get_object_or_404(Message.objects.select_related("social_user"), pk=message_id)
-    require_member(me, src.conversation_id)
-    err = can_dm(me, other)
-    if err:
-        raise PermissionError(err)
-    conv = dm_find_or_create(me, other)
-    quote = (src.body or "").strip() or ("[фото]" if src.attachment_path else "")
-    body = f"Переслано от {src.social_user.name}:\n{quote}"[:4000]
-    m = post_message(me, conv, body, copy_from=src if src.attachment_path else None)
-    return m, conv
 
 
 def delete_message(me, message_id) -> int:
@@ -515,7 +475,6 @@ def delete_message(me, message_id) -> int:
 
 
 def ws_payload(m: Message) -> dict:
-    reply = m.reply_to
     return {
         "type": "chat.message",
         "id": m.id,
@@ -524,11 +483,7 @@ def ws_payload(m: Message) -> dict:
         "user_id": m.social_user_id,
         "message_type": m.message_type or "text",
         "attachment_url": m.attachment_url or "",
-        "reply_to_id": reply.id if reply else None,
-        "reply_name": reply.social_user.name if reply else "",
-        "reply_body": (reply.body or "")[:80] if reply else "",
         "created_at": m.created_at.strftime("%d.%m.%Y %H:%M") if m.created_at else "",
-        "read_at": bool(m.read_at),
     }
 
 

@@ -8,12 +8,8 @@
         <button type="submit" class="linkish muted" title="Удалить">×</button>
     </form>
     {% endif %}
-    {% if m.reply_to %}
-    <div class="chat-quote muted">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatechars:80 }}</div>
-    {% endif %}
     <div class="chat-body">
         {% if m.body and m.body != '[фото]' %}{{ m.body|linebreaksbr }}{% endif %}
         {% if m.attachment_url %}<p><img src="{{ m.attachment_url }}" alt="" class="chat-photo"></p>{% endif %}
     </div>
-    {% if m.social_user_id == me.id and m.read_at %}<div class="muted chat-seen">прочитано</div>{% endif %}
 </div>

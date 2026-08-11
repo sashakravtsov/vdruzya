@@ -9,7 +9,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
-from apps.social.friendship import block_user, friends_of
+from apps.social.friendship import friends_of
 from apps.social.models import Conversation, ConversationMember, Message, SocialProfile
 from apps.social.services import profile_of
 from apps.social.throttle import throttle
@@ -90,7 +90,6 @@ def messenger(request):
     friends = list(friends_of(me, limit=200))
     have = {p.id for p in members} | ({active.peer.id} if active and active.peer else set())
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
-    reply_to = request.GET.get("reply")
     return render(request, "social/messenger.html", {
         "conversations": conversations,
         "active": active,
@@ -99,11 +98,10 @@ def messenger(request):
         "has_older": has_older,
         "is_archived": is_archived,
         "me": me,
-        "form": MessageForm(initial={"reply_to": reply_to} if reply_to else None),
+        "form": MessageForm(),
         "compose_form": _compose_form(friends, to=preselect),
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
-        "friends_json": [{"id": f.id, "name": f.name} for f in friends],
         "invite_friends": [f for f in friends if f.id not in have],
         "q": q,
         "tq": tq,
@@ -141,7 +139,6 @@ def message_send(request, me, conv):
     try:
         m = ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
-            reply_to_id=form.cleaned_data.get("reply_to"),
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
         )
     except ValueError:
@@ -210,7 +207,7 @@ def messenger_leave(request, me, conv):
 @require_POST
 @transaction.atomic
 def messenger_bulk(request):
-    """Classic inbox bulk: archive / restore / unread / purge."""
+    """Classic inbox bulk: archive / restore / unread."""
     me = _me(request)
     if not me:
         return redirect("messenger")
@@ -226,11 +223,6 @@ def messenger_bulk(request):
         if n:
             messages.info(request, f"Непрочитанных: {n}.")
         return redirect("/messenger?folder=unread")
-    if action == "purge":
-        n = ch.purge_many(me, ids)
-        if n:
-            messages.info(request, f"Удалено навсегда: {n}.")
-        return redirect("/messenger?folder=archive")
     if action == "read_all":
         ch.mark_all_read(me)
         messages.info(request, "Все диалоги отмечены прочитанными.")
@@ -250,24 +242,6 @@ def messenger_restore(request, me, conv):
     ch.restore(me, conv)
     messages.info(request, "Диалог возвращён во входящие.")
     return redirect(f"/messenger?c={conv.id}")
-
-
-@ch.member_post
-def messenger_purge(request, me, conv):
-    ch.purge_many(me, [conv.id])
-    messages.info(request, "Диалог удалён.")
-    return redirect("messenger")
-
-
-@ch.member_post
-def messenger_spam(request, me, conv):
-    peer = ch.report_spam(me, conv)
-    if peer and request.POST.get("block") == "1":
-        block_user(me, peer)
-        messages.info(request, f"Спам: {peer.name} заблокирован.")
-    else:
-        messages.info(request, "Диалог помечен как спам и убран в архив.")
-    return redirect("messenger")
 
 
 @ch.member_post
@@ -298,28 +272,6 @@ def messenger_invite(request, me, conv):
         messages.success(request, f"Добавлено: {', '.join(p.name for p in added)}.")
     else:
         messages.info(request, "Некого добавить.")
-    return redirect(f"/messenger?c={conv.id}")
-
-
-@login_required
-@require_POST
-@transaction.atomic
-@throttle("msg", 20, 60)
-def message_forward(request, message_id):
-    me = _me(request)
-    if not me:
-        return redirect("messenger")
-    other = get_object_or_404(SocialProfile, pk=request.POST.get("to"))
-    try:
-        m, conv = ch.forward_message(me, message_id, other)
-        ch.after_send(m)
-    except Http404:
-        messages.error(request, "Сообщение недоступно.")
-        return redirect("messenger")
-    except PermissionError as e:
-        messages.error(request, str(e) or "Нельзя переслать.")
-        return redirect(request.POST.get("next") or "messenger")
-    messages.success(request, "Сообщение переслано.")
     return redirect(f"/messenger?c={conv.id}")
 
 

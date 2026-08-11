@@ -12,10 +12,10 @@ check_http() {
 echo "== HTTP smoke (${BASE_URL}) =="
 for path in \
   /up:200 /:200 /login:200 /register:200 /terms:200 /privacy:200 \
-  /contacts:200 /payment-info:200 /security:200 \
+  /contacts:200 /security:200 \
   /apple-touch-icon.png:200 /favicon-32x32.png:200 \
   /password-reset:200 \
-  /promo:302 /landing:302 /sitemap.xml:200 /robots.txt:200 \
+  /sitemap.xml:200 /robots.txt:200 \
   /sw.js:200 /offline.html:200 /feed:302 /messenger:302 \
   /app:410 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do

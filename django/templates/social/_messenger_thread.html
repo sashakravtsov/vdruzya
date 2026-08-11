@@ -32,18 +32,12 @@
 {% if has_older %}
 <p class="chat-older"><a href="#" id="chat-older" data-tq="{{ tq }}">← более ранние сообщения</a></p>
 {% endif %}
-{{ friends_json|json_script:"msg-friends" }}
 <div id="chat-log" class="chat-log" data-me="{{ me.id }}" data-cid="{{ active.id }}" data-tq="{{ tq }}">
     {% for m in chat_messages %}
     {% include "social/_messenger_line.html" %}
     {% empty %}<p class="muted" id="chat-empty">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
 </div>
 <form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" id="chat-form" enctype="multipart/form-data">{% csrf_token %}
-    {{ form.reply_to }}
-    <div id="reply-banner" class="chat-quote muted" style="{% if not form.reply_to.value %}display:none{% endif %}">
-        Ответ{% if form.reply_to.value %} #{{ form.reply_to.value }}{% endif %}
-        <button type="button" class="linkish" id="reply-clear">отмена</button>
-    </div>
     {{ form.body }}
     <p class="wallposter-file">Фото: {{ form.photo }}</p>
     <input type="submit" class="inputsubmit" value="Отправить">

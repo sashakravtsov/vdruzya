@@ -18,8 +18,7 @@
             {% if user.is_authenticated %}
                 <li><a href="{% url 'feed' %}">главная</a></li>
                 <li><a href="{% url 'search' %}">поиск</a></li>
-                <li><a href="{% url 'people' %}">люди</a></li>
-                {% if me %}<li><a href="{% url 'profile' me.id %}">профиль</a></li>{% endif %}
+                <li><a href="{% url 'invite.mine' %}">пригласить</a></li>
                 <li><a href="{% url 'security' %}">помощь</a></li>
                 <li>
                     <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}

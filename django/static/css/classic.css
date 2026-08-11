@@ -329,7 +329,6 @@ button.linkish, .profile-box-body button.linkish {
 }
 .group-tile-body { display: grid; gap: 2px; min-width: 0; }
 .group-tile-body b { color: var(--fb); }
-.profile-action-links .share-btn,
 .profile-action-links button.linkish {
   display: block; width: 100%; text-align: left; padding: 1px 0;
   color: var(--fb); background: 0; border: 0; font: 11px var(--font); cursor: pointer;
@@ -403,8 +402,6 @@ button.linkish, .profile-box-body button.linkish {
   .members-grid { grid-template-columns: repeat(4, 50px); }
 }
 
-.poll-box{margin:6px 0;padding:6px;background:#f7f7f7;border:1px solid #d8dfea}
-.poll-opt{display:block;margin:2px 0}
 .group-locked .profile-box-body{padding:12px}
 
 /* Groups index — FB 2005 directory (aligned with #header, no inset) */
@@ -589,12 +586,6 @@ button.linkish, .profile-box-body button.linkish {
 .group-join-status b{display:block;color:#333;font-size:11px;font-weight:bold}
 .group-join-status .label{display:block;margin:2px 0 0;color:#777;font-weight:normal;font-size:10px}
 .profile-action-links .group-join-status{width:100%;border-bottom:1px solid var(--line)}
-.wall-mood{color:#777;font-size:10px;margin:0 0 4px}
-.sticker-chip{
-  display:inline-block;margin:4px 0;padding:2px 6px;
-  background:#D8DFEA;border:1px solid #B3B3B3;color:#3B5998;
-  font:11px var(--font);
-}
 .member-row{display:inline-flex;align-items:center;gap:8px}
 .member-row img,.member-row .avatar-fallback{flex:0 0 auto}
 .members-full .col-name{width:auto}
@@ -1196,10 +1187,6 @@ button.linkish, .profile-box-body button.linkish {
 }
 .messages-thread .chat-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
 .messages-thread .msg-members { margin: 0 0 8px; font-size: 11px; }
-.messages-thread .msg-reply,
-.messages-thread .msg-fwd-toggle { margin-left: 6px; }
-.messages-thread .msg-fwd-box { margin: 4px 0; }
-.messages-thread .chat-seen { font-size: 10px; margin-top: 2px; }
 .messages-thread .msg-meta { margin: 0 0 8px; font-size: 11px; }
 .messages-thread .msg-meta summary { cursor: pointer; margin-bottom: 6px; }
 .messages-thread .msg-title-form,

@@ -120,21 +120,6 @@ def birthday_tags(profile):
     return tag(dmy)
 
 
-# Legacy mood labels for old wall posts (compose no longer sets mood).
-_MOOD = {
-    "happy": "радостное", "calm": "спокойное", "focused": "сосредоточенное",
-    "inspired": "вдохновлённое", "curious": "любопытное", "grateful": "благодарное",
-    "serious": "серьёзное", "worried": "встревоженное",
-}
-
-
-@register.filter
-def mood_ru(value):
-    if not value:
-        return ""
-    return _MOOD.get(str(value), str(value))
-
-
 @register.filter
 def can_manage_post(me, post):
     from apps.social.services import can_manage_wall_post

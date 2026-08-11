@@ -7,32 +7,9 @@
   const me = String(log.dataset.me || '');
   const cid = log.dataset.cid;
   const csrf = (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
-  const replyInput = form.querySelector('[name=reply_to]');
-  const replyBanner = document.getElementById('reply-banner');
   const olderBtn = document.getElementById('chat-older');
-  const friendsEl = document.getElementById('msg-friends');
-  const friends = friendsEl ? JSON.parse(friendsEl.textContent || '[]') : [];
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws/messenger/${cid}`);
-
-  const setReply = (id, name, body) => {
-    if (!replyInput) return;
-    replyInput.value = id || '';
-    if (replyBanner) {
-      replyBanner.style.display = id ? '' : 'none';
-      if (id) replyBanner.firstChild.textContent = 'Ответ ' + (name || '') + ': ' + (body || '') + ' ';
-    }
-  };
-
-  const bindReply = (root) => {
-    root.querySelectorAll('.msg-reply').forEach((a) => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        setReply(a.dataset.reply, a.dataset.name, a.dataset.body);
-        form.querySelector('textarea')?.focus();
-      });
-    });
-  };
 
   const bindDel = (root) => {
     root.querySelectorAll('.msg-del').forEach((sf) => {
@@ -45,59 +22,7 @@
     });
   };
 
-  const bindFwd = (root) => {
-    root.querySelectorAll('.msg-fwd-toggle').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const box = btn.parentElement?.querySelector('.msg-fwd-box');
-        if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
-      });
-    });
-  };
-
-  const fwdBox = (messageId) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'msg-fwd-box';
-    wrap.style.display = 'none';
-    const sf = document.createElement('form');
-    sf.method = 'post';
-    sf.action = '/messages/' + messageId + '/forward';
-    sf.className = 'inline';
-    const tok = document.createElement('input');
-    tok.type = 'hidden';
-    tok.name = 'csrfmiddlewaretoken';
-    tok.value = csrf;
-    sf.appendChild(tok);
-    const next = document.createElement('input');
-    next.type = 'hidden';
-    next.name = 'next';
-    next.value = '/messenger?c=' + cid;
-    sf.appendChild(next);
-    const sel = document.createElement('select');
-    sel.name = 'to';
-    sel.className = 'inputtext';
-    sel.required = true;
-    const ph = document.createElement('option');
-    ph.value = '';
-    ph.textContent = 'Другу…';
-    sel.appendChild(ph);
-    friends.forEach((f) => {
-      const o = document.createElement('option');
-      o.value = f.id;
-      o.textContent = f.name;
-      sel.appendChild(o);
-    });
-    sf.appendChild(sel);
-    const go = document.createElement('input');
-    go.type = 'submit';
-    go.className = 'inputbutton';
-    go.value = 'OK';
-    sf.appendChild(go);
-    wrap.appendChild(sf);
-    return wrap;
-  };
-
-  const lineEl = (d, actions) => {
+  const lineEl = (d) => {
     const line = document.createElement('div');
     line.className = 'chat-line' + (String(d.user_id) === me ? ' is-mine' : '');
     line.dataset.id = d.id;
@@ -113,45 +38,23 @@
       t.textContent = ' · ' + d.created_at;
       line.appendChild(t);
     }
-    if (actions) {
-      const reply = document.createElement('a');
-      reply.href = '#chat-form';
-      reply.className = 'linkish muted msg-reply';
-      reply.dataset.reply = String(d.id);
-      reply.dataset.name = d.name || '';
-      reply.dataset.body = (d.body || '').slice(0, 60);
-      reply.textContent = 'ответить';
-      line.appendChild(reply);
-      const fwd = document.createElement('a');
-      fwd.href = '#';
-      fwd.className = 'linkish muted msg-fwd-toggle';
-      fwd.textContent = 'переслать';
-      line.appendChild(fwd);
-      if (String(d.user_id) === me) {
-        const df = document.createElement('form');
-        df.method = 'post';
-        df.action = '/messages/' + d.id + '/delete';
-        df.className = 'inline msg-del';
-        const tok = document.createElement('input');
-        tok.type = 'hidden';
-        tok.name = 'csrfmiddlewaretoken';
-        tok.value = csrf;
-        df.appendChild(tok);
-        const btn = document.createElement('button');
-        btn.type = 'submit';
-        btn.className = 'linkish muted';
-        btn.title = 'Удалить';
-        btn.textContent = '×';
-        df.appendChild(btn);
-        line.appendChild(df);
-      }
-      line.appendChild(fwdBox(d.id));
-    }
-    if (d.reply_to_id) {
-      const q = document.createElement('div');
-      q.className = 'chat-quote muted';
-      q.textContent = (d.reply_name || '') + ': ' + (d.reply_body || '');
-      line.appendChild(q);
+    if (String(d.user_id) === me) {
+      const df = document.createElement('form');
+      df.method = 'post';
+      df.action = '/messages/' + d.id + '/delete';
+      df.className = 'inline msg-del';
+      const tok = document.createElement('input');
+      tok.type = 'hidden';
+      tok.name = 'csrfmiddlewaretoken';
+      tok.value = csrf;
+      df.appendChild(tok);
+      const btn = document.createElement('button');
+      btn.type = 'submit';
+      btn.className = 'linkish muted';
+      btn.title = 'Удалить';
+      btn.textContent = '×';
+      df.appendChild(btn);
+      line.appendChild(df);
     }
     const body = document.createElement('div');
     body.className = 'chat-body';
@@ -171,28 +74,16 @@
       body.appendChild(p);
     }
     line.appendChild(body);
-    if (String(d.user_id) === me && d.read_at) {
-      const seen = document.createElement('div');
-      seen.className = 'muted chat-seen';
-      seen.textContent = 'прочитано';
-      line.appendChild(seen);
-    }
     return line;
-  };
-
-  const wire = (el) => {
-    bindReply(el);
-    bindDel(el);
-    bindFwd(el);
   };
 
   const append = (d) => {
     if (!d || !d.id || d.event === 'delete') return;
     if (log.querySelector('[data-id="' + d.id + '"]')) return;
     document.getElementById('chat-empty')?.remove();
-    const el = lineEl(d, true);
+    const el = lineEl(d);
     log.appendChild(el);
-    wire(el);
+    bindDel(el);
     log.scrollTop = log.scrollHeight;
   };
 
@@ -202,9 +93,9 @@
     const keep = log.scrollHeight;
     rows.forEach((d) => {
       if (!d || !d.id || log.querySelector('[data-id="' + d.id + '"]')) return;
-      const el = lineEl(d, true);
+      const el = lineEl(d);
       log.insertBefore(el, first);
-      wire(el);
+      bindDel(el);
     });
     log.scrollTop = log.scrollHeight - keep;
   };
@@ -230,8 +121,7 @@
     return r.json();
   };
 
-  document.getElementById('reply-clear')?.addEventListener('click', () => setReply(''));
-  wire(document);
+  bindDel(document);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -246,7 +136,6 @@
       if (ta) ta.value = '';
       const file = form.querySelector('[name=photo]');
       if (file) file.value = '';
-      setReply('');
     } else form.submit();
   });
 

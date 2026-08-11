@@ -51,7 +51,6 @@ def post_create(request):
     from django.core.cache import cache
     from django.db.models import Q
     from apps.social.models import Friendship
-    from apps.social.polls import attach_post_poll
     from apps.social.profile_page import can_write_wall
     from apps.social.throttle import throttle
     from apps.social.attach import attach_wall
@@ -66,7 +65,6 @@ def post_create(request):
         post.social_user = me
         post.body = (post.body or "").strip()
         post.topic = "thought"
-        labels = [x.strip() for x in (form.cleaned_data.get("poll_options") or "").splitlines() if x.strip()]
         files = list(req.FILES.getlist("photo"))
         albums = req.POST.getlist("album_photos")
         wall_to = req.POST.get("wall_to")
@@ -82,12 +80,7 @@ def post_create(request):
                 return redirect(target)
             post.topic = f"wall:{target.id}"
             post.visibility = "friends"
-        if len(labels) >= 2:
-            post.kind = "poll"
-        elif files or albums:
-            post.kind = "photo"
-        else:
-            post.kind = "text"
+        post.kind = "photo" if (files or albums) else "text"
         post.created_at = post.updated_at = _now()
         post.save()
         path = attach_wall(post, files, me, albums)
@@ -96,8 +89,6 @@ def post_create(request):
             if post.kind == "text":
                 post.kind = "photo"
             post.save(update_fields=["media_path", "kind"])
-        if post.kind == "poll":
-            attach_post_poll(post, labels)
         cache.delete(f"news:{me.id}:60")
         messages.success(req, "Запись опубликована.")
         return redirect(req.POST.get("next") or "feed")

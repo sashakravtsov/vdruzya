@@ -11,7 +11,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 _sk = env("SECRET_KEY")
 SECRET_KEY = _sk.removeprefix("base64:") if _sk.startswith("base64:") else _sk
 DEBUG = env.bool("DEBUG", default=False)
-ALLOWED_HOSTS = ["vdruzya.ru", "www.vdruzya.ru", "promo.vdruzya.ru", "127.0.0.1", "localhost", "testserver"]
+ALLOWED_HOSTS = ["vdruzya.ru", "www.vdruzya.ru", "127.0.0.1", "localhost", "testserver"]
 CSRF_TRUSTED_ORIGINS = [u for u in [env("CSRF_TRUSTED_ORIGIN", default="")] if u.startswith("http")]
 
 INSTALLED_APPS = [

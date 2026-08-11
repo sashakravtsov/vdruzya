@@ -1,4 +1,4 @@
-"""Group ops FBVs — edit, members, message, deletes, invite, events, polls. Keep short."""
+"""Group ops FBVs — edit, members, message, deletes, invite, events. Keep short."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -8,11 +8,10 @@ from django.views.decorators.http import require_POST, require_http_methods
 
 from apps.social.forms import CommunityPostForm, GroupForm
 from apps.social.models import (
-    Community, CommunityJoinRequest, CommunityMember, CommunityPollOption, CommunityPost,
+    Community, CommunityJoinRequest, CommunityMember, CommunityPost,
     CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember,
     Notification, SocialProfile,
 )
-from apps.social.polls import vote_group_option
 from apps.social.services import now, profile_of
 
 _ADMIN = ("admin", "moderator", "creator", "officer")
@@ -192,18 +191,6 @@ def group_comment_update(request, pk, comment_id):
 
 @login_required
 @require_POST
-def group_poll_vote(request, pk, post_id):
-    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    post = get_object_or_404(CommunityPost, pk=post_id, community=group, kind="poll")
-    if not _member(me, group):
-        return redirect("groups.show", pk=pk)
-    opt = get_object_or_404(CommunityPollOption, pk=request.POST.get("option_id"), poll__post=post)
-    vote_group_option(me, opt)
-    return redirect(f"/groups/{pk}?topic={post_id}#topic-{post_id}")
-
-
-@login_required
-@require_POST
 def group_invite(request, pk):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     if not _member(me, group):
@@ -281,7 +268,6 @@ def member_manage(request, pk, user_id):
 @require_POST
 def group_post(request, pk):
     from apps.social.attach import attach_group
-    from apps.social.polls import attach_group_poll
     from apps.social.throttle import throttle
 
     @throttle("gposts", 20, 60)
@@ -302,20 +288,12 @@ def group_post(request, pk):
         p.community, p.social_user = group, me
         p.topic = form.cleaned_data.get("board") or "discussion"
         p.posted_as_community = bool(is_admin and req.POST.get("as_community"))
-        labels = [x.strip() for x in (form.cleaned_data.get("poll_options") or "").splitlines() if x.strip()]
         files = list(req.FILES.getlist("photo"))
         albums = req.POST.getlist("album_photos")
         p.created_at = p.updated_at = now()
         p.body = (p.body or "").strip()
-        if len(labels) >= 2:
-            p.kind = "poll"
-        elif files or albums:
-            p.kind = "photo"
-        else:
-            p.kind = "text"
+        p.kind = "photo" if (files or albums) else "text"
         p.save()
-        if p.kind == "poll":
-            attach_group_poll(p, labels)
         path = attach_group(p, files, me, albums)
         if path:
             p.media_path = path

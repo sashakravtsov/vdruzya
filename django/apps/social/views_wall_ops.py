@@ -1,4 +1,4 @@
-"""Wall ops: edit, share, show, poll vote — short FBVs."""
+"""Wall ops: edit, show, comment edit — short FBVs."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -6,8 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 
 from apps.social.forms import CommentForm, PostForm
-from apps.social.models import Comment, PollOption, Post
-from apps.social.polls import vote_post_option
+from apps.social.models import Comment, Post
 from apps.social.services import feed_queryset, now, profile_of
 
 
@@ -51,27 +50,6 @@ def comment_update(request, comment_id):
     return redirect(request.POST.get("next") or "feed")
 
 
-@login_required
-@require_POST
-def post_share(request, post_id):
-    me = profile_of(request.user)
-    src = get_object_or_404(Post, pk=post_id)
-    if not me:
-        return redirect("feed")
-    body = (request.POST.get("body") or "").strip()[:1200]
-    vis = request.POST.get("visibility") or "public"
-    if vis not in ("public", "friends", "private"):
-        vis = "public"
-    t = now()
-    Post.objects.create(
-        social_user=me, shared_post=src, body=body, visibility=vis,
-        kind="share", topic="thought", created_at=t, updated_at=t,
-    )
-    cache.delete(f"news:{me.id}:60")
-    messages.success(request, "Публикация добавлена на стену.")
-    return redirect(request.POST.get("next") or "feed")
-
-
 def post_show(request, post_id):
     me = profile_of(request.user) if request.user.is_authenticated else None
     post = get_object_or_404(
@@ -82,14 +60,3 @@ def post_show(request, post_id):
         request, "social/post_show.html",
         {"post": post, "me": me, "form": None, "comment_form": CommentForm() if me else None},
     )
-
-
-@login_required
-@require_POST
-def poll_vote(request, post_id):
-    me = profile_of(request.user)
-    post = get_object_or_404(Post, pk=post_id, kind="poll")
-    opt = get_object_or_404(PollOption, pk=request.POST.get("option_id"), poll__post=post)
-    if me:
-        vote_post_option(me, opt)
-    return redirect(request.POST.get("next") or "feed")

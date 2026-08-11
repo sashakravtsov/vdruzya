@@ -52,7 +52,7 @@
             <div class="profile-box">
                 <h4>Сети</h4>
                 <div class="profile-box-body">
-                    <ul class="plain">{% for n in networks %}<li>{{ n }}</li>{% endfor %}</ul>
+                    <ul class="plain">{% for n in networks %}<li><a href="{% url 'search' %}?q={{ n|urlencode }}">{{ n }}</a></li>{% endfor %}</ul>
                 </div>
             </div>
             {% endif %}
@@ -280,9 +280,9 @@
                     {% if form %}
                     {% url 'posts.store' as compose_action %}
                     {% if is_own %}
-                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" album_photos=album_photos hide_poll=1 %}
+                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" album_photos=album_photos %}
                     {% else %}
-                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" album_photos=album_photos hide_poll=1 %}
+                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" album_photos=album_photos %}
                     {% endif %}
                     {% elif user.is_authenticated and not can_wall %}
                     <p class="muted">На стену могут писать только друзья.</p>

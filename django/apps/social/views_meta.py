@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.sitemaps import Sitemap
 from django.contrib.sitemaps.views import sitemap as django_sitemap
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
 from apps.social.models import SocialProfile
@@ -29,9 +29,7 @@ _PAGES = {
     "privacy": ("Конфиденциальность", "legal/privacy.html"),
     "about": ("О сайте", "legal/about.html"),
     "contacts": ("Контакты", "legal/contacts.html"),
-    "payment": ("Оплата и возврат", "legal/payment.html"),
     "security": ("Помощь", "legal/security.html"),
-    "advertisers": ("Рекламодателям", "legal/advertisers.html"),
 }
 
 
@@ -55,7 +53,7 @@ class StaticSitemap(Sitemap):
     changefreq = "monthly"
 
     def items(self):
-        return ["/", "/about", "/terms", "/privacy", "/contacts", "/advertisers", "/security"]
+        return ["/", "/about", "/terms", "/privacy", "/contacts", "/security"]
 
     def location(self, item):
         return item
@@ -83,9 +81,7 @@ terms = _page("terms")
 privacy = _page("privacy")
 about = _page("about")
 contacts = _page("contacts")
-payment = _page("payment")
 security = _page("security")
-advertisers = _page("advertisers")
 
 
 @login_not_required
@@ -119,13 +115,3 @@ def server_error(request):
 @login_not_required
 def csrf_failure(request, reason=""):
     return render(request, "errors/csrf.html", {"reason": reason}, status=403)
-
-
-@login_not_required
-def promo(_request):
-    return redirect("https://promo.vdruzya.ru", permanent=False)
-
-
-@login_not_required
-def landing(_request):
-    return redirect("home", permanent=False)

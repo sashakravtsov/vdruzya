@@ -38,13 +38,11 @@
                     {% endif %}
                     {% endwith %}
                     {% if post.kind == 'poll' and post.poll %}
-                    <form method="post" action="{% url 'posts.poll' post.id %}" class="poll-box">{% csrf_token %}
-                        <input type="hidden" name="next" value="{{ next }}">
+                    <ul class="plain muted">
                         {% for o in post.poll.options.all %}
-                        <label class="poll-opt"><input type="radio" name="option_id" value="{{ o.id }}" required> {{ o.label }} <span class="muted">({{ o.votes_count }})</span></label>
+                        <li>{{ o.label }} ({{ o.votes_count }})</li>
                         {% endfor %}
-                        {% if me %}<p><input type="submit" class="inputsubmit" value="Голос"></p>{% endif %}
-                    </form>
+                    </ul>
                     {% endif %}
                 </div>
                 <div class="actions">
