@@ -1,14 +1,17 @@
-{# Classic FB wall: text + photo. #}
+{# Classic FB wall: text + photo. Profile uses simple=1 (no «ещё» / visibility UI). #}
 <form method="post" action="{{ action }}" enctype="multipart/form-data" class="wallposter">{% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     {% if wall_to %}<input type="hidden" name="wall_to" value="{{ wall_to }}">{% endif %}
     {% if form.board %}{{ form.board }}{% elif board %}<input type="hidden" name="board" value="{{ board }}">{% endif %}
+    {% if simple and form.visibility %}<input type="hidden" name="visibility" value="friends">{% endif %}
     {{ form.body }}
     <div class="wallposter-tools">
         <span class="wallposter-go">
             <input type="submit" class="inputsubmit" value="{{ submit|default:'Опубликовать' }}">
         </span>
-        {% if form.visibility and not wall_to or form.photo or show_as_community or album_photos %}
+        {% if simple %}
+        {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }}</p>{% endif %}
+        {% elif form.visibility and not wall_to or form.photo or show_as_community or album_photos %}
         <details class="compose-more">
             <summary class="linkish">ещё</summary>
             {% if form.visibility and not wall_to %}

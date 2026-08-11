@@ -37,7 +37,7 @@ def can_edit(album, viewer) -> bool:
 
 
 def save_photos(album, files, title=""):
-    n, label0 = 0, (title or "").strip()
+    n, label0, first_path = 0, (title or "").strip(), None
     for f in (files or [])[:10]:
         if getattr(f, "size", 0) > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
             continue
@@ -47,11 +47,30 @@ def save_photos(album, files, title=""):
             album=album, title=label, path=path, color="#A3D6F5",
             created_at=now(), updated_at=now(),
         )
+        if first_path is None:
+            first_path = path
         n += 1
     if n:
+        fields = ["updated_at"]
         album.updated_at = now()
-        album.save(update_fields=["updated_at"])
+        if first_path and not album.cover_path:
+            album.cover_path = first_path
+            fields.append("cover_path")
+        album.save(update_fields=fields)
     return n
+
+
+def albums_with_covers(qs):
+    """Annotate first photo path so cover_url works when cover_path is empty."""
+    from django.db.models import OuterRef, Subquery
+
+    first = (
+        Photo.objects.filter(album_id=OuterRef("pk"))
+        .exclude(path="")
+        .order_by("id")
+        .values("path")[:1]
+    )
+    return qs.annotate(_first_photo_path=Subquery(first))
 
 
 def delete_photo_file(photo):

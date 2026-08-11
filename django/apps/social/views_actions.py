@@ -246,23 +246,17 @@ def block_toggle(request, pk):
 def education_save(request, pk=None):
     from apps.social.forms import EducationForm
     from apps.social.models import Education
-    me = profile_of(request.user)
-    row = get_object_or_404(Education, pk=pk, social_user=me) if pk else Education(social_user=me)
-    form = EducationForm(request.POST, instance=row)
-    if me and form.is_valid():
-        form.save()
-        messages.success(request, "Образование сохранено." if pk else "Образование добавлено.")
-    return redirect("/profile/edit?section=eduwork")
+    return _profile_row_save(
+        request, Education, EducationForm, pk,
+        msg_edit="Образование сохранено.", msg_add="Образование добавлено.",
+    )
 
 
 @login_required
 @require_POST
 def education_delete(request, pk):
     from apps.social.models import Education
-    me = profile_of(request.user)
-    Education.objects.filter(pk=pk, social_user=me).delete()
-    messages.info(request, "Запись удалена.")
-    return redirect("/profile/edit?section=eduwork")
+    return _profile_row_delete(request, Education, pk)
 
 
 @login_required
@@ -270,23 +264,39 @@ def education_delete(request, pk):
 def experience_save(request, pk=None):
     from apps.social.forms import ExperienceForm
     from apps.social.models import Experience
-    me = profile_of(request.user)
-    row = get_object_or_404(Experience, pk=pk, social_user=me) if pk else Experience(social_user=me)
-    form = ExperienceForm(request.POST, instance=row)
-    if me and form.is_valid():
-        obj = form.save(commit=False)
+
+    def _prep(obj):
         obj.description = obj.description or ""
-        obj.save()
-        messages.success(request, "Работа сохранена." if pk else "Работа добавлена.")
-    return redirect("/profile/edit?section=eduwork")
+
+    return _profile_row_save(
+        request, Experience, ExperienceForm, pk,
+        msg_edit="Работа сохранена.", msg_add="Работа добавлена.", prep=_prep,
+    )
 
 
 @login_required
 @require_POST
 def experience_delete(request, pk):
     from apps.social.models import Experience
+    return _profile_row_delete(request, Experience, pk)
+
+
+def _profile_row_save(request, model, form_cls, pk, *, msg_edit, msg_add, prep=None):
     me = profile_of(request.user)
-    Experience.objects.filter(pk=pk, social_user=me).delete()
+    row = get_object_or_404(model, pk=pk, social_user=me) if pk else model(social_user=me)
+    form = form_cls(request.POST, instance=row)
+    if me and form.is_valid():
+        obj = form.save(commit=False)
+        if prep:
+            prep(obj)
+        obj.save()
+        messages.success(request, msg_edit if pk else msg_add)
+    return redirect("/profile/edit?section=eduwork")
+
+
+def _profile_row_delete(request, model, pk):
+    me = profile_of(request.user)
+    model.objects.filter(pk=pk, social_user=me).delete()
     messages.info(request, "Запись удалена.")
     return redirect("/profile/edit?section=eduwork")
 

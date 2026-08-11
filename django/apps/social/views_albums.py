@@ -7,8 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social.albums import (
-    add_comment, can_edit, can_view, comments_for, delete_comment, delete_photo_file,
-    neighbors, save_photos, visible_q,
+    add_comment, albums_with_covers, can_edit, can_view, comments_for, delete_comment,
+    delete_photo_file, neighbors, save_photos, visible_q,
 )
 from apps.social.forms import AlbumForm, PhotoUploadForm
 from apps.social.models import Album, Photo, PhotoComment
@@ -25,8 +25,9 @@ def _forbid(request, album=None):
 
 def albums_for_profile(profile, viewer, limit=4):
     return list(
-        Album.objects.filter(social_user=profile).filter(visible_q(viewer))
-        .annotate(n=Count("photos")).order_by("-id")[:limit]
+        albums_with_covers(
+            Album.objects.filter(social_user=profile).filter(visible_q(viewer))
+        ).annotate(n=Count("photos")).order_by("-id")[:limit]
     )
 
 
@@ -46,7 +47,7 @@ def albums(request):
         messages.success(request, "Альбом создан.")
         return redirect("albums.show", album_id=a.id)
     items = (
-        Album.objects.filter(social_user=me)
+        albums_with_covers(Album.objects.filter(social_user=me))
         .annotate(n=Count("photos"))
         .prefetch_related(
             Prefetch("photos", queryset=Photo.objects.exclude(path="").order_by("id"), to_attr="preview")

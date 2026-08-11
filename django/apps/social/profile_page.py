@@ -36,8 +36,12 @@ def recent_photos(profile, viewer, limit=8):
 
 
 def profile_albums(profile, viewer, limit=12):
+    from apps.social.albums import albums_with_covers
+
     return list(
-        Album.objects.filter(social_user=profile).filter(visible_q(viewer)).order_by("-id")[:limit]
+        albums_with_covers(
+            Album.objects.filter(social_user=profile).filter(visible_q(viewer))
+        ).order_by("-id")[:limit]
     )
 
 

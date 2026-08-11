@@ -178,31 +178,10 @@ input[type="submit"], input[type="button"] {
 #error a { text-decoration: none; color: #dd3c10; }
 .auth-box { padding: 12px 20px; }
 
-.profile-content {
-  display: block;
-  overflow: hidden;
-  padding: 10px 0 10px 10px !important;
-}
-.profile-left { float: left; width: 200px; margin: 0 10px 0 0; min-width: 0; }
-.profile-right { float: left; width: 396px; margin: 0; min-width: 0; }
-.profile-picture { width: 200px; }
-.profile-picture img, .profile-picture .avatar-fallback {
-  width: 200px; height: 200px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
-  background: #eee;
-}
+/* Shared boxes / profile chrome (page layouts refine below) */
 .avatar-fallback {
   background: var(--line); display: grid; place-items: center; font-size: 64px; color: #555;
 }
-.profile-action-links {
-  margin: 6px 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--line);
-}
-.profile-action-links a,
-.profile-action-links button {
-  display: block; width: 100%; color: var(--fb); background: 0; border: 0; padding: 1px 0;
-  margin: 0; font: 11px var(--font); text-align: left; cursor: pointer;
-}
-.profile-action-links a:hover, .profile-action-links button:hover { color: #fff; background: #3B5998; text-decoration: none; }
-.profile-action-links .muted, .profile-action-links button.muted { color: #777; }
 .profile-box {
   margin: 0 0 10px; border: 0; background: transparent;
 }
@@ -217,10 +196,7 @@ input[type="submit"], input[type="button"] {
 .profile-box-body { padding: 8px; }
 .profile-box-body p { margin: 0 0 6px; }
 .profile #header .profile-status-form {
-  display: inline;
-  margin: 0;
-  font: 11px var(--font);
-  color: #fff;
+  display: inline; margin: 0; font: 11px var(--font); color: #fff;
 }
 .profile #header .profile-status-form .inputtext {
   width: 240px; max-width: 55%;
@@ -228,8 +204,7 @@ input[type="submit"], input[type="button"] {
   font: 11px var(--font); vertical-align: middle;
 }
 .profile #header .profile-status-form .inputbutton {
-  margin-left: 4px; vertical-align: middle;
-  font: 11px var(--font);
+  margin-left: 4px; vertical-align: middle; font: 11px var(--font);
 }
 .profile-edit-content { overflow: hidden; padding: 10px !important; }
 .profile-edit-nav { float: left; width: 180px; margin: 0 12px 0 0; }
@@ -245,13 +220,6 @@ input[type="submit"], input[type="button"] {
 .infotable td { padding: 0 0 3px; vertical-align: top; font-size: 11px; }
 .infotable td.label { color: gray; white-space: nowrap; padding-right: 12px; width: 1%; }
 .infotable td a { color: var(--fb); }
-.profile-friend-grid { display: flex; flex-wrap: wrap; margin: 4px 0 0; }
-.profile-friend-tile { width: 62px; margin: 0 0 6px; padding: 3px 0; text-align: center; font-size: 11px; color: #3B5998; line-height: 1.2; vertical-align: bottom; }
-.profile-friend-tile img, .profile-friend-tile .avatar-fallback {
-  width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block; margin: 0 auto 2px;
-  font-size: 16px;
-}
-.profile-friend-tile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .album-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .album-tile {
   display: block; border: 1px solid #B3B3B3; padding: 8px; background: #f7f7f7;
@@ -630,11 +598,6 @@ button.linkish, .profile-box-body button.linkish {
 .albums-page .profile-box > h4 .edit:hover,
 .group-page .profile-box > h4 .edit:hover,
 .feed-page .profile-box > h4 .edit:hover{color:#3B5998}
-.profile .profile-box > h4{
-  background:#D8DFEA !important;color:#3B5998 !important;border-top:solid 1px #3B5998;
-}
-.profile .profile-box > h4 .edit{color:gray !important}
-.profile .profile-box > h4 .edit:hover{color:#3B5998 !important}
 @media (max-width:780px){.album-photo-grid{grid-template-columns:repeat(3,100px)}}
 
 /* People / Friends FB 2005 */
@@ -873,6 +836,12 @@ button.linkish, .profile-box-body button.linkish {
   display: block;
   font-size: 16px;
 }
+.profile-friend-tile span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Info / legal pages — about + FAQ */
 .about #content { margin: 0; padding: 0 20px 20px; }
@@ -899,6 +868,7 @@ button.linkish, .profile-box-body button.linkish {
   .profile-picture, .profile-picture img, .profile-picture .avatar-fallback {
     width: 100%; max-width: 200px; height: auto; aspect-ratio: 1;
   }
+  .profile-edit-nav, .profile-edit-main { float: none; width: auto; margin: 0 0 12px; }
 }
 
 /* ===== Profile polish FB2005 wall ===== */
@@ -912,14 +882,6 @@ button.linkish, .profile-box-body button.linkish {
   border-bottom: 0 !important;
 }
 .profile .profile-subsection:first-child h5 { margin-top: 0 !important; }
-.profile .infotable { margin: 0 0 8px; }
-.profile .infotable td.label { width: 120px; }
-
-.profile-friend-tile img,
-.profile-friend-tile .avatar-fallback {
-  width: 50px; height: 50px; margin: 0 auto 4px; border: 1px solid #B3B3B3;
-  object-fit: cover; display: block; font-size: 16px;
-}
 
 /* Photos on profile — archive #photos .album */
 .profile #photos,

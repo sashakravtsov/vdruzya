@@ -34,9 +34,9 @@
         {% if form %}
         {% url 'posts.store' as compose_action %}
         {% if is_own %}
-        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" %}
+        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" simple=1 %}
         {% else %}
-        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" %}
+        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" simple=1 %}
         {% endif %}
         {% elif user.is_authenticated and not can_wall %}
         <p class="muted">На стену могут писать только друзья.</p>

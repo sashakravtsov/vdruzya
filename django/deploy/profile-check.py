@@ -40,9 +40,12 @@ def main():
     assert "Стена".encode() in r.content
     assert "Группы".encode() in r.content
     assert b'name="headline"' in r.content  # status in header
-    assert b" is " in r.content or " is ".encode() in r.content
+    assert b" is" in r.content  # classic "Name is …"
     assert "<h4>Статус</h4>".encode() not in r.content
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
+    assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
+    assert b'name="visibility"' in r.content and b'value="friends"' in r.content
+    assert "Мне нравится".encode() not in r.content  # pre-2009 profile wall
     ok("own profile wall tab")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
@@ -188,6 +191,7 @@ def main():
     assert b"__profile_check_wall_note__" in r.content
     assert "написал(а) на стену".encode() in r.content
     assert f'action="/posts/{note.id}/delete"'.encode() in r.content
+    assert "Мне нравится".encode() not in r.content
     ok("wall note + owner delete UI")
 
     r = c.post(f"/posts/{note.id}/delete", {"next": f"/profile/{me.id}"}, secure=True)

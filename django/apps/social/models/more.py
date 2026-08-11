@@ -27,7 +27,8 @@ class Album(models.Model):
     @property
     def cover_url(self):
         from apps.social.media import media_url
-        return media_url(self.cover_path) if self.cover_path else ""
+        path = self.cover_path or getattr(self, "_first_photo_path", None)
+        return media_url(path) if path else ""
 
 
 class Photo(models.Model):

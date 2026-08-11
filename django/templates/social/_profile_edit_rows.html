@@ -1,0 +1,33 @@
+{# Shared education / experience editor. Expects: box_title, rows, row_kind, edit_param,
+   create_url, edit_url, delete_url, form, edit_row #}
+<div class="profile-box">
+    <h4>{{ box_title }}</h4>
+    <div class="profile-box-body">
+        <ul class="plain">
+            {% for e in rows %}
+            <li>
+                {% if row_kind == 'edu' %}
+                {{ e.institution }}{% if e.degree %} — {{ e.degree }}{% endif %}{% if e.field %}, {{ e.field }}{% endif %}
+                {% else %}
+                <b>{{ e.position }}</b> · {{ e.company_name }}{% if e.period %} <span class="muted">{{ e.period }}</span>{% endif %}
+                {% endif %}
+                <a class="muted" href="{% url 'profile.edit' %}?{{ edit_param }}={{ e.id }}">ред.</a>
+                <form method="post" action="{% url delete_url e.id %}" class="inline">{% csrf_token %}
+                    <button type="submit" class="linkish muted">удалить</button>
+                </form>
+            </li>
+            {% empty %}<li class="muted">Пока пусто</li>{% endfor %}
+        </ul>
+        <form method="post" action="{% if edit_row %}{% url edit_url edit_row.id %}{% else %}{% url create_url %}{% endif %}">{% csrf_token %}
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                {% for field in form %}
+                <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
+                {% endfor %}
+                <tr><td></td><td>
+                    <input type="submit" class="inputsubmit" value="{% if edit_row %}Сохранить{% else %}Добавить{% endif %}">
+                    {% if edit_row %} · <a href="{% url 'profile.edit' %}?section=eduwork">Отмена</a>{% endif %}
+                </td></tr>
+            </table>
+        </form>
+    </div>
+</div>
