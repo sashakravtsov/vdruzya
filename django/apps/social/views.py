@@ -1,11 +1,10 @@
-"""Core social FBVs — home, feed, profile, messenger, notifications."""
+"""Core social FBVs — home, feed, profile, pokes."""
 from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page, never_cache
-from django.views.decorators.http import require_POST
 
 from apps.social.forms import CommentForm
 from apps.social.models import Community, Notification
@@ -80,31 +79,3 @@ def pokes(request):
         Notification.objects.filter(social_user=me, type="poke", seen=False).update(seen=True)
         cache.delete(f"nav:{me.id}")
     return render(request, "social/pokes.html", {"items": items, "me": me})
-
-
-@login_required
-@never_cache
-def activity(request):
-    me = profile_of(request.user)
-    items = list(Notification.objects.filter(social_user=me).exclude(type="poke")[:50]) if me else []
-    if me:
-        Notification.objects.filter(social_user=me, seen=False).exclude(type="poke").update(seen=True)
-        cache.delete(f"nav:{me.id}")
-    return render(request, "social/activity.html", {"items": items, "me": me})
-
-
-@login_required
-@require_POST
-def notification_read(request, notification_id):
-    me = profile_of(request.user)
-    Notification.objects.filter(pk=notification_id, social_user=me).update(seen=True)
-    return redirect(request.POST.get("next") or "activity")
-
-
-@login_required
-@require_POST
-def notifications_read_all(request):
-    me = profile_of(request.user)
-    if me:
-        Notification.objects.filter(social_user=me, seen=False).update(seen=True)
-    return redirect("activity")

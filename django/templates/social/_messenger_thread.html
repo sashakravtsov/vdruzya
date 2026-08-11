@@ -1,27 +1,15 @@
 {% load vd %}
-{# Classic FB Inbox thread: 1:1 HTTP form, no live chat / group invite chrome. #}
+{# Classic FB Inbox thread — HTTP reply form, 1:1. #}
 {% if active.peer %}
-<p class="msg-members muted">Диалог с <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a></p>
-{% elif members %}
-<p class="msg-members muted">Участники:
-    {% for p in members %}<a href="{% url 'profile' p.id %}">{{ p.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
-</p>
+<p class="msg-members muted">От: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a></p>
 {% endif %}
-<form method="get" class="msg-thread-filter" action="{% url 'messenger' %}">
-    <input type="hidden" name="c" value="{{ active.id }}">
-    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
-    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-    <input class="inputtext" type="text" name="tq" value="{{ tq }}" placeholder="Найти в переписке…">
-    <input type="submit" class="inputbutton" value="Найти">
-    {% if tq %}<a href="?c={{ active.id }}" class="muted">сбросить</a>{% endif %}
-</form>
 {% if has_older and not show_all %}
 <p class="chat-older"><a href="?c={{ active.id }}&amp;all=1{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
 {% endif %}
 <div id="chat-log" class="chat-log">
     {% for m in chat_messages %}
     {% include "social/_messenger_line.html" %}
-    {% empty %}<p class="muted">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
+    {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}
 </div>
 <form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.body }}

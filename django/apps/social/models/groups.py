@@ -75,7 +75,7 @@ class CommunityPost(models.Model):
     def title_line(self) -> str:
         line = (self.body or "").strip().split("\n", 1)[0].strip()
         if not line:
-            return "Фото" if self.kind == "photo" or self.media_path else ("Опрос" if self.kind == "poll" else "Тема")
+            return "Фото" if self.kind == "photo" or self.media_path else "Тема"
         return line[:80] + ("…" if len(line) > 80 else "")
 
     def get_absolute_url(self):

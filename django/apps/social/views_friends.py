@@ -11,7 +11,7 @@ from apps.social import friendship as fr
 from apps.social.models import SocialProfile
 from apps.social.services import friend_ids, get_profile, profile_of
 
-_TABS = ("suggested", "requests", "search")
+_TABS = ("requests", "search")
 
 
 def _forbid_block(request, who=None):
@@ -35,13 +35,13 @@ def _pending(me, limit=40):
 
 @login_required
 def people(request):
-    """Find Friends — suggested / requests / search (My Friends lives on /friends)."""
-    if request.GET.get("tab") == "friends":
-        return redirect("friends")
+    """Find Friends — search + requests (FB 2006; no PYMK)."""
+    if request.GET.get("tab") in ("friends", "suggested"):
+        return redirect("people") if request.GET.get("tab") == "suggested" else redirect("friends")
     me = profile_of(request.user)
-    tab = request.GET.get("tab") or "suggested"
+    tab = request.GET.get("tab") or "search"
     if tab not in _TABS:
-        tab = "suggested"
+        tab = "search"
     q = (request.GET.get("q") or "").strip()
     city = (request.GET.get("city") or "").strip()
     school = (request.GET.get("school") or "").strip()
@@ -49,7 +49,6 @@ def people(request):
     workplace = (request.GET.get("workplace") or "").strip()
     pending = _pending(me)
     outgoing = list(fr.pending_from(me)[:40]) if me and tab == "requests" else []
-    sugg = fr.suggestions(me, 24) if me and tab == "suggested" else []
     results = None
     searching = bool(q or city or school or gender or workplace)
     if tab == "search" and searching and me:
@@ -67,7 +66,7 @@ def people(request):
         {
             "me": me, "tab": tab, "q": q, "city": city, "school": school,
             "gender": gender, "workplace": workplace,
-            "pending": pending, "outgoing": outgoing, "suggestions": sugg,
+            "pending": pending, "outgoing": outgoing,
             "results": results, "searching": searching,
         },
     )

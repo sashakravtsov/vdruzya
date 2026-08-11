@@ -1,20 +1,20 @@
 {% extends "layout.html" %}
 {% load static vd %}
-{% block title %}Сообщения — ВДрузья{% endblock %}
+{% block title %}Входящие — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="messages-page">
     <div id="header" class="withsubtitle">
-        <h1>Сообщения</h1>
+        <h1>Входящие</h1>
         <div class="subtitle"><a href="{% url 'messenger' %}?compose=1" style="color:#fff">Написать сообщение</a></div>
     </div>
     <div id="content" class="messages-content">
         {% if messages %}{% for flash in messages %}<div class="flash">{{ flash }}</div>{% endfor %}{% endif %}
 
         <div class="messages-inbox profile-box">
-            <h4>Входящие</h4>
+            <h4>{% if folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h4>
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'messenger' %}">
-                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск по сообщениям…" aria-label="Поиск сообщений">
+                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск…" aria-label="Поиск сообщений">
                     {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                     <input type="submit" class="inputbutton" value="Найти">
                 </form>
@@ -22,32 +22,15 @@
                     <a href="{% url 'messenger' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if folder == 'inbox' %} class="is-on"{% endif %}>входящие</a>
                     ·
                     <a href="{% url 'messenger' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
-                    ·
-                    <a href="{% url 'messenger' %}?folder=archive{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'archive' %} class="is-on"{% endif %}>архив</a>
-                    ·
-                    <a href="{% url 'messenger' %}?folder=unread{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'unread' %} class="is-on"{% endif %}>непрочитанные</a>
                 </p>
-                {% if folder == 'inbox' %}
-                <form method="post" action="{% url 'messenger.bulk' %}" class="msg-readall inline">{% csrf_token %}
-                    <input type="hidden" name="action" value="read_all">
-                    <button type="submit" class="linkish muted">отметить всё прочитанным</button>
-                </form>
-                {% endif %}
-                <form method="post" action="{% url 'messenger.bulk' %}" id="inbox-bulk">{% csrf_token %}
-                {% if folder == 'archive' %}<input type="hidden" name="action" value="restore" id="bulk-action">{% else %}<input type="hidden" name="action" value="archive" id="bulk-action">{% endif %}
-                {% if conversations %}
-                <p class="msg-bulk-top muted">
-                    <label><input type="checkbox" id="msg-check-all"> все</label>
-                </p>
-                {% endif %}
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
                     <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
-                        <td class="msg-check"><input type="checkbox" name="ids" value="{{ c.id }}" aria-label="Выбрать диалог"></td>
-                        <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<span class="avatar-fallback group-mark" style="width:32px;height:32px;font-size:12px;display:grid;place-items:center;background:#3B5998;color:#fff">Г</span>{% endif %}</td>
+                        <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<span class="avatar-fallback" style="width:32px;height:32px;display:grid;place-items:center;background:#3B5998;color:#fff;font-size:11px">?</span>{% endif %}</td>
                         <td>
                             <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
                                 <span class="msg-name">{{ c.display_name }}</span>
+                                {% if c.title %}<span class="msg-subj">{{ c.title|truncatechars:40 }}</span>{% endif %}
                                 {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:52 }}</span>{% endif %}
                                 {% if c.last_at %}<span class="msg-when muted">{{ c.last_at|date:"j E, H:i" }}</span>{% endif %}
                             </a>
@@ -55,17 +38,6 @@
                     </tr></table>
                 </div>
                 {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</p>{% endfor %}
-                {% if conversations %}
-                <p class="msg-bulk">
-                    {% if folder == 'archive' %}
-                    <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='restore'">Вернуть</button>
-                    {% else %}
-                    <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='archive'">В архив</button>
-                    <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='unread'">Непрочит.</button>
-                    {% endif %}
-                </p>
-                {% endif %}
-                </form>
                 {% if has_more or page > 1 %}
                 <p class="msg-pager muted">
                     {% if page > 1 %}<a href="?page={{ page|add:'-1' }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← новее</a>{% endif %}
@@ -81,42 +53,28 @@
             {% else %}
             <h4>
                 {% if active %}
+                    {% if active.title %}<span class="msg-subj-h">{{ active.title }}</span> · {% endif %}
                     {% if active.peer %}
                     <a href="{% url 'profile' active.peer.id %}">{{ active.display_name|default:active.peer.name }}</a>
                     {% else %}
-                    {{ active.display_name|default:active.title|default:"Переписка" }}
+                    {{ active.display_name|default:"Сообщение" }}
                     {% endif %}
                     <span class="edit msg-actions">
-                        {% if is_archived %}
-                        <form method="post" action="{% url 'messenger.restore' active.id %}" class="inline">{% csrf_token %}
-                            <button type="submit" class="linkish muted">во входящие</button>
+                        <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Удалить из входящих?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">удалить</button>
                         </form>
-                        {% else %}
-                        <form method="post" action="{% url 'messenger.unread' active.id %}" class="inline">{% csrf_token %}
-                            <button type="submit" class="linkish muted">непрочит.</button>
-                        </form>
-                        ·
-                        <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Перенести диалог в архив?');">{% csrf_token %}
-                            <button type="submit" class="linkish muted">в архив</button>
-                        </form>
-                        {% endif %}
                     </span>
-                {% else %}Переписка{% endif %}
+                {% else %}Сообщение{% endif %}
             </h4>
             <div class="profile-box-body">
                 {% if active %}
                 {% include "social/_messenger_thread.html" %}
                 {% else %}
-                <p class="muted">Выберите диалог слева или <a href="{% url 'messenger' %}?compose=1">напишите сообщение</a>.</p>
+                <p class="muted">Выберите сообщение слева или <a href="{% url 'messenger' %}?compose=1">напишите новое</a>.</p>
                 {% endif %}
             </div>
             {% endif %}
         </div>
     </div>
 </div>
-<script>
-document.getElementById('msg-check-all')?.addEventListener('change', (e) => {
-  document.querySelectorAll('#inbox-bulk [name=ids]').forEach((cb) => { cb.checked = e.target.checked; });
-});
-</script>
 {% endblock %}

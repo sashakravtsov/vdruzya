@@ -1,4 +1,4 @@
-"""Messenger FBVs — classic Facebook Inbox (HTTP, 1:1)."""
+"""Inbox FBVs — classic Facebook Message Center (HTTP, 1:1)."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -14,7 +14,7 @@ from apps.social.models import SocialProfile
 from apps.social.services import profile_of
 from apps.social.throttle import throttle
 
-FOLDERS = frozenset({"inbox", "sent", "unread", "archive"})
+FOLDERS = frozenset({"inbox", "sent"})
 
 
 def _me(request):
@@ -25,21 +25,20 @@ def _compose_form(friends, data=None, files=None, to=None):
     return ComposeMessageForm(friends, data, files, initial={"to": str(to)} if to else None)
 
 
-def _int_ids(values):
-    out = []
-    for x in values:
-        try:
-            out.append(int(x))
-        except (TypeError, ValueError):
-            pass
-    return out
-
-
 def _page(request):
     try:
         return max(1, int(request.GET.get("page") or 1))
     except (TypeError, ValueError):
         return 1
+
+
+def _go(conv_id=None, *, compose=False, folder="inbox"):
+    if compose:
+        return "/inbox?compose=1"
+    if conv_id:
+        q = f"/inbox?c={conv_id}"
+        return q if folder == "inbox" else f"{q}&folder={folder}"
+    return "/inbox" if folder == "inbox" else f"/inbox?folder={folder}"
 
 
 @login_required
@@ -60,19 +59,17 @@ def messenger(request):
     show_all = request.GET.get("all") == "1"
     conversations, has_more = ch.inbox(
         me, limit=40, offset=(page - 1) * 40, q=q,
-        unread_only=folder == "unread",
         sent_only=folder == "sent",
-        archived_only=folder == "archive",
     )
 
-    active = is_archived = None
+    active = None
     members, chat_messages, has_older = [], [], False
     active_id = request.GET.get("c")
     if active_id:
         try:
             active = ch.require_member(me, int(active_id))
         except (Http404, TypeError, ValueError):
-            messages.error(request, "Диалог недоступен.")
+            messages.error(request, "Сообщение недоступно.")
             return redirect("messenger")
 
     if active:
@@ -80,8 +77,7 @@ def messenger(request):
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
         chat_messages, has_older = ch.thread(active, q=tq, all_messages=show_all)
-        is_archived = ch.is_archived(me, active)
-        if not is_archived:
+        if not ch.is_archived(me, active):
             ch.mark_read(me, active)
         for c in conversations:
             if c.id == active.id:
@@ -96,7 +92,6 @@ def messenger(request):
         "chat_messages": chat_messages,
         "has_older": has_older,
         "show_all": show_all,
-        "is_archived": is_archived,
         "me": me,
         "form": MessageForm(),
         "compose_form": _compose_form(friends, to=preselect),
@@ -110,18 +105,11 @@ def messenger(request):
     })
 
 
-@login_required
-@never_cache
-def messages_older(request, conversation_id):
-    """HTTP fallback for «earlier messages» — full thread via ?all=1."""
-    return redirect(f"/messenger?c={int(conversation_id)}&all=1")
-
-
 @ch.member_post
 @throttle("msg", 40, 60)
 def message_send(request, me, conv):
     form = MessageForm(request.POST, request.FILES)
-    go = f"/messenger?c={conv.id}"
+    go = _go(conv.id)
     if not form.is_valid():
         messages.error(request, "Напишите текст или приложите фото.")
         return redirect(go)
@@ -146,7 +134,7 @@ def messenger_start(request, pk):
     if err:
         messages.error(request, err)
         return redirect(request.POST.get("next") or "messenger")
-    return redirect(f"/messenger?c={ch.dm_find_or_create(me, other).id}")
+    return redirect(_go(ch.dm_find_or_create(me, other).id))
 
 
 @login_required
@@ -161,20 +149,17 @@ def messenger_compose(request):
     form = _compose_form(friends, request.POST, request.FILES)
     if not form.is_valid():
         messages.error(request, "Выберите друга и напишите сообщение.")
-        return redirect("/messenger?compose=1")
+        return redirect(_go(compose=True))
     try:
         tid = int(form.cleaned_data["to"])
     except (TypeError, ValueError):
         messages.error(request, "Выберите друга и напишите сообщение.")
-        return redirect("/messenger?compose=1")
+        return redirect(_go(compose=True))
     other = SocialProfile.objects.filter(id=tid).first()
-    if not other:
-        messages.error(request, "Писать можно только друзьям.")
-        return redirect("/messenger?compose=1")
-    conv = ch.start_thread(me, [other], subject=(form.cleaned_data.get("subject") or "").strip())
+    conv = ch.start_thread(me, [other], subject=(form.cleaned_data.get("subject") or "").strip()) if other else None
     if not conv:
         messages.error(request, "Писать можно только друзьям.")
-        return redirect("/messenger?compose=1")
+        return redirect(_go(compose=True))
     try:
         ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
@@ -182,74 +167,15 @@ def messenger_compose(request):
         )
     except ValueError:
         messages.error(request, "Напишите текст или приложите фото.")
-        return redirect("/messenger?compose=1")
-    return redirect(f"/messenger?c={conv.id}")
+        return redirect(_go(compose=True))
+    return redirect(_go(conv.id))
 
 
 @ch.member_post
 def messenger_leave(request, me, conv):
     ch.leave(me, conv)
-    messages.info(request, "Диалог перенесён в архив.")
+    messages.info(request, "Сообщение удалено из входящих.")
     return redirect("messenger")
-
-
-@login_required
-@require_POST
-@transaction.atomic
-def messenger_bulk(request):
-    """Classic inbox bulk: archive / restore / unread."""
-    me = _me(request)
-    if not me:
-        return redirect("messenger")
-    ids = _int_ids(request.POST.getlist("ids"))
-    action = (request.POST.get("action") or "archive").strip()
-    if action == "restore":
-        n = ch.restore_many(me, ids)
-        if n:
-            messages.info(request, f"Возвращено во входящие: {n}.")
-        return redirect("/messenger?folder=archive")
-    if action == "unread":
-        n = ch.mark_unread_many(me, ids)
-        if n:
-            messages.info(request, f"Непрочитанных: {n}.")
-        return redirect("/messenger?folder=unread")
-    if action == "read_all":
-        ch.mark_all_read(me)
-        messages.info(request, "Все диалоги отмечены прочитанными.")
-        return redirect("messenger")
-    n = ch.leave_many(me, ids)
-    if n:
-        messages.info(request, f"В архиве: {n}.")
-    return redirect("messenger")
-
-
-# Back-compat alias used by older templates/urls
-messenger_archive = messenger_bulk
-
-
-@ch.member_post
-def messenger_restore(request, me, conv):
-    ch.restore(me, conv)
-    messages.info(request, "Диалог возвращён во входящие.")
-    return redirect(f"/messenger?c={conv.id}")
-
-
-@ch.member_post
-def messenger_unread(request, me, conv):
-    ch.mark_unread(me, conv)
-    return redirect("/messenger?folder=unread")
-
-
-@ch.member_post
-def messenger_title(request, me, conv):
-    """FB 2006 Inbox — no group-chat rename UI."""
-    return redirect(f"/messenger?c={conv.id}")
-
-
-@ch.member_post
-def messenger_invite(request, me, conv):
-    """FB 2006 Inbox — no adding members to a thread."""
-    return redirect(f"/messenger?c={conv.id}")
 
 
 @login_required
@@ -266,4 +192,4 @@ def message_delete(request, message_id):
     except PermissionError:
         messages.error(request, "Можно удалить только своё сообщение.")
         return redirect(request.POST.get("next") or "messenger")
-    return redirect(request.POST.get("next") or f"/messenger?c={cid}")
+    return redirect(request.POST.get("next") or _go(cid))

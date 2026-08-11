@@ -140,12 +140,7 @@ def main():
         fail("comment")
     if not post_row.comments.filter(body="probe c").exists():
         fail("group comment not saved")
-    from apps.social.models import CommunityPostReaction
-    before = CommunityPostReaction.objects.filter(post=post_row).count()
-    post(f"/groups/{g.id}/posts/{post_row.id}/react", {})
-    if CommunityPostReaction.objects.filter(post=post_row).count() != before:
-        fail("group react must be stubbed (no likes in 2006)")
-    ok("comment + react stub")
+    ok("group comment")
 
     r = post(f"/groups/{g.id}/posts", {"body": "probe topic django", "board": "discussion"})
     topic = CommunityPost.objects.filter(community=g, body="probe topic django").order_by("-id").first()

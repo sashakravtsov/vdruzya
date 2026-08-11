@@ -63,14 +63,14 @@ def main():
 
     try:
         r = c.get("/people", secure=True)
-        assert r.status_code == 200 and "Люди, которых вы можете знать".encode() in r.content
-        ok("people suggested")
+        assert r.status_code == 200 and "Поиск людей".encode() in r.content
+        assert "Люди, которых вы можете знать".encode() not in r.content
+        ok("people find friends search")
 
         r = c.get("/friends", secure=True)
         assert r.status_code == 200 and "Мои друзья".encode() in r.content
         assert "Заявки".encode() in r.content
         assert "Люди, которых вы можете знать".encode() not in r.content
-        assert "Найти людей".encode() in r.content or "Найти друга".encode() in r.content
         assert "Найти друга".encode() in r.content
         ok("friends home page")
 

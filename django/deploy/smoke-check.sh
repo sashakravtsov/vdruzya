@@ -16,7 +16,7 @@ for path in \
   /apple-touch-icon.png:200 /favicon-32x32.png:200 \
   /password-reset:200 \
   /sitemap.xml:200 /robots.txt:200 \
-  /sw.js:200 /offline.html:200 /feed:302 /messenger:302 \
+  /sw.js:200 /offline.html:200 /feed:302 /inbox:302 /messenger:301 /activity:301 \
   /app:410 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"

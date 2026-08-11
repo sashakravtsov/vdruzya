@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.sitemaps import Sitemap
 from django.contrib.sitemaps.views import sitemap as django_sitemap
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
 from apps.social.models import SocialProfile
@@ -115,3 +115,19 @@ def server_error(request):
 @login_not_required
 def csrf_failure(request, reason=""):
     return render(request, "errors/csrf.html", {"reason": reason}, status=403)
+
+
+def _with_qs(request, target):
+    qs = request.META.get("QUERY_STRING")
+    return f"{target}?{qs}" if qs else target
+
+
+@login_not_required
+def redirect_permanent(request, to):
+    return redirect(_with_qs(request, to), permanent=True)
+
+
+@login_not_required
+def redirect_messenger_legacy(request, rest=""):
+    """Old /messenger/* → /inbox/* (FB 2006 Message Center)."""
+    return redirect(_with_qs(request, f"/inbox/{rest}" if rest else "/inbox"), permanent=True)

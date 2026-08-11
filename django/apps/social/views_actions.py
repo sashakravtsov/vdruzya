@@ -5,12 +5,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.social.forms import CommentForm, PostForm
-from apps.social.models import (
-    Comment,
-    Post,
-    Reaction,
-    SocialProfile,
-)
+from apps.social.models import Comment, Post, SocialProfile
+from apps.social.models.feed import Reaction
 from apps.social.services import bump_news, now as _now, profile_of
 
 
@@ -116,14 +112,6 @@ def comment_create(request, post_id):
     if "#" not in nxt:
         nxt = f"{nxt}#c-{post_id}"
     return redirect(nxt)
-
-
-@login_required
-@require_POST
-def react(request, post_id):
-    """FB 2006: likes arrived in 2009 — route kept as stub."""
-    get_object_or_404(Post, pk=post_id)
-    return redirect(request.POST.get("next") or "feed")
 
 
 @login_required

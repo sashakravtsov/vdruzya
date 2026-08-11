@@ -1,11 +1,9 @@
 """Friendship helpers — classic Facebook Friends."""
-from collections import Counter, defaultdict
-
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
-from apps.social.models import Block, CommunityMember, Education, Friendship, SocialProfile
+from apps.social.models import Block, Education, Friendship, SocialProfile
 from apps.social.services import friend_ids, now
 
 
@@ -130,78 +128,6 @@ def mutual_friends_page(a, b, *, q="", page=1, per=40):
         qs = qs.filter(Q(name__icontains=q) | Q(city__icontains=q) | Q(headline__icontains=q))
     p = Paginator(qs, per).get_page(page)
     return list(p.object_list), p
-
-
-def suggestions(me, limit=20):
-    """People You May Know — mutual friends, city, groups."""
-    exclude = _exclude_ids(me)
-    scores = defaultdict(lambda: {"score": 0, "reasons": []})
-    fids = list(friend_ids(me))
-
-    if fids:
-        neigh = defaultdict(set)
-        for u, f in (
-            Friendship.objects.filter(status="accepted")
-            .filter(Q(user_id__in=fids) | Q(friend_id__in=fids))
-            .values_list("user_id", "friend_id")
-        ):
-            if u in fids:
-                neigh[u].add(f)
-            if f in fids:
-                neigh[f].add(u)
-        foaf = Counter()
-        for fid in fids:
-            for oid in neigh.get(fid, ()):
-                if oid not in exclude:
-                    foaf[oid] += 1
-        for oid, cnt in foaf.items():
-            scores[oid]["score"] += 5 * cnt
-            scores[oid]["reasons"].append(mutual_label(cnt))
-
-    city = (me.city or "").strip()
-    if city and city.lower() != "не указан":
-        for oid in (
-            SocialProfile.objects.filter(city__iexact=city)
-            .exclude(id__in=exclude)
-            .values_list("id", flat=True)[:50]
-        ):
-            scores[oid]["score"] += 4
-            scores[oid]["reasons"].append("Ваш город")
-
-    gids = list(CommunityMember.objects.filter(social_user=me).values_list("community_id", flat=True))
-    if gids:
-        for oid, cnt in (
-            CommunityMember.objects.filter(community_id__in=gids)
-            .exclude(social_user_id__in=exclude)
-            .values("social_user_id")
-            .annotate(cnt=Count("id"))
-            .values_list("social_user_id", "cnt")
-        ):
-            scores[oid]["score"] += 3 * min(3, cnt)
-            scores[oid]["reasons"].append("Общие группы")
-
-    if not scores:
-        people = list(SocialProfile.objects.exclude(id__in=exclude).order_by("-id")[:limit])
-        return [
-            {"user": p, "score": 0, "reasons": [], "subtitle": p.city or p.headline or "Новый участник"}
-            for p in people
-        ]
-
-    top = sorted(scores, key=lambda i: scores[i]["score"], reverse=True)[:limit]
-    users = SocialProfile.objects.filter(id__in=top).in_bulk()
-    rows = []
-    for i in top:
-        p = users.get(i)
-        if not p:
-            continue
-        reasons = list(dict.fromkeys(scores[i]["reasons"]))
-        rows.append({
-            "user": p,
-            "score": scores[i]["score"],
-            "reasons": reasons,
-            "subtitle": reasons[0] if reasons else (p.city or p.headline or ""),
-        })
-    return rows
 
 
 def send_request(me, other):

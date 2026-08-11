@@ -1158,21 +1158,16 @@ button.linkish .ico { margin-right: 2px; }
 .messages-inbox .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
 .messages-inbox .msg-thread { margin: 0 0 6px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
 .messages-inbox .msg-row { width: 100%; }
-.messages-inbox .msg-check { width: 18px; vertical-align: top; padding-right: 2px; }
 .messages-inbox .msg-av { width: 36px; vertical-align: top; padding-right: 6px; }
 .messages-inbox .msg-thread a { display: block; text-decoration: none; color: #3B5998; }
 .messages-inbox .msg-thread .msg-name { display: block; }
+.messages-inbox .msg-thread .msg-subj { display: block; color: #333; font-weight: normal; margin-top: 1px; }
 .messages-inbox .msg-thread .msg-snip { display: block; color: gray; font-weight: normal; margin-top: 2px; }
 .messages-inbox .msg-thread .msg-when { display: block; color: gray; font-weight: normal; margin-top: 1px; font-size: 10px; }
 .messages-inbox .msg-thread.is-active a { font-weight: bold; }
 .messages-inbox .msg-thread.is-unread .msg-name { font-weight: bold; }
-.messages-inbox .msg-bulk,
-.messages-inbox .msg-bulk-top,
-.messages-inbox .msg-pager,
-.messages-inbox .msg-readall { margin: 8px 0 0; font-size: 11px; }
-.messages-inbox .msg-bulk-top { margin: 0 0 6px; }
-.messages-inbox .msg-readall { margin: 0 0 8px; }
-.messages-inbox .msg-bulk .inputbutton { margin-right: 4px; }
+.messages-inbox .msg-pager { margin: 8px 0 0; font-size: 11px; }
+.messages-thread .msg-subj-h { font-weight: bold; }
 .messages-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
 .messages-thread .chat-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
 .messages-thread .chat-line .chat-body { margin: 2px 0 0; white-space: pre-wrap; }

@@ -81,7 +81,7 @@ def mark_read(me, conv: Conversation):
     ConversationMember.objects.filter(conversation=conv, social_user=me).update(last_read_at=t)
     Message.objects.filter(conversation=conv, read_at__isnull=True).exclude(social_user=me).update(read_at=t)
     Notification.objects.filter(
-        social_user=me, type="message", seen=False, url=f"/messenger?c={conv.id}",
+        social_user=me, type="message", seen=False, url=f"/inbox?c={conv.id}",
     ).update(seen=True)
     cache.delete(f"nav:{me.id}")
 
@@ -370,7 +370,7 @@ def notify_peers(me, conv: Conversation, m: Message):
     t = now()
     snippet = (m.body or "").strip() or ("[фото]" if m.attachment_path else "")
     body = f"{me.name}: {snippet}"[:255]
-    url = f"/messenger?c={conv.id}"
+    url = f"/inbox?c={conv.id}"
     for pid in peer_ids:
         existing = (
             Notification.objects.filter(social_user_id=pid, type="message", url=url, seen=False)

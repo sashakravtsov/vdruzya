@@ -3,9 +3,9 @@
 Прод: https://vdruzya.ru → nginx → Daphne `127.0.0.1:18081` (`vdruzya-django.service`).
 
 ## Facebook 2006 core
-Профиль, Стена, Mini-Feed, Лента новостей, друзья, фото/альбомы, группы (стена + доска), Inbox (сообщения), подмигивания, поиск, события.
+Профиль, Стена, Mini-Feed, Лента новостей, друзья, Find Friends, фото/альбомы, группы (стена + доска), Inbox (`/inbox`), подмигивания, поиск, события.
 
-Без лайков (2009), без Messenger/WebSocket, без опросов/репостов в UI.
+Без лайков (2009), без Messenger/WebSocket/групповых чатов, без PYMK, без центра уведомлений, без опросов/репостов в UI.
 
 ## Стек
 - Django 6, Daphne, WhiteNoise, Postgres FTS
