@@ -1,0 +1,49 @@
+{% load vd %}
+<div class="profile-box">
+    <h4>Мини-лента</h4>
+    <div class="profile-box-body">
+        {% for item in mini %}
+        <div class="minifeed-item">
+            {% if item.kind == 'joined' %}
+            вступил(а) в <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+            {% elif item.kind == 'created' %}
+            создал(а) группу <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+            {% elif item.kind == 'photo' %}
+            добавил(а) фото в <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>
+            {% elif item.kind == 'friend' and item.other %}
+            теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
+            {% elif item.kind == 'wall' %}
+            написал(а) на стену: {{ item.post.body|truncatewords:12 }}
+            {% else %}
+            написал(а): {{ item.post.body|truncatewords:16 }}
+            {% endif %}
+            {% if item.at %}<span class="muted"> · {{ item.at|timesince }} назад</span>{% endif %}
+        </div>
+        {% empty %}
+        <p class="muted">Пока нет событий.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% if show_wall %}
+<div class="profile-box wall-box">
+    <h4>Стена</h4>
+    <div class="profile-box-body">
+        {% if form %}
+        {% url 'posts.store' as compose_action %}
+        {% if is_own %}
+        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" %}
+        {% else %}
+        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" %}
+        {% endif %}
+        {% elif user.is_authenticated and not can_wall %}
+        <p class="muted">На стену могут писать только друзья.</p>
+        {% endif %}
+        {% for post in posts %}
+        {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path %}
+        {% empty %}
+        <p class="muted">На стене пока пусто.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

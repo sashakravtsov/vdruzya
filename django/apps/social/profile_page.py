@@ -2,14 +2,17 @@
 from django.db.models import Q
 
 from apps.social.albums import visible_q
-from apps.social.forms import CommentForm, PostForm, StatusForm
+from apps.social.forms import CommentForm, PostForm
 from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
 )
 from apps.social.services import friend_ids, mini_feed, wall_posts_for
 
+TABS = frozenset({"wall", "info", "photos", "friends"})
+
 
 def networks_for(profile, education=None) -> list[str]:
+    """Classic left-rail Networks: city + schools + workplace."""
     if education is None:
         education = list(Education.objects.filter(social_user=profile)[:3])
     out = []
@@ -81,23 +84,26 @@ def friend_tiles(me, profile, *, can_see: bool, relation, limit=6):
     return [], False
 
 
+def _relation(me, profile):
+    if not me or me.id == profile.id:
+        return None, False, 0, ""
+    from apps.social import friendship as fr
+
+    relation = Friendship.objects.filter(
+        Q(user=me, friend=profile) | Q(user=profile, friend=me)
+    ).first()
+    blocked = Block.objects.filter(blocker=me, blocked=profile).exists()
+    mutual = fr.mutual_count(me, profile)
+    return relation, blocked, mutual, (fr.mutual_label(mutual) if mutual else "")
+
+
 def build_context(profile, me, tab="wall"):
     """Full template context for classic Profile."""
     from apps.social import friendship as fr
 
-    tab = tab if tab in ("wall", "info", "photos", "friends") else "wall"
-    relation = blocked = None
+    tab = tab if tab in TABS else "wall"
+    relation, blocked, mutual, mutual_text = _relation(me, profile)
     can_see = fr.can_see_friends(me, profile)
-    if me and me.id != profile.id:
-        relation = Friendship.objects.filter(
-            Q(user=me, friend=profile) | Q(user=profile, friend=me)
-        ).first()
-        blocked = Block.objects.filter(blocker=me, blocked=profile).exists()
-        mutual = fr.mutual_count(me, profile)
-        mutual_text = fr.mutual_label(mutual) if mutual else ""
-    else:
-        mutual, mutual_text = 0, ""
-
     is_own = bool(me and me.id == profile.id)
     full = can_view_full(me, profile, relation)
     can_wall = can_write_wall(me, profile, relation) if full else False
@@ -105,20 +111,23 @@ def build_context(profile, me, tab="wall"):
 
     education = list(Education.objects.filter(social_user=profile)[:10]) if full else []
     experiences = list(Experience.objects.filter(social_user=profile)[:10]) if full else []
-    friend_limit = 30 if tab == "friends" else 6
-    friends, friends_are_mutual = friend_tiles(
-        me, profile, can_see=can_see, relation=relation, limit=friend_limit,
+    communities = (
+        list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
+        if full else []
     )
-    photo_limit = 24 if tab == "photos" else 8
+    friends, friends_are_mutual = friend_tiles(
+        me, profile, can_see=can_see, relation=relation,
+        limit=30 if tab == "friends" else 6,
+    )
     vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me))
+    group_count = (
+        Community.objects.filter(memberships__social_user=profile).distinct().count() if full else 0
+    )
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
         "friends": friends, "friends_are_mutual": friends_are_mutual,
-        "communities": (
-            list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
-            if full else []
-        ),
-        "photos": recent_photos(profile, me, photo_limit) if full else [],
+        "communities": communities,
+        "photos": recent_photos(profile, me, 24 if tab == "photos" else 8) if full else [],
         "posts": wall_posts_for(profile, 20, viewer=me) if show_wall else [],
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,
@@ -127,18 +136,12 @@ def build_context(profile, me, tab="wall"):
         "stats": {
             "friends": len(friend_ids(profile)),
             "photos": Photo.objects.filter(album__in=vis_albums).count(),
-            "groups": (
-                Community.objects.filter(memberships__social_user=profile).count() if full else 0
-            ),
+            "groups": group_count,
         },
         "form": PostForm() if can_wall else None,
         "comment_form": CommentForm() if me and show_wall else None,
         "can_wall": can_wall,
         "show_wall": show_wall,
         "can_see_friends": can_see,
-        "album_photos": list(
-            Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]
-        ) if me and can_wall else [],
         "mini": mini_feed(profile, viewer=me) if full else [],
-        "status_form": StatusForm(initial={"headline": profile.headline or ""}) if is_own else None,
     }

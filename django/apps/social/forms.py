@@ -54,7 +54,7 @@ class ProfileForm(forms.ModelForm):
     ]
     LOOKING = [
         ("friendship", "Дружба"), ("dating", "Знакомства"),
-        ("relationship", "Отношения"), ("networking", "Нетворкинг"),
+        ("relationship", "Отношения"), ("networking", "Деловые контакты"),
     ]
     INTERESTED = [("men", "Мужчины"), ("women", "Женщины")]
     BIRTHDAY_VIS = [

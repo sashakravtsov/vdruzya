@@ -106,7 +106,7 @@ class SocialProfile(models.Model):
             return ""
         labels = {
             "friendship": "Дружба", "dating": "Знакомства",
-            "relationship": "Отношения", "networking": "Нетворкинг",
+            "relationship": "Отношения", "networking": "Деловые контакты",
         }
         return ", ".join(labels.get(str(x), str(x)) for x in raw)
 
