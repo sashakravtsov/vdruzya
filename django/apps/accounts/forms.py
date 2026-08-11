@@ -7,7 +7,11 @@ UserModel = get_user_model()
 
 
 class PasswordResetForm(DjangoPasswordResetForm):
-    """User has is_active as a class attr, not a DB field — skip ORM filter."""
+    """User.has_usable_password is custom; is_active is class attr — skip ORM is_active filter."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].widget.attrs.update({"class": "inputtext", "size": "30"})
 
     def get_users(self, email):
         email_field_name = UserModel.get_email_field_name()

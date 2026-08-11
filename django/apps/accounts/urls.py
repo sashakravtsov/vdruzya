@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_not_required
 from django.urls import path, reverse_lazy
@@ -10,6 +11,8 @@ _reset = dict(
     subject_template_name="accounts/password_reset_subject.txt",
     success_url=reverse_lazy("password_reset_done"),
     form_class=PasswordResetForm,
+    from_email=settings.DEFAULT_FROM_EMAIL,
+    extra_email_context={"site_name": "ВДрузья"},
 )
 
 urlpatterns = [

@@ -185,8 +185,10 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="").strip("'\"")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="").strip("'\"")
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=EMAIL_PORT == 465)
 EMAIL_USE_TLS = False if EMAIL_USE_SSL else env.bool("EMAIL_USE_TLS", default=EMAIL_PORT == 587)
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@vdruzya.ru").strip("'\"")
-SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL).strip("'\"")
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=20)
+_from = env("DEFAULT_FROM_EMAIL", default="noreply@vlyubvi.ru").strip("'\"")
+DEFAULT_FROM_EMAIL = _from if "<" in _from else f"ВДрузья <{_from}>"
+SERVER_EMAIL = env("SERVER_EMAIL", default=_from).strip("'\"")
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST else "django.core.mail.backends.console.EmailBackend"
 
 VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
