@@ -5,15 +5,19 @@
 <div id="pagebody" class="profile">
     <div id="header" class="withsubtitle">
         <h1>{{ profile.name }}</h1>
-        {% if profile.headline %}
-        <div class="subtitle">
-            <b>{{ profile.name }}</b> — {{ profile.headline }}
-            {% if is_own %} <a href="{% url 'profile.edit' %}" style="color:#fff">[ред.]</a>{% endif %}
+        {% if is_own and status_form %}
+        <div class="subtitle profile-status-bar">
+            <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <b>{{ profile.name }}</b> —
+                <input class="inputtext" type="text" name="headline" value="{{ status_form.headline.value|default:'' }}" maxlength="255" placeholder="Что у вас нового?" aria-label="Статус">
+                <input type="submit" class="inputbutton" value="Обновить">
+            </form>
         </div>
+        {% elif profile.headline %}
+        <div class="subtitle"><b>{{ profile.name }}</b> — {{ profile.headline }}</div>
         {% elif profile.city %}
         <div class="subtitle">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>
-        {% elif is_own %}
-        <div class="subtitle"><a href="{% url 'profile.edit' %}" style="color:#fff">Обновить статус</a></div>
         {% endif %}
     </div>
     <div id="content" class="profile-content">

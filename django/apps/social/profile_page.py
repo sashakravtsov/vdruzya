@@ -2,7 +2,7 @@
 from django.db.models import Q
 
 from apps.social.albums import visible_q
-from apps.social.forms import CommentForm, PostForm
+from apps.social.forms import CommentForm, PostForm, StatusForm
 from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
 )
@@ -98,7 +98,7 @@ def _relation(me, profile):
 
 
 def build_context(profile, me, tab="wall"):
-    """Full template context for classic Profile."""
+    """Full template context for classic Profile — load only what the tab needs."""
     from apps.social import friendship as fr
 
     tab = tab if tab in TABS else "wall"
@@ -108,9 +108,9 @@ def build_context(profile, me, tab="wall"):
     full = can_view_full(me, profile, relation)
     can_wall = can_write_wall(me, profile, relation) if full else False
     show_wall = can_view_wall(me, profile, relation) if full else False
+    wall = tab == "wall" and full
 
-    education = list(Education.objects.filter(social_user=profile)[:10]) if full else []
-    experiences = list(Experience.objects.filter(social_user=profile)[:10]) if full else []
+    edu_rail = list(Education.objects.filter(social_user=profile)[:3])
     communities = (
         list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
         if full else []
@@ -120,28 +120,48 @@ def build_context(profile, me, tab="wall"):
         limit=30 if tab == "friends" else 6,
     )
     vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me))
-    group_count = (
-        Community.objects.filter(memberships__social_user=profile).distinct().count() if full else 0
-    )
+
+    education = experiences = []
+    info_empty = False
+    if full and tab == "info":
+        education = list(Education.objects.filter(social_user=profile)[:10])
+        experiences = list(Experience.objects.filter(social_user=profile)[:10])
+        p = profile
+        info_empty = not any((
+            p.gender, p.birthday, p.city, p.hometown, p.relationship_status,
+            p.looking_for_label(), p.interested_in_label(), p.political_views,
+            p.religious_views, p.languages_label(), p.created_at, p.bio, p.interests,
+            p.hobbies, p.favorite_music, p.favorite_movies, p.favorite_books,
+            p.favorite_quotes, p.favorite_tv, education, p.education_note,
+            experiences, p.workplace, p.telegram_username, p.website,
+            p.show_email and getattr(p.user, "email", None),
+            p.show_phone and p.phone,
+        ))
+
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
         "friends": friends, "friends_are_mutual": friends_are_mutual,
         "communities": communities,
-        "photos": recent_photos(profile, me, 24 if tab == "photos" else 8) if full else [],
-        "posts": wall_posts_for(profile, 20, viewer=me) if show_wall else [],
+        "photos": recent_photos(profile, me, 24) if full and tab == "photos" else [],
+        "posts": wall_posts_for(profile, 20, viewer=me) if wall and show_wall else [],
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,
         "education": education, "experiences": experiences,
-        "networks": networks_for(profile, education if full else None),
+        "info_empty": info_empty,
+        "networks": networks_for(profile, edu_rail),
         "stats": {
             "friends": len(friend_ids(profile)),
             "photos": Photo.objects.filter(album__in=vis_albums).count(),
-            "groups": group_count,
+            "groups": (
+                Community.objects.filter(memberships__social_user=profile).distinct().count()
+                if full else 0
+            ),
         },
-        "form": PostForm() if can_wall else None,
-        "comment_form": CommentForm() if me and show_wall else None,
+        "form": PostForm() if wall and can_wall else None,
+        "comment_form": CommentForm() if wall and me and show_wall else None,
         "can_wall": can_wall,
         "show_wall": show_wall,
         "can_see_friends": can_see,
-        "mini": mini_feed(profile, viewer=me) if full else [],
+        "mini": mini_feed(profile, viewer=me) if wall else [],
+        "status_form": StatusForm(initial={"headline": profile.headline or ""}) if is_own else None,
     }

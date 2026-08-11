@@ -38,12 +38,16 @@ def main():
     assert b"?tab=friends" in r.content
     assert "Мини-лента".encode() in r.content
     assert "Стена".encode() in r.content
+    assert "Группы".encode() in r.content
+    assert b'name="headline"' in r.content  # status in header
+    assert b"<h4>Статус</h4>" not in r.content
     ok("own profile wall tab")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
     assert r.status_code == 200
     assert "Информация".encode() in r.content
     assert "Мини-лента".encode() not in r.content
+    assert "Основная информация".encode() in r.content
     ok("profile info tab")
 
     r = c.get("/feed", secure=True)
@@ -66,13 +70,14 @@ def main():
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
     assert "Основная информация".encode() in r.content
-    assert "Контакты".encode() in r.content
+    assert "Контакты".encode() in r.content or "Контактная информация".encode() in r.content
     assert "Приватность".encode() in r.content
     assert "Интересуюсь".encode() in r.content
     assert "Имя в сети".encode() in r.content
     assert "Работа".encode() in r.content
     assert "Ищу".encode() in r.content
     assert "Игры".encode() not in r.content
+    assert b"profile" in r.content  # back link to own profile
     ok("profile edit sections")
 
     other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()

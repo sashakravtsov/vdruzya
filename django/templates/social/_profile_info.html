@@ -68,5 +68,9 @@
             {% endif %}
         </div>
         {% endif %}
+
+        {% if info_empty %}
+        <p class="muted">{% if is_own %}Заполните <a href="{% url 'profile.edit' %}">профиль</a>.{% else %}Информация пока не заполнена.{% endif %}</p>
+        {% endif %}
     </div>
 </div>

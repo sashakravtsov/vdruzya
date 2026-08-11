@@ -1,0 +1,27 @@
+<div class="profile-box">
+    <h4>Работа</h4>
+    <div class="profile-box-body">
+        <ul class="plain">
+            {% for e in experiences %}
+            <li>
+                <b>{{ e.position }}</b> · {{ e.company_name }}{% if e.period %} <span class="muted">{{ e.period }}</span>{% endif %}
+                <a class="muted" href="{% url 'profile.edit' %}?exp={{ e.id }}">ред.</a>
+                <form method="post" action="{% url 'profile.experience.delete' e.id %}" class="inline">{% csrf_token %}
+                    <button type="submit" class="linkish muted">удалить</button>
+                </form>
+            </li>
+            {% empty %}<li class="muted">Пока пусто</li>{% endfor %}
+        </ul>
+        <form method="post" action="{% if exp_edit %}{% url 'profile.experience.edit' exp_edit.id %}{% else %}{% url 'profile.experience' %}{% endif %}">{% csrf_token %}
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                {% for field in exp_form %}
+                <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
+                {% endfor %}
+                <tr><td></td><td>
+                    <input type="submit" class="inputsubmit" value="{% if exp_edit %}Сохранить{% else %}Добавить{% endif %}">
+                    {% if exp_edit %} · <a href="{% url 'profile.edit' %}">Отмена</a>{% endif %}
+                </td></tr>
+            </table>
+        </form>
+    </div>
+</div>

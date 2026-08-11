@@ -1,0 +1,28 @@
+<div class="profile-box">
+    <h4>Основная информация</h4>
+    <div class="profile-box-body">
+        <table class="formtable" cellpadding="0" cellspacing="0">
+            <tr><td class="label">Имя:</td><td>{{ form.name }}</td></tr>
+            <tr>
+                <td class="label">Короткое имя:</td>
+                <td>
+                    {{ form.slug }}
+                    <div class="file-hint muted">/u/{{ me.slug }}</div>
+                    {% if form.slug.errors %}<div class="error">{{ form.slug.errors }}</div>{% endif %}
+                </td>
+            </tr>
+            <tr><td class="label">Статус:</td><td>{{ form.headline }}</td></tr>
+            <tr><td class="label">День рождения:</td><td>{{ form.birthday }} {{ form.birthday_visibility }}</td></tr>
+            <tr><td class="label">Город:</td><td>{{ form.city }}</td></tr>
+            <tr><td class="label">Родной город:</td><td>{{ form.hometown }}</td></tr>
+            <tr><td class="label">Страна:</td><td>{{ form.country }}</td></tr>
+            <tr><td class="label">Пол:</td><td>{{ form.gender }}</td></tr>
+            <tr><td class="label">Отношения:</td><td>{{ form.relationship_status }} {{ form.relationship_with }}</td></tr>
+            <tr><td class="label">Интересуюсь:</td><td>{{ form.interested_in_choices }}</td></tr>
+            <tr><td class="label">Ищу:</td><td>{{ form.looking_for_choices }}</td></tr>
+            <tr><td class="label">Политика:</td><td>{{ form.political_views }}</td></tr>
+            <tr><td class="label">Религия:</td><td>{{ form.religious_views }}</td></tr>
+            <tr><td class="label">Языки:</td><td>{{ form.languages_text }}</td></tr>
+        </table>
+    </div>
+</div>

@@ -216,6 +216,21 @@ input[type="submit"], input[type="button"] {
 .profile-box > h4 .edit:hover { color: var(--fb); }
 .profile-box-body { padding: 8px; }
 .profile-box-body p { margin: 0 0 6px; }
+.profile #header .profile-status-form {
+  display: inline;
+  margin: 0;
+  font: 11px var(--font);
+  color: #fff;
+}
+.profile #header .profile-status-form .inputtext {
+  width: 240px; max-width: 55%;
+  border: 1px solid #910A0A; padding: 1px 3px;
+  font: 11px var(--font); vertical-align: middle;
+}
+.profile #header .profile-status-form .inputbutton {
+  margin-left: 4px; vertical-align: middle;
+  font: 11px var(--font);
+}
 .profile-subsection { margin: 0 0 10px; }
 .profile-subsection h5 {
   color: #3B5998; font: bold 12px var(--font); margin: 0 0 6px; padding: 2px 8px;
