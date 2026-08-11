@@ -81,6 +81,7 @@ urlpatterns = [
     path("profile/avatar", act.avatar_upload, name="profile.avatar"),
     path("profile/<int:pk>/block", act.block_toggle, name="profile.block"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),
+    path("profile/<int:pk>/mutual", friends.mutual_friends_view, name="profile.mutual"),
     path("profile/<int:pk>", views.profile, name="profile"),
     path("profile/<slug:slug>", browse.profile_slug_redirect, name="profile.slug"),
     path("u/<slug:slug>", browse.profile_slug_redirect, name="profile.vanity"),

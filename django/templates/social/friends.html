@@ -13,8 +13,13 @@
                     <td class="label">Найти друга:</td>
                     <td>
                         <input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя" autocomplete="off">
+                        <input class="inputtext" type="text" name="city" value="{{ city }}" placeholder="Город" style="width:120px" autocomplete="off">
+                        <select name="sort" class="inputtext" style="width:auto">
+                            <option value="name"{% if sort == 'name' %} selected{% endif %}>по имени</option>
+                            <option value="recent"{% if sort == 'recent' %} selected{% endif %}>недавние</option>
+                        </select>
                         <input class="inputsubmit" type="submit" value="Найти">
-                        {% if q %}<a href="{% url 'friends' %}">сбросить</a>{% endif %}
+                        {% if q or city or sort == 'recent' %}<a href="{% url 'friends' %}">сбросить</a>{% endif %}
                     </td>
                 </tr>
             </table>
@@ -42,7 +47,7 @@
                             </form>
                             ·
                             <form method="post" action="{% url 'friends.remove' f.id %}">{% csrf_token %}
-                                <input type="hidden" name="next" value="{% url 'friends' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                 <button type="submit" class="linkish" onclick="return confirm('Удалить из друзей?');">Удалить</button>
                             </form>
                             ·
@@ -53,11 +58,18 @@
                         </span>
                     </div>
                     {% empty %}
-                    <p class="muted">{% if q %}Никого не найдено по запросу «{{ q }}».{% else %}Пока нет друзей.{% endif %}</p>
-                    {% if not q %}
+                    <p class="muted">{% if q or city %}Никого не найдено.{% else %}Пока нет друзей.{% endif %}</p>
+                    {% if not q and not city %}
                     <p class="friends-side-foot"><a href="{% url 'invite.mine' %}">Пригласить</a> · <a href="{% url 'people' %}">Найти людей</a></p>
                     {% endif %}
                     {% endfor %}
+                    {% if page_obj and page_obj.has_other_pages %}
+                    <p class="people-top-links">
+                        {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}&amp;p={{ page_obj.previous_page_number }}">« назад</a>{% endif %}
+                        стр. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                        {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}&amp;p={{ page_obj.next_page_number }}">вперёд »</a>{% endif %}
+                    </p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -86,12 +98,15 @@
                     {% empty %}
                     <p class="muted">Нет новых заявок.</p>
                     {% endfor %}
+                    {% if pending %}
+                    <p class="friends-side-foot"><a href="{% url 'people' %}?tab=requests">Все заявки</a></p>
+                    {% endif %}
                 </div>
             </div>
 
             {% if outgoing %}
             <div class="profile-box">
-                <h4>Исходящие{% if outgoing %} ({{ outgoing|length }}){% endif %}</h4>
+                <h4>Исходящие ({{ outgoing|length }})</h4>
                 <div class="profile-box-body">
                     {% for r in outgoing %}
                     <div class="classic-person-row classic-person-row-side">

@@ -47,11 +47,11 @@
                 <div class="profile-box-body">
                     {% if relation and relation.status == 'accepted' %}
                         <p>У вас в друзьях.</p>
-                        {% if mutual %}<p class="muted">{{ mutual }} общих друзей.</p>{% endif %}
+                        {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
                     {% elif relation and relation.status == 'pending' %}<p>Заявка в друзья.</p>
                     {% else %}
                         <p class="muted">Пока не связаны.</p>
-                        {% if mutual %}<p class="muted">{{ mutual }} общих друзей.</p>{% endif %}
+                        {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
                     {% endif %}
                 </div>
             </div>

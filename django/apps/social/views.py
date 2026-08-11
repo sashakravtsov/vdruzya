@@ -81,8 +81,10 @@ def profile(request, pk):
         blocked = Block.objects.filter(blocker=me, blocked=user).exists()
         can_wall = bool(relation and relation.status == "accepted")
         mutual = fr.mutual_count(me, user)
+        mutual_text = fr.mutual_label(mutual) if mutual else ""
     else:
         mutual = 0
+        mutual_text = ""
     album_photos = list(
         Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]
     ) if me and can_wall else []
@@ -95,6 +97,7 @@ def profile(request, pk):
             "friends": friends, "communities": communities,
             "albums": albums, "posts": posts, "relation": relation, "blocked": blocked,
             "mutual": mutual,
+            "mutual_text": mutual_text,
             "education": Education.objects.filter(social_user=user)[:10],
             "experiences": Experience.objects.filter(social_user=user)[:10],
             "stats": {

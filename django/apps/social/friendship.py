@@ -1,19 +1,54 @@
-"""Friendship helpers — short only, FB 2005 / Laravel parity."""
-from collections import defaultdict
+"""Friendship helpers — classic Facebook Friends."""
+from collections import Counter, defaultdict
 
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 
 from apps.social.models import Block, CommunityMember, Friendship, SocialProfile
 from apps.social.services import friend_ids, now
 
 
-def friends_of(me, limit=200):
-    ids = list(friend_ids(me))[:limit]
+def friends_of(me, limit=None):
+    ids = friend_ids(me)
     if not ids:
         return SocialProfile.objects.none()
-    return SocialProfile.objects.filter(id__in=ids).order_by("name")
+    qs = SocialProfile.objects.filter(id__in=ids).order_by("name")
+    return qs[:limit] if limit else qs
+
+
+def friends_page(me, *, q="", city="", sort="name", page=1, per=40):
+    """Paginated My Friends with name/city filter and sort."""
+    ids = friend_ids(me)
+    total = len(ids)
+    empty = Paginator([], per).get_page(1)
+    if not ids:
+        return [], total, empty
+    qs = SocialProfile.objects.filter(id__in=ids)
+    q, city = (q or "").strip(), (city or "").strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(city__icontains=q) | Q(headline__icontains=q))
+    if city:
+        qs = qs.filter(city__icontains=city)
+    if sort == "recent":
+        order, seen = [], set()
+        for u, f in (
+            Friendship.objects.filter(status="accepted")
+            .filter(Q(user=me) | Q(friend=me))
+            .order_by("-updated_at", "-id")
+            .values_list("user_id", "friend_id")
+        ):
+            oid = f if u == me.id else u
+            if oid in ids and oid not in seen:
+                seen.add(oid)
+                order.append(oid)
+        filtered = set(qs.values_list("id", flat=True))
+        order = [i for i in order if i in filtered]
+        p = Paginator(order, per).get_page(page)
+        users = SocialProfile.objects.in_bulk(p.object_list)
+        return [users[i] for i in p.object_list if i in users], total, p
+    p = Paginator(qs.order_by("name"), per).get_page(page)
+    return list(p.object_list), total, p
 
 
 def pending_to(me):
@@ -25,7 +60,6 @@ def pending_to(me):
 
 
 def pending_from(me):
-    """Outgoing friend requests I sent."""
     return (
         Friendship.objects.filter(user=me, status="pending")
         .select_related("friend")
@@ -62,26 +96,65 @@ def mutual_label(n):
     return f"{n} общих друзей"
 
 
+def mutual_count(a, b) -> int:
+    if not a or not b or a.id == b.id:
+        return 0
+    return len(friend_ids(a) & friend_ids(b))
+
+
+def mutual_friends_qs(a, b):
+    ids = friend_ids(a) & friend_ids(b)
+    if not ids:
+        return SocialProfile.objects.none()
+    return SocialProfile.objects.filter(id__in=ids).order_by("name")
+
+
+def mutual_friends(a, b, limit=200):
+    return mutual_friends_qs(a, b)[:limit]
+
+
+def mutual_friends_page(a, b, *, q="", page=1, per=40):
+    qs = mutual_friends_qs(a, b)
+    q = (q or "").strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(city__icontains=q) | Q(headline__icontains=q))
+    p = Paginator(qs, per).get_page(page)
+    return list(p.object_list), p
+
+
 def suggestions(me, limit=20):
-    """People You May Know — mutual friends, city, groups (classic FB)."""
+    """People You May Know — mutual friends, city, groups."""
     exclude = _exclude_ids(me)
     scores = defaultdict(lambda: {"score": 0, "reasons": []})
-
     fids = list(friend_ids(me))
+
     if fids:
-        for oid, cnt in (
-            Friendship.objects.filter(status="accepted", user_id__in=fids)
-            .exclude(friend_id__in=exclude)
-            .values("friend_id")
-            .annotate(cnt=Count("id"))
-            .values_list("friend_id", "cnt")
+        neigh = defaultdict(set)
+        for u, f in (
+            Friendship.objects.filter(status="accepted")
+            .filter(Q(user_id__in=fids) | Q(friend_id__in=fids))
+            .values_list("user_id", "friend_id")
         ):
+            if u in fids:
+                neigh[u].add(f)
+            if f in fids:
+                neigh[f].add(u)
+        foaf = Counter()
+        for fid in fids:
+            for oid in neigh.get(fid, ()):
+                if oid not in exclude:
+                    foaf[oid] += 1
+        for oid, cnt in foaf.items():
             scores[oid]["score"] += 5 * cnt
             scores[oid]["reasons"].append(mutual_label(cnt))
 
     city = (me.city or "").strip()
     if city and city.lower() != "не указан":
-        for oid in SocialProfile.objects.filter(city=city).exclude(id__in=exclude).values_list("id", flat=True)[:50]:
+        for oid in (
+            SocialProfile.objects.filter(city__iexact=city)
+            .exclude(id__in=exclude)
+            .values_list("id", flat=True)[:50]
+        ):
             scores[oid]["score"] += 4
             scores[oid]["reasons"].append("Ваш город")
 
@@ -99,7 +172,10 @@ def suggestions(me, limit=20):
 
     if not scores:
         people = list(SocialProfile.objects.exclude(id__in=exclude).order_by("-id")[:limit])
-        return [{"user": p, "score": 0, "reasons": [], "subtitle": p.city or p.headline or "Новый участник"} for p in people]
+        return [
+            {"user": p, "score": 0, "reasons": [], "subtitle": p.city or p.headline or "Новый участник"}
+            for p in people
+        ]
 
     top = sorted(scores, key=lambda i: scores[i]["score"], reverse=True)[:limit]
     users = SocialProfile.objects.filter(id__in=top).in_bulk()
@@ -110,7 +186,9 @@ def suggestions(me, limit=20):
             continue
         reasons = list(dict.fromkeys(scores[i]["reasons"]))
         rows.append({
-            "user": p, "score": scores[i]["score"], "reasons": reasons,
+            "user": p,
+            "score": scores[i]["score"],
+            "reasons": reasons,
             "subtitle": reasons[0] if reasons else (p.city or p.headline or ""),
         })
     return rows
@@ -123,7 +201,6 @@ def send_request(me, other):
         return "blocked"
     if Friendship.objects.filter(user=me, friend=other).exists():
         return False
-    # Incoming pending → accept instead
     if Friendship.objects.filter(user=other, friend=me, status="pending").exists():
         return accept_request(me, other) is True
     Friendship.objects.create(
@@ -137,7 +214,6 @@ def cancel_request(me, other):
 
 
 def relation_of(me, other):
-    """Return Friendship row between me and other, or None."""
     if not me or not other or me.id == other.id:
         return None
     return Friendship.objects.filter(
@@ -146,7 +222,6 @@ def relation_of(me, other):
 
 
 def relations_for(me, ids):
-    """Map profile_id → {status, outgoing} for batch UI."""
     if not me or not ids:
         return {}
     out = {}
@@ -158,13 +233,13 @@ def relations_for(me, ids):
     return out
 
 
-def accept_request(me, other):
+def accept_request(me, other) -> bool:
     from django.db import transaction
     from apps.social.models import Notification
 
     pending = Friendship.objects.filter(user=other, friend=me, status="pending").first()
     if not pending:
-        return HttpResponseForbidden("Нет заявки.")
+        return False
     with transaction.atomic():
         pending.status, pending.updated_at = "accepted", now()
         pending.save(update_fields=["status", "updated_at"])
@@ -221,14 +296,7 @@ def invite_url(me, request=None):
     return f"https://vdruzya.ru/i/{code}"
 
 
-def mutual_count(a, b) -> int:
-    if not a or not b or a.id == b.id:
-        return 0
-    return len(friend_ids(a) & friend_ids(b))
-
-
 def invite_code_from_request(request):
-    """POST / GET / cookie — first non-empty invite code."""
     for src in (
         (request.POST.get("invite") if hasattr(request, "POST") else None),
         request.GET.get("invite"),
@@ -242,18 +310,14 @@ def invite_code_from_request(request):
 
 def find_inviter(code):
     code = (code or "").strip()
-    if not code:
-        return None
-    return SocialProfile.objects.filter(invite_code=code).first()
+    return SocialProfile.objects.filter(invite_code=code).first() if code else None
 
 
 def registration_requires_invite():
-    """Invite-only after the first member exists (bootstrap exception)."""
     return SocialProfile.objects.exists()
 
 
 def apply_invite(request, me, code=None):
-    """After register: link inviter, send friend request."""
     if not me:
         return None
     code = (code or invite_code_from_request(request) or "").strip()
@@ -269,9 +333,31 @@ def apply_invite(request, me, code=None):
 
 
 def apply_invite_cookie(request, me):
-    """Back-compat alias."""
     return apply_invite(request, me)
 
 
 def other_or_404(pk):
     return get_object_or_404(SocialProfile, pk=pk)
+
+
+def find_people(me, *, q="", city="", gender="", workplace="", page=1, per=24):
+    """Classic Find Friends search (both-way blocks excluded)."""
+    ban = set(Block.objects.filter(blocker=me).values_list("blocked_id", flat=True))
+    ban |= set(Block.objects.filter(blocked=me).values_list("blocker_id", flat=True))
+    qs = SocialProfile.objects.exclude(id=me.id).exclude(id__in=ban)
+    q = (q or "").strip()
+    city = (city or "").strip()
+    gender = (gender or "").strip()
+    workplace = (workplace or "").strip()
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) | Q(city__icontains=q) | Q(headline__icontains=q)
+            | Q(slug__icontains=q) | Q(hometown__icontains=q) | Q(workplace__icontains=q)
+        )
+    if city:
+        qs = qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))
+    if gender in ("male", "female", "other"):
+        qs = qs.filter(gender=gender)
+    if workplace:
+        qs = qs.filter(workplace__icontains=workplace)
+    return Paginator(qs.order_by("name"), per).get_page(page)

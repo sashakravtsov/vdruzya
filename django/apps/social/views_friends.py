@@ -1,4 +1,4 @@
-"""Friends / people / invite FBVs — short only, FB 2005."""
+"""Friends / people / invite FBVs — classic Facebook Friends."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.paginator import Paginator
@@ -8,10 +8,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.social import friendship as fr
-from apps.social.models import Block, SocialProfile
-from apps.social.services import accepted_friends, get_profile, profile_of
+from apps.social.models import SocialProfile
+from apps.social.services import friend_ids, get_profile, profile_of
 
-_TABS = ("suggested", "friends", "requests", "search")
+_TABS = ("suggested", "requests", "search")
 
 
 def _forbid_block(request, who=None):
@@ -22,38 +22,47 @@ def _forbid_block(request, who=None):
     )
 
 
+def _page_int(raw, default=1):
+    try:
+        return max(1, int(raw or default))
+    except (TypeError, ValueError):
+        return default
+
+
 @login_required
 def people(request):
+    """Find Friends — suggested / requests / search (My Friends lives on /friends)."""
+    if request.GET.get("tab") == "friends":
+        return redirect("friends")
     me = profile_of(request.user)
     tab = request.GET.get("tab") or "suggested"
     if tab not in _TABS:
         tab = "suggested"
     q = (request.GET.get("q") or "").strip()
+    city = (request.GET.get("city") or "").strip()
+    gender = (request.GET.get("gender") or "").strip()
+    workplace = (request.GET.get("workplace") or "").strip()
     pending = list(fr.pending_to(me)[:40]) if me else []
     outgoing = list(fr.pending_from(me)[:40]) if me and tab == "requests" else []
-    friends = list(fr.friends_of(me)[:200]) if me and tab == "friends" else []
-    if tab == "friends" and q and friends:
-        ql = q.lower()
-        friends = [f for f in friends if ql in (f.name or "").lower() or ql in (f.city or "").lower()]
-    blocked = list(fr.blocked_by(me)[:40]) if me and tab == "friends" else []
-    sugg = fr.suggestions(me, 20) if me and tab == "suggested" else []
+    sugg = fr.suggestions(me, 24) if me and tab == "suggested" else []
     results = None
-    if tab == "search" and q and me:
-        ban = Block.objects.filter(blocker=me).values_list("blocked_id", flat=True)
-        qs = (
-            SocialProfile.objects.exclude(id=me.id).exclude(id__in=ban)
-            .filter(Q(name__icontains=q) | Q(city__icontains=q) | Q(headline__icontains=q) | Q(slug__icontains=q))
-            .order_by("name")
+    searching = bool(q or city or gender or workplace)
+    if tab == "search" and searching and me:
+        results = fr.find_people(
+            me, q=q, city=city, gender=gender, workplace=workplace,
+            page=_page_int(request.GET.get("p")),
         )
-        results = Paginator(qs, 24).get_page(request.GET.get("p"))
         rel = fr.relations_for(me, [p.id for p in results])
         for p in results:
+            n = fr.mutual_count(me, p)
             p.rel = rel.get(p.id)
+            p.mutual = fr.mutual_label(n) if n else ""
     return render(
         request, "social/people.html",
         {
-            "me": me, "tab": tab, "q": q, "friends": friends, "pending": pending,
-            "outgoing": outgoing, "blocked": blocked, "suggestions": sugg, "results": results,
+            "me": me, "tab": tab, "q": q, "city": city, "gender": gender, "workplace": workplace,
+            "pending": pending, "outgoing": outgoing, "suggestions": sugg, "results": results,
+            "searching": searching,
             "invite_url": fr.invite_url(me, request) if me else "",
         },
     )
@@ -64,18 +73,25 @@ def friends_home(request):
     """Dedicated Мои друзья — FB 2005 two-column."""
     me = profile_of(request.user)
     q = (request.GET.get("q") or "").strip()
-    friends = list(fr.friends_of(me)[:200]) if me else []
-    total = len(friends)
-    if q and friends:
-        ql = q.lower()
-        friends = [f for f in friends if ql in (f.name or "").lower() or ql in (f.city or "").lower()]
+    city = (request.GET.get("city") or "").strip()
+    sort = request.GET.get("sort") or "name"
+    if sort not in ("name", "recent"):
+        sort = "name"
+    friends, total, page = ([], 0, None)
+    if me:
+        friends, total, page = fr.friends_page(
+            me, q=q, city=city, sort=sort, page=_page_int(request.GET.get("p")),
+        )
     return render(
         request, "social/friends.html",
         {
             "me": me,
             "q": q,
+            "city": city,
+            "sort": sort,
             "friends": friends,
             "friends_total": total,
+            "page_obj": page,
             "pending": list(fr.pending_to(me)[:40]) if me else [],
             "outgoing": list(fr.pending_from(me)[:40]) if me else [],
             "suggestions": fr.suggestions(me, 12) if me else [],
@@ -91,7 +107,13 @@ def profile_friends(request, pk):
     me = profile_of(request.user) if request.user.is_authenticated else None
     if me and me.id != owner.id and fr.is_blocked(me, owner):
         return _forbid_block(request, owner)
-    items = list(accepted_friends(owner, 120))
+    q = (request.GET.get("q") or "").strip()
+    fids = friend_ids(owner)
+    qs = SocialProfile.objects.filter(id__in=fids).order_by("name")
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(city__icontains=q) | Q(headline__icontains=q))
+    page = Paginator(qs, 40).get_page(_page_int(request.GET.get("p")))
+    items = list(page.object_list)
     rel = fr.relations_for(me, [p.id for p in items]) if me else {}
     for p in items:
         n = fr.mutual_count(me, p) if me and me.id != p.id else 0
@@ -99,7 +121,33 @@ def profile_friends(request, pk):
         p.rel = rel.get(p.id)
     return render(
         request, "social/friends_user.html",
-        {"owner": owner, "friends": items, "me": me, "is_own": bool(me and me.id == owner.id)},
+        {
+            "owner": owner, "friends": items, "me": me, "q": q, "page_obj": page,
+            "friends_total": len(fids),
+            "is_own": bool(me and me.id == owner.id),
+        },
+    )
+
+
+@login_required
+def mutual_friends_view(request, pk):
+    other = get_profile(pk)
+    me = profile_of(request.user)
+    if not me:
+        return redirect("login")
+    if other.id == me.id:
+        return redirect("friends")
+    if fr.is_blocked(me, other):
+        return _forbid_block(request, other)
+    q = (request.GET.get("q") or "").strip()
+    friends, page = fr.mutual_friends_page(me, other, q=q, page=_page_int(request.GET.get("p")))
+    count = fr.mutual_count(me, other)
+    return render(
+        request, "social/mutual_friends.html",
+        {
+            "me": me, "other": other, "friends": friends, "page_obj": page,
+            "q": q, "mutual_count": count, "mutual_label": fr.mutual_label(count) if count else "",
+        },
     )
 
 
@@ -152,9 +200,8 @@ def friend_accept(request, pk):
     me, other = profile_of(request.user), fr.other_or_404(pk)
     if fr.is_blocked(me, other):
         return HttpResponseForbidden("Взаимодействие с этим пользователем недоступно.")
-    out = fr.accept_request(me, other)
-    if out is not True:
-        return out
+    if not fr.accept_request(me, other):
+        return HttpResponseForbidden("Нет заявки.")
     messages.success(request, "Заявка принята.")
     return _back(request, "/friends")
 

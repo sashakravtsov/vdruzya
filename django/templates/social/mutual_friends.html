@@ -1,30 +1,30 @@
 {% extends "layout.html" %}
 {% load vd %}
-{% block title %}Друзья {{ owner.name }} — ВДрузья{% endblock %}
+{% block title %}Общие друзья с {{ other.name }} — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="people-page">
     <div id="header" class="withsubtitle">
-        <h1>Друзья {{ owner.name }}</h1>
-        <div class="subtitle"><a href="{% url 'profile' owner.id %}" style="color:#fff">← профиль</a></div>
+        <h1>Общие друзья</h1>
+        <div class="subtitle"><a href="{% url 'profile' other.id %}" style="color:#fff">← {{ other.name }}</a></div>
     </div>
     <div id="content" class="people-content">
-        <form class="people-search-form" method="get" action="{% url 'profile.friends' owner.id %}">
+        <p class="people-lead">{% if mutual_label %}{{ mutual_label }} с {{ other.name }}.{% else %}Нет общих друзей с {{ other.name }}.{% endif %}</p>
+
+        <form class="people-search-form" method="get" action="{% url 'profile.mutual' other.id %}">
             <table class="formtable" cellpadding="0" cellspacing="0">
                 <tr>
                     <td class="label">Найти:</td>
                     <td>
                         <input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя" autocomplete="off">
                         <input class="inputsubmit" type="submit" value="Найти">
-                        {% if q %}<a href="{% url 'profile.friends' owner.id %}">сбросить</a>{% endif %}
+                        {% if q %}<a href="{% url 'profile.mutual' other.id %}">сбросить</a>{% endif %}
                     </td>
                 </tr>
             </table>
         </form>
+
         <div class="profile-box">
-            <h4>Друзья{% if friends_total %} ({{ friends_total }}){% endif %}
-                {% if is_own %}<a class="edit" href="{% url 'friends' %}">мои друзья</a>{% endif %}
-                {% if me and not is_own %}<a class="edit" href="{% url 'profile.mutual' owner.id %}">общие</a>{% endif %}
-            </h4>
+            <h4>Общие друзья{% if mutual_count %} ({{ mutual_count }}){% endif %}</h4>
             <div class="profile-box-body">
                 {% for f in friends %}
                 <div class="classic-person-row classic-person-row-friend">
@@ -32,18 +32,18 @@
                         {% avatar f 50 %}
                         <span>
                             <b>{{ f.name }}</b>
-                            {% if f.mutual %}<span class="classic-person-sub">{{ f.mutual }}</span>
-                            {% elif f.city %}<span class="classic-person-sub">{{ f.city }}</span>{% endif %}
+                            {% if f.city %}<span class="classic-person-sub">{{ f.city }}</span>
+                            {% elif f.headline %}<span class="classic-person-sub">{{ f.headline }}</span>{% endif %}
                         </span>
                     </a>
-                    {% if me and not is_own and f.id != me.id %}
                     <span class="classic-inline-actions classic-inline-actions-friend">
-                        {% include "partials/friend_actions.html" with p=f r=f.rel %}
+                        <form method="post" action="{% url 'messenger.start' f.id %}">{% csrf_token %}
+                            <button type="submit" class="linkish">Написать</button>
+                        </form>
                     </span>
-                    {% endif %}
                 </div>
                 {% empty %}
-                <p class="muted">{% if q %}Никого не найдено.{% else %}Список друзей пуст.{% endif %}</p>
+                <p class="muted">{% if q %}Никого не найдено.{% else %}Общих друзей нет.{% endif %}</p>
                 {% endfor %}
                 {% if page_obj and page_obj.has_other_pages %}
                 <p class="people-top-links">
