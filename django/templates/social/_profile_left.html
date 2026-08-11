@@ -12,7 +12,7 @@
     {% if is_own %}
         <a href="{% url 'albums' %}">Смотреть фотографии ({{ stats.photos }})</a>
         <a href="{% url 'profile.edit' %}">Редактировать профиль</a>
-        <a href="{% url 'profile.edit' %}#avatar">Изменить фото</a>
+        <a href="{% url 'profile.edit' %}?section=picture">Изменить фото</a>
     {% elif user.is_authenticated %}
         <a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>
         {% if relation and relation.status == 'accepted' %}
@@ -29,6 +29,7 @@
         {% else %}
             <form method="post" action="{% url 'friends.request' profile.id %}">{% csrf_token %}<button type="submit">Добавить в друзья</button></form>
             <form method="post" action="{% url 'messenger.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
+            <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
         {% endif %}
         <form method="post" action="{% url 'profile.block' profile.id %}">{% csrf_token %}<button type="submit" class="muted">{% if blocked %}Разблокировать{% else %}Заблокировать{% endif %}</button></form>
     {% else %}
@@ -47,13 +48,27 @@
 {% endif %}
 
 <div class="profile-box">
-    <h4>Друзья ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
+    <h4>{% if friends_are_mutual %}Общие друзья{% else %}Друзья{% endif %} ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
     <div class="profile-box-body">
-        {% if profile.city %}<p>Друзья · {{ profile.city|tag }}</p>{% endif %}
+        {% if profile.city and not friends_are_mutual %}<p>Друзья в {{ profile.city|tag }}</p>{% endif %}
         {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
-        {% include "social/_profile_friend_grid.html" with compact=1 %}
+        {% include "social/_profile_friend_grid.html" with friends=friends compact=1 %}
     </div>
 </div>
+
+{% if not limited and rail_photos %}
+<div class="profile-box">
+    <h4>Фото <a class="edit" href="?tab=photos">[все]</a></h4>
+    <div class="profile-box-body profile-photo-thumbs">
+        {% for ph in rail_photos %}
+        <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
+            {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
+        </a>
+        {% endfor %}
+        <div class="clear"></div>
+    </div>
+</div>
+{% endif %}
 
 {% if not limited %}
 <div class="profile-box">

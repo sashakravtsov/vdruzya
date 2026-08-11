@@ -12,6 +12,8 @@
             добавил(а) фото в <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>
             {% elif item.kind == 'friend' and item.other %}
             теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
+            {% elif item.kind == 'status' %}
+            обновил(а) статус: {{ item.post.body|truncatewords:16 }}
             {% elif item.kind == 'wall' %}
             написал(а) на стену: {{ item.post.body|truncatewords:12 }}
             {% else %}
@@ -40,7 +42,7 @@
         <p class="muted">На стену могут писать только друзья.</p>
         {% endif %}
         {% for post in posts %}
-        {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path %}
+        {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path wall_owner=profile %}
         {% empty %}
         <p class="muted">На стене пока пусто.</p>
         {% endfor %}

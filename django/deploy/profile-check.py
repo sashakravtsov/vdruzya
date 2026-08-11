@@ -40,20 +40,26 @@ def main():
     assert "Стена".encode() in r.content
     assert "Группы".encode() in r.content
     assert b'name="headline"' in r.content  # status in header
+    assert b" is " in r.content or " is ".encode() in r.content
     assert "<h4>Статус</h4>".encode() not in r.content
+    assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     ok("own profile wall tab")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
     assert r.status_code == 200
-    assert "Информация".encode() in r.content
-    assert "Мини-лента".encode() not in r.content
     assert "Основная информация".encode() in r.content
+    assert "Мини-лента".encode() not in r.content
     ok("profile info tab")
+
+    r = c.get(f"/profile/{me.id}?tab=friends", secure=True)
+    assert r.status_code == 200
+    # left rail still compact (friend tiles appear, page loads)
+    ok("profile friends tab")
 
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert "Лента новостей".encode() in r.content
-    assert b"wallposter" not in r.content  # no wall compose on news feed
+    assert b"wallposter" not in r.content
     assert "Что у вас нового".encode() in r.content
     ok("news feed")
 
@@ -70,24 +76,29 @@ def main():
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
     assert "Основная информация".encode() in r.content
-    assert "Контакты".encode() in r.content or "Контактная информация".encode() in r.content
-    assert "Приватность".encode() in r.content
+    assert "Контактная информация".encode() in r.content  # nav
+    assert "Приватность".encode() in r.content  # nav
     assert "Интересуюсь".encode() in r.content
-    assert "Имя в сети".encode() in r.content
-    assert "Работа".encode() in r.content
     assert "Ищу".encode() in r.content
-    assert "Игры".encode() not in r.content
-    assert b"profile" in r.content  # back link to own profile
+    assert b"section=picture" in r.content
     ok("profile edit sections")
+
+    r = c.get("/profile/edit?section=contact", secure=True)
+    assert r.status_code == 200
+    assert "Имя в сети".encode() in r.content
+    ok("profile edit contact")
+
+    r = c.get("/profile/edit?section=personal", secure=True)
+    assert r.status_code == 200
+    assert "Игры".encode() in r.content
+    ok("profile edit personal games")
 
     other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
     assert other, "need a friend"
 
-    r = c.post("/profile/edit", {
+    r = c.post("/profile/edit?section=basic", {
         "name": me.name,
         "slug": me.slug,
-        "headline": "__profile_status_check__",
-        "bio": me.bio or "",
         "city": me.city or "Москва",
         "hometown": me.hometown or "",
         "country": me.country or "",
@@ -98,41 +109,44 @@ def main():
         "relationship_with": str(other.id),
         "political_views": me.political_views or "",
         "religious_views": me.religious_views or "",
-        "interests": me.interests or "",
-        "hobbies": me.hobbies or "",
-        "workplace": me.workplace or "",
-        "education_note": me.education_note or "",
-        "website": me.website or "",
-        "phone": me.phone or "",
-        "telegram_username": "aim_classic",
-        "show_phone": "on" if me.show_phone else "",
-        "show_email": "on" if me.show_email else "",
-        "profile_visibility": me.profile_visibility or "public",
-        "wall_write": me.wall_write or "friends",
-        "wall_view": me.wall_view or "public",
-        "favorite_music": me.favorite_music or "",
-        "favorite_movies": me.favorite_movies or "",
-        "favorite_tv": me.favorite_tv or "",
-        "favorite_books": me.favorite_books or "",
-        "favorite_quotes": me.favorite_quotes or "",
         "languages_text": me.languages_label(),
         "looking_for_choices": ["friendship"],
         "interested_in_choices": ["women"],
     }, secure=True)
     assert r.status_code in (301, 302), getattr(r, "context", None) and r.context["form"].errors
+
+    r = c.post("/profile/edit?section=contact", {
+        "website": me.website or "",
+        "phone": me.phone or "",
+        "telegram_username": "aim_classic",
+        "show_phone": "on" if me.show_phone else "",
+        "show_email": "on" if me.show_email else "",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+
+    r = c.post("/profile/status", {
+        "headline": "__profile_status_check__",
+        "next": f"/profile/{me.id}",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+
     me.refresh_from_db()
     assert isinstance(me.looking_for, list) and "friendship" in me.looking_for
     assert isinstance(me.interested_in, list) and "women" in me.interested_in
     assert me.telegram_username == "aim_classic"
     assert me.relationship_with_id == other.id
-    ok("profile save looking_for + partner + screen name")
+    assert me.headline == "__profile_status_check__"
+    ok("profile save looking_for + partner + screen name + status")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
     assert other.name.encode() in r.content
     assert b"aim_classic" in r.content
     r = c.get(f"/profile/{me.id}", secure=True)
     assert b"__profile_status_check__" in r.content
-    ok("partner + screen name + status on profile")
+    # status must not appear as a wall post body card from kind=status alone in wall box
+    posts = list(wall_posts_for(me, 20, viewer=me))
+    assert all(getattr(p, "kind", None) != "status" for p in posts)
+    ok("partner + screen name + status on profile; status off wall")
 
     list(wall_posts_for(me, 5, viewer=me))
     ok("wall_posts_for visibility")
@@ -172,6 +186,7 @@ def main():
 
     r = c.get(f"/profile/{me.id}", secure=True)
     assert b"__profile_check_wall_note__" in r.content
+    assert "написал(а) на стену".encode() in r.content
     assert f'action="/posts/{note.id}/delete"'.encode() in r.content
     ok("wall note + owner delete UI")
 
@@ -190,8 +205,8 @@ def main():
     c2.force_login(User.objects.get(pk=stranger.user_id))
     r = c2.get(f"/profile/{me.id}", secure=True)
     assert r.status_code == 200
-    assert "Ограниченный профиль".encode() in r.content
     assert "Мини-лента".encode() not in r.content
+    assert b"?tab=wall" not in r.content
     ok("limited profile for non-friend")
     me.profile_visibility = prev
     me.save(update_fields=["profile_visibility"])

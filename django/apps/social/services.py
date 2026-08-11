@@ -106,10 +106,12 @@ def can_manage_wall_comment(me, comment) -> bool:
 
 
 def wall_posts_for(profile, limit=20, viewer=None):
-    """Own posts (not notes on others' walls) + notes written on this wall."""
+    """Own posts (not notes on others' walls) + notes written on this wall. No status."""
     key = f"wall:{profile.id}"
     qs = (
         Post.objects.filter(Q(topic=key) | (Q(social_user=profile) & ~Q(topic__startswith="wall:")))
+        .exclude(kind="status")
+        .exclude(topic="status")
         .select_related("social_user")
         .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages", "search_vector")
         .prefetch_related(
@@ -159,7 +161,9 @@ def mini_feed(profile, limit=8, viewer=None):
                     continue
                 if vis == "friends" and not friends:
                     continue
-            kind = "wall" if (p.topic or "").startswith("wall:") else "post"
+            kind = "status" if (p.kind == "status" or p.topic == "status") else (
+                "wall" if (p.topic or "").startswith("wall:") else "post"
+            )
             items.append({"kind": kind, "at": p.created_at, "post": p})
     if friends or own:
         for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:

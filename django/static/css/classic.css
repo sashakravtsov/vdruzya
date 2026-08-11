@@ -231,6 +231,11 @@ input[type="submit"], input[type="button"] {
   margin-left: 4px; vertical-align: middle;
   font: 11px var(--font);
 }
+.profile-edit-content { overflow: hidden; padding: 10px !important; }
+.profile-edit-nav { float: left; width: 180px; margin: 0 12px 0 0; }
+.profile-edit-main { float: left; width: 420px; }
+.profile-edit-links { list-style: none; padding-left: 0; margin: 0; }
+.profile-edit-links li { margin: 0 0 4px; }
 .profile-subsection { margin: 0 0 10px; }
 .profile-subsection h5 {
   color: #3B5998; font: bold 12px var(--font); margin: 0 0 6px; padding: 2px 8px;

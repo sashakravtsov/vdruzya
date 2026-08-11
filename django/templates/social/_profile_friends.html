@@ -2,8 +2,8 @@
     <h4>Друзья ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
     <div class="profile-box-body">
         {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
-        {% include "social/_profile_friend_grid.html" %}
-        {% if friends and can_see_friends %}
+        {% include "social/_profile_friend_grid.html" with friends=friends_tab %}
+        {% if friends_tab and can_see_friends %}
         <p><a href="{% if is_own %}{% url 'friends' %}{% else %}{% url 'profile.friends' profile.id %}{% endif %}">Смотреть всех</a></p>
         {% endif %}
     </div>

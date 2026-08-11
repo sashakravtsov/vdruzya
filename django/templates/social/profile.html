@@ -9,13 +9,13 @@
         <div class="subtitle profile-status-bar">
             <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <b>{{ profile.name }}</b> —
-                <input class="inputtext" type="text" name="headline" value="{{ status_form.headline.value|default:'' }}" maxlength="255" placeholder="Что у вас нового?" aria-label="Статус">
+                <b>{{ profile.name }}</b> is
+                {{ status_form.headline }}
                 <input type="submit" class="inputbutton" value="Обновить">
             </form>
         </div>
         {% elif profile.headline %}
-        <div class="subtitle"><b>{{ profile.name }}</b> — {{ profile.headline }}</div>
+        <div class="subtitle"><b>{{ profile.name }}</b> is {{ profile.headline }}</div>
         {% elif profile.city %}
         <div class="subtitle">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>
         {% endif %}
@@ -35,12 +35,6 @@
             {% endif %}
 
             {% if limited %}
-            <div class="profile-box">
-                <h4>Ограниченный профиль</h4>
-                <div class="profile-box-body">
-                    <p class="muted">Полная информация, стена и лента доступны только друзьям.</p>
-                </div>
-            </div>
             {% elif tab == 'info' %}
             {% include "social/_profile_info.html" %}
             {% elif tab == 'photos' %}

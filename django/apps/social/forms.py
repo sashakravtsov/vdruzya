@@ -45,8 +45,8 @@ def _has_media(form):
 class ProfileForm(forms.ModelForm):
     GENDER = [("", "—"), ("male", "Мужской"), ("female", "Женский")]
     RELATION = [
-        ("", "—"), ("single", "Не женат"), ("in_a_relationship", "В отношениях"),
-        ("engaged", "Помолвлен(а)"), ("married", "Женат"), ("complicated", "Всё сложно"),
+        ("", "—"), ("single", "Не женат(а)"), ("in_a_relationship", "В отношениях"),
+        ("engaged", "Помолвлен(а)"), ("married", "Женат / замужем"), ("complicated", "Всё сложно"),
     ]
     POLITICS = [
         ("", "—"), ("not_interested", "Не интересуюсь"), ("moderate", "Умеренные"),
@@ -80,12 +80,13 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = SocialProfile
         fields = (
-            "name", "slug", "headline", "bio", "city", "hometown", "country", "gender", "birthday",
+            "name", "slug", "bio", "city", "hometown", "country", "gender", "birthday",
             "birthday_visibility", "relationship_status", "relationship_with", "political_views",
             "religious_views", "interests", "hobbies", "workplace", "education_note",
             "website", "phone", "show_phone", "show_email", "telegram_username",
             "profile_visibility", "wall_write", "wall_view",
-            "favorite_music", "favorite_movies", "favorite_tv", "favorite_books", "favorite_quotes",
+            "favorite_music", "favorite_movies", "favorite_tv", "favorite_books",
+            "favorite_quotes", "favorite_games",
         )
         labels = {
             "slug": "Короткое имя", "birthday": "День рождения",
@@ -98,10 +99,11 @@ class ProfileForm(forms.ModelForm):
             "profile_visibility": "Кто видит профиль",
             "wall_write": "Кто пишет на стену",
             "wall_view": "Кто видит стену",
+            "favorite_games": "Игры",
         }
         widgets = {
             "name": _in(), "slug": _in(placeholder="латиница, 5–32", autocomplete="off"),
-            "headline": _in(style="width:100%"), "city": _in(),
+            "city": _in(),
             "birthday": forms.DateInput(attrs={"class": "inputtext", "type": "date"}),
             "hometown": _in(), "country": _in(),
             "workplace": _in(style="width:100%"), "education_note": _in(style="width:100%"),
@@ -110,11 +112,29 @@ class ProfileForm(forms.ModelForm):
             "religious_views": _in(style="width:100%"),
             "bio": _ta(4), "interests": _ta(2), "hobbies": _ta(2),
             "favorite_music": _ta(2), "favorite_movies": _ta(2), "favorite_tv": _ta(2),
-            "favorite_books": _ta(2), "favorite_quotes": _ta(2),
+            "favorite_books": _ta(2), "favorite_quotes": _ta(2), "favorite_games": _ta(2),
         }
 
-    def __init__(self, *args, **kwargs):
+    SECTIONS = {
+        "basic": {
+            "name", "slug", "city", "hometown", "country", "gender", "birthday",
+            "birthday_visibility", "relationship_status", "relationship_with",
+            "political_views", "religious_views", "languages_text",
+            "looking_for_choices", "interested_in_choices",
+        },
+        "contact": {"website", "phone", "show_phone", "show_email", "telegram_username"},
+        "personal": {
+            "bio", "interests", "hobbies", "favorite_music", "favorite_movies",
+            "favorite_tv", "favorite_books", "favorite_quotes", "favorite_games",
+        },
+        "eduwork": {"workplace", "education_note"},
+        "privacy": {"profile_visibility", "wall_write", "wall_view"},
+        "picture": set(),
+    }
+
+    def __init__(self, *args, section="basic", **kwargs):
         super().__init__(*args, **kwargs)
+        self.section = section if section in self.SECTIONS else "basic"
         self.fields["gender"] = forms.ChoiceField(
             required=False, label="Пол", choices=self.GENDER, widget=forms.Select(attrs={"class": "inputtext"}),
         )
@@ -137,29 +157,38 @@ class ProfileForm(forms.ModelForm):
                 required=False, label=label, choices=choices,
                 widget=forms.Select(attrs={"class": "inputtext"}),
             )
-        self.fields["relationship_with"].required = False
-        self.fields["relationship_with"].empty_label = "—"
-        self.fields["relationship_with"].widget.attrs["class"] = "inputtext"
+        if "relationship_with" in self.fields:
+            self.fields["relationship_with"].required = False
+            self.fields["relationship_with"].empty_label = "—"
+            self.fields["relationship_with"].widget.attrs["class"] = "inputtext"
         if self.instance and self.instance.pk:
             from apps.social.services import accepted_friends
-            qs = accepted_friends(self.instance, 200)
-            cur = self.instance.relationship_with_id
-            if cur:
-                qs = SocialProfile.objects.filter(Q(pk__in=qs) | Q(pk=cur)).order_by("name")
-            self.fields["relationship_with"].queryset = qs
-            self.fields["languages_text"].initial = self.instance.languages_label()
-            raw = self.instance.looking_for
-            if isinstance(raw, list):
-                self.fields["looking_for_choices"].initial = [str(x) for x in raw]
-            raw = self.instance.interested_in
-            if isinstance(raw, list):
-                self.fields["interested_in_choices"].initial = [str(x) for x in raw]
-        else:
+            if "relationship_with" in self.fields:
+                qs = accepted_friends(self.instance, 200)
+                cur = self.instance.relationship_with_id
+                if cur:
+                    qs = SocialProfile.objects.filter(Q(pk__in=qs) | Q(pk=cur)).order_by("name")
+                self.fields["relationship_with"].queryset = qs
+            if "languages_text" in self.fields:
+                self.fields["languages_text"].initial = self.instance.languages_label()
+            if "looking_for_choices" in self.fields:
+                raw = self.instance.looking_for
+                if isinstance(raw, list):
+                    self.fields["looking_for_choices"].initial = [str(x) for x in raw]
+            if "interested_in_choices" in self.fields:
+                raw = self.instance.interested_in
+                if isinstance(raw, list):
+                    self.fields["interested_in_choices"].initial = [str(x) for x in raw]
+        elif "relationship_with" in self.fields:
             self.fields["relationship_with"].queryset = SocialProfile.objects.none()
+        keep = self.SECTIONS[self.section]
+        for name in list(self.fields):
+            if name not in keep:
+                del self.fields[name]
 
     def clean_telegram_username(self):
-        raw = (self.cleaned_data.get("telegram_username") or "").strip().lstrip("@")
-        return raw[:255] or None
+        """Screen name (AIM / ICQ / nick) — classic Contact Info."""
+        return (self.cleaned_data.get("telegram_username") or "").strip()[:255] or None
 
     def clean_slug(self):
         from apps.social.slugs import clean_short_slug
@@ -173,18 +202,22 @@ class ProfileForm(forms.ModelForm):
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        raw = (self.cleaned_data.get("languages_text") or "").replace(";", ",")
-        langs = [x.strip() for x in raw.split(",") if x.strip()]
-        obj.languages = langs or None
-        obj.looking_for = list(self.cleaned_data.get("looking_for_choices") or []) or None
-        obj.interested_in = list(self.cleaned_data.get("interested_in_choices") or []) or None
+        if "languages_text" in self.cleaned_data:
+            raw = (self.cleaned_data.get("languages_text") or "").replace(";", ",")
+            langs = [x.strip() for x in raw.split(",") if x.strip()]
+            obj.languages = langs or None
+        if "looking_for_choices" in self.cleaned_data:
+            obj.looking_for = list(self.cleaned_data.get("looking_for_choices") or []) or None
+        if "interested_in_choices" in self.cleaned_data:
+            obj.interested_in = list(self.cleaned_data.get("interested_in_choices") or []) or None
         for f, default in (
             ("profile_visibility", "public"),
             ("wall_write", "friends"),
             ("wall_view", "public"),
         ):
-            setattr(obj, f, self.cleaned_data.get(f) or default)
-        if (obj.relationship_status or "") not in {
+            if f in self.cleaned_data:
+                setattr(obj, f, self.cleaned_data.get(f) or default)
+        if "relationship_status" in self.cleaned_data and (obj.relationship_status or "") not in {
             "in_a_relationship", "engaged", "married", "complicated",
         }:
             obj.relationship_with = None
@@ -369,7 +402,10 @@ class CommunityPostForm(forms.ModelForm):
 
 
 class StatusForm(forms.Form):
-    headline = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%", placeholder="Что у вас нового?"))
+    headline = forms.CharField(
+        max_length=255, required=False,
+        widget=_in(style="width:240px;max-width:55%", placeholder="…"),
+    )
 
 
 class GroupEventForm(forms.Form):

@@ -18,23 +18,33 @@ from apps.social.services import now as _now, profile_of
 def profile_edit(request):
     from apps.social.forms import EducationForm, ExperienceForm
     from apps.social.models import Education, Experience
+    from apps.social.profile_page import EDIT_SECTIONS
+
     me = profile_of(request.user)
-    form = ProfileForm(request.POST or None, instance=me)
+    section = (request.GET.get("section") or request.POST.get("section") or "basic").lower()
+    if section not in EDIT_SECTIONS:
+        section = "basic"
+    form = ProfileForm(request.POST or None, instance=me, section=section)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
         obj.updated_at = _now()
         obj.save()
         messages.success(request, "Профиль сохранён.")
-        return redirect(obj)
+        return redirect(f"{request.path}?section={section}")
     edu_id, exp_id = request.GET.get("edu"), request.GET.get("exp")
     edu_row = Education.objects.filter(pk=edu_id, social_user=me).first() if edu_id else None
     exp_row = Experience.objects.filter(pk=exp_id, social_user=me).first() if exp_id else None
+    if edu_row:
+        section = "eduwork"
+    if exp_row:
+        section = "eduwork"
     return render(
         request,
         "social/profile_edit.html",
         {
             "form": form,
             "me": me,
+            "section": section,
             "edu_form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
             "exp_form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),
             "edu_edit": edu_row,
@@ -242,7 +252,7 @@ def education_save(request, pk=None):
     if me and form.is_valid():
         form.save()
         messages.success(request, "Образование сохранено." if pk else "Образование добавлено.")
-    return redirect("profile.edit")
+    return redirect("/profile/edit?section=eduwork")
 
 
 @login_required
@@ -252,7 +262,7 @@ def education_delete(request, pk):
     me = profile_of(request.user)
     Education.objects.filter(pk=pk, social_user=me).delete()
     messages.info(request, "Запись удалена.")
-    return redirect("profile.edit")
+    return redirect("/profile/edit?section=eduwork")
 
 
 @login_required
@@ -268,7 +278,7 @@ def experience_save(request, pk=None):
         obj.description = obj.description or ""
         obj.save()
         messages.success(request, "Работа сохранена." if pk else "Работа добавлена.")
-    return redirect("profile.edit")
+    return redirect("/profile/edit?section=eduwork")
 
 
 @login_required
@@ -278,5 +288,5 @@ def experience_delete(request, pk):
     me = profile_of(request.user)
     Experience.objects.filter(pk=pk, social_user=me).delete()
     messages.info(request, "Запись удалена.")
-    return redirect("profile.edit")
+    return redirect("/profile/edit?section=eduwork")
 

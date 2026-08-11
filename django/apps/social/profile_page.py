@@ -9,6 +9,7 @@ from apps.social.models import (
 from apps.social.services import friend_ids, mini_feed, wall_posts_for
 
 TABS = frozenset({"wall", "info", "photos", "friends"})
+EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
 
 
 def networks_for(profile, education=None) -> list[str]:
@@ -31,6 +32,12 @@ def recent_photos(profile, viewer, limit=8):
     return list(
         Photo.objects.filter(album__in=albums).exclude(path="")
         .select_related("album").order_by("-id")[:limit]
+    )
+
+
+def profile_albums(profile, viewer, limit=12):
+    return list(
+        Album.objects.filter(social_user=profile).filter(visible_q(viewer)).order_by("-id")[:limit]
     )
 
 
@@ -97,6 +104,20 @@ def _relation(me, profile):
     return relation, blocked, mutual, (fr.mutual_label(mutual) if mutual else "")
 
 
+def _info_empty(profile, education, experiences) -> bool:
+    p = profile
+    return not any((
+        p.gender, p.birthday, p.city, p.hometown, p.relationship_status,
+        p.looking_for_label(), p.interested_in_label(), p.political_views,
+        p.religious_views, p.languages_label(), p.bio, p.interests, p.hobbies,
+        p.favorite_music, p.favorite_movies, p.favorite_books, p.favorite_quotes,
+        p.favorite_tv, p.favorite_games, education, p.education_note,
+        experiences, p.workplace, p.telegram_username, p.website,
+        p.show_email and getattr(p.user, "email", None),
+        p.show_phone and p.phone,
+    ))
+
+
 def build_context(profile, me, tab="wall"):
     """Full template context for classic Profile — load only what the tab needs."""
     from apps.social import friendship as fr
@@ -115,34 +136,35 @@ def build_context(profile, me, tab="wall"):
         list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
         if full else []
     )
-    friends, friends_are_mutual = friend_tiles(
-        me, profile, can_see=can_see, relation=relation,
-        limit=30 if tab == "friends" else 6,
+    friends_rail, friends_are_mutual = friend_tiles(
+        me, profile, can_see=can_see, relation=relation, limit=6,
     )
+    friends_tab = friends_rail
+    if tab == "friends":
+        friends_tab, _ = friend_tiles(
+            me, profile, can_see=can_see, relation=relation, limit=30,
+        )
     vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me))
+    rail_photos = recent_photos(profile, me, 4) if full else []
 
     education = experiences = []
     info_empty = False
+    albums = []
     if full and tab == "info":
         education = list(Education.objects.filter(social_user=profile)[:10])
         experiences = list(Experience.objects.filter(social_user=profile)[:10])
-        p = profile
-        info_empty = not any((
-            p.gender, p.birthday, p.city, p.hometown, p.relationship_status,
-            p.looking_for_label(), p.interested_in_label(), p.political_views,
-            p.religious_views, p.languages_label(), p.created_at, p.bio, p.interests,
-            p.hobbies, p.favorite_music, p.favorite_movies, p.favorite_books,
-            p.favorite_quotes, p.favorite_tv, education, p.education_note,
-            experiences, p.workplace, p.telegram_username, p.website,
-            p.show_email and getattr(p.user, "email", None),
-            p.show_phone and p.phone,
-        ))
+        info_empty = _info_empty(profile, education, experiences)
+    if full and tab == "photos":
+        albums = profile_albums(profile, me, 12)
 
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
-        "friends": friends, "friends_are_mutual": friends_are_mutual,
+        "friends": friends_rail, "friends_tab": friends_tab,
+        "friends_are_mutual": friends_are_mutual,
         "communities": communities,
+        "rail_photos": rail_photos,
         "photos": recent_photos(profile, me, 24) if full and tab == "photos" else [],
+        "albums": albums,
         "posts": wall_posts_for(profile, 20, viewer=me) if wall and show_wall else [],
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,
@@ -164,4 +186,5 @@ def build_context(profile, me, tab="wall"):
         "can_see_friends": can_see,
         "mini": mini_feed(profile, viewer=me) if wall else [],
         "status_form": StatusForm(initial={"headline": profile.headline or ""}) if is_own else None,
+        "wall_owner": profile,
     }

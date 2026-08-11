@@ -1,12 +1,26 @@
 <div class="profile-box">
     <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все альбомы</a>{% endif %}</h4>
-    <div class="profile-box-body profile-photo-thumbs" id="photos">
-        {% for ph in photos %}
-        <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
-            {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
-        </a>
+    <div class="profile-box-body profile-albums" id="photos">
+        {% for a in albums %}
+        <div class="album">
+            <a href="{% url 'albums.show' a.id %}">
+                {% if a.cover_url %}<img src="{{ a.cover_url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
+                <span class="album-title">{{ a.title }}</span>
+                {% if a.created_at %}<span class="date">{{ a.created_at|date:"j E Y" }}</span>{% endif %}
+            </a>
+        </div>
         {% empty %}
+        {% if photos %}
+        <div class="profile-photo-thumbs">
+            {% for ph in photos %}
+            <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
+                {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
         <p class="muted">Фотографий пока нет.</p>
+        {% endif %}
         {% endfor %}
         <div class="clear"></div>
     </div>

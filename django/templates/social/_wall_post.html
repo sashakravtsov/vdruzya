@@ -6,6 +6,7 @@
             <div class="info">
                 <div class="header">
                     <a href="{% url 'profile' post.social_user.id %}"><b>{{ post.social_user.name }}</b></a>
+                    {% if wall_owner and post.social_user_id != wall_owner.id %} написал(а) на стену{% endif %}
                     {% if post.created_at %}<span class="muted"> · {{ post.created_at|timesince }} назад</span>{% endif %}
                     {% if me|can_manage_post:post %}
                     <span class="wallpost-edit">
