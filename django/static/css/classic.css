@@ -1143,12 +1143,19 @@ button.linkish, .profile-box-body button.linkish {
 .notifications-page .profile-box > h4 form.edit { float: right; font-weight: normal; }
 .notifications-page .profile-box > h4 .linkish { color: gray; }
 .messages-content {
-  display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 10px; padding: 10px; align-items: start;
+  display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; padding: 10px; align-items: start;
 }
+.messages-inbox .msg-filter { margin: 0 0 8px; }
+.messages-inbox .msg-filter .inputtext { width: 70%; }
+.messages-inbox .msg-tabs { margin: 0 0 8px; font-size: 11px; }
+.messages-inbox .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
 .messages-inbox .msg-thread { margin: 0 0 6px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
+.messages-inbox .msg-row { width: 100%; }
+.messages-inbox .msg-av { width: 36px; vertical-align: top; padding-right: 6px; }
 .messages-inbox .msg-thread a { display: block; text-decoration: none; color: #3B5998; }
 .messages-inbox .msg-thread .msg-name { display: block; }
 .messages-inbox .msg-thread .msg-snip { display: block; color: gray; font-weight: normal; margin-top: 2px; }
+.messages-inbox .msg-thread .msg-when { display: block; color: gray; font-weight: normal; margin-top: 1px; font-size: 10px; }
 .messages-inbox .msg-thread.is-active a { font-weight: bold; }
 .messages-inbox .msg-thread.is-unread .msg-name { font-weight: bold; }
 .messages-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
@@ -1164,6 +1171,7 @@ button.linkish, .profile-box-body button.linkish {
 .messages-thread .sticker-btn { margin: 2px; font-size: 11px; }
 .messages-thread .compose-new .inputtext,
 .messages-thread .compose-new textarea { width: 100%; max-width: 420px; }
+.messages-thread > h4 .edit { float: right; font-weight: normal; }
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"] {
   width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;

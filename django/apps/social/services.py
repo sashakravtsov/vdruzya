@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from apps.social.models import (
-    Block, Comment, Community, CommunityMember, CommunityPost, Friendship, Post, SavedPost,
+    Block, Comment, Community, CommunityMember, CommunityPost, Friendship, Post,
     SocialProfile,
 )
 
@@ -52,9 +52,6 @@ def feed_queryset(viewer=None):
             | Q(visibility="friends", social_user_id__in=fids)
             | Q(social_user_id=viewer.id)
         ).exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
-        qs = qs.annotate(
-            is_saved=Exists(SavedPost.objects.filter(post_id=OuterRef("pk"), social_user=viewer)),
-        )
     else:
         qs = qs.filter(visibility="public")
     return (
@@ -95,10 +92,6 @@ def wall_posts_for(profile, limit=20, viewer=None):
         )
         .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
     )
-    if viewer:
-        qs = qs.annotate(
-            is_saved=Exists(SavedPost.objects.filter(post_id=OuterRef("pk"), social_user=viewer)),
-        )
     return qs.order_by("-id")[:limit]
 
 

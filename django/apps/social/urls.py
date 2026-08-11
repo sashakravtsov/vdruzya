@@ -6,13 +6,13 @@ from . import views_group_ops as gops
 from . import views_meta as meta
 from . import views_albums as albums
 from . import views_friends as friends
+from . import views_messenger as msg
 from . import views_wall_ops as wall
 
 urlpatterns = [
     path("up", meta.up, name="up"),
     path("", views.home, name="home"),
     path("feed", views.feed, name="feed"),
-    path("saved", views.saved, name="saved"),
     path("people", friends.people, name="people"),
     path("friends", friends.friends_home, name="friends"),
     path("invite", friends.invite_mine, name="invite.mine"),
@@ -40,11 +40,12 @@ urlpatterns = [
     path("groups/<int:pk>", browse.group_show, name="groups.show"),
     path("groups/<slug:slug>", browse.group_slug_redirect, name="groups.slug"),
     path("g/<slug:slug>", browse.group_slug_redirect, name="groups.vanity"),
-    path("messenger", views.messenger, name="messenger"),
-    path("messenger/compose", act.messenger_compose, name="messenger.compose"),
-    path("messenger/start/<int:pk>", act.messenger_start, name="messenger.start"),
-    path("messenger/<int:conversation_id>/message", act.message_send, name="messages.store"),
-    path("messenger/<int:conversation_id>/sticker", act.sticker_send, name="messages.sticker"),
+    path("messenger", msg.messenger, name="messenger"),
+    path("messenger/compose", msg.messenger_compose, name="messenger.compose"),
+    path("messenger/start/<int:pk>", msg.messenger_start, name="messenger.start"),
+    path("messenger/<int:conversation_id>/message", msg.message_send, name="messages.store"),
+    path("messenger/<int:conversation_id>/sticker", msg.sticker_send, name="messages.sticker"),
+    path("messenger/<int:conversation_id>/leave", msg.messenger_leave, name="messenger.leave"),
     path("activity", views.activity, name="activity"),
     path("notifications", views.activity, name="notifications"),
     path("notifications/<int:notification_id>/read", views.notification_read, name="notifications.read"),
@@ -78,7 +79,6 @@ urlpatterns = [
     path("posts/<int:post_id>/edit", wall.post_edit, name="posts.edit"),
     path("posts/<int:post_id>/comment", act.comment_create, name="comments.store"),
     path("posts/<int:post_id>/react", act.react, name="posts.react"),
-    path("posts/<int:post_id>/save", act.save_post, name="posts.save"),
     path("posts/<int:post_id>/share", wall.post_share, name="posts.share"),
     path("posts/<int:post_id>/poll", wall.poll_vote, name="posts.poll"),
     path("posts/<int:post_id>/delete", act.post_delete, name="posts.delete"),

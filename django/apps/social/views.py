@@ -113,69 +113,6 @@ def profile(request, pk):
 
 @login_required
 @never_cache
-def messenger(request):
-    from django.contrib import messages as flash
-    from django.http import Http404
-    from apps.social import chat as ch
-    from apps.social.forms import ComposeMessageForm, MessageForm
-    from apps.social.friendship import friends_of
-    from apps.social.models import Sticker
-
-    me = profile_of(request.user)
-    if not me:
-        return redirect("home")
-
-    conversations = ch.inbox(me)
-    active = None
-    active_id = request.GET.get("c")
-    compose = request.GET.get("compose") or request.GET.get("new")
-    if active_id:
-        try:
-            active = ch.require_member(me, int(active_id))
-        except (Http404, TypeError, ValueError):
-            flash.error(request, "Диалог недоступен.")
-            return redirect("messenger")
-    elif conversations and not compose:
-        active = conversations[0]
-
-    if active:
-        active.display_name = ch.label(active, me)
-        active.peer = ch.peer(active, me)
-        before = request.GET.get("before")
-        try:
-            chat_messages, has_older = ch.thread(active, before_id=before)
-        except (TypeError, ValueError):
-            chat_messages, has_older = ch.thread(active)
-        ch.mark_read(me, active)
-        for c in conversations:
-            if c.id == active.id:
-                c.unread = False
-    else:
-        chat_messages, has_older = [], False
-
-    friends = list(friends_of(me, limit=200))
-    return render(
-        request, "social/messenger.html",
-        {
-            "conversations": conversations,
-            "active": active,
-            "chat_messages": chat_messages,
-            "has_older": has_older,
-            "me": me,
-            "form": MessageForm(),
-            "compose_form": ComposeMessageForm(friends),
-            "compose_mode": bool(compose),
-            "friends": friends,
-            "stickers": (
-                list(Sticker.objects.filter(is_active=True).order_by("sort_order")[:24])
-                if active else []
-            ),
-        },
-    )
-
-
-@login_required
-@never_cache
 def activity(request):
     me = profile_of(request.user)
     items = list(Notification.objects.filter(social_user=me)[:50]) if me else []
@@ -200,23 +137,3 @@ def notifications_read_all(request):
     if me:
         Notification.objects.filter(social_user=me, seen=False).update(seen=True)
     return redirect("activity")
-
-
-@login_required
-def saved(request):
-    me = profile_of(request.user)
-    posts = (
-        Post.objects.filter(saves__social_user=me)
-        .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__languages")
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))[:40]
-    )
-    items = [{"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user} for p in posts]
-    return render(
-        request, "social/feed.html",
-        {
-            "items": items, "me": me, "form": None, "comment_form": CommentForm(),
-            "title": "Избранное", "requests": [], "birthdays": [], "shared": [],
-            "popular_groups": [], "status_form": None,
-        },
-    )

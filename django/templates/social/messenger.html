@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% load vd %}
 {% block title %}Сообщения — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="messages-page">
@@ -12,14 +13,30 @@
         <div class="messages-inbox profile-box">
             <h4>Диалоги</h4>
             <div class="profile-box-body">
+                <form method="get" class="msg-filter" action="{% url 'messenger' %}">
+                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск…" aria-label="Поиск диалогов">
+                    {% if unread_only %}<input type="hidden" name="unread" value="1">{% endif %}
+                    <input type="submit" class="inputbutton" value="Найти">
+                </form>
+                <p class="msg-tabs muted">
+                    <a href="{% url 'messenger' %}"{% if not unread_only %} class="is-on"{% endif %}>все</a>
+                    ·
+                    <a href="{% url 'messenger' %}?unread=1{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if unread_only %} class="is-on"{% endif %}>непрочитанные</a>
+                </p>
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
-                    <a href="?c={{ c.id }}">
-                        <span class="msg-name">{{ c.display_name }}</span>
-                        {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:48 }}</span>{% endif %}
-                    </a>
+                    <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
+                        <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<span class="avatar-fallback group-mark" style="width:32px;height:32px;font-size:12px;display:grid;place-items:center;background:#3B5998;color:#fff">Г</span>{% endif %}</td>
+                        <td>
+                            <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if unread_only %}&amp;unread=1{% endif %}">
+                                <span class="msg-name">{{ c.display_name }}</span>
+                                {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:48 }}</span>{% endif %}
+                                {% if c.last_at %}<span class="msg-when muted">{{ c.last_at|timesince }} назад</span>{% endif %}
+                            </a>
+                        </td>
+                    </tr></table>
                 </div>
-                {% empty %}<p class="muted">Нет диалогов.</p>{% endfor %}
+                {% empty %}<p class="muted">{% if q or unread_only %}Ничего не найдено.{% else %}Нет диалогов.{% endif %}</p>{% endfor %}
             </div>
         </div>
 
@@ -54,6 +71,9 @@
                     {% else %}
                     {{ active.display_name|default:active.title|default:"Переписка" }}
                     {% endif %}
+                    <form method="post" action="{% url 'messenger.leave' active.id %}" class="edit" onsubmit="return confirm('Убрать диалог из списка?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">убрать</button>
+                    </form>
                 {% else %}Переписка{% endif %}
             </h4>
             <div class="profile-box-body">
@@ -79,9 +99,9 @@
                     <input type="submit" class="inputsubmit" value="Отправить">
                 </form>
                 {% if stickers %}
-                <div class="chat-stickers">
+                <div class="chat-stickers" id="chat-stickers">
                     {% for s in stickers %}
-                    <form method="post" action="{% url 'messages.sticker' active.id %}" class="inline">{% csrf_token %}
+                    <form method="post" action="{% url 'messages.sticker' active.id %}" class="inline sticker-form">{% csrf_token %}
                         <input type="hidden" name="sticker_id" value="{{ s.id }}">
                         <button type="submit" class="inputbutton sticker-btn" style="background:{{ s.background_color }};color:{{ s.foreground_color }}">{{ s.title }}</button>
                     </form>
@@ -91,10 +111,13 @@
                 <script>
                 (() => {
                   const log = document.getElementById('chat-log');
-                  if (!log) return;
+                  const form = document.getElementById('chat-form');
+                  if (!log || !form) return;
                   const me = String(log.dataset.me || '');
+                  const csrf = (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
                   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
                   const ws = new WebSocket(`${proto}://${location.host}/ws/messenger/{{ active.id }}`);
+
                   const append = (d) => {
                     if (!d || !d.id || log.querySelector('[data-id="' + d.id + '"]')) return;
                     const empty = document.getElementById('chat-empty');
@@ -122,9 +145,42 @@
                     log.appendChild(line);
                     log.scrollTop = log.scrollHeight;
                   };
-                  ws.onmessage = (e) => {
-                    try { append(JSON.parse(e.data)); } catch (_) {}
+
+                  ws.onmessage = (e) => { try { append(JSON.parse(e.data)); } catch (_) {} };
+
+                  const postAjax = async (action, data) => {
+                    const fd = data instanceof FormData ? data : new FormData();
+                    if (!(data instanceof FormData)) {
+                      Object.entries(data).forEach(([k, v]) => fd.append(k, v));
+                    }
+                    if (!fd.has('csrfmiddlewaretoken')) fd.append('csrfmiddlewaretoken', csrf);
+                    const r = await fetch(action, {
+                      method: 'POST', body: fd,
+                      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                      credentials: 'same-origin',
+                    });
+                    if (!r.ok) return null;
+                    return r.json();
                   };
+
+                  form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const ta = form.querySelector('textarea, input[name=body]');
+                    const body = (ta && ta.value || '').trim();
+                    if (!body) return;
+                    const d = await postAjax(form.action, new FormData(form));
+                    if (d) { append(d); if (ta) ta.value = ''; }
+                    else form.submit();
+                  });
+
+                  document.querySelectorAll('.sticker-form').forEach((sf) => {
+                    sf.addEventListener('submit', async (e) => {
+                      e.preventDefault();
+                      const d = await postAjax(sf.action, new FormData(sf));
+                      if (d) append(d); else sf.submit();
+                    });
+                  });
+
                   log.scrollTop = log.scrollHeight;
                 })();
                 </script>

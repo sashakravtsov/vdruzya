@@ -1,14 +1,16 @@
-"""Classic Facebook inbox helpers — DMs, group chats, broadcast."""
+"""Classic Facebook inbox — DMs, group chats, broadcast, notifications."""
 from __future__ import annotations
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.cache import cache
-from django.db.models import Count, F, OuterRef, Prefetch, Subquery
+from django.db import transaction
+from django.db.models import Count, F, OuterRef, Prefetch, Q, Subquery
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 
-from apps.social.friendship import friends_of, is_blocked
-from apps.social.models import Conversation, ConversationMember, Message, SocialProfile, Sticker
+from apps.social.friendship import is_blocked
+from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile, Sticker
 from apps.social.services import friend_ids, now
 
 
@@ -20,7 +22,6 @@ def is_member(me, conversation_id) -> bool:
 
 
 def require_member(me, conversation_id) -> Conversation:
-    from django.http import Http404
     conv = get_object_or_404(Conversation, pk=conversation_id)
     if not is_member(me, conv.id):
         raise Http404("not a member")
@@ -28,7 +29,6 @@ def require_member(me, conversation_id) -> Conversation:
 
 
 def peer(conv: Conversation, me) -> SocialProfile | None:
-    """Other member in a 1:1 DM; None for group chats."""
     if conv.community_id:
         return None
     for m in conv.members.all():
@@ -49,17 +49,17 @@ def mark_read(me, conv: Conversation):
     cache.delete(f"nav:{me.id}")
 
 
-def _invalidate_members(conv_id, except_id=None):
-    ids = ConversationMember.objects.filter(conversation_id=conv_id).values_list("social_user_id", flat=True)
-    for pid in ids:
-        if except_id is None or pid != except_id:
-            cache.delete(f"nav:{pid}")
-    if except_id:
-        cache.delete(f"nav:{except_id}")
+def leave(me, conv: Conversation):
+    ConversationMember.objects.filter(conversation=conv, social_user=me).delete()
+    cache.delete(f"nav:{me.id}")
 
 
-def inbox(me, limit=40):
-    """Conversations for sidebar: peer/title, last message, unread."""
+def _invalidate_members(conv_id):
+    for pid in ConversationMember.objects.filter(conversation_id=conv_id).values_list("social_user_id", flat=True):
+        cache.delete(f"nav:{pid}")
+
+
+def inbox(me, limit=40, q="", unread_only=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     qs = (
         Conversation.objects.filter(members__social_user=me)
@@ -76,14 +76,22 @@ def inbox(me, limit=40):
             )
         )
         .order_by(F("updated_at").desc(nulls_last=True), "-id")
-        .distinct()[:limit]
+        .distinct()
     )
+    q = (q or "").strip()
+    if q:
+        qs = qs.filter(
+            Q(title__icontains=q)
+            | Q(members__social_user__name__icontains=q)
+        ).distinct()
+
+    rows = list(qs[: limit * 2 if q or unread_only else limit])
     my_read = {
         row.conversation_id: row.last_read_at
-        for row in ConversationMember.objects.filter(social_user=me, conversation__in=qs)
+        for row in ConversationMember.objects.filter(social_user=me, conversation_id__in=[c.id for c in rows])
     }
     out = []
-    for c in qs:
+    for c in rows:
         c.display_name = label(c, me)
         c.peer = peer(c, me)
         c.snippet = (c.last_body or "")[:80]
@@ -96,15 +104,24 @@ def inbox(me, limit=40):
             and c.last_at
             and (read_at is None or c.last_at > read_at)
         )
+        if unread_only and not c.unread:
+            continue
         out.append(c)
+        if len(out) >= limit:
+            break
     return out
 
 
 def thread(conv: Conversation, before_id=None, limit=50):
-    """Newest `limit` messages (or older than before_id), returned oldest→newest."""
+    """Messages oldest→newest. `before` expands the window upward (keeps recent)."""
     qs = Message.objects.filter(conversation=conv).select_related("social_user")
     if before_id:
-        qs = qs.filter(id__lt=int(before_id))
+        bid = int(before_id)
+        older = list(qs.filter(id__lt=bid).order_by("-id")[:limit])
+        start = older[-1].id if older else bid
+        rows = list(qs.filter(id__gte=start).order_by("id")[:500])
+        has_older = bool(older) and Message.objects.filter(conversation=conv, id__lt=start).exists()
+        return rows, has_older
     rows = list(qs.order_by("-id")[:limit])
     rows.reverse()
     has_older = bool(rows) and Message.objects.filter(conversation=conv, id__lt=rows[0].id).exists()
@@ -112,7 +129,6 @@ def thread(conv: Conversation, before_id=None, limit=50):
 
 
 def can_dm(me, other: SocialProfile) -> str | None:
-    """Return error text, or None if OK."""
     if not me or me.id == other.id:
         return "Нельзя написать себе."
     if is_blocked(me, other):
@@ -143,6 +159,33 @@ def dm_find_or_create(me, other: SocialProfile) -> Conversation:
     return conv
 
 
+def notify_peers(me, conv: Conversation, m: Message):
+    peer_ids = list(
+        ConversationMember.objects.filter(conversation=conv)
+        .exclude(social_user=me)
+        .values_list("social_user_id", flat=True)
+    )
+    if not peer_ids:
+        return
+    t = now()
+    snippet = (m.body or "")[:120]
+    title = "Новое сообщение"
+    Notification.objects.bulk_create([
+        Notification(
+            social_user_id=pid,
+            title=title,
+            body=f"{me.name}: {snippet}"[:255],
+            seen=False,
+            type="message",
+            url=f"/messenger?c={conv.id}",
+            created_at=t,
+        )
+        for pid in peer_ids
+    ])
+    for pid in peer_ids:
+        cache.delete(f"nav:{pid}")
+
+
 def post_message(me, conv: Conversation, body: str, *, message_type="text", sticker_id=None) -> Message:
     body = (body or "").strip()
     if not body:
@@ -158,6 +201,7 @@ def post_message(me, conv: Conversation, body: str, *, message_type="text", stic
     )
     Conversation.objects.filter(pk=conv.pk).update(updated_at=t)
     _invalidate_members(conv.id)
+    notify_peers(me, conv, m)
     return m
 
 
@@ -184,3 +228,16 @@ def broadcast(m: Message):
     if not layer:
         return
     async_to_sync(layer.group_send)(f"chat_{m.conversation_id}", ws_payload(m))
+
+
+def wants_json(request) -> bool:
+    accept = request.headers.get("Accept", "")
+    return "application/json" in accept or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def json_message(m: Message):
+    return JsonResponse(ws_payload(m))
+
+
+def after_send(m: Message):
+    transaction.on_commit(lambda: broadcast(m))

@@ -4,12 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.social.forms import CommentForm, MessageForm, PostForm, ProfileForm
+from apps.social.forms import CommentForm, PostForm, ProfileForm
 from apps.social.models import (
     Comment,
     Post,
     Reaction,
-    SavedPost,
     SocialProfile,
 )
 from apps.social.services import now as _now, profile_of
@@ -145,19 +144,6 @@ def react(request, post_id):
 
 @login_required
 @require_POST
-def save_post(request, post_id):
-    me = profile_of(request.user)
-    post = get_object_or_404(Post, pk=post_id)
-    row = SavedPost.objects.filter(post=post, social_user=me).first()
-    if row:
-        row.delete()
-    elif me:
-        SavedPost.objects.create(post=post, social_user=me, created_at=_now())
-    return redirect(request.POST.get("next") or "saved")
-
-
-@login_required
-@require_POST
 def post_delete(request, post_id):
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
@@ -166,7 +152,6 @@ def post_delete(request, post_id):
         return redirect(request.POST.get("next") or "feed")
     Comment.objects.filter(post=post).delete()
     Reaction.objects.filter(post=post).delete()
-    SavedPost.objects.filter(post=post).delete()
     post.delete()
     messages.success(request, "Запись удалена.")
     return redirect(request.POST.get("next") or "feed")
@@ -183,9 +168,6 @@ def comment_delete(request, comment_id):
     return redirect(request.POST.get("next") or "feed")
 
 
-
-@login_required
-
 @login_required
 @require_POST
 def avatar_upload(request):
@@ -200,109 +182,6 @@ def avatar_upload(request):
         messages.success(request, "Аватар обновлён.")
     return redirect("profile.edit")
 
-
-@login_required
-@require_POST
-@transaction.atomic
-def message_send(request, conversation_id):
-    from apps.social import chat as ch
-    from apps.social.throttle import throttle
-
-    @throttle("msg", 40, 60)
-    def _go(req):
-        me = profile_of(req.user)
-        if not me:
-            return redirect("messenger")
-        try:
-            conv = ch.require_member(me, conversation_id)
-        except Exception:
-            messages.error(req, "Диалог недоступен.")
-            return redirect("messenger")
-        form = MessageForm(req.POST)
-        if not form.is_valid():
-            messages.error(req, "Напишите текст сообщения.")
-            return redirect(f"/messenger?c={conversation_id}")
-        m = ch.post_message(me, conv, form.cleaned_data["body"])
-        transaction.on_commit(lambda: ch.broadcast(m))
-        return redirect(f"/messenger?c={conversation_id}")
-
-    return _go(request)
-
-
-@login_required
-@require_POST
-@transaction.atomic
-def sticker_send(request, conversation_id):
-    from apps.social import chat as ch
-    from apps.social.models import Sticker
-    from apps.social.throttle import throttle
-
-    @throttle("msg", 40, 60)
-    def _go(req):
-        me = profile_of(req.user)
-        if not me:
-            return redirect("messenger")
-        try:
-            conv = ch.require_member(me, conversation_id)
-        except Exception:
-            messages.error(req, "Диалог недоступен.")
-            return redirect("messenger")
-        sticker = get_object_or_404(Sticker, pk=req.POST.get("sticker_id"), is_active=True)
-        m = ch.post_sticker(me, conv, sticker)
-        transaction.on_commit(lambda: ch.broadcast(m))
-        return redirect(f"/messenger?c={conversation_id}")
-
-    return _go(request)
-
-
-@login_required
-@require_POST
-@transaction.atomic
-def messenger_start(request, pk):
-    from apps.social import chat as ch
-
-    me = profile_of(request.user)
-    other = get_object_or_404(SocialProfile, pk=pk)
-    err = ch.can_dm(me, other)
-    if err:
-        messages.error(request, err)
-        return redirect(request.POST.get("next") or "messenger")
-    conv = ch.dm_find_or_create(me, other)
-    return redirect(f"/messenger?c={conv.id}")
-
-
-@login_required
-@require_POST
-@transaction.atomic
-def messenger_compose(request):
-    from apps.social import chat as ch
-    from apps.social.forms import ComposeMessageForm
-    from apps.social.friendship import friends_of
-    from apps.social.throttle import throttle
-
-    @throttle("msg", 40, 60)
-    def _go(req):
-        me = profile_of(req.user)
-        if not me:
-            return redirect("messenger")
-        friends = list(friends_of(me, limit=200))
-        form = ComposeMessageForm(friends, req.POST)
-        if not form.is_valid():
-            messages.error(req, "Выберите друга.")
-            return redirect("/messenger?compose=1")
-        other = get_object_or_404(SocialProfile, pk=int(form.cleaned_data["to"]))
-        err = ch.can_dm(me, other)
-        if err:
-            messages.error(req, err)
-            return redirect("/messenger?compose=1")
-        conv = ch.dm_find_or_create(me, other)
-        body = (form.cleaned_data.get("body") or "").strip()
-        if body:
-            m = ch.post_message(me, conv, body)
-            transaction.on_commit(lambda: ch.broadcast(m))
-        return redirect(f"/messenger?c={conv.id}")
-
-    return _go(request)
 
 @login_required
 @require_POST
