@@ -105,10 +105,16 @@
                             <button type="submit" class="linkish muted">в архив</button>
                         </form>
                         ·
-                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Пометить как спам?{% if active.peer %} Можно также заблокировать.{% endif %}');">{% csrf_token %}
-                            {% if active.peer %}<input type="hidden" name="block" value="1">{% endif %}
+                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Пометить как спам и убрать в архив?');">{% csrf_token %}
                             <button type="submit" class="linkish muted">спам</button>
                         </form>
+                        {% if active.peer %}
+                        ·
+                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Спам и заблокировать {{ active.peer.name }}?');">{% csrf_token %}
+                            <input type="hidden" name="block" value="1">
+                            <button type="submit" class="linkish muted">спам+блок</button>
+                        </form>
+                        {% endif %}
                         {% endif %}
                     </span>
                 {% else %}Переписка{% endif %}

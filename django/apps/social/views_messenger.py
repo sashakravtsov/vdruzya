@@ -10,7 +10,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
 from apps.social.friendship import block_user, friends_of
-from apps.social.models import SocialProfile
+from apps.social.models import Conversation, ConversationMember, Message, SocialProfile
 from apps.social.services import profile_of
 from apps.social.throttle import throttle
 
@@ -104,6 +104,7 @@ def messenger(request):
         "compose_form": _compose_form(friends, to=preselect),
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
+        "friends_json": [{"id": f.id, "name": f.name} for f in friends],
         "invite_friends": [f for f in friends if f.id not in have],
         "q": q,
         "tq": tq,
@@ -184,13 +185,18 @@ def messenger_compose(request):
     if not conv:
         messages.error(request, "Писать можно только друзьям.")
         return redirect("/messenger?compose=1")
+    had_msgs = Message.objects.filter(conversation=conv).exists()
     try:
         ch.after_send(ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
         ))
     except ValueError:
-        pass
+        if not had_msgs and len(recipients) > 1:
+            ConversationMember.objects.filter(conversation=conv).delete()
+            Conversation.objects.filter(pk=conv.pk).delete()
+        messages.error(request, "Напишите текст или приложите фото.")
+        return redirect("/messenger?compose=1")
     return redirect(f"/messenger?c={conv.id}")
 
 

@@ -241,6 +241,9 @@ def _snippet(c, me) -> str:
 def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, archived_only=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     mine = Message.objects.filter(conversation_id=OuterRef("pk"), social_user=me).order_by("-id")
+    my_read_sq = ConversationMember.objects.filter(
+        conversation_id=OuterRef("pk"), social_user=me,
+    ).values("last_read_at")[:1]
     member_q = Q(members__social_user=me)
     if archived_only:
         member_q &= Q(members__archived_at__isnull=False)
@@ -257,6 +260,7 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, arch
             my_last_body=Subquery(mine.values("body")[:1]),
             my_last_at=Subquery(mine.values("created_at")[:1]),
             my_last_attach=Subquery(mine.values("attachment_path")[:1]),
+            my_read_at=Subquery(my_read_sq),
         )
         .prefetch_related(
             Prefetch("members", queryset=ConversationMember.objects.select_related("social_user"))
@@ -273,14 +277,16 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, arch
         ).distinct()
     if sent_only:
         qs = qs.filter(my_last_at__isnull=False).order_by(F("my_last_at").desc(nulls_last=True), "-id")
+    if unread_only:
+        qs = (
+            qs.exclude(last_from_id=me.id)
+            .filter(last_from_id__isnull=False, last_at__isnull=False)
+            .filter(Q(my_read_at__isnull=True) | Q(last_at__gt=F("my_read_at")))
+        )
 
-    fetch = max(limit + offset, limit) * (3 if (q or unread_only or sent_only or archived_only) else 1)
-    rows = list(qs[: fetch + 1])
-    my_read = {
-        row.conversation_id: row.last_read_at
-        for row in ConversationMember.objects.filter(social_user=me, conversation_id__in=[c.id for c in rows])
-    }
-    out = []
+    rows = list(qs[offset: offset + limit + 1])
+    has_more = len(rows) > limit
+    rows = rows[:limit]
     for c in rows:
         c.display_name = label(c, me)
         c.peer = peer(c, me)
@@ -290,16 +296,11 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, arch
             c.last_at = c.my_last_at or c.last_at
         else:
             c.snippet = _snippet(c, me)
-        read_at = my_read.get(c.id)
         c.unread = bool(
             c.last_from_id and c.last_from_id != me.id and c.last_at
-            and (read_at is None or c.last_at > read_at)
+            and (c.my_read_at is None or c.last_at > c.my_read_at)
         )
-        if unread_only and not c.unread:
-            continue
-        out.append(c)
-    page = out[offset: offset + limit]
-    return page, len(out) > offset + limit
+    return rows, has_more
 
 
 def _msg_qs(conv, q=""):
@@ -430,7 +431,7 @@ def _save_attach(upload):
 
 def post_message(
     me, conv: Conversation, body: str = "", *,
-    message_type="text", sticker_id=None, reply_to_id=None, upload=None,
+    message_type="text", reply_to_id=None, upload=None,
     copy_from: Message | None = None,
 ) -> Message:
     body = (body or "").strip()
@@ -448,7 +449,6 @@ def post_message(
         social_user=me,
         body=(body or ("[фото]" if path else ""))[:4000],
         message_type="photo" if path and message_type == "text" else message_type,
-        sticker_id=sticker_id,
         reply_to=reply,
         attachment_path=path,
         attachment_name=aname,

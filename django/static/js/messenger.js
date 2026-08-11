@@ -10,6 +10,8 @@
   const replyInput = form.querySelector('[name=reply_to]');
   const replyBanner = document.getElementById('reply-banner');
   const olderBtn = document.getElementById('chat-older');
+  const friendsEl = document.getElementById('msg-friends');
+  const friends = friendsEl ? JSON.parse(friendsEl.textContent || '[]') : [];
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws/messenger/${cid}`);
 
@@ -43,6 +45,58 @@
     });
   };
 
+  const bindFwd = (root) => {
+    root.querySelectorAll('.msg-fwd-toggle').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const box = btn.parentElement?.querySelector('.msg-fwd-box');
+        if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
+      });
+    });
+  };
+
+  const fwdBox = (messageId) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-fwd-box';
+    wrap.style.display = 'none';
+    const sf = document.createElement('form');
+    sf.method = 'post';
+    sf.action = '/messages/' + messageId + '/forward';
+    sf.className = 'inline';
+    const tok = document.createElement('input');
+    tok.type = 'hidden';
+    tok.name = 'csrfmiddlewaretoken';
+    tok.value = csrf;
+    sf.appendChild(tok);
+    const next = document.createElement('input');
+    next.type = 'hidden';
+    next.name = 'next';
+    next.value = '/messenger?c=' + cid;
+    sf.appendChild(next);
+    const sel = document.createElement('select');
+    sel.name = 'to';
+    sel.className = 'inputtext';
+    sel.required = true;
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = 'Другу…';
+    sel.appendChild(ph);
+    friends.forEach((f) => {
+      const o = document.createElement('option');
+      o.value = f.id;
+      o.textContent = f.name;
+      sel.appendChild(o);
+    });
+    sf.appendChild(sel);
+    const go = document.createElement('input');
+    go.type = 'submit';
+    go.className = 'inputbutton';
+    go.value = 'OK';
+    sf.appendChild(go);
+    wrap.appendChild(sf);
+    return wrap;
+  };
+
   const lineEl = (d, actions) => {
     const line = document.createElement('div');
     line.className = 'chat-line' + (String(d.user_id) === me ? ' is-mine' : '');
@@ -68,6 +122,11 @@
       reply.dataset.body = (d.body || '').slice(0, 60);
       reply.textContent = 'ответить';
       line.appendChild(reply);
+      const fwd = document.createElement('a');
+      fwd.href = '#';
+      fwd.className = 'linkish muted msg-fwd-toggle';
+      fwd.textContent = 'переслать';
+      line.appendChild(fwd);
       if (String(d.user_id) === me) {
         const df = document.createElement('form');
         df.method = 'post';
@@ -86,6 +145,7 @@
         df.appendChild(btn);
         line.appendChild(df);
       }
+      line.appendChild(fwdBox(d.id));
     }
     if (d.reply_to_id) {
       const q = document.createElement('div');
@@ -117,14 +177,19 @@
     return line;
   };
 
+  const wire = (el) => {
+    bindReply(el);
+    bindDel(el);
+    bindFwd(el);
+  };
+
   const append = (d) => {
     if (!d || !d.id || d.event === 'delete') return;
     if (log.querySelector('[data-id="' + d.id + '"]')) return;
     document.getElementById('chat-empty')?.remove();
     const el = lineEl(d, true);
     log.appendChild(el);
-    bindReply(el);
-    bindDel(el);
+    wire(el);
     log.scrollTop = log.scrollHeight;
   };
 
@@ -136,8 +201,7 @@
       if (!d || !d.id || log.querySelector('[data-id="' + d.id + '"]')) return;
       const el = lineEl(d, true);
       log.insertBefore(el, first);
-      bindReply(el);
-      bindDel(el);
+      wire(el);
     });
     log.scrollTop = log.scrollHeight - keep;
   };
@@ -164,8 +228,7 @@
   };
 
   document.getElementById('reply-clear')?.addEventListener('click', () => setReply(''));
-  bindReply(document);
-  bindDel(document);
+  wire(document);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -204,14 +267,6 @@
     const d = await r.json();
     prepend(d.messages || []);
     if (!d.has_older) olderBtn.remove();
-  });
-
-  document.querySelectorAll('.msg-fwd-toggle').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const box = btn.parentElement?.querySelector('.msg-fwd-box');
-      if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
-    });
   });
 
   log.scrollTop = log.scrollHeight;

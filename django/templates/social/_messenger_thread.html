@@ -32,6 +32,7 @@
 {% if has_older %}
 <p class="chat-older"><a href="#" id="chat-older" data-tq="{{ tq }}">← более ранние сообщения</a></p>
 {% endif %}
+{{ friends_json|json_script:"msg-friends" }}
 <div id="chat-log" class="chat-log" data-me="{{ me.id }}" data-cid="{{ active.id }}" data-tq="{{ tq }}">
     {% for m in chat_messages %}
     {% include "social/_messenger_line.html" %}
