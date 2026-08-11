@@ -9,10 +9,12 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
-from apps.social.friendship import friends_of
-from apps.social.models import ConversationMember, SocialProfile
+from apps.social.friendship import block_user, friends_of
+from apps.social.models import SocialProfile
 from apps.social.services import profile_of
 from apps.social.throttle import throttle
+
+FOLDERS = frozenset({"inbox", "sent", "unread", "archive"})
 
 
 def _me(request):
@@ -20,8 +22,7 @@ def _me(request):
 
 
 def _compose_form(friends, data=None, files=None, to=None):
-    initial = {"to": [str(to)]} if to else None
-    return ComposeMessageForm(friends, data, files, initial=initial)
+    return ComposeMessageForm(friends, data, files, initial={"to": [str(to)]} if to else None)
 
 
 def _int_ids(values):
@@ -34,6 +35,13 @@ def _int_ids(values):
     return out
 
 
+def _page(request):
+    try:
+        return max(1, int(request.GET.get("page") or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
 @login_required
 @never_cache
 def messenger(request):
@@ -43,24 +51,21 @@ def messenger(request):
 
     q = (request.GET.get("q") or "").strip()
     tq = (request.GET.get("tq") or "").strip()
-    folder = (request.GET.get("folder") or "inbox").strip()
-    if folder not in ("inbox", "sent", "unread", "archive"):
+    folder = request.GET.get("folder") or "inbox"
+    if folder not in FOLDERS:
         folder = "inbox"
-    unread_only = folder == "unread"
-    sent_only = folder == "sent"
-    archived_only = folder == "archive"
-    try:
-        page = max(1, int(request.GET.get("page") or 1))
-    except (TypeError, ValueError):
-        page = 1
     compose = request.GET.get("compose") or request.GET.get("new")
     to_id = request.GET.get("to")
+    page = _page(request)
     conversations, has_more = ch.inbox(
         me, limit=40, offset=(page - 1) * 40, q=q,
-        unread_only=unread_only, sent_only=sent_only, archived_only=archived_only,
+        unread_only=folder == "unread",
+        sent_only=folder == "sent",
+        archived_only=folder == "archive",
     )
 
-    active = None
+    active = is_archived = None
+    members, chat_messages, has_older = [], [], False
     active_id = request.GET.get("c")
     if active_id:
         try:
@@ -71,16 +76,12 @@ def messenger(request):
     elif conversations and not compose:
         active = conversations[0]
 
-    members, chat_messages, has_older = [], [], False
-    is_archived = False
     if active:
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
         chat_messages, has_older = ch.thread(active, q=tq)
-        is_archived = ConversationMember.objects.filter(
-            conversation=active, social_user=me, archived_at__isnull=False,
-        ).exists()
+        is_archived = ch.is_archived(me, active)
         if not is_archived:
             ch.mark_read(me, active)
         for c in conversations:
@@ -88,8 +89,7 @@ def messenger(request):
                 c.unread = False
 
     friends = list(friends_of(me, limit=200))
-    member_ids = {p.id for p in members} | ({active.peer.id} if active and active.peer else set())
-    invite_friends = [f for f in friends if f.id not in member_ids and (not active or f.id != me.id)]
+    have = {p.id for p in members} | ({active.peer.id} if active and active.peer else set())
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
     reply_to = request.GET.get("reply")
     return render(request, "social/messenger.html", {
@@ -104,7 +104,7 @@ def messenger(request):
         "compose_form": _compose_form(friends, to=preselect),
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
-        "invite_friends": invite_friends,
+        "invite_friends": [f for f in friends if f.id not in have],
         "q": q,
         "tq": tq,
         "folder": folder,
@@ -132,11 +132,12 @@ def messages_older(request, conversation_id):
 @throttle("msg", 40, 60)
 def message_send(request, me, conv):
     form = MessageForm(request.POST, request.FILES)
+    go = f"/messenger?c={conv.id}"
     if not form.is_valid():
         if ch.wants_json(request):
             return JsonResponse({"error": "empty"}, status=400)
         messages.error(request, "Напишите текст или приложите фото.")
-        return redirect(f"/messenger?c={conv.id}")
+        return redirect(go)
     try:
         m = ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
@@ -147,9 +148,9 @@ def message_send(request, me, conv):
         if ch.wants_json(request):
             return JsonResponse({"error": "empty"}, status=400)
         messages.error(request, "Напишите текст или приложите фото.")
-        return redirect(f"/messenger?c={conv.id}")
+        return redirect(go)
     ch.after_send(m)
-    return ch.json_message(m) if ch.wants_json(request) else redirect(f"/messenger?c={conv.id}")
+    return ch.json_message(m) if ch.wants_json(request) else redirect(go)
 
 
 @login_required
@@ -184,11 +185,10 @@ def messenger_compose(request):
         messages.error(request, "Писать можно только друзьям.")
         return redirect("/messenger?compose=1")
     try:
-        m = ch.post_message(
+        ch.after_send(ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
-        )
-        ch.after_send(m)
+        ))
     except ValueError:
         pass
     return redirect(f"/messenger?c={conv.id}")
@@ -204,7 +204,8 @@ def messenger_leave(request, me, conv):
 @login_required
 @require_POST
 @transaction.atomic
-def messenger_archive(request):
+def messenger_bulk(request):
+    """Classic inbox bulk: archive / restore / unread / purge."""
     me = _me(request)
     if not me:
         return redirect("messenger")
@@ -215,10 +216,28 @@ def messenger_archive(request):
         if n:
             messages.info(request, f"Возвращено во входящие: {n}.")
         return redirect("/messenger?folder=archive")
+    if action == "unread":
+        n = ch.mark_unread_many(me, ids)
+        if n:
+            messages.info(request, f"Непрочитанных: {n}.")
+        return redirect("messenger")
+    if action == "purge":
+        n = ch.purge_many(me, ids)
+        if n:
+            messages.info(request, f"Удалено навсегда: {n}.")
+        return redirect("/messenger?folder=archive")
+    if action == "read_all":
+        ch.mark_all_read(me)
+        messages.info(request, "Все диалоги отмечены прочитанными.")
+        return redirect("messenger")
     n = ch.leave_many(me, ids)
     if n:
         messages.info(request, f"В архиве: {n}.")
     return redirect("messenger")
+
+
+# Back-compat alias used by older templates/urls
+messenger_archive = messenger_bulk
 
 
 @ch.member_post
@@ -229,12 +248,18 @@ def messenger_restore(request, me, conv):
 
 
 @ch.member_post
+def messenger_purge(request, me, conv):
+    ch.purge_many(me, [conv.id])
+    messages.info(request, "Диалог удалён.")
+    return redirect("messenger")
+
+
+@ch.member_post
 def messenger_spam(request, me, conv):
-    from apps.social.friendship import block_user
     peer = ch.report_spam(me, conv)
     if peer and request.POST.get("block") == "1":
         block_user(me, peer)
-        messages.info(request, f"Помечено как спам, {peer.name} заблокирован.")
+        messages.info(request, f"Спам: {peer.name} заблокирован.")
     else:
         messages.info(request, "Диалог помечен как спам и убран в архив.")
     return redirect("messenger")
@@ -256,8 +281,9 @@ def messenger_title(request, me, conv):
 @ch.member_post
 @throttle("msg", 20, 60)
 def messenger_invite(request, me, conv):
-    ids = _int_ids(request.POST.getlist("ids") or request.POST.getlist("to"))
-    people = list(SocialProfile.objects.filter(id__in=ids))
+    people = list(SocialProfile.objects.filter(
+        id__in=_int_ids(request.POST.getlist("ids") or request.POST.getlist("to")),
+    ))
     try:
         added = ch.add_members(me, conv, people)
     except PermissionError as e:

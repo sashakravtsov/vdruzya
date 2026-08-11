@@ -1161,8 +1161,11 @@ button.linkish, .profile-box-body button.linkish {
 .messages-inbox .msg-thread.is-unread .msg-name { font-weight: bold; }
 .messages-inbox .msg-bulk,
 .messages-inbox .msg-bulk-top,
-.messages-inbox .msg-pager { margin: 8px 0 0; font-size: 11px; }
+.messages-inbox .msg-pager,
+.messages-inbox .msg-readall { margin: 8px 0 0; font-size: 11px; }
 .messages-inbox .msg-bulk-top { margin: 0 0 6px; }
+.messages-inbox .msg-readall { margin: 0 0 8px; }
+.messages-inbox .msg-bulk .inputbutton { margin-right: 4px; }
 .messages-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
 .messages-thread .chat-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
 .messages-thread .chat-line .chat-body { margin: 2px 0 0; white-space: pre-wrap; }

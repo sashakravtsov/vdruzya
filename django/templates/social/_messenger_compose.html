@@ -1,0 +1,29 @@
+<h4>Новое сообщение</h4>
+<div class="profile-box-body">
+    {% if friends %}
+    <form method="post" action="{% url 'messenger.compose' %}" class="compose-new" enctype="multipart/form-data">{% csrf_token %}
+        <table class="formtable" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Кому:</td>
+                <td>
+                    {{ compose_form.to }}
+                    <div class="file-hint muted">Можно выбрать нескольких друзей (Ctrl/⌘)</div>
+                </td>
+            </tr>
+            <tr><td class="label">Тема:</td><td>{{ compose_form.subject }}</td></tr>
+            <tr><td class="label">Сообщение:</td><td>{{ compose_form.body }}</td></tr>
+            <tr><td class="label">Фото:</td><td>{{ compose_form.photo }}</td></tr>
+            <tr>
+                <td></td>
+                <td>
+                    <input type="submit" class="inputsubmit" value="Отправить">
+                    · <a href="{% url 'messenger' %}">Отмена</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+    {% else %}
+    <p class="muted">Сначала добавьте друзей — писать можно только им.</p>
+    <p><a href="{% url 'friends' %}">Мои друзья</a></p>
+    {% endif %}
+</div>

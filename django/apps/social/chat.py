@@ -129,10 +129,45 @@ def restore(me, conv: Conversation):
     restore_many(me, [conv.id])
 
 
+def purge_many(me, conversation_ids: list[int]) -> int:
+    """Hard-remove from mailbox (classic Delete) — membership gone until revive on DM reply."""
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation_id__in=conversation_ids,
+    ).delete()[0]
+    if n:
+        cache.delete(f"nav:{me.id}")
+    return n
+
+
+def is_archived(me, conv: Conversation) -> bool:
+    return ConversationMember.objects.filter(
+        conversation=conv, social_user=me, archived_at__isnull=False,
+    ).exists()
+
+
+def mark_unread_many(me, conversation_ids: list[int]) -> int:
+    n = 0
+    for cid in conversation_ids:
+        try:
+            mark_unread(me, require_member(me, cid))
+            n += 1
+        except Http404:
+            pass
+    return n
+
+
+def mark_all_read(me) -> int:
+    t = now()
+    n = ConversationMember.objects.filter(social_user=me, archived_at__isnull=True).update(last_read_at=t)
+    cache.delete(f"nav:{me.id}")
+    return n
+
+
 def report_spam(me, conv: Conversation) -> SocialProfile | None:
     """Classic Report as Spam: archive thread; return DM peer for optional block."""
+    p = peer(conv, me)
     leave(me, conv)
-    return peer(conv, me)
+    return p
 
 
 def set_title(me, conv: Conversation, title: str):

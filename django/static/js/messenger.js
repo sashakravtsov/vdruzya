@@ -95,12 +95,7 @@
     }
     const body = document.createElement('div');
     body.className = 'chat-body';
-    if (d.message_type === 'sticker') {
-      const chip = document.createElement('span');
-      chip.className = 'sticker-chip';
-      chip.textContent = d.body || '';
-      body.appendChild(chip);
-    } else if (d.body && d.body !== '[фото]') {
+    if (d.body && d.body !== '[фото]') {
       body.appendChild(document.createTextNode(d.body || ''));
     }
     if (d.attachment_url) {

@@ -1,0 +1,51 @@
+{% load static vd %}
+{% if members|length > 1 %}
+<p class="msg-members muted">Участники:
+    {% for p in members %}<a href="{% url 'profile' p.id %}">{{ p.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+</p>
+{% endif %}
+<details class="msg-meta">
+    <summary class="linkish muted">тема и участники</summary>
+    <form method="post" action="{% url 'messenger.title' active.id %}" class="msg-title-form">{% csrf_token %}
+        <label class="muted">Тема:</label>
+        <input class="inputtext" type="text" name="title" value="{{ active.title|default:'' }}" maxlength="160" placeholder="Без темы">
+        <input type="submit" class="inputbutton" value="Сохранить">
+    </form>
+    {% if invite_friends and not active.community_id %}
+    <form method="post" action="{% url 'messenger.invite' active.id %}" class="msg-invite-form">{% csrf_token %}
+        <label class="muted">Добавить друзей:</label>
+        <select name="ids" class="inputtext" multiple size="4">
+            {% for f in invite_friends %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+        <input type="submit" class="inputbutton" value="Добавить">
+    </form>
+    {% endif %}
+</details>
+<form method="get" class="msg-thread-filter" action="{% url 'messenger' %}">
+    <input type="hidden" name="c" value="{{ active.id }}">
+    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+    <input class="inputtext" type="text" name="tq" value="{{ tq }}" placeholder="Найти в переписке…">
+    <input type="submit" class="inputbutton" value="Найти">
+    {% if tq %}<a href="?c={{ active.id }}" class="muted">сбросить</a>{% endif %}
+</form>
+{% if has_older %}
+<p class="chat-older"><a href="#" id="chat-older" data-tq="{{ tq }}">← более ранние сообщения</a></p>
+{% endif %}
+<div id="chat-log" class="chat-log" data-me="{{ me.id }}" data-cid="{{ active.id }}" data-tq="{{ tq }}">
+    {% for m in chat_messages %}
+    {% include "social/_messenger_line.html" %}
+    {% empty %}<p class="muted" id="chat-empty">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
+</div>
+<form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" id="chat-form" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.reply_to }}
+    <div id="reply-banner" class="chat-quote muted" style="{% if not form.reply_to.value %}display:none{% endif %}">
+        Ответ{% if form.reply_to.value %} #{{ form.reply_to.value }}{% endif %}
+        <button type="button" class="linkish" id="reply-clear">отмена</button>
+    </div>
+    {{ form.body }}
+    <p class="wallposter-file">Фото: {{ form.photo }}</p>
+    <input type="submit" class="inputsubmit" value="Отправить">
+    <span class="muted file-hint">Enter — отправить · Shift+Enter — новая строка</span>
+</form>
+<script src="{% static 'js/messenger.js' %}" defer></script>

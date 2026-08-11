@@ -1,0 +1,31 @@
+{% load vd %}
+<div class="chat-line{% if m.social_user_id == me.id %} is-mine{% endif %}" data-id="{{ m.id }}">
+    <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
+    {% if m.created_at %}<span class="muted chat-time"> · {{ m.created_at|date:"j E, H:i" }}</span>{% endif %}
+    <a class="linkish muted msg-reply" href="#chat-form" data-reply="{{ m.id }}" data-name="{{ m.social_user.name }}" data-body="{{ m.body|truncatechars:60 }}">ответить</a>
+    <a class="linkish muted msg-fwd-toggle" href="#">переслать</a>
+    {% if m.social_user_id == me.id %}
+    <form method="post" action="{% url 'messages.delete' m.id %}" class="inline msg-del" data-ajax="1">{% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
+        <button type="submit" class="linkish muted" title="Удалить">×</button>
+    </form>
+    {% endif %}
+    <div class="msg-fwd-box" style="display:none">
+        <form method="post" action="{% url 'messages.forward' m.id %}" class="inline">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
+            <select name="to" class="inputtext" required>
+                <option value="">Другу…</option>
+                {% for f in friends %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+            </select>
+            <input type="submit" class="inputbutton" value="OK">
+        </form>
+    </div>
+    {% if m.reply_to %}
+    <div class="chat-quote muted">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatechars:80 }}</div>
+    {% endif %}
+    <div class="chat-body">
+        {% if m.body and m.body != '[фото]' %}{{ m.body|linebreaksbr }}{% endif %}
+        {% if m.attachment_url %}<p><img src="{{ m.attachment_url }}" alt="" class="chat-photo"></p>{% endif %}
+    </div>
+    {% if m.social_user_id == me.id and m.read_at %}<div class="muted chat-seen">прочитано</div>{% endif %}
+</div>
