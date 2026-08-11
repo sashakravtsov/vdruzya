@@ -2,7 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -15,23 +15,33 @@ from apps.social.services import profile_of
 from apps.social.throttle import throttle
 
 
+def _me(request):
+    return profile_of(request.user)
+
+
+def _conv(me, conversation_id):
+    return ch.require_member(me, conversation_id)
+
+
 @login_required
 @never_cache
 def messenger(request):
-    me = profile_of(request.user)
+    me = _me(request)
     if not me:
         return redirect("home")
 
     q = (request.GET.get("q") or "").strip()
-    unread_only = request.GET.get("unread") == "1"
+    folder = (request.GET.get("folder") or "inbox").strip()
+    unread_only = request.GET.get("unread") == "1" or folder == "unread"
+    sent_only = folder == "sent"
     compose = request.GET.get("compose") or request.GET.get("new")
-    conversations = ch.inbox(me, q=q, unread_only=unread_only)
+    conversations = ch.inbox(me, q=q, unread_only=unread_only, sent_only=sent_only)
 
     active = None
     active_id = request.GET.get("c")
     if active_id:
         try:
-            active = ch.require_member(me, int(active_id))
+            active = _conv(me, int(active_id))
         except (Http404, TypeError, ValueError):
             messages.error(request, "Диалог недоступен.")
             return redirect("messenger")
@@ -68,7 +78,7 @@ def messenger(request):
             "compose_mode": bool(compose),
             "friends": friends,
             "q": q,
-            "unread_only": unread_only,
+            "folder": "unread" if unread_only else ("sent" if sent_only else "inbox"),
             "stickers": (
                 list(Sticker.objects.filter(is_active=True).order_by("sort_order")[:24])
                 if active else []
@@ -82,13 +92,11 @@ def messenger(request):
 @transaction.atomic
 @throttle("msg", 40, 60)
 def message_send(request, conversation_id):
-    from django.http import JsonResponse
-
-    me = profile_of(request.user)
+    me = _me(request)
     if not me:
         return redirect("messenger")
     try:
-        conv = ch.require_member(me, conversation_id)
+        conv = _conv(me, conversation_id)
     except Http404:
         messages.error(request, "Диалог недоступен.")
         return redirect("messenger")
@@ -116,11 +124,11 @@ def message_send(request, conversation_id):
 @transaction.atomic
 @throttle("msg", 40, 60)
 def sticker_send(request, conversation_id):
-    me = profile_of(request.user)
+    me = _me(request)
     if not me:
         return redirect("messenger")
     try:
-        conv = ch.require_member(me, conversation_id)
+        conv = _conv(me, conversation_id)
     except Http404:
         messages.error(request, "Диалог недоступен.")
         return redirect("messenger")
@@ -136,7 +144,7 @@ def sticker_send(request, conversation_id):
 @require_POST
 @transaction.atomic
 def messenger_start(request, pk):
-    me = profile_of(request.user)
+    me = _me(request)
     other = get_object_or_404(SocialProfile, pk=pk)
     err = ch.can_dm(me, other)
     if err:
@@ -151,7 +159,7 @@ def messenger_start(request, pk):
 @transaction.atomic
 @throttle("msg", 40, 60)
 def messenger_compose(request):
-    me = profile_of(request.user)
+    me = _me(request)
     if not me:
         return redirect("messenger")
     friends = list(friends_of(me, limit=200))
@@ -176,13 +184,48 @@ def messenger_compose(request):
 @require_POST
 @transaction.atomic
 def messenger_leave(request, conversation_id):
-    me = profile_of(request.user)
+    me = _me(request)
     if not me:
         return redirect("messenger")
     try:
-        conv = ch.require_member(me, conversation_id)
+        conv = _conv(me, conversation_id)
     except Http404:
         return redirect("messenger")
     ch.leave(me, conv)
-    messages.info(request, "Диалог убран из списка.")
+    messages.info(request, "Диалог убран из входящих.")
     return redirect("messenger")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def messenger_unread(request, conversation_id):
+    me = _me(request)
+    if not me:
+        return redirect("messenger")
+    try:
+        conv = _conv(me, conversation_id)
+    except Http404:
+        return redirect("messenger")
+    ch.mark_unread(me, conv)
+    return redirect("messenger")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def message_delete(request, message_id):
+    me = _me(request)
+    if not me:
+        return redirect("messenger")
+    try:
+        cid = ch.delete_message(me, message_id)
+    except Http404:
+        return redirect("messenger")
+    except PermissionError:
+        messages.error(request, "Можно удалить только своё сообщение.")
+        return redirect(request.POST.get("next") or "messenger")
+    transaction.on_commit(lambda: ch.broadcast_delete(cid, message_id))
+    if ch.wants_json(request):
+        return JsonResponse({"ok": True, "id": message_id, "event": "delete"})
+    return redirect(request.POST.get("next") or f"/messenger?c={cid}")

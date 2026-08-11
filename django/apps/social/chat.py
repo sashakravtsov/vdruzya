@@ -1,6 +1,8 @@
 """Classic Facebook inbox — DMs, group chats, broadcast, notifications."""
 from __future__ import annotations
 
+from datetime import timedelta
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.cache import cache
@@ -49,7 +51,25 @@ def mark_read(me, conv: Conversation):
     cache.delete(f"nav:{me.id}")
 
 
+def mark_unread(me, conv: Conversation):
+    """Classic FB: mark thread unread (bold in inbox)."""
+    last = (
+        Message.objects.filter(conversation=conv)
+        .exclude(social_user=me)
+        .order_by("-id")
+        .only("created_at")
+        .first()
+    )
+    if last and last.created_at:
+        t = last.created_at - timedelta(seconds=1)
+    else:
+        t = None
+    ConversationMember.objects.filter(conversation=conv, social_user=me).update(last_read_at=t)
+    cache.delete(f"nav:{me.id}")
+
+
 def leave(me, conv: Conversation):
+    """Archive: remove from inbox until a new message revives membership."""
     ConversationMember.objects.filter(conversation=conv, social_user=me).delete()
     cache.delete(f"nav:{me.id}")
 
@@ -59,7 +79,20 @@ def _invalidate_members(conv_id):
         cache.delete(f"nav:{pid}")
 
 
-def inbox(me, limit=40, q="", unread_only=False):
+def _revive_dm(conv: Conversation, me):
+    """If peer archived (left) a 1:1, put them back when a new message arrives."""
+    if conv.community_id:
+        return
+    past = set(Message.objects.filter(conversation=conv).values_list("social_user_id", flat=True))
+    past.add(me.id)
+    if len(past) > 2:
+        return
+    have = set(ConversationMember.objects.filter(conversation=conv).values_list("social_user_id", flat=True))
+    for pid in past - have:
+        ConversationMember.objects.create(conversation=conv, social_user_id=pid)
+
+
+def inbox(me, limit=40, q="", unread_only=False, sent_only=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     qs = (
         Conversation.objects.filter(members__social_user=me)
@@ -80,12 +113,9 @@ def inbox(me, limit=40, q="", unread_only=False):
     )
     q = (q or "").strip()
     if q:
-        qs = qs.filter(
-            Q(title__icontains=q)
-            | Q(members__social_user__name__icontains=q)
-        ).distinct()
+        qs = qs.filter(Q(title__icontains=q) | Q(members__social_user__name__icontains=q)).distinct()
 
-    rows = list(qs[: limit * 2 if q or unread_only else limit])
+    rows = list(qs[: limit * 3 if (q or unread_only or sent_only) else limit])
     my_read = {
         row.conversation_id: row.last_read_at
         for row in ConversationMember.objects.filter(social_user=me, conversation_id__in=[c.id for c in rows])
@@ -105,6 +135,8 @@ def inbox(me, limit=40, q="", unread_only=False):
             and (read_at is None or c.last_at > read_at)
         )
         if unread_only and not c.unread:
+            continue
+        if sent_only and c.last_from_id != me.id:
             continue
         out.append(c)
         if len(out) >= limit:
@@ -150,6 +182,19 @@ def dm_find_or_create(me, other: SocialProfile) -> Conversation:
     )
     if shared:
         return shared
+    # Peer may have archived — look for orphaned 1:1 via message history among mutual DMs.
+    orphan = (
+        Conversation.objects.filter(community_id__isnull=True, members__social_user=other)
+        .annotate(n=Count("members", distinct=True))
+        .filter(n=1)
+        .filter(messages__social_user=me)
+        .order_by("id")
+        .first()
+    )
+    if orphan:
+        if not ConversationMember.objects.filter(conversation=orphan, social_user=me).exists():
+            ConversationMember.objects.create(conversation=orphan, social_user=me)
+        return orphan
     t = now()
     conv = Conversation.objects.create(created_at=t, updated_at=t)
     ConversationMember.objects.bulk_create([
@@ -169,20 +214,28 @@ def notify_peers(me, conv: Conversation, m: Message):
         return
     t = now()
     snippet = (m.body or "")[:120]
-    title = "Новое сообщение"
-    Notification.objects.bulk_create([
-        Notification(
-            social_user_id=pid,
-            title=title,
-            body=f"{me.name}: {snippet}"[:255],
-            seen=False,
-            type="message",
-            url=f"/messenger?c={conv.id}",
-            created_at=t,
-        )
-        for pid in peer_ids
-    ])
+    body = f"{me.name}: {snippet}"[:255]
+    url = f"/messenger?c={conv.id}"
     for pid in peer_ids:
+        existing = (
+            Notification.objects.filter(social_user_id=pid, type="message", url=url, seen=False)
+            .order_by("-id")
+            .first()
+        )
+        if existing:
+            existing.body = body
+            existing.created_at = t
+            existing.save(update_fields=["body", "created_at"])
+        else:
+            Notification.objects.create(
+                social_user_id=pid,
+                title="Новое сообщение",
+                body=body,
+                seen=False,
+                type="message",
+                url=url,
+                created_at=t,
+            )
         cache.delete(f"nav:{pid}")
 
 
@@ -200,6 +253,7 @@ def post_message(me, conv: Conversation, body: str, *, message_type="text", stic
         created_at=t,
     )
     Conversation.objects.filter(pk=conv.pk).update(updated_at=t)
+    _revive_dm(conv, me)
     _invalidate_members(conv.id)
     notify_peers(me, conv, m)
     return m
@@ -210,6 +264,19 @@ def post_sticker(me, conv: Conversation, sticker: Sticker) -> Message:
         me, conv, sticker.phrase or sticker.title,
         message_type="sticker", sticker_id=sticker.id,
     )
+
+
+def delete_message(me, message_id) -> int:
+    """Delete own message from the thread (classic: removes from both views in our clone)."""
+    m = get_object_or_404(Message, pk=message_id)
+    require_member(me, m.conversation_id)
+    if m.social_user_id != me.id:
+        raise PermissionError("not yours")
+    cid = m.conversation_id
+    m.delete()
+    last = Message.objects.filter(conversation_id=cid).order_by("-id").first()
+    Conversation.objects.filter(pk=cid).update(updated_at=last.created_at if last else now())
+    return cid
 
 
 def ws_payload(m: Message) -> dict:
@@ -228,6 +295,16 @@ def broadcast(m: Message):
     if not layer:
         return
     async_to_sync(layer.group_send)(f"chat_{m.conversation_id}", ws_payload(m))
+
+
+def broadcast_delete(conversation_id, message_id):
+    layer = get_channel_layer()
+    if not layer:
+        return
+    async_to_sync(layer.group_send)(
+        f"chat_{conversation_id}",
+        {"type": "chat.message", "event": "delete", "id": message_id},
+    )
 
 
 def wants_json(request) -> bool:

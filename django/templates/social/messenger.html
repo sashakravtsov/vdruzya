@@ -15,20 +15,22 @@
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'messenger' %}">
                     <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск…" aria-label="Поиск диалогов">
-                    {% if unread_only %}<input type="hidden" name="unread" value="1">{% endif %}
+                    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                     <input type="submit" class="inputbutton" value="Найти">
                 </form>
                 <p class="msg-tabs muted">
-                    <a href="{% url 'messenger' %}"{% if not unread_only %} class="is-on"{% endif %}>все</a>
+                    <a href="{% url 'messenger' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if folder == 'inbox' %} class="is-on"{% endif %}>входящие</a>
                     ·
-                    <a href="{% url 'messenger' %}?unread=1{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if unread_only %} class="is-on"{% endif %}>непрочитанные</a>
+                    <a href="{% url 'messenger' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
+                    ·
+                    <a href="{% url 'messenger' %}?folder=unread{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'unread' %} class="is-on"{% endif %}>непрочитанные</a>
                 </p>
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
                     <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
                         <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<span class="avatar-fallback group-mark" style="width:32px;height:32px;font-size:12px;display:grid;place-items:center;background:#3B5998;color:#fff">Г</span>{% endif %}</td>
                         <td>
-                            <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if unread_only %}&amp;unread=1{% endif %}">
+                            <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
                                 <span class="msg-name">{{ c.display_name }}</span>
                                 {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:48 }}</span>{% endif %}
                                 {% if c.last_at %}<span class="msg-when muted">{{ c.last_at|timesince }} назад</span>{% endif %}
@@ -36,7 +38,7 @@
                         </td>
                     </tr></table>
                 </div>
-                {% empty %}<p class="muted">{% if q or unread_only %}Ничего не найдено.{% else %}Нет диалогов.{% endif %}</p>{% endfor %}
+                {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет диалогов.{% endif %}</p>{% endfor %}
             </div>
         </div>
 
@@ -71,9 +73,15 @@
                     {% else %}
                     {{ active.display_name|default:active.title|default:"Переписка" }}
                     {% endif %}
-                    <form method="post" action="{% url 'messenger.leave' active.id %}" class="edit" onsubmit="return confirm('Убрать диалог из списка?');">{% csrf_token %}
-                        <button type="submit" class="linkish muted">убрать</button>
-                    </form>
+                    <span class="edit msg-actions">
+                        <form method="post" action="{% url 'messenger.unread' active.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted">непрочит.</button>
+                        </form>
+                        ·
+                        <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Убрать диалог из входящих?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">убрать</button>
+                        </form>
+                    </span>
                 {% else %}Переписка{% endif %}
             </h4>
             <div class="profile-box-body">
@@ -86,6 +94,12 @@
                     <div class="chat-line{% if m.social_user_id == me.id %} is-mine{% endif %}" data-id="{{ m.id }}">
                         <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
                         {% if m.created_at %}<span class="muted chat-time"> · {{ m.created_at|timesince }} назад</span>{% endif %}
+                        {% if m.social_user_id == me.id %}
+                        <form method="post" action="{% url 'messages.delete' m.id %}" class="inline msg-del" data-ajax="1">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
+                            <button type="submit" class="linkish muted" title="Удалить">×</button>
+                        </form>
+                        {% endif %}
                         <div class="chat-body">
                             {% if m.message_type == 'sticker' %}
                             <span class="sticker-chip">{{ m.body }}</span>
@@ -97,6 +111,7 @@
                 <form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" id="chat-form">{% csrf_token %}
                     {{ form.body }}
                     <input type="submit" class="inputsubmit" value="Отправить">
+                    <span class="muted file-hint">Enter — отправить · Shift+Enter — новая строка</span>
                 </form>
                 {% if stickers %}
                 <div class="chat-stickers" id="chat-stickers">
@@ -119,7 +134,8 @@
                   const ws = new WebSocket(`${proto}://${location.host}/ws/messenger/{{ active.id }}`);
 
                   const append = (d) => {
-                    if (!d || !d.id || log.querySelector('[data-id="' + d.id + '"]')) return;
+                    if (!d || !d.id || d.event === 'delete') return;
+                    if (log.querySelector('[data-id="' + d.id + '"]')) return;
                     const empty = document.getElementById('chat-empty');
                     if (empty) empty.remove();
                     const line = document.createElement('div');
@@ -131,6 +147,14 @@
                     b.textContent = d.name || '';
                     a.appendChild(b);
                     line.appendChild(a);
+                    if (String(d.user_id) === me) {
+                      const del = document.createElement('button');
+                      del.type = 'button';
+                      del.className = 'linkish muted msg-del-btn';
+                      del.textContent = '×';
+                      del.addEventListener('click', () => delMsg(d.id));
+                      line.appendChild(del);
+                    }
                     const body = document.createElement('div');
                     body.className = 'chat-body';
                     if (d.message_type === 'sticker') {
@@ -146,13 +170,33 @@
                     log.scrollTop = log.scrollHeight;
                   };
 
-                  ws.onmessage = (e) => { try { append(JSON.parse(e.data)); } catch (_) {} };
+                  const removeLine = (id) => {
+                    const el = log.querySelector('[data-id="' + id + '"]');
+                    if (el) el.remove();
+                  };
+
+                  const delMsg = async (id) => {
+                    const fd = new FormData();
+                    fd.append('csrfmiddlewaretoken', csrf);
+                    const r = await fetch('/messages/' + id + '/delete', {
+                      method: 'POST', body: fd,
+                      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                      credentials: 'same-origin',
+                    });
+                    if (r.ok) removeLine(id);
+                  };
+
+                  ws.onmessage = (e) => {
+                    try {
+                      const d = JSON.parse(e.data);
+                      if (d.event === 'delete') removeLine(d.id);
+                      else append(d);
+                    } catch (_) {}
+                  };
 
                   const postAjax = async (action, data) => {
                     const fd = data instanceof FormData ? data : new FormData();
-                    if (!(data instanceof FormData)) {
-                      Object.entries(data).forEach(([k, v]) => fd.append(k, v));
-                    }
+                    if (!(data instanceof FormData)) Object.entries(data).forEach(([k, v]) => fd.append(k, v));
                     if (!fd.has('csrfmiddlewaretoken')) fd.append('csrfmiddlewaretoken', csrf);
                     const r = await fetch(action, {
                       method: 'POST', body: fd,
@@ -173,11 +217,30 @@
                     else form.submit();
                   });
 
+                  const ta = form.querySelector('textarea');
+                  if (ta) {
+                    ta.addEventListener('keydown', (e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        form.requestSubmit();
+                      }
+                    });
+                  }
+
                   document.querySelectorAll('.sticker-form').forEach((sf) => {
                     sf.addEventListener('submit', async (e) => {
                       e.preventDefault();
                       const d = await postAjax(sf.action, new FormData(sf));
                       if (d) append(d); else sf.submit();
+                    });
+                  });
+
+                  document.querySelectorAll('.msg-del').forEach((sf) => {
+                    sf.addEventListener('submit', async (e) => {
+                      e.preventDefault();
+                      const id = sf.closest('[data-id]')?.dataset.id;
+                      const d = await postAjax(sf.action, new FormData(sf));
+                      if (d && id) removeLine(id); else sf.submit();
                     });
                   });
 

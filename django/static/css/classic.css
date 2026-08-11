@@ -1172,6 +1172,10 @@ button.linkish, .profile-box-body button.linkish {
 .messages-thread .compose-new .inputtext,
 .messages-thread .compose-new textarea { width: 100%; max-width: 420px; }
 .messages-thread > h4 .edit { float: right; font-weight: normal; }
+.messages-thread .msg-actions form { display: inline; }
+.messages-thread .chat-line .msg-del,
+.messages-thread .chat-line .msg-del-btn { float: right; margin-left: 6px; }
+.messages-thread .chat-compose .file-hint { display: block; margin-top: 4px; }
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"] {
   width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -1180,20 +1184,8 @@ button.linkish, .profile-box-body button.linkish {
   .messages-content { grid-template-columns: 1fr; }
 }
 
-/* ===== More utility FB2005 ===== */
-  background: #D8DFEA; color: #3B5998;
-  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
-  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
-}
 .group-page #content:not(.group-content) {
   padding: 10px;
-}
-  margin: 0 0 12px; padding: 0 0 10px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
-}
-  width: 100%; max-width: 420px; box-sizing: border-box;
-  border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
-}
-  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
 .feed-page .wall-box > .profile-box-body { background: #f7f7f7; padding: 10px; }
 
