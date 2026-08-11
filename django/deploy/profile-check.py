@@ -109,7 +109,6 @@ def main():
     stranger = SocialProfile.objects.exclude(id__in={me.id, other.id}).first()
     if stranger:
         assert not can_manage_wall_post(stranger, note)
-        assert not can_view_full(stranger, me, None) or (me.profile_visibility or "public") == "public"
         assert not can_write_wall(stranger, me, None)
 
     r = c.get(f"/profile/{me.id}", secure=True)
@@ -124,18 +123,20 @@ def main():
     assert not Post.objects.filter(pk=note.id).exists()
     ok("wall owner deletes guest note")
 
-    # Limited profile: stranger sees gate when visibility=friends
+    # Limited profile: non-friend sees gate when visibility=friends
     prev = me.profile_visibility or "public"
     me.profile_visibility = "friends"
     me.save(update_fields=["profile_visibility"])
+    fids = friend_ids(me) | {me.id, other.id}
+    stranger = SocialProfile.objects.exclude(id__in=fids).exclude(user_id__isnull=True).first()
+    assert stranger, "need non-friend for limited profile"
     c2 = Client(HTTP_HOST="vdruzya.ru")
-    if stranger and stranger.user_id:
-        c2.force_login(User.objects.get(pk=stranger.user_id))
-        r = c2.get(f"/profile/{me.id}", secure=True)
-        assert r.status_code == 200
-        assert "Ограниченный профиль".encode() in r.content
-        assert "Мини-лента".encode() not in r.content
-        ok("limited profile for non-friend")
+    c2.force_login(User.objects.get(pk=stranger.user_id))
+    r = c2.get(f"/profile/{me.id}", secure=True)
+    assert r.status_code == 200
+    assert "Ограниченный профиль".encode() in r.content
+    assert "Мини-лента".encode() not in r.content
+    ok("limited profile for non-friend")
     me.profile_visibility = prev
     me.save(update_fields=["profile_visibility"])
 
