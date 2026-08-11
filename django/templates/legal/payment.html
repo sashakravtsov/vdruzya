@@ -1,0 +1,11 @@
+{% extends "legal/base.html" %}
+{% block legal_body %}
+<div class="profile-box">
+    <h4>Оплата</h4>
+    <p>Платежи принимает {{ legal.bank_name }}. Услуга — добровольная поддержка проектов на платформе ВДрузья.</p>
+    <h4>Реквизиты</h4>
+    <p>Р/с {{ legal.bank_account }} · БИК {{ legal.bank_bik }} · к/с {{ legal.bank_corr }}</p>
+    <h4>Возврат</h4>
+    <p>По вопросам возврата пишите на <a href="mailto:{{ legal.email }}">{{ legal.email }}</a>.</p>
+</div>
+{% endblock %}

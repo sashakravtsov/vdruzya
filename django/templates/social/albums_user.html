@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Фото {{ owner.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page">
+    <div id="header" class="withsubtitle">
+        <h1>Фото {{ owner.name }}</h1>
+        <div class="subtitle"><a href="{% url 'profile' owner.id %}" style="color:#fff">профиль</a></div>
+    </div>
+    <div id="content" class="albums-content">
+        <p class="classic-page-lead">
+            <a href="{% url 'profile' owner.id %}">← {{ owner.name }}</a>
+            {% if is_own %} · <a href="{% url 'albums' %}">Мои альбомы</a>{% endif %}
+        </p>
+        <div class="profile-box">
+            <h4>Альбомы{% if albums %} ({{ albums|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% if albums %}
+                <div class="album-fb-grid">
+                    {% for a in albums %}
+                    <a class="album-fb-card" href="{% url 'albums.show' a.id %}">
+                        <span class="album-fb-cover">
+                            {% if a.cover_url %}
+                            <img src="{{ a.cover_url }}" alt="">
+                            {% else %}
+                            <span class="album-fb-empty">{{ a.title|slice:":1"|upper }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="album-fb-name">{{ a.title }}</span>
+                        <span class="album-fb-meta">{{ a.n }} фото · {% if a.visibility == 'public' %}Всем{% elif a.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="muted">Нет доступных альбомов.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Приглашение — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header"><h1>{{ inviter.name }} приглашает вас</h1></div>
+    <div id="content" class="people-content">
+        <p class="classic-page-lead">ВДрузья — по приглашениям. Создайте аккаунт по ссылке друга.</p>
+        <div class="profile-box">
+            <h4>Приглашение</h4>
+            <div class="profile-box-body">
+                <div class="classic-person-row">
+                    <span class="classic-person-name">
+                        {% avatar inviter 50 %}
+                        <span>
+                            <b>{{ inviter.name }}</b>
+                            <span class="classic-person-sub">{{ inviter.city|default:inviter.headline }}</span>
+                        </span>
+                    </span>
+                </div>
+                <p class="people-top-links">
+                    <a href="{% url 'register' %}?invite={{ inviter.invite_code|urlencode }}"><b>Создать аккаунт</b></a>
+                    · <a href="{% url 'login' %}?next=/i/{{ inviter.invite_code }}">Войти</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block title %}Редактировать запись — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="feed-page">
+    <div id="header"><h1>Редактировать запись</h1></div>
+    <div id="content">
+        <div class="profile-box">
+            <h4>Запись</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Текст:</td><td>{{ form.body }}</td></tr>
+                        <tr><td class="label">Кому:</td><td>{{ form.visibility }}</td></tr>
+                        <tr><td class="label">Тема:</td><td>{{ form.topic }}</td></tr>
+                        <tr><td class="label">Настроение:</td><td>{{ form.mood }} {{ form.emoji }}</td></tr>
+                        <tr><td class="label">Стикер:</td><td>{{ form.sticker }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{% url 'feed' %}">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

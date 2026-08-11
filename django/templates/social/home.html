@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block title %}ВДрузья | Добро пожаловать во ВДрузья!{% endblock %}
+{% block welcome %}
+<div id="sidebar">
+    <div id="squicklogin">
+        <form method="post" name="loginform" action="{% url 'login' %}">{% csrf_token %}
+            <label for="email">E-mail:</label>
+            <input class="inputtext" type="email" name="email" id="email" size="20" autofocus autocomplete="username">
+            <label for="pass">Пароль:</label>
+            <input class="inputtext" type="password" name="password" id="pass" size="20" autocomplete="current-password">
+            <div class="buttons">
+                <input type="submit" class="inputsubmit" value="Войти" id="doquicklogin">
+            </div>
+            <p class="file-hint muted">Регистрация — по приглашению</p>
+        </form>
+    </div>
+    <div id="ssponsor"></div>
+</div>
+<div id="pagebody" class="welcome">
+    <div id="header"><h1>Добро пожаловать во ВДрузья!</h1></div>
+    <div id="content">
+        <div class="infocontent">
+            <h2>ВДрузья — онлайн-каталог, который связывает людей через социальные сети друзей, групп и общих интересов.</h2>
+            <p>Здесь можно общаться, смотреть, как люди знакомы друг с другом, находить единомышленников и поддерживать проекты.</p>
+            <p>Вступление — по приглашению друга. Уже в сети? Войдите слева.</p>
+            <p>Во ВДрузья вы можете:</p>
+            <ul class="bulletpoints">
+                <li><span>Искать людей и добавлять друзей.</span></li>
+                <li><span>Смотреть, как люди связаны друг с другом.</span></li>
+                <li><span>Находить группы, события и вакансии.</span></li>
+            </ul>
+            <p class="welcome-cta muted">Нужна ссылка-приглашение от участника ВДрузья.</p>
+        </div>
+    </div>
+    {% include "partials/footer.html" %}
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}

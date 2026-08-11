@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Редактировать альбом — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page">
+    <div id="header"><h1>Редактировать альбом</h1></div>
+    <div id="content" class="albums-content">
+        <p class="classic-page-lead"><a href="{% url 'albums.show' album.id %}">← {{ album.title }}</a></p>
+        <div class="profile-box">
+            <h4>Настройки</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Видимость:</td><td>{{ form.visibility }}</td></tr>
+                        <tr>
+                            <td class="label">Обложка:</td>
+                            <td>
+                                {% if album.cover_url %}<p><img src="{{ album.cover_url }}" alt="" class="cover-edit-preview"></p>{% endif %}
+                                {{ form.cover }}
+                                <div class="file-hint muted">JPEG, PNG или GIF · до 2 МБ</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{% url 'albums.show' album.id %}">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ profile.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="profile">
+    <div id="header" class="withsubtitle">
+        <h1>{{ profile.name }}</h1>
+        {% if profile.city %}<div class="subtitle">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>{% endif %}
+    </div>
+    <div id="content" class="profile-content">
+        <div class="profile-left">
+            <div class="profile-picture">
+                {% if profile.avatar_url %}
+                    <img src="{{ profile.avatar_url }}" alt="">
+                {% else %}
+                    <div class="avatar-fallback" style="background:{{ profile.avatar_color|default:'#D8DFEA' }}">{{ profile.name|slice:":1"|upper }}</div>
+                {% endif %}
+            </div>
+            <div class="profile-action-links">
+                {% if is_own and stats.photos %}<a href="{% url 'albums' %}">Смотреть фотографии ({{ stats.photos }})</a>
+                {% elif albums %}<a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>{% endif %}
+                {% if is_own %}
+                    <a href="{% url 'profile.edit' %}">Редактировать профиль</a>
+                    <a href="{% url 'profile.edit' %}#avatar">Изменить фото</a>
+                {% elif user.is_authenticated %}
+                    {% if relation and relation.status == 'accepted' %}
+                        <form method="post" action="{% url 'friends.remove' profile.id %}">{% csrf_token %}<button type="submit">Удалить из друзей</button></form>
+                    {% elif relation and relation.status == 'pending' and relation.user_id == me.id %}
+                        <span class="muted">Заявка отправлена</span>
+                        <form method="post" action="{% url 'friends.cancel' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Отменить заявку</button></form>
+                    {% elif relation and relation.status == 'pending' %}
+                        <form method="post" action="{% url 'friends.accept' profile.id %}">{% csrf_token %}<button type="submit">Принять заявку</button></form>
+                        <form method="post" action="{% url 'friends.reject' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Отклонить</button></form>
+                    {% else %}
+                        <form method="post" action="{% url 'friends.request' profile.id %}">{% csrf_token %}<button type="submit">В друзья</button></form>
+                    {% endif %}
+                    <form method="post" action="{% url 'messenger.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
+                    <form method="post" action="{% url 'profile.block' profile.id %}">{% csrf_token %}<button type="submit" class="muted">{% if blocked %}Разблокировать{% else %}Заблокировать{% endif %}</button></form>
+                {% else %}
+                    <a href="{% url 'login' %}?next={{ request.path }}">Войти, чтобы добавить в друзья</a>
+                {% endif %}
+            </div>
+
+            {% if not is_own %}
+            <div class="profile-box">
+                <h4>Связь</h4>
+                <div class="profile-box-body">
+                    {% if relation and relation.status == 'accepted' %}
+                        <p>У вас в друзьях.</p>
+                        {% if mutual %}<p class="muted">{{ mutual }} общих друзей.</p>{% endif %}
+                    {% elif relation and relation.status == 'pending' %}<p>Заявка в друзья.</p>
+                    {% else %}
+                        <p class="muted">Пока не связаны.</p>
+                        {% if mutual %}<p class="muted">{{ mutual }} общих друзей.</p>{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if profile.headline or is_own %}
+            <div class="profile-box">
+                <h4>Статус{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if profile.headline %}
+                        <p><b>{{ profile.name }}</b> — {{ profile.headline }}</p>
+                        {% if profile.updated_at %}<p class="muted">Обновлено {{ profile.updated_at|timesince }} назад</p>{% endif %}
+                    {% else %}
+                        <p class="muted">Статус не указан.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Друзья{% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    <p>{% if profile.city %}Друзья · {{ profile.city|tag }}: {% endif %}<b>{{ stats.friends }}</b></p>
+                    {% if friends %}
+                    <div class="profile-friend-grid">
+                        {% for f in friends %}
+                        <a class="profile-friend-tile" href="{% url 'profile' f.id %}">
+                            {% avatar f 50 %}
+                            <span>{{ f.name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <p><a href="{% if is_own %}{% url 'friends' %}{% else %}{% url 'profile.friends' profile.id %}{% endif %}">Смотреть всех</a></p>
+                    {% else %}
+                    <p class="muted">Список друзей пуст.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-right">
+            <div class="profile-box">
+                <h4>Информация{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    <div class="profile-subsection">
+                        <h5>Информация об аккаунте</h5>
+                        <table class="infotable">
+                            <tr><td class="label">Имя:</td><td>{{ profile.name }}</td></tr>
+                            {% if profile.created_at %}<tr><td class="label">На сайте с:</td><td>{{ profile.created_at|date:"j E Y" }}</td></tr>{% endif %}
+                            {% if profile.updated_at %}<tr><td class="label">Обновлено:</td><td>{{ profile.updated_at|date:"j E Y" }}</td></tr>{% endif %}
+                        </table>
+                    </div>
+                    <div class="profile-subsection">
+                        <h5>Основная информация</h5>
+                        <table class="infotable">
+                            {% if profile.gender %}<tr><td class="label">Пол:</td><td>{{ profile.gender|ru_label|tag }}</td></tr>{% endif %}
+                            {% if profile.birthday %}<tr><td class="label">День рождения:</td><td>{{ profile|birthday_tags }}</td></tr>{% endif %}
+                            {% if profile.city %}<tr><td class="label">Город:</td><td>{{ profile.city|tag }}{% if profile.country %}, {{ profile.country|tag }}{% endif %}</td></tr>{% endif %}
+                            {% if profile.hometown %}<tr><td class="label">Родной город:</td><td>{{ profile.hometown|tag }}</td></tr>{% endif %}
+                            {% if profile.relationship_status %}<tr><td class="label">Отношения:</td><td>{{ profile.relationship_status|ru_label|tag }}</td></tr>{% endif %}
+                            {% if profile.political_views %}<tr><td class="label">Политика:</td><td>{{ profile.political_views|ru_label|tag }}</td></tr>{% endif %}
+                            {% if profile.languages_label %}<tr><td class="label">Языки:</td><td>{{ profile.languages_label|tags }}</td></tr>{% endif %}
+                            {% if profile.website %}<tr><td class="label">Сайт:</td><td><a href="{{ profile.website }}" rel="nofollow noopener">{{ profile.website }}</a></td></tr>{% endif %}
+                        </table>
+                    </div>
+                    {% if profile.bio or profile.interests or profile.hobbies or profile.favorite_music or profile.favorite_movies or profile.favorite_books or profile.favorite_quotes or profile.favorite_tv or profile.workplace or profile.education_note %}
+                    <div class="profile-subsection">
+                        <h5>Личная информация</h5>
+                        <table class="infotable">
+                            {% if profile.bio %}<tr><td class="label">Обо мне:</td><td>{{ profile.bio }}</td></tr>{% endif %}
+                            {% if profile.interests %}<tr><td class="label">Интересы:</td><td>{{ profile.interests|tags }}</td></tr>{% endif %}
+                            {% if profile.hobbies %}<tr><td class="label">Хобби:</td><td>{{ profile.hobbies|tags }}</td></tr>{% endif %}
+                            {% if profile.favorite_music %}<tr><td class="label">Музыка:</td><td>{{ profile.favorite_music|tags }}</td></tr>{% endif %}
+                            {% if profile.favorite_movies %}<tr><td class="label">Фильмы:</td><td>{{ profile.favorite_movies|tags }}</td></tr>{% endif %}
+                            {% if profile.favorite_tv %}<tr><td class="label">ТВ:</td><td>{{ profile.favorite_tv|tags }}</td></tr>{% endif %}
+                            {% if profile.favorite_books %}<tr><td class="label">Книги:</td><td>{{ profile.favorite_books|tags }}</td></tr>{% endif %}
+                            {% if profile.favorite_quotes %}<tr><td class="label">Цитаты:</td><td>{{ profile.favorite_quotes }}</td></tr>{% endif %}
+                            {% if profile.workplace %}<tr><td class="label">Работа:</td><td>{{ profile.workplace|tag }}</td></tr>{% endif %}
+                            {% if profile.education_note %}<tr><td class="label">Образование:</td><td>{{ profile.education_note|tag }}</td></tr>{% endif %}
+                        </table>
+                    </div>
+                    {% endif %}
+                    {% if education %}
+                    <div class="profile-subsection">
+                        <h5>Учёба</h5>
+                        <ul class="plain">{% for e in education %}<li>{{ e.institution }}{% if e.degree %} — {{ e.degree }}{% endif %}{% if e.field %}, {{ e.field }}{% endif %}{% if e.start_year or e.end_year %} <span class="muted">({{ e.start_year }}–{{ e.end_year }})</span>{% endif %}</li>{% endfor %}</ul>
+                    </div>
+                    {% endif %}
+                    {% if experiences %}
+                    <div class="profile-subsection">
+                        <h5>Работа</h5>
+                        <ul class="plain">{% for e in experiences %}<li><b>{{ e.position }}</b> · {{ e.company_name }} <span class="muted">{{ e.period }}</span></li>{% endfor %}</ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if albums %}
+            <div class="profile-box">
+                <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body profile-albums" id="photos">
+                    {% for a in albums %}
+                    <div class="album">
+                        <a href="{% url 'albums.show' a.id %}">
+                            {% if a.cover_url %}
+                            <img src="{{ a.cover_url }}" alt="">
+                            {% else %}
+                            <span class="album-cover-fallback">{{ a.title|slice:":1"|upper }}</span>
+                            {% endif %}
+                        </a>
+                        <a class="album-title" href="{% url 'albums.show' a.id %}">{{ a.title }}</a>
+                        <span class="date">{{ a.n }} фото</span>
+                    </div>
+                    {% endfor %}
+                    <div class="clear"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Группы ({{ stats.groups }})</h4>
+                <div class="profile-box-body">
+                    {% if communities %}
+                    <ul class="profilelinks">{% for c in communities %}<li><a href="{% url 'groups.show' c.id %}">{{ c.name }}</a></li>{% endfor %}</ul>
+                    {% else %}<p class="muted">Пока ни в одной группе.</p>{% endif %}
+                </div>
+            </div>
+
+            {% if mini %}
+            <div class="profile-box">
+                <h4>Лента</h4>
+                <div class="profile-box-body">
+                    {% for item in mini %}
+                    <div class="minifeed-item">
+                        {% if item.kind == 'joined' %}
+                        вступил(а) в <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+                        {% elif item.kind == 'created' %}
+                        создал(а) группу <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+                        {% else %}
+                        написал(а): {{ item.post.body|truncatewords:16 }}
+                        {% endif %}
+                        {% if item.at %}<span class="muted"> · {{ item.at|timesince }} назад</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box wall-box">
+                <h4>Стена</h4>
+                <div class="profile-box-body">
+                    {% if form %}
+                    {% url 'posts.store' as compose_action %}
+                    {% if is_own %}
+                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" album_photos=album_photos %}
+                    {% else %}
+                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" album_photos=album_photos %}
+                    {% endif %}
+                    {% elif user.is_authenticated and not can_wall %}
+                    <p class="muted">На стену могут писать только друзья.</p>
+                    {% endif %}
+                    {% for post in posts %}
+                    {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path %}
+                    {% empty %}
+                    <p class="muted">На стене пока пусто.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

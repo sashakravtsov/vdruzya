@@ -1,0 +1,17 @@
+{# Group post/thread comment. Expects: c, group, is_admin, me #}
+<div class="wall-comment muted">
+    <a href="{% url 'profile' c.social_user.id %}">{{ c.social_user.name }}</a>: {{ c.body }}
+    {% if is_admin or me and me.id == c.social_user_id %}
+    <form method="post" action="{% url 'groups.comments.delete' group.id c.id %}" class="inline">{% csrf_token %}
+        <button type="submit" class="linkish muted">×</button>
+    </form>
+    {% endif %}
+    {% if me and me.id == c.social_user_id %}
+    <details class="inline"><summary class="linkish">ред.</summary>
+    <form method="post" action="{% url 'groups.comments.edit' group.id c.id %}">{% csrf_token %}
+        <input class="inputtext" name="body" value="{{ c.body }}" style="width:70%">
+        <input type="submit" class="inputsubmit" value="OK">
+    </form>
+    </details>
+    {% endif %}
+</div>

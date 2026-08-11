@@ -1,0 +1,1208 @@
+/* VDruzya classic chrome — Facebook Blue #3B5998 / Light #D8DFEA (Nov 2005) */
+:root {
+  --fb: #3B5998;
+  --line: #D8DFEA;
+  --font: "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+body { background: #fff; margin: 0; padding: 0; }
+body, p { font: 11px/1.4 var(--font); text-align: left; color: #000; }
+a { color: var(--fb); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { border: 0; }
+form { margin: 0; padding: 0; }
+label { font-weight: bold; color: gray; }
+
+#book { width: 760px; max-width: 100%; margin: 0 auto; padding: 8px 0 0; text-align: left; }
+#pageheader {
+  position: relative; width: 760px; height: 33px;
+  background: var(--fb) url("../img/pageheaderbg.png") no-repeat left top;
+}
+/* Brand lives in pageheaderbg.png once — clickable hit area only */
+#homelink {
+  position: absolute; left: 0; top: 0; margin: 0; padding: 0;
+  width: 148px; height: 33px; font-size: 0; line-height: 0;
+}
+#homelink a { display: block; width: 100%; height: 100%; }
+.hide { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+#gnav {
+  position: absolute; top: 1px; left: 250px; width: 500px;
+  margin: 0; padding: 3px 0; list-style: none; text-align: right; line-height: 25px;
+}
+#gnav li { display: inline; }
+#gnav a, #gnav button.linkish {
+  margin: 0; padding: 2px 4px; color: #D8DFEA; text-decoration: none;
+  background: 0; border: 0; font: 11px var(--font); cursor: pointer;
+}
+#gnav a:hover, #gnav button.linkish:hover {
+  color: #fff; background: #526DA4; text-decoration: none;
+}
+
+/* FB 2006 float chrome */
+#sidebar { float: left; width: 120px; margin-top: 8px; }
+#snav { width: 114px; margin: 10px 0; padding: 0; border-bottom: solid 1px #fff; overflow: hidden; }
+#snav a {
+  display: block; float: left; width: 114px; margin: 0; padding: 2px 3px;
+  border-bottom: solid 1px var(--line); color: var(--fb);
+  box-sizing: border-box; font: 11px/14px var(--font); white-space: nowrap;
+}
+#snav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
+#snav a.is-on { color: #fff; background: var(--fb); font-weight: bold; }
+/* Profile + [ред.] share one 114px row — FB 2005 / classic snav */
+#snav .snav-profile {
+  display: block; float: left; width: 114px; overflow: hidden;
+  border-bottom: solid 1px var(--line);
+}
+#snav .snav-profile a { border-bottom: 0; }
+#snav a.hasedit, #snav .snav-profile a.hasedit { width: 74px; }
+#snav a.edit, #snav .snav-profile a.edit {
+  width: 40px; color: gray; text-align: center; padding-left: 0; padding-right: 0;
+}
+#snav a.edit:hover, #snav .snav-profile a.edit:hover { color: #fff; }
+#qsearch { width: 120px; margin: 0 0 8px; }
+#qsearch .inputtext { width: 115px; }
+#squicklogin { width: 120px; margin: 0 0 10px; padding: 0; }
+#squicklogin label {
+  display: block; margin: 0; padding: 0 0 2px; color: gray; font-weight: bold;
+}
+#squicklogin .inputtext { width: 115px; box-sizing: border-box; }
+#squicklogin .buttons { text-align: right; padding: 3px 0 0; white-space: nowrap; }
+#squicklogin .buttons .inputsubmit { margin: 0 0 0 2px; }
+
+#nav { list-style: none; margin: 1em 0; padding: 0; }
+#nav li { border-bottom: 1px solid var(--line); font-size: 1em; }
+#nav li a {
+  display: block; padding: 2px 3px; background: #fff; border: 0; color: var(--fb);
+}
+#nav li a:hover { background: var(--fb); color: #fff; text-decoration: none; }
+
+#pagebody {
+  float: left; width: 628px; margin-left: 12px; font-size: 11px; text-align: left;
+}
+#pagebody a:hover { text-decoration: underline; }
+#header {
+  margin: 0; padding: 0 10px; background: #6d84b4; color: #fff;
+  font: bold 14px/23px var(--font); border-bottom: solid 1px var(--fb);
+}
+#header h1 { margin: 0; padding: 0; font-size: 14px; color: #fff; }
+#header.withsubtitle { text-align: right; overflow: hidden; }
+#header.withsubtitle h1 { float: left; }
+#header.withsubtitle .subtitle {
+  float: right; font-weight: normal; font-size: 11px; line-height: 23px; white-space: nowrap;
+}
+#content {
+  padding: 12px 0; overflow: hidden;
+  border-left: solid 1px var(--line);
+  border-right: solid 1px var(--line);
+  border-bottom: solid 1px var(--fb);
+}
+.infocontent { margin: 10px 20px; }
+.infocontent h2 {
+  font-size: 11px; margin: 0 0 10px; padding: 0; font-weight: bold; line-height: 16px;
+}
+.infocontent p { margin: 0 0 10px; line-height: 16px; }
+ul.bulletpoints { padding-left: 20px; color: var(--fb); margin: 0 0 14px; }
+ul.bulletpoints li { padding: 1px 0; }
+ul.bulletpoints li span { color: #000; }
+.center { margin-left: auto; margin-right: auto; }
+.welcome-actions { width: 170px; margin: 8px auto 4px; text-align: center; }
+
+/* Auth / reset forms — FB login.css */
+#loginform { text-align: center; margin: 20px; }
+#loginform table { margin: 0 auto; }
+#loginform p { text-align: center; margin: 0 20px 10px; }
+.formtable { margin: 0; }
+.formtable td { border: none; margin: 0; padding: 3px 1px; text-align: left; }
+.formtable td.label { padding-right: 10px; font-weight: bold; color: gray; white-space: nowrap; }
+.formbuttons { text-align: center; margin: 10px; }
+.formbuttons .inputsubmit, .formbuttons .inputbutton { margin: 2px 4px; }
+#passwordnote { width: 300px; margin: 10px auto; text-align: left; }
+#confirmterm { width: 320px; margin: 10px auto; text-align: left; }
+#confirmterm .inputcheckbox { float: left; display: block; margin: 2px 5px 8px 0; border: 0; }
+.inputcheckbox { border: 0; }
+
+/* About page — info.css */
+.about #content { margin: 0; padding: 0 20px 20px; }
+.about #tabs { margin: 0 0 20px; padding-top: 20px; }
+.about .leftcolumn { float: left; padding-right: 20px; width: 283px; }
+.about .rightcolumn { float: left; width: 283px; }
+.about .halfwidth { margin: 0; float: none; width: auto; }
+.halfwidth h4, .about h4, .legal-content h4 {
+  border-bottom: solid 1px var(--line); margin: 0 0 6px; padding: 0 0 2px; font-size: 13px; color: #000;
+}
+.halfwidth table .title, .about td.title { color: #666; padding-left: 10px; }
+.clearfix:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+.clearfix { display: block; }
+#tabs { text-align: center; padding: 4px 0; margin: 10px 20px; border-bottom: solid 1px var(--fb); }
+#tabs div { display: inline; padding: 0; margin: 0; }
+#tabs a { margin: 0; padding: 4px; }
+#tabs .activetab a { color: #fff; background: var(--fb); }
+#tabs .activetab a:hover { text-decoration: none; }
+#tabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.legal-content #tabs { margin: 10px 0 16px; }
+.legal-content .infocontent { margin: 0 0 10px; }
+#loginform input[type="password"],
+#loginform input[type="text"],
+#loginform input[type="email"],
+#loginform .inputtext,
+#loginform .inputpassword {
+  border: 1px solid #bdc7d8; padding: 3px; font: 11px var(--font);
+}
+
+.inputtext, .inputpassword, select, textarea,
+input[type="text"], input[type="email"], input[type="password"] {
+  border: 1px solid #bdc7d8; padding: 3px; font: 11px var(--font);
+}
+textarea { font-family: var(--font); }
+.inputsubmit, .inputbutton, button.inputbutton,
+input[type="submit"], input[type="button"] {
+  background: #3b5998; color: #fff; font: 11px var(--font); cursor: pointer;
+  border-style: solid; border-width: 1px;
+  border-color: #D9DFEA #0e1f5b #0e1f5b #D9DFEA; padding: 1px 6px;
+}
+
+#pagefooter {
+  clear: both; font-size: 10px; line-height: 15px; padding: 10px 0;
+  border: 0; text-align: center; color: #777;
+}
+#pagebody > #pagefooter { clear: none; }
+#pagefooter p { margin: 0; padding: 0; text-align: center; }
+#fnav { list-style: none; margin: 0; padding: 0; text-align: center; font-size: 11px; }
+#fnav li { display: inline; }
+#fnav a { padding: 2px 5px; }
+#fnav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
+
+.flash, .status { margin: 0 10px 10px; padding: 10px; border: 1px solid #ffe222; background: #fffbe2; }
+.error, #error { margin: 0 10px 10px; padding: 10px; border: 1px solid #dd3c10; background: #ffebe8; color: #dd3c10; }
+#error p { margin: 4px 0 0; }
+#error a { text-decoration: none; color: #dd3c10; }
+.auth-box { padding: 12px 20px; }
+
+.profile-content {
+  display: block;
+  overflow: hidden;
+  padding: 10px 0 10px 10px !important;
+}
+.profile-left { float: left; width: 200px; margin: 0 10px 0 0; min-width: 0; }
+.profile-right { float: left; width: 396px; margin: 0; min-width: 0; }
+.profile-picture { width: 200px; }
+.profile-picture img, .profile-picture .avatar-fallback {
+  width: 200px; height: 200px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
+  background: #eee;
+}
+.avatar-fallback {
+  background: var(--line); display: grid; place-items: center; font-size: 64px; color: #555;
+}
+.profile-action-links {
+  margin: 6px 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--line);
+}
+.profile-action-links a,
+.profile-action-links button {
+  display: block; width: 100%; color: var(--fb); background: 0; border: 0; padding: 1px 0;
+  margin: 0; font: 11px var(--font); text-align: left; cursor: pointer;
+}
+.profile-action-links a:hover, .profile-action-links button:hover { color: #fff; background: #3B5998; text-decoration: none; }
+.profile-action-links .muted, .profile-action-links button.muted { color: #777; }
+.profile-box {
+  margin: 0 0 10px; border: 0; background: transparent;
+}
+.profile-box > h4 {
+  background: #D8DFEA; color: #3B5998; font: bold 11px/16px var(--font);
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.profile-box > h4 .edit {
+  float: right; color: #777; font-weight: normal; text-decoration: none;
+}
+.profile-box > h4 .edit:hover { color: var(--fb); }
+.profile-box-body { padding: 8px; }
+.profile-box-body p { margin: 0 0 6px; }
+.profile-subsection { margin: 0 0 10px; }
+.profile-subsection h5 {
+  color: #3B5998; font: bold 12px var(--font); margin: 0 0 6px; padding: 2px 8px;
+  background: #eee; border-top: solid 1px #ccc; border-bottom: 0;
+}
+.infotable { width: 100%; border-collapse: collapse; }
+.infotable td { padding: 0 0 3px; vertical-align: top; font-size: 11px; }
+.infotable td.label { color: gray; white-space: nowrap; padding-right: 12px; width: 1%; }
+.infotable td a { color: var(--fb); }
+.profile-friend-grid { display: flex; flex-wrap: wrap; margin: 4px 0 0; }
+.profile-friend-tile { width: 62px; margin: 0 0 6px; padding: 3px 0; text-align: center; font-size: 11px; color: #3B5998; line-height: 1.2; vertical-align: bottom; }
+.profile-friend-tile img, .profile-friend-tile .avatar-fallback {
+  width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block; margin: 0 auto 2px;
+  font-size: 16px;
+}
+.profile-friend-tile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.album-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.album-tile {
+  display: block; border: 1px solid #B3B3B3; padding: 8px; background: #f7f7f7;
+}
+.album-title { display: block; color: var(--fb); font-weight: bold; }
+ul.plain { margin: 0; padding-left: 16px; }
+ul.plain li { margin: 0 0 2px; }
+.muted { color: #777; }
+.inline { display: inline; }
+button.linkish, .profile-box-body button.linkish {
+  background: 0; border: 0; color: var(--fb); font: 11px var(--font); cursor: pointer; padding: 0;
+}
+.wall-compose { margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid var(--line); }
+.wall-post {
+  display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 8px 10px;
+  margin: 0 0 14px; padding: 0 0 10px; border-bottom: 1px solid var(--line);
+}
+.wall-post > .avatar-col { width: 50px; }
+.wall-post > .avatar-col img, .wall-post > .avatar-col .avatar-fallback {
+  width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
+}
+.wall-post-body { min-width: 0; }
+.wall-post .group-mark {
+  display: grid; place-items: center; color: #fff; font: bold 20px/1 var(--font);
+}
+.wall-item { margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3; }
+.wall-meta { margin: 0 0 3px; }
+.wall-actions { margin: 4px 0; }
+.wall-comment { margin: 4px 0 0; }
+#header.withsubtitle .subtitle {
+  float: right; font-weight: normal; font-size: 11px; line-height: 23px; white-space: nowrap;
+}
+.profile-section-head {
+  background: var(--line); color: var(--fb); font: bold 11px/16px var(--font);
+  margin: 0 0 6px; padding: 2px 5px;
+}
+.pager { padding-left: 4px; text-align: right; }
+.pager a:hover { color: #fff; background: var(--fb); text-decoration: none; padding: 3px; }
+
+/* Group page — FB 2005: main + right rail, white-on-blue section heads */
+.group-content, .feed-content {
+  display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px;
+  padding: 10px !important;
+}
+.group-main, .feed-main, .group-rail, .feed-rail { min-width: 0; }
+.group-page .profile-box > h4,
+.feed-page .profile-box > h4 {
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.group-page .profile-box > h4 .edit,
+.feed-page .profile-box > h4 .edit { color: gray; float: right; font-weight: normal; text-decoration: none; }
+.group-page .profile-box > h4 .edit:hover,
+.feed-page .profile-box > h4 .edit:hover { color: #3B5998; }
+.group-picture { width: 180px; margin: 0 0 8px; }
+.group-picture img, .group-cover-fallback {
+  width: 180px; height: 180px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
+}
+.group-cover-fallback {
+  background: var(--fb); color: #fff; display: grid; place-items: center;
+  font: bold 64px/1 var(--font);
+}
+.group-photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.group-photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid #B3B3B3; }
+.empty-panel { background: #f5f5f5; border: 1px solid #E5E5E5; padding: 10px; }
+.members-grid { grid-template-columns: repeat(6, 50px); }
+.discuss-table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; }
+.discuss-table th {
+  text-align: left; color: #777; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border-bottom: solid 1px #D8DFEA; padding: 2px 6px 4px 0; background: transparent;
+}
+.discuss-table td {
+  padding: 5px 6px 5px 0; border-bottom: solid 1px #D8DFEA;
+  vertical-align: top; font-size: 11px; line-height: 14px;
+}
+.discuss-table .col-topic { width: auto; }
+.discuss-table .col-n { width: 52px; text-align: center; white-space: nowrap; color: #777; }
+.discuss-table .col-author { width: 110px; }
+.discuss-table .col-when { width: 100px; white-space: nowrap; }
+.discuss-table tr.is-open td { background: #f7f7f7; }
+.discuss-table a { color: #3B5998; font-weight: bold; }
+.discuss-open {
+  margin: 10px 0 0; padding: 10px; background: #f7f7f7; border-top: solid 1px #3B5998;
+}
+.group-catalog { display: grid; gap: 8px; }
+.group-tile {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px;
+  align-items: center; padding: 6px; border: 1px solid var(--line); background: #fff;
+}
+.group-tile:hover { background: #f5f7fb; text-decoration: none; }
+.group-tile-mark {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  color: #fff; font: bold 16px var(--font);
+}
+.group-tile-body { display: grid; gap: 2px; min-width: 0; }
+.group-tile-body b { color: var(--fb); }
+.profile-action-links .share-btn,
+.profile-action-links button.linkish {
+  display: block; width: 100%; text-align: left; padding: 1px 0;
+  color: var(--fb); background: 0; border: 0; font: 11px var(--font); cursor: pointer;
+}
+
+/* News Feed / Wall — FB 2006 */
+.news-title {
+  margin: 0 0 10px; padding: 0; color: var(--fb);
+  font: bold 13px var(--font); border: 0;
+}
+.news-item {
+  display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 8px 10px;
+  margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
+}
+.news-item.news-joined,
+.news-item.news-created,
+.news-item.news-group_post,
+.news-item.news-photos { grid-template-columns: 18px minmax(0, 1fr); }
+.news-photo-row { margin: 4px 0; }
+.news-icon {
+  display: inline-block; width: 14px; height: 14px; margin-top: 2px;
+  background: var(--fb); border-radius: 1px; opacity: .85;
+}
+.news-icon.ico-group {
+  mask: none;
+  background:
+    linear-gradient(#fff,#fff) center 3px / 6px 5px no-repeat,
+    linear-gradient(#fff,#fff) 2px 9px / 10px 3px no-repeat,
+    var(--fb);
+}
+.news-icon.ico-note {
+  background:
+    linear-gradient(#fff,#fff) 3px 3px / 8px 2px no-repeat,
+    linear-gradient(#fff,#fff) 3px 7px / 8px 2px no-repeat,
+    linear-gradient(#fff,#fff) 3px 11px / 5px 2px no-repeat,
+    var(--fb);
+}
+.news-body { min-width: 0; position: relative; padding-right: 110px; }
+.news-time { position: absolute; right: 0; top: 0; white-space: nowrap; font-size: 10px; }
+.news-card {
+  margin: 4px 0; padding: 6px 8px; border: 1px solid var(--line); background: #f7f7f7;
+}
+.news-photo { max-width: 100%; border: 1px solid #B3B3B3; }
+.news-item .avatar-col img, .news-item .avatar-col .avatar-fallback {
+  width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
+}
+.status-box { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; align-items: start; }
+.status-box img, .status-box .avatar-fallback {
+  width: 40px; height: 40px; border: 1px solid #B3B3B3; object-fit: cover;
+}
+.req-row, .shared-row { margin: 0 0 6px; }
+.req-row .news-icon { vertical-align: middle; margin-right: 4px; }
+
+@media (max-width: 780px) {
+  #book { width: 100%; padding: 0 8px; box-sizing: border-box; }
+  #pageheader { width: 100%; }
+  #sidebar { float: none; width: auto; padding: 8px 0; }
+  #pagebody { float: none; width: auto; margin: 8px 0; }
+  #snav { width: auto; }
+  #snav a, #snav a.hasedit, #snav a.edit,
+  #snav .snav-profile, #snav .snav-profile a {
+    float: none; display: inline-block; width: auto;
+  }
+  #snav .snav-profile { border-bottom: 0; margin: 0 4px 4px 0; }
+  #squicklogin, #squicklogin .inputtext { width: 100%; max-width: 280px; }
+  #gnav { position: static; left: auto; width: auto; max-width: none; text-align: right; padding: 4px 8px 0; }
+  .about .leftcolumn, .about .rightcolumn { float: none; width: auto; padding: 0; }
+  .profile-content, .group-content, .feed-content { grid-template-columns: 1fr; }
+  .profile-picture img, .profile-picture .avatar-fallback { width: 100%; max-width: 200px; height: auto; aspect-ratio: 1; }
+  .group-picture, .group-picture img, .group-cover-fallback { width: 100%; max-width: 180px; }
+  .members-grid { grid-template-columns: repeat(4, 50px); }
+}
+
+.poll-box{margin:6px 0;padding:6px;background:#f7f7f7;border:1px solid #d8dfea}
+.poll-opt{display:block;margin:2px 0}
+.group-locked .profile-box-body{padding:12px}
+
+/* Groups index — FB 2005 directory (aligned with #header, no inset) */
+.groups-index #content { padding: 10px 12px 14px; }
+.groups-index .groups-nav {
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--line);
+}
+.groups-index .groups-nav a.is-active { font-weight: bold; color: #333; text-decoration: none; }
+.groups-index .groups-search { margin: 0 0 10px; }
+.groups-index .groups-search label { margin-right: 6px; }
+.groups-index .groups-search .inputtext { width: 220px; }
+.groups-index .groups-cats { margin: 0 0 12px; }
+.groups-index .groups-cats a.is-active { font-weight: bold; color: #333; text-decoration: none; }
+.groups-index .classic-group-row {
+  margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
+}
+.groups-index .classic-group-title { margin: 0 0 3px; }
+.groups-index .classic-group-desc { margin: 0 0 4px; }
+.groups-index .classic-group-actions { margin: 0; }
+.groups-index .formtable { width: 100%; max-width: 480px; }
+.groups-index .formtable .label {
+  width: 90px; color: #555; vertical-align: top; padding: 4px 8px 4px 0; white-space: nowrap;
+}
+.groups-index .formtable td { padding: 3px 0; vertical-align: top; }
+.groups-index .groups-create {
+  margin: 16px 0 0; padding: 0; border: 1px solid var(--line);
+}
+.groups-index .groups-create > h4 {
+  margin: 0; padding: 2px 8px; background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border-top: solid 1px #3B5998;
+}
+.groups-index .groups-create form,
+.groups-index .groups-create > p { margin: 0; padding: 10px; }
+.mygroups-table { width: 100%; border-collapse: collapse; margin: 4px 0 0; }
+.mygroups-table th {
+  text-align: left; color: gray; font: bold 11px var(--font);
+  border-bottom: 1px solid var(--line); padding: 2px 8px 4px 0;
+}
+.mygroups-table td {
+  padding: 8px 8px 8px 0; border-bottom: 1px solid #EEEFF3;
+  vertical-align: top; font-size: 11px;
+}
+.mygroups-table .col-name { width: auto; }
+.mygroups-table .col-type { width: 120px; white-space: nowrap; }
+.mygroups-table .col-n { width: 70px; text-align: center; white-space: nowrap; }
+.mygroups-table .col-act { width: 110px; white-space: nowrap; text-align: right; }
+.mygroups-table .col-name a { color: var(--fb); }
+
+/* Classic FB-2005 media upload (no drag-drop) + wallposter */
+.compose-table,.formtable{width:100%;max-width:520px}
+.compose-table .label,.formtable .label{width:100px;color:#555;vertical-align:top;padding:4px 8px 4px 0;white-space:nowrap}
+.compose-table td,.formtable td{padding:4px 0;vertical-align:top}
+.inputfile{font:11px var(--font);max-width:100%}
+.file-hint{margin:2px 0 0;font-size:10px}
+.compose-more{margin:0;display:inline}
+.compose-more summary{cursor:pointer}
+.wallposter{
+  margin:0 0 12px;padding:8px;background:#f7f7f7;border:1px solid #d8dfea;
+}
+.wallposter textarea{
+  width:100%;min-height:48px;box-sizing:border-box;font:11px var(--font);
+  border:1px solid #bdc7d8;padding:4px;
+}
+.wallposter-tools{
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0 0;
+}
+.wallposter-vis,.wallposter-file{font-size:11px;color:#555}
+.wallposter-go{margin-left:auto}
+.wall-more{margin-left:4px}
+.wall-more > summary{list-style:none;display:inline;cursor:pointer}
+.wall-more > summary::-webkit-details-marker{display:none}
+.avatar-edit-preview,.cover-edit-preview{width:80px;height:80px;object-fit:cover;border:1px solid #B3B3B3}
+.cover-edit-preview{width:120px;height:120px}
+.albums-page #content.albums-content { padding: 10px; }
+.classic-page-lead { margin: 0 0 10px; font-size: 11px; color: #555; }
+/* FB 2005 My Photos album grid */
+.album-fb-grid { overflow: hidden; margin: 2px 0 0; }
+.album-fb-card {
+  width: 180px; float: left; margin: 0 10px 12px 0; text-decoration: none; color: inherit; font-size: 11px;
+}
+.album-fb-cover {
+  width: 75px; height: 56px; float: left; margin-right: 10px; border: 1px solid #B3B3B3; background: #D8DFEA;
+  overflow: hidden; display: block;
+}
+.album-fb-cover img {
+  width: 75px; height: 56px; object-fit: cover; display: block; border: 0;
+}
+.album-fb-empty {
+  width: 75px; height: 56px; display: grid; place-items: center;
+  background: #3B5998; color: #fff; font: bold 20px/1 "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.album-fb-name {
+  display: block; color: #3B5998; font: bold 11px/14px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.album-fb-meta { display: block; color: gray; font-size: 11px; }
+.album-list { margin: 0; }
+.album-list-row {
+  display: grid; grid-template-columns: 80px 1fr; gap: 10px;
+  margin: 0 0 10px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
+  align-items: start;
+}
+.album-list-cover {
+  display: block; width: 80px; height: 80px; border: 1px solid #B3B3B3; background: #D8DFEA;
+}
+.album-list-cover img, .album-tile-img {
+  width: 80px; height: 80px; object-fit: cover; display: block; border: 0;
+}
+.album-cover-fallback {
+  display: flex; width: 80px; height: 80px; align-items: center; justify-content: center;
+  background: #3B5998; color: #fff; font: bold 28px/1 var(--font);
+}
+.album-list-meta a { color: var(--fb); }
+.album-tile {
+  display: block; text-align: center; text-decoration: none; color: inherit;
+}
+.album-tile .album-cover-fallback, .album-tile .album-tile-img {
+  width: 100%; max-width: 100px; height: 75px; margin: 0 auto 4px;
+}
+.album-tile .album-tile-img { border: 1px solid #B3B3B3; object-fit: cover; }
+/* FB 2005 album photo thumbs ~130×97 */
+.photo-gallery {
+  display: flex; flex-wrap: wrap; gap: 12px 14px;
+}
+.photo-gallery-item {
+  width: 130px; margin: 0; text-align: left; font-size: 10px;
+}
+.photo-gallery-item .photo-thumb {
+  display: block; width: 130px; height: 97px; border: 1px solid #B3B3B3;
+  overflow: hidden; background: #D8DFEA; text-decoration: none;
+}
+.photo-gallery-item img {
+  width: 130px; height: 97px; object-fit: cover; display: block; border: 0;
+}
+.photo-gallery-item .album-photo-fallback {
+  width: 130px; height: 97px; display: flex; align-items: center; justify-content: center;
+  font: bold 28px var(--font); color: #fff; background: #3B5998;
+}
+.photo-gallery-item figcaption { margin: 3px 0 0; line-height: 13px; }
+.photo-gallery-item figcaption a { color: var(--fb); font-weight: bold; font-size: 11px; }
+.photo-gallery-item form { margin: 2px 0 0; }
+.photo-nav {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 6px 12px; margin: 0 0 10px; padding: 6px 8px;
+  background: #f7f7f7; border: 1px solid #ccc; font: 11px var(--font);
+}
+.photo-nav a { color: var(--fb); font-weight: bold; }
+.photo-nav-mid { text-align: center; flex: 1 1 auto; }
+.photo-nav-pos { margin: 0 10px; color: #555; font-weight: normal; }
+.photo-view { text-align: center; }
+.photo-view-img {
+  max-width: 100%; max-height: 520px; border: 1px solid #B3B3B3; display: inline-block;
+  background: #eee;
+}
+.photo-view-fallback {
+  width: 320px; height: 240px; margin: 0 auto; display: flex; align-items: center; justify-content: center;
+  font: bold 48px var(--font); color: #fff; border: 1px solid #B3B3B3; background: #3B5998;
+}
+.photo-caption {
+  margin: 8px auto 0; max-width: 480px; padding: 6px 8px;
+  background: #f7f7f7; border: 1px solid #ddd; font-size: 12px; color: #333; text-align: left;
+}
+.photo-caption-form { margin: 12px 0 0; text-align: left; }
+.photo-page .classic-page-lead a { color: var(--fb); }
+@media (max-width:780px){
+  .album-fb-card, .album-fb-cover, .album-fb-cover img, .album-fb-empty { width: 110px; }
+  .album-fb-cover, .album-fb-cover img, .album-fb-empty { height: 82px; }
+  .photo-gallery-item, .photo-gallery-item .photo-thumb,
+  .photo-gallery-item img, .photo-gallery-item .album-photo-fallback { width: 110px; height: 82px; }
+  .photo-nav { flex-direction: column; text-align: center; }
+}
+.photo-upload-form{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #EEEFF3}
+.wall-compose{margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid var(--line)}
+.feed-wall-box > .profile-box-body{padding-top:10px}
+.group-page #content.group-content { padding: 10px; }
+.group-page #content:not(.group-content) { padding: 10px 12px 14px; }
+.group-join-panel{margin:6px 0 10px;padding:0 0 8px;border-bottom:1px solid var(--line)}
+.group-join-status{
+  margin:0 0 8px;padding:0 0 6px;border-bottom:1px solid var(--line);
+  font:11px var(--font);color:#333;
+}
+.group-join-status b{display:block;color:#333;font-size:11px;font-weight:bold}
+.group-join-status .label{display:block;margin:2px 0 0;color:#777;font-weight:normal;font-size:10px}
+.profile-action-links .group-join-status{width:100%;border-bottom:1px solid var(--line)}
+.wall-mood{color:#777;font-size:10px;margin:0 0 4px}
+.sticker-chip{
+  display:inline-block;margin:4px 0;padding:2px 6px;
+  background:#D8DFEA;border:1px solid #B3B3B3;color:#3B5998;
+  font:11px var(--font);
+}
+.member-row{display:inline-flex;align-items:center;gap:8px}
+.member-row img,.member-row .avatar-fallback{flex:0 0 auto}
+.members-full .col-name{width:auto}
+.wall-media{margin:6px 0}
+.album-pick{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0;max-width:280px}
+.album-pick-item{display:block;width:48px;height:48px;margin:0;padding:0;cursor:pointer;position:relative}
+.album-pick-item input{position:absolute;left:2px;top:2px;z-index:1}
+.album-pick-item img,.album-pick-item .album-photo-fallback{
+  width:48px;height:48px;object-fit:cover;border:1px solid #B3B3B3;display:block;
+}
+.album-pick-item:has(input:checked) img{outline:2px solid var(--fb)}
+.albums-page .profile-box > h4,
+.group-page .profile-box > h4,
+.feed-page .profile-box > h4{
+  background:#D8DFEA;color:#3B5998;
+  font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
+}
+.albums-page .profile-box > h4 .edit,
+.group-page .profile-box > h4 .edit,
+.feed-page .profile-box > h4 .edit{color:gray;float:right;font-weight:normal;text-decoration:none}
+.albums-page .profile-box > h4 .edit:hover,
+.group-page .profile-box > h4 .edit:hover,
+.feed-page .profile-box > h4 .edit:hover{color:#3B5998}
+.profile .profile-box > h4{
+  background:#D8DFEA !important;color:#3B5998 !important;border-top:solid 1px #3B5998;
+}
+.profile .profile-box > h4 .edit{color:gray !important}
+.profile .profile-box > h4 .edit:hover{color:#3B5998 !important}
+@media (max-width:780px){.album-photo-grid{grid-template-columns:repeat(3,100px)}}
+
+/* People / Friends FB 2005 */
+.people-page #content.people-content{padding:10px}
+.people-lead{margin:0 0 8px;font:11px/16px var(--font);color:#333}
+.people-top-links{margin:0 0 10px;font:11px var(--font)}
+.people-top-links a{color:var(--fb)}
+.people-top-links span{margin:0 4px;color:#aaa}
+.people-subsection{
+  margin:14px 0 6px;padding:8px 0 0;border-top:1px solid #D8DFEA;
+  background:transparent;color:#3B5998;font:bold 11px var(--font);
+}
+.people-search-form{margin:0 0 10px}
+.page-tabs{
+  display:flex;flex-wrap:wrap;gap:0;margin:0 0 10px;padding:0;
+  border-bottom:1px solid #D8DFEA;
+}
+.page-tab{
+  display:inline-block;margin:0 2px 0 0;padding:3px 8px;
+  color:var(--fb);font:bold 11px/16px var(--font);text-decoration:none;
+}
+.page-tab:hover{background:#D8DFEA;color:var(--fb);text-decoration:none}
+.page-tab.is-active{background:#3B5998;color:#fff}
+.page-tab-badge{
+  margin-left:4px;padding:0 3px;background:#fff;color:#3B5998;font-size:10px;font-weight:bold;
+}
+.page-tab.is-active .page-tab-badge{background:#D8DFEA;color:#3B5998}
+.classic-person-row{
+  margin:0 0 8px;padding:0 0 8px;border-bottom:1px solid #eee;
+  font:11px/14px var(--font);overflow:hidden;
+}
+.classic-person-row:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.classic-person-name{
+  display:inline-flex;align-items:flex-start;gap:8px;
+  max-width:calc(100% - 12rem);color:var(--fb);text-decoration:none;vertical-align:top;
+}
+.classic-person-name:hover b{text-decoration:underline}
+.classic-person-name b{display:block;font-size:11px;color:var(--fb)}
+.classic-person-name .avatar-fallback,
+.classic-person-name img{
+  width:50px;height:50px;flex:0 0 auto;border:1px solid #B3B3B3;object-fit:cover;
+}
+.classic-person-sub{display:block;color:#777;font-size:10px;font-weight:normal;margin-top:1px}
+.classic-inline-actions{
+  float:right;margin:0;padding:2px 0 0;font:11px/16px var(--font);color:#777;text-align:right;
+}
+.classic-inline-actions form{display:inline;margin:0}
+.classic-inline-actions .inputsubmit{margin:0;padding:1px 6px;font-size:11px}
+.people-page .profile-box > h4{
+  background:#D8DFEA;color:#3B5998;
+  font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
+}
+/* Dedicated friends page — FB 2005 two columns */
+.friends-page #content.friends-content{
+  padding:10px;overflow:hidden;
+  display:grid;grid-template-columns:minmax(0,1fr) 196px;gap:10px;align-items:start;
+  box-sizing:border-box;
+}
+.friends-page #content.friends-content > .flash,
+.friends-page #content.friends-content > .error,
+.friends-page #content.friends-content > .friends-find{
+  grid-column:1 / -1;margin:0 0 0;
+}
+.friends-page .friends-find{margin:0}
+.friends-page .friends-find .inputtext{width:180px}
+.friends-main,.friends-side{float:none;width:auto;min-width:0;margin:0}
+.friends-page .profile-box{margin:0 0 10px}
+.friends-page .profile-box:last-child{margin-bottom:0}
+.friends-page .profile-box > h4{
+  background:#D8DFEA;color:#3B5998;
+  font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
+}
+.friends-page .profile-box > h4 .edit{color:gray;float:right;font-weight:normal;text-decoration:none}
+.friends-page .profile-box > h4 .edit:hover{color:#3B5998}
+
+.classic-person-row-side{
+  display:block;
+  overflow:hidden;
+}
+.classic-person-row-friend{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
+  overflow:visible;
+}
+.classic-person-row-friend .classic-person-name{max-width:none;flex:1 1 auto;min-width:0}
+.classic-inline-actions-friend{
+  float:none;flex:0 0 auto;white-space:nowrap;padding-top:2px;text-align:right;
+}
+.classic-person-row-side .classic-person-name{max-width:100%}
+.classic-person-row-side .classic-person-name .avatar-fallback,
+.classic-person-row-side .classic-person-name img{width:32px;height:32px}
+.classic-person-row-side .classic-inline-actions{float:none;display:block;margin:3px 0 0 40px;text-align:left}
+.classic-inline-actions-stack{float:none;display:block;margin:4px 0 0 40px;text-align:left}
+.classic-inline-actions-stack form{display:inline;margin:0 6px 0 0}
+.friends-side-foot{margin:6px 0 0;font:11px var(--font)}
+@media (max-width:560px){
+  .friends-page #content.friends-content{grid-template-columns:1fr}
+  .classic-person-name{max-width:100%}
+  .classic-inline-actions{float:none;display:block;margin:4px 0 0 58px;text-align:left}
+}
+
+
+/* ===== Profile FB Dec 2005 (profile.css) ===== */
+.profile #content.profile-content {
+  padding: 10px 0 10px 10px !important;
+  display: block;
+  overflow: hidden;
+  background: url("../img/narrowleftbg.gif") repeat-y;
+}
+.profile-left {
+  float: left;
+  width: 200px;
+  margin: 0 10px 0 0;
+}
+.profile-right {
+  float: left;
+  width: 396px;
+  margin: 0;
+  min-width: 0;
+}
+.profile-picture {
+  width: 200px;
+  text-align: center;
+}
+.profile-picture img,
+.profile-picture .avatar-fallback {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #B3B3B3;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto;
+}
+.profile-action-links {
+  margin: 0;
+  padding: 10px 0;
+  background: #fff;
+  border-bottom: 0;
+}
+.profile-action-links a,
+.profile-action-links button,
+.profile-action-links .muted {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 2px 3px;
+  border: 0;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+  color: #3B5998;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+}
+.profile-action-links form { margin: 0; }
+.profile-action-links a:hover,
+.profile-action-links button:hover {
+  color: #fff !important;
+  background: #3B5998 !important;
+  text-decoration: none !important;
+}
+.profile-action-links .muted,
+.profile-action-links button.muted { color: #777; cursor: default; }
+.profile-action-links button.muted:hover { color: #fff !important; background: #3B5998 !important; cursor: pointer; }
+
+.profile .profile-box {
+  margin: 0 0 10px;
+  border: 0;
+  background: transparent;
+}
+.profile .profile-box > h4 {
+  margin: 0;
+  padding: 2px 8px;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  color: #3B5998 !important;
+  background: #D8DFEA !important;
+  border-top: solid 1px #3B5998;
+  overflow: hidden;
+}
+.profile .profile-box > h4 .edit {
+  float: right;
+  color: gray !important;
+  font-weight: normal;
+  text-decoration: none;
+}
+.profile .profile-box > h4 .edit:hover { color: #3B5998 !important; }
+.profile .profile-box-body {
+  padding: 10px 8px 15px;
+  line-height: 13px;
+}
+.profile .profile-subsection h5 {
+  color: #3B5998;
+  font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0 0 6px;
+  padding: 2px 8px;
+  background: #eee;
+  border-top: solid 1px #ccc;
+  border-bottom: 0;
+}
+.profile .infotable { margin: 0 0 8px; width: 100%; border-collapse: collapse; }
+.profile .infotable td {
+  vertical-align: top;
+  font-size: 11px;
+  line-height: 13px;
+  padding: 1px 0;
+}
+.profile .infotable td.label {
+  width: 120px;
+  color: gray;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+.profile-friend-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 6px 0;
+}
+.profile-friend-tile {
+  width: 62px;
+  margin: 0 3px 8px 0;
+  text-align: center;
+  font-size: 11px;
+  color: #3B5998;
+  line-height: 1.2;
+}
+.profile-friend-tile img,
+.profile-friend-tile .avatar-fallback {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 4px;
+  border: 1px solid #B3B3B3;
+  object-fit: cover;
+  display: block;
+  font-size: 16px;
+}
+
+/* Info / legal pages — about + FAQ */
+.about #content { margin: 0; padding: 0 20px 20px; }
+.about #tabs { margin: 0 0 20px; padding-top: 20px; }
+.about .fullwidth { margin: 0 0 10px; }
+.about .fullwidth h4,
+.about #faqanswers h4,
+.about #faqindex h4 {
+  border-bottom: solid 1px #D8DFEA;
+  margin: 12px 0 8px;
+  padding: 0 0 2px;
+  font-size: 13px;
+  color: #000;
+}
+.about #faqindex { line-height: 16px; padding: 0 0 10px; overflow: hidden; }
+.about #faqindex .faq-link { margin: 4px 0; }
+.about #faqanswers { line-height: 16px; padding: 0 0 10px; }
+.about #faqanswers p { margin: 0 0 12px; padding-right: 40px; }
+.about .halfwidth p { line-height: 16px; margin: 10px 0; }
+.legal-content, .profile-box { /* noop legacy */ }
+
+@media (max-width: 780px) {
+  .profile-left, .profile-right { float: none; width: auto; margin: 0 0 12px; }
+  .profile-picture, .profile-picture img, .profile-picture .avatar-fallback {
+    width: 100%; max-width: 200px; height: auto; aspect-ratio: 1;
+  }
+}
+
+/* ===== Profile polish FB2005 wall ===== */
+.profile .profile-subsection h5 {
+  color: #3B5998 !important;
+  font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif !important;
+  margin: 8px 0 6px !important;
+  padding: 2px 8px !important;
+  background: #eee !important;
+  border-top: solid 1px #ccc !important;
+  border-bottom: 0 !important;
+}
+.profile .profile-subsection:first-child h5 { margin-top: 0 !important; }
+.profile .infotable { margin: 0 0 8px; }
+.profile .infotable td.label { width: 120px; }
+
+.profile-friend-tile img,
+.profile-friend-tile .avatar-fallback {
+  width: 50px; height: 50px; margin: 0 auto 4px; border: 1px solid #B3B3B3;
+  object-fit: cover; display: block; font-size: 16px;
+}
+
+/* Photos on profile — archive #photos .album */
+.profile #photos,
+.profile .profile-albums { overflow: hidden; }
+.profile .profile-albums .album {
+  width: 180px; float: left; margin: 0 10px 10px 0; font-size: 11px;
+}
+.profile .profile-albums .album img,
+.profile .profile-albums .album .album-cover-fallback {
+  width: 75px; height: 56px; float: left; margin-right: 10px;
+  border: 1px solid #B3B3B3; object-fit: cover; display: block;
+}
+.profile .profile-albums .album .album-cover-fallback {
+  background: #3B5998; color: #fff; font: bold 20px/56px var(--font); text-align: center;
+}
+.profile .profile-albums .album .date { color: gray; display: block; }
+.profile .profile-albums .album .album-title { color: #3B5998; font-weight: bold; }
+
+.profile .profilelinks { margin: 0; padding: 0 0 0 10px; list-style: disc; color: #3B5998; }
+.profile .profilelinks li { padding: 0 0 5px; }
+
+/* Wall — archive wall.css */
+.profile .profile-box.wall-box > .profile-box-body {
+  padding: 10px;
+  background: #f7f7f7;
+}
+.wallpost {
+  float: none; clear: both; width: 100%; margin: 0 0 15px; padding: 0;
+  box-sizing: border-box;
+  display: block;
+}
+.wallpost:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+.wallpost .wp-table { width: 100%; border-collapse: collapse; }
+.wallpost .wp-table td { padding: 0; vertical-align: top; }
+.wallpost td.image { width: 55px; text-align: left; }
+.wallpost td.image img,
+.wallpost td.image .avatar-fallback {
+  width: 50px; height: 50px; margin-right: 5px; border: 1px solid #B3B3B3;
+  object-fit: cover; display: block;
+}
+.wallpost .info {
+  width: 100%;
+  border-top: solid 1px #3B5998;
+}
+.wallpost .info .header {
+  padding: 3px 5px;
+  background: #f7f7f7;
+  border-bottom: solid 1px #D8DFEA;
+  font-size: 11px;
+}
+.wallpost .info .text { padding: 5px; background: #fff; font-size: 11px; line-height: 14px; }
+.wallpost .info .actions {
+  padding: 3px 5px;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+  clear: right;
+  font-size: 11px;
+  color: #777;
+}
+.wallpost .info .actions a:hover { text-decoration: underline; }
+.wallpost .wall-comment {
+  margin: 4px 0 0; padding: 2px 5px; font-size: 11px; background: #fff;
+}
+.profile .minifeed-item {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
+  font-size: 11px; line-height: 14px;
+}
+.profile .minifeed-item:last-child { border-bottom: 0; }
+
+/* wallposter on profile wall */
+.profile .wall-box .wallposter {
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  border-bottom: solid 1px #D8DFEA;
+  background: transparent;
+}
+.profile .wall-box .wallposter textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #BDC7D8;
+  padding: 3px;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.profile .wall-box .wallpost .info .header a { color: #3B5998; }
+.profile .wall-box .wallpost .info .actions .linkish,
+.profile .wall-box .wallpost .info .actions a { color: #3B5998; }
+.profile .wall-box .clearfix { height: 0; clear: both; overflow: hidden; }
+
+/* ===== Wall chrome global FB2005 ===== */
+.wall-box > .profile-box-body,
+.feed-wall-box.wall-box > .profile-box-body,
+.group-wall-box > .profile-box-body {
+  padding: 10px;
+  background: #f7f7f7;
+  overflow: hidden;
+}
+.wallposter-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.wallposter-tools .wallposter-go { margin-left: 0; order: -1; }
+.wallposter-tools .compose-more { font-size: 11px; }
+.wallposter textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #BDC7D8;
+  padding: 3px;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  min-height: 48px;
+}
+.wallpost-edit { float: right; font-weight: normal; }
+.wallpost-edit a { color: #3B5998; }
+.wallpost .info .actions .linkish,
+.wallpost .info .actions a { color: #3B5998; }
+.wallpost .wall-comment {
+  margin: 4px 0 0; padding: 2px 5px; font-size: 11px; background: #fff;
+}
+.wallpost td.image .avatar-fallback.group-mark {
+  width: 50px; height: 50px; display: grid; place-items: center;
+  color: #fff; font: bold 20px/1 "lucida grande", tahoma, verdana, arial, sans-serif;
+  border: 1px solid #B3B3B3;
+}
+.news-item {
+  margin: 0 0 12px;
+  padding: 0 0 8px;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+}
+
+/* ===== Feed/group polish FB2005 ===== */
+.feed-page .feed-content,
+.group-page .group-content {
+  padding: 10px !important;
+}
+.feed-page .profile-box,
+.group-page .profile-box {
+  margin: 0 0 10px;
+  border: 0;
+  background: transparent;
+}
+.feed-page .profile-box-body,
+.group-page .profile-box-body {
+  padding: 10px 8px 12px;
+  line-height: 13px;
+  background: #fff;
+}
+.feed-page .wall-box > .profile-box-body,
+.group-page .wall-box > .profile-box-body {
+  background: #f7f7f7;
+}
+.feed-page .news-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 6px 8px;
+  margin: 0 0 10px;
+  padding: 6px 8px 8px;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+}
+.feed-page .news-item .news-body { padding-right: 0; }
+.feed-page .news-item .news-time {
+  position: static; display: inline; margin-left: 4px; font-size: 11px;
+}
+.feed-page .news-card {
+  margin: 4px 0; padding: 5px; border: solid 1px #D8DFEA; background: #fff;
+}
+.feed-page .news-icon {
+  width: 14px; height: 14px; border-radius: 0; opacity: 1;
+}
+.feed-rail .profile-box-body,
+.group-rail .profile-box-body {
+  font-size: 11px;
+}
+.feed-rail .req-row,
+.feed-rail .shared-row {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
+}
+.feed-rail .req-row:last-child,
+.feed-rail .shared-row:last-child { border-bottom: 0; }
+.feed-rail .status-box textarea,
+.feed-rail .status-box .inputtext,
+.feed-rail .status-box input[type="text"] {
+  width: 100%; box-sizing: border-box; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border: 1px solid #BDC7D8; padding: 2px;
+}
+
+
+/* ===== Utility pages FB2005 ===== */
+.clear { clear: both; height: 0; overflow: hidden; margin: 0; padding: 0; border: 0; }
+.profile .profile-albums .clear { clear: both; }
+
+.search-page .profile-box > h4,
+.events-page .profile-box > h4,
+.notifications-page .profile-box > h4,
+.messages-page .profile-box > h4,
+.account-page .profile-box > h4,
+.profile-edit-page .profile-box > h4 {
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.search-page .profile-box-body,
+.events-page .profile-box-body,
+.notifications-page .profile-box-body,
+.messages-page .profile-box-body,
+.account-page .profile-box-body,
+.profile-edit-page .profile-box-body {
+  padding: 10px 8px 12px; line-height: 13px;
+}
+.search-page #content,
+.events-page #content,
+.notifications-page #content,
+.account-page #content,
+.profile-edit-page #content { padding: 10px; }
+.search-page .profilelinks { margin: 0; padding: 0 0 0 16px; list-style: disc; color: #3B5998; }
+.search-page .profilelinks li { padding: 0 0 4px; }
+.search-page .minifeed-item {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.events-page .event-row {
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.events-page .event-row:last-child { border-bottom: 0; }
+.notifications-page .notify-row {
+  display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;
+  margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.notifications-page .notify-row.is-unread .notify-body { font-weight: bold; }
+.notifications-page .profile-box > h4 .edit,
+.notifications-page .profile-box > h4 form.edit { float: right; font-weight: normal; }
+.notifications-page .profile-box > h4 .linkish { color: gray; }
+.messages-content {
+  display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 10px; padding: 10px; align-items: start;
+}
+.messages-inbox .msg-thread { margin: 0 0 6px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
+.messages-inbox .msg-thread.is-active a { font-weight: bold; }
+.messages-thread .chat-log { max-height: 360px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
+.messages-thread .chat-line { margin: 0 0 8px; font-size: 11px; line-height: 14px; }
+.messages-thread .chat-compose { margin: 0 0 8px; }
+.messages-thread .chat-compose textarea,
+.messages-thread .chat-compose .inputtext {
+  width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.messages-thread .chat-stickers { margin-top: 4px; }
+.messages-thread .sticker-btn { margin: 2px; font-size: 11px; }
+.account-page .formtable .inputtext,
+.account-page .formtable input[type="password"] {
+  width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+@media (max-width: 780px) {
+  .messages-content { grid-template-columns: 1fr; }
+}
+
+/* ===== More utility FB2005 ===== */
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.group-page #content:not(.group-content) {
+  padding: 10px;
+}
+  margin: 0 0 12px; padding: 0 0 10px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+  width: 100%; max-width: 420px; box-sizing: border-box;
+  border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.feed-page .wall-box > .profile-box-body { background: #f7f7f7; padding: 10px; }
+
+.group-page .event-row {
+  margin: 8px 0 0; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.group-page .event-row:last-child { border-bottom: 0; }
+.profile-edit-page .formtable textarea { width: 100%; max-width: 360px; }
+.profile-edit-page .formtable .inputtext { max-width: 280px; }
+
+.group-page .profile-subsection h5,
+.profile-edit-page .profile-subsection h5 {
+  color: #3B5998; font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0 0 6px; padding: 2px 8px; background: #eee; border-top: solid 1px #ccc; border-bottom: 0;
+}
+select.inputtext {
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border: 1px solid #BDC7D8; padding: 2px; background: #fff;
+}
+#loginform select.inputtext { width: auto; }
+
+.welcome .welcome-cta { margin: 16px 0 0; font-size: 11px; }
+.welcome .welcome-cta a { font-weight: bold; }
+
+.reg-wrap { margin: 10px 20px; max-width: 480px; }
+.reg-wrap .formtable { margin: 10px auto; }
+#squicklogin .file-hint { margin: 6px 0 0; }
+

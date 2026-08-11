@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ photo.title }} — {{ album.title }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page photo-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ album.title }}</h1>
+        <div class="subtitle">фото {{ pos }} из {{ n }}</div>
+    </div>
+    <div id="content" class="albums-content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <div class="photo-nav">
+            <span class="photo-nav-back"><a href="{% url 'albums.show' album.id %}">← {{ album.title }}</a></span>
+            <span class="photo-nav-mid">
+                {% if prev_id %}<a href="{% url 'albums.photos.show' album.id prev_id %}">« предыдущее</a>{% else %}<span class="muted">« предыдущее</span>{% endif %}
+                <span class="photo-nav-pos">фото {{ pos }} из {{ n }}</span>
+                {% if next_id %}<a href="{% url 'albums.photos.show' album.id next_id %}">следующее »</a>{% else %}<span class="muted">следующее »</span>{% endif %}
+            </span>
+            <span class="photo-nav-owner"><a href="{% url 'profile' album.social_user.id %}">{{ album.social_user.name }}</a></span>
+        </div>
+
+        <div class="profile-box">
+            <h4>{{ photo.title|default:"Фото" }}</h4>
+            <div class="profile-box-body photo-view">
+                {% if photo.url %}
+                <img class="photo-view-img" src="{{ photo.url }}" alt="{{ photo.title }}">
+                {% else %}
+                <div class="photo-view-fallback" style="background:{{ photo.color|default:'#3B5998' }}">{{ photo.title|slice:":1"|upper }}</div>
+                {% endif %}
+                {% if photo.title %}<p class="photo-caption">{{ photo.title }}</p>{% endif %}
+
+                {% if is_owner %}
+                <form method="post" action="{% url 'albums.photos.caption' album.id photo.id %}" class="photo-caption-form">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="label">Название:</td>
+                            <td><input class="inputtext" name="title" value="{{ photo.title }}" maxlength="120" style="width:100%" required></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                ·
+                                <button type="submit" class="linkish" form="photo-cover-form">Сделать обложкой</button>
+                                ·
+                                <button type="submit" class="linkish muted" form="photo-del-form"
+                                    onclick="return confirm('Удалить это фото?');">Удалить</button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+                <form id="photo-cover-form" method="post" action="{% url 'albums.photos.cover' album.id photo.id %}">{% csrf_token %}</form>
+                <form id="photo-del-form" method="post" action="{% url 'albums.photos.delete' album.id photo.id %}">{% csrf_token %}</form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

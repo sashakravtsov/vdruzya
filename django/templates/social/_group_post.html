@@ -1,0 +1,77 @@
+{# Group wall — archive wallpost chrome. Expects: p, group, is_member, is_admin, me #}
+{% load vd %}
+<div class="wallpost" id="topic-{{ p.id }}">
+    <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
+        <td class="image">
+            {% if p.posted_as_community %}
+            <span class="avatar-fallback group-mark" style="background:{{ group.cover_color|default:'#3B5998' }}">{{ group.name|slice:":1"|upper }}</span>
+            {% else %}
+            {% avatar p.social_user 50 %}
+            {% endif %}
+        </td>
+        <td>
+            <div class="info">
+                <div class="header">
+                    {% if p.posted_as_community %}
+                    <a href="{% url 'groups.show' group.id %}"><b>{{ group.name }}</b></a>
+                    <span class="muted"> · от имени группы</span>
+                    {% else %}
+                    <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
+                    {% endif %}
+                    {% if p.created_at %}<span class="muted"> · {{ p.created_at|timesince }} назад</span>{% endif %}
+                    {% if is_admin or me and me.id == p.social_user_id %}
+                    <span class="wallpost-edit">
+                        <a href="{% url 'groups.posts.edit' group.id p.id %}">ред.</a>
+                        ·
+                        <form method="post" action="{% url 'groups.posts.delete' group.id p.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text">
+                    {% if p.mood or p.emoji %}<div class="wall-mood muted">{% if p.emoji %}{{ p.emoji }} {% endif %}{% if p.mood %}настроение: {{ p.mood|mood_ru }}{% endif %}</div>{% endif %}
+                    {% if p.body %}{{ p.body|linebreaksbr }}{% endif %}
+                    {% if p.sticker_url %}<p><img src="{{ p.sticker_url }}" alt="" class="sticker-inline"></p>{% endif %}
+                    {% with extras=p.media.all %}
+                    {% if extras %}
+                    <div class="group-photo-grid wall-media">
+                        {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
+                    </div>
+                    {% elif p.media_url %}
+                    <p><img src="{{ p.media_url }}" alt="" class="news-photo"></p>
+                    {% endif %}
+                    {% endwith %}
+                    {% if p.kind == 'poll' and p.poll %}
+                    <form method="post" action="{% url 'groups.posts.poll' group.id p.id %}" class="poll-box">{% csrf_token %}
+                        {% for o in p.poll.options.all %}
+                        <label class="poll-opt"><input type="radio" name="option_id" value="{{ o.id }}" required> {{ o.label }} <span class="muted">({{ o.votes_count }})</span></label>
+                        {% endfor %}
+                        {% if is_member %}<p><input type="submit" class="inputsubmit" value="Голос"></p>{% endif %}
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="actions">
+                    {% if is_member %}
+                    <form method="post" action="{% url 'groups.react' group.id p.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">Нравится</button>
+                    </form>
+                    ({{ p.likes|default:0 }})
+                    · <a href="#c-{{ p.id }}">Комментировать</a>{% if p.n_comments %} ({{ p.n_comments }}){% endif %}
+                    {% else %}
+                    ★ {{ p.likes|default:0 }} · комм. {{ p.n_comments|default:0 }}
+                    {% endif %}
+                </div>
+                {% for c in p.comments.all %}
+                {% include "social/_group_comment.html" with c=c group=group me=me is_admin=is_admin %}
+                {% endfor %}
+                {% if is_member %}
+                <form method="post" action="{% url 'groups.comment' group.id p.id %}" class="wall-comment" id="c-{{ p.id }}">{% csrf_token %}
+                    <input class="inputtext" name="body" style="width:70%" placeholder="Написать комментарий…" required>
+                    <input type="submit" class="inputsubmit" value="→">
+                </form>
+                {% endif %}
+            </div>
+        </td>
+    </tr></table>
+</div>

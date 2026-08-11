@@ -1,0 +1,219 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{% if tab == 'friends' %}Друзья{% elif tab == 'requests' %}Заявки{% elif tab == 'search' %}Поиск людей{% else %}Люди{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header"><h1>{% if tab == 'friends' %}Друзья{% elif tab == 'requests' %}Заявки{% elif tab == 'search' %}Поиск людей{% else %}Люди{% endif %}</h1></div>
+    <div id="content" class="people-content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <p class="people-lead">Рекомендации по общим друзьям, городу, группам и проектам.</p>
+        <p class="people-top-links">
+            <a href="{% url 'invite.mine' %}">Пригласить друга</a>
+        </p>
+
+        <nav class="page-tabs" aria-label="Разделы людей">
+            <a class="page-tab{% if tab == 'suggested' %} is-active{% endif %}" href="{% url 'people' %}">Рекомендации</a>
+            <a class="page-tab{% if tab == 'friends' %} is-active{% endif %}" href="{% url 'friends' %}">Друзья</a>
+            <a class="page-tab{% if tab == 'requests' %} is-active{% endif %}" href="?tab=requests">Заявки{% if pending %}<span class="page-tab-badge">{{ pending|length }}</span>{% endif %}</a>
+            <a class="page-tab{% if tab == 'search' %} is-active{% endif %}" href="?tab=search{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Поиск</a>
+        </nav>
+
+        {% if tab == 'suggested' %}
+        <div class="profile-box">
+            <h4>Рекомендации</h4>
+            <div class="profile-box-body">
+                {% for row in suggestions %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' row.user.id %}">
+                        {% avatar row.user 50 %}
+                        <span>
+                            <b>{{ row.user.name }}</b>
+                            {% if row.subtitle %}<span class="classic-person-sub">{{ row.subtitle }}</span>{% endif %}
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'friends.request' row.user.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="linkish">Добавить в друзья</button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">Пока нет рекомендаций — пригласите друзей или откройте поиск.</p>
+                <p class="people-top-links"><a href="{% url 'invite.mine' %}">Пригласить</a> · <a href="?tab=search">Найти людей</a></p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% elif tab == 'friends' %}
+        <form class="people-search-form" method="get" action="{% url 'people' %}">
+            <input type="hidden" name="tab" value="friends">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="label">Найти:</td>
+                    <td>
+                        <input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя друга" autocomplete="off">
+                        <input class="inputsubmit" type="submit" value="Найти">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <div class="profile-box">
+            <h4>Мои друзья{% if friends %} ({{ friends|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% for f in friends %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' f.id %}">
+                        {% avatar f 50 %}
+                        <span>
+                            <b>{{ f.name }}</b>
+                            {% if f.headline %}<span class="classic-person-sub">{{ f.headline }}</span>
+                            {% elif f.city %}<span class="classic-person-sub">{{ f.city }}</span>{% endif %}
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'messenger.start' f.id %}">{% csrf_token %}
+                            <button type="submit" class="linkish">Написать</button>
+                        </form>
+                        ·
+                        <form method="post" action="{% url 'friends.remove' f.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="linkish" onclick="return confirm('Удалить из друзей?');">Удалить</button>
+                        </form>
+                        ·
+                        <form method="post" action="{% url 'friends.block' f.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="linkish" onclick="return confirm('Заблокировать?');">Заблокировать</button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">Пока нет друзей — начните с приглашения.</p>
+                <p class="people-top-links"><a href="{% url 'invite.mine' %}">Ссылка-приглашение</a></p>
+                {% endfor %}
+
+                {% if blocked %}
+                <h4 class="people-subsection">Заблокированные</h4>
+                {% for b in blocked %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' b.id %}">
+                        {% avatar b 50 %}
+                        <span><b>{{ b.name }}</b></span>
+                    </a>
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'friends.unblock' b.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="linkish">Разблокировать</button>
+                        </form>
+                    </span>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        {% elif tab == 'requests' %}
+        <div class="profile-box">
+            <h4>Заявки в друзья{% if pending %} ({{ pending|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% for r in pending %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' r.user.id %}">
+                        {% avatar r.user 50 %}
+                        <span>
+                            <b>{{ r.user.name }}</b>
+                            {% if r.user.headline %}<span class="classic-person-sub">{{ r.user.headline }}</span>
+                            {% elif r.user.city %}<span class="classic-person-sub">{{ r.user.city }}</span>{% endif %}
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'friends.accept' r.user.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="inputsubmit">Принять</button>
+                        </form>
+                        ·
+                        <form method="post" action="{% url 'friends.reject' r.user.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="linkish">Отклонить</button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">Нет новых заявок.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% if outgoing %}
+        <div class="profile-box">
+            <h4>Исходящие заявки ({{ outgoing|length }})</h4>
+            <div class="profile-box-body">
+                {% for r in outgoing %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' r.friend.id %}">
+                        {% avatar r.friend 50 %}
+                        <span><b>{{ r.friend.name }}</b></span>
+                    </a>
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'friends.cancel' r.friend.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="linkish">Отменить заявку</button>
+                        </form>
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% elif tab == 'search' %}
+        <form class="people-search-form" method="get" action="{% url 'people' %}">
+            <input type="hidden" name="tab" value="search">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="label">Поиск:</td>
+                    <td>
+                        <input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя, город или статус" autocomplete="off">
+                        <input class="inputsubmit" type="submit" value="Найти">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        {% if not q %}
+        <p class="muted">Введите имя, город или статус для поиска людей.</p>
+        {% elif results %}
+        <div class="profile-box">
+            <h4>Результаты</h4>
+            <div class="profile-box-body">
+                {% for p in results %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                        {% avatar p 50 %}
+                        <span>
+                            <b>{{ p.name }}</b>
+                            {% if p.city or p.headline %}<span class="classic-person-sub">{{ p.city|default:p.headline }}</span>{% endif %}
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions">
+                        {% include "partials/friend_actions.html" with p=p r=p.rel %}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">Никого не найдено по запросу «{{ q }}».</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% if results.has_other_pages %}
+        <p class="people-top-links">
+            {% if results.has_previous %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;p={{ results.previous_page_number }}">« назад</a>{% endif %}
+            стр. {{ results.number }} / {{ results.paginator.num_pages }}
+            {% if results.has_next %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;p={{ results.next_page_number }}">вперёд »</a>{% endif %}
+        </p>
+        {% endif %}
+        {% else %}
+        <p class="muted">Никого не найдено по запросу «{{ q }}».</p>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

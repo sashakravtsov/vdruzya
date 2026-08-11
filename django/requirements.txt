@@ -1,0 +1,14 @@
+Django==6.1
+psycopg[binary]>=3.2
+django-environ>=0.12
+bcrypt>=4.0
+argon2-cffi>=23.0
+Pillow>=10.0
+whitenoise>=6.6
+gunicorn>=23.0
+redis>=5.0
+channels>=4.2
+daphne>=4.1
+
+django-storages[s3]>=1.14
+boto3>=1.34

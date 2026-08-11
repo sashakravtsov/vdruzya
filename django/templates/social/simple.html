@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}{{ title }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>{{ title }}</h1></div>
+    <div id="content">
+        <div class="profile-box">
+            <h4>{{ title }}</h4>
+            <div class="profile-box-body">
+                <p>{{ lead }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

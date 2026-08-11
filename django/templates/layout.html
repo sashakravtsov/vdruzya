@@ -1,0 +1,48 @@
+{% load static %}
+<!doctype html>
+<html lang="ru" id="vdruzya">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ВДрузья{% endblock %}</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="{% static 'css/classic.css' %}">
+    {% block head %}{% endblock %}
+    <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body class="classic-ui{% if is_home %} welcome{% endif %}{% block bodyclass %}{% endblock %}">
+<div id="book">
+    <div id="pageheader">
+        <h1 id="homelink"><a href="{% if user.is_authenticated %}{% url 'feed' %}{% else %}{% url 'home' %}{% endif %}" title="вдрузья"><span class="hide">вдрузья</span></a></h1>
+        <ul id="gnav">
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'feed' %}">главная</a></li>
+                <li><a href="{% url 'search' %}">поиск</a></li>
+                <li><a href="{% url 'people' %}">люди</a></li>
+                {% if me %}<li><a href="{% url 'profile' me.id %}">профиль</a></li>{% endif %}
+                <li><a href="{% url 'security' %}">помощь</a></li>
+                <li>
+                    <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}
+                        <button type="submit" class="linkish">выход</button>
+                    </form>
+                </li>
+            {% else %}
+                <li><a href="{% url 'login' %}">вход</a></li>
+                <li><a href="{% url 'register' %}">регистрация</a></li>
+                <li><a href="{% url 'about' %}">о сайте</a></li>
+                <li><a href="{% url 'security' %}">помощь</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    {% if is_home %}
+        {% block welcome %}{% endblock %}
+    {% else %}
+        {% block sidebar %}{% include "partials/sidebar.html" %}{% endblock %}
+        {% block pagebody %}{% endblock %}
+    {% endif %}
+
+    {% block footer %}{% include "partials/footer.html" %}{% endblock %}
+</div>
+</body>
+</html>

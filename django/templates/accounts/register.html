@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}ВДрузья | Регистрация{% endblock %}
+{% block sidebar %}
+<div id="sidebar">
+    <ol id="nav">
+        <li><a href="{% url 'home' %}">Главная</a></li>
+        <li><a href="{% url 'login' %}">Вход</a></li>
+        <li><a href="{% url 'register' %}">Регистрация</a></li>
+    </ol>
+    <div id="ssponsor"></div>
+</div>
+{% endblock %}
+
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>Регистрация</h1></div>
+    <div id="content">
+        {% if error %}<div id="error"><p>{{ error }}</p></div>{% endif %}
+        <div class="reg-wrap">
+            {% if need_invite and not inviter and not invite %}
+            <p>Регистрация во ВДрузья — <b>только по приглашению</b>.</p>
+            <p class="muted">Попросите ссылку у друга, который уже в сети, или введите код приглашения ниже.</p>
+            {% elif inviter %}
+            <p>Вас приглашает <a href="{% url 'profile' inviter.id %}"><b>{{ inviter.name }}</b></a>. Заполните поля ниже.</p>
+            {% else %}
+            <p>Чтобы зарегистрироваться во ВДрузья, заполните поля ниже.</p>
+            {% endif %}
+
+            <form method="post" action="{% url 'register' %}">{% csrf_token %}
+                <table class="formtable" border="0" cellspacing="0">
+                    <tr>
+                        <td class="label">Код приглашения:</td>
+                        <td>
+                            <input type="text" id="invite" class="inputtext" name="invite" size="30"
+                                   value="{{ invite }}" {% if need_invite %}required{% endif %}
+                                   autocomplete="off" placeholder="из ссылки друга">
+                            {% if inviter %}<div class="file-hint muted">приглашение от {{ inviter.name }}</div>{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Имя:</td>
+                        <td><input type="text" id="name" class="inputtext" name="name" size="30" required value="{{ request.POST.name }}"></td>
+                    </tr>
+                    <tr>
+                        <td class="label">E-mail:</td>
+                        <td><input type="email" id="email" class="inputtext" name="email" size="30" required value="{{ request.POST.email }}" autocomplete="username"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><p id="passwordnote">Вы можете выбрать любой пароль. Не используйте пароль от почты.</p></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Пароль:</td>
+                        <td><input type="password" id="pass" class="inputpassword" name="password" size="30" required minlength="8" autocomplete="new-password"></td>
+                    </tr>
+                </table>
+                <p id="confirmterm">
+                    <input type="checkbox" id="terms" name="terms" class="inputcheckbox" value="1" required>
+                    Я прочитал(а) и принимаю <a href="{% url 'terms' %}">Правила использования</a>.
+                </p>
+                <div class="formbuttons">
+                    <input type="submit" class="inputsubmit" value="Зарегистрироваться!">
+                </div>
+            </form>
+            <p class="muted">Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
+        </div>
+    </div>
+    {% include "partials/footer.html" %}
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}

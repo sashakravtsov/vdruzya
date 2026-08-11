@@ -1,0 +1,153 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{% if mine %}Мои группы{% else %}Группы{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+{# FB 2005 Groups directory — same chrome as People: #header + #content, no infocontent inset #}
+<div id="pagebody" class="groups-index">
+    <div id="header"><h1>{% if mine %}Мои группы{% else %}Группы{% endif %}</h1></div>
+    <div id="content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <div class="groups-nav">
+            <a href="{% url 'groups' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if not mine %} class="is-active"{% endif %}>Обзор</a>
+            ·
+            <a href="{% url 'groups' %}?mine=1"{% if mine %} class="is-active"{% endif %}>Мои группы</a>
+            {% if me and not mine %} · <a href="#create">Создать группу</a>{% endif %}
+        </div>
+
+        {% if not mine %}
+        <form method="get" class="groups-search">
+            {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+            <label>Поиск:</label>
+            <input class="inputtext" name="q" value="{{ q }}" placeholder="Название группы" autocomplete="off">
+            <input class="inputsubmit" type="submit" value="Найти">
+        </form>
+        {% if categories %}
+        <p class="groups-cats">
+            {% for cat in categories %}
+            <a href="?category={{ cat|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if category == cat %} class="is-active"{% endif %}>{{ cat|ru_label }}</a>{% if not forloop.last %} · {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% endif %}
+
+        {% if mine %}
+        {# FB 2005 My Groups table: Name | Type | Members | actions #}
+        {% if communities %}
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead>
+                <tr>
+                    <th class="col-name">Группа</th>
+                    <th class="col-type">Тип</th>
+                    <th class="col-n">Участники</th>
+                    <th class="col-act"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in communities %}
+                <tr>
+                    <td class="col-name">
+                        <a href="{% url 'groups.show' g.id %}"><b>{{ g.name }}</b></a>
+                        {% if g.privacy == 'closed' %}<span class="muted"> · закрытая</span>{% endif %}
+                        {% if g.short_description %}<div class="muted">{{ g.short_description|truncatewords:18 }}</div>{% endif %}
+                    </td>
+                    <td class="col-type">{% if g.category %}{{ g.category|ru_label }}{% else %}—{% endif %}</td>
+                    <td class="col-n">{{ g.n_members }}</td>
+                    <td class="col-act">
+                        <a href="{% url 'groups.show' g.id %}">открыть</a>
+                        ·
+                        <form method="post" action="{% url 'groups.leave' g.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">выйти</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">Вы ещё не состоите ни в одной группе.</p>
+        <p><a href="{% url 'groups' %}">Смотреть обзор</a>{% if me %} · <a href="{% url 'groups' %}#create">Создать группу</a>{% endif %}</p>
+        {% endif %}
+        {% if page.paginator.num_pages > 1 %}
+        <p class="pager">
+            {% if page.has_previous %}<a href="?mine=1&amp;p={{ page.previous_page_number }}">← назад</a>{% endif %}
+            стр. {{ page.number }}/{{ page.paginator.num_pages }}
+            {% if page.has_next %}<a href="?mine=1&amp;p={{ page.next_page_number }}">вперёд →</a>{% endif %}
+        </p>
+        {% endif %}
+
+        {% else %}
+        <div class="obj_list">
+            {% for g in communities %}
+            <div class="classic-group-row">
+                <div class="classic-group-title">
+                    <a href="{% url 'groups.show' g.id %}"><b>{{ g.name }}</b></a>
+                    <span class="muted">
+                        {% if g.category %}{{ g.category|ru_label }} · {% endif %}{{ g.n_members }} участник{% if g.n_members == 1 %}{% elif g.n_members > 1 and g.n_members < 5 %}а{% else %}ов{% endif %}
+                        {% if g.privacy == 'closed' %} · закрытая{% endif %}
+                        {% if g.joined %} · <b>вы в группе</b>{% elif g.join_pending %} · заявка отправлена{% endif %}
+                    </span>
+                </div>
+                {% if g.short_description or g.description %}
+                <div class="classic-group-desc muted">{{ g.short_description|default:g.description|truncatewords:28 }}</div>
+                {% endif %}
+                <div class="classic-group-actions">
+                    <a href="{% url 'groups.show' g.id %}">Открыть</a>
+                    {% if me %}
+                    ·
+                    {% if g.joined %}
+                    <form method="post" action="{% url 'groups.leave' g.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">Выйти</button>
+                    </form>
+                    {% elif g.join_pending %}
+                    <form method="post" action="{% url 'groups.join.cancel' g.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">Отозвать заявку</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'groups.join' g.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">{% if g.join_mode == 'request' or g.privacy == 'closed' %}Подать заявку{% else %}Вступить{% endif %}</button>
+                    </form>
+                    {% endif %}
+                    {% else %}
+                    · <a href="{% url 'login' %}?next={% url 'groups.show' g.id %}">Войти, чтобы вступить</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            {% if q or category %}
+            <p class="muted">Ничего не нашлось. <a href="{% url 'groups' %}">Сбросить</a></p>
+            {% else %}
+            <p class="muted">Групп пока нет.</p>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+        <p class="pager">
+            {% if page.has_previous %}<a href="?p={{ page.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if category %}&amp;category={{ category|urlencode }}{% endif %}">← назад</a>{% endif %}
+            стр. {{ page.number }}/{{ page.paginator.num_pages }}
+            {% if page.has_next %}<a href="?p={{ page.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if category %}&amp;category={{ category|urlencode }}{% endif %}">вперёд →</a>{% endif %}
+        </p>
+        {% endif %}
+
+        <div class="groups-create" id="create">
+            <h4>Создать группу</h4>
+            {% if me %}
+            <form method="post">{% csrf_token %}
+                <table class="formtable" cellpadding="0" cellspacing="0">
+                    <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
+                    <tr><td class="label">Тип:</td><td>{{ form.category }}</td></tr>
+                    <tr><td class="label">Доступ:</td><td>{{ form.privacy }}</td></tr>
+                    <tr><td class="label">Описание:</td><td>{{ form.short_description }}</td></tr>
+                    <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать группу"></td></tr>
+                </table>
+            </form>
+            <p class="file-hint muted">Адрес: /groups/&lt;id&gt;. Закрытая группа — вступление по заявке. Короткое имя (/g/…) — в настройках.</p>
+            {% else %}
+            <p class="muted"><a href="{% url 'login' %}?next=/groups#create">Войдите</a>, чтобы создать группу.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

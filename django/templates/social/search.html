@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Поиск — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="search-page">
+    <div id="header"><h1>Поиск</h1></div>
+    <div id="content">
+        <div class="profile-box">
+            <h4>Найти</h4>
+            <div class="profile-box-body">
+                <form method="get">
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="label">Запрос:</td>
+                            <td>
+                                <input class="inputtext" name="q" value="{{ q }}" style="width:280px">
+                                <input type="submit" class="inputsubmit" value="Найти">
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        {% if q %}
+        <div class="profile-box">
+            <h4>Люди</h4>
+            <div class="profile-box-body">
+                {% for p in people %}
+                <div class="classic-person-row">
+                    <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                        {% avatar p 50 %}
+                        <span>
+                            <b>{{ p.name }}</b>
+                            {% if p.city %}<span class="classic-person-sub">{{ p.city }}</span>{% endif %}
+                        </span>
+                    </a>
+                </div>
+                {% empty %}<p class="muted">Никого не найдено.</p>{% endfor %}
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Группы</h4>
+            <div class="profile-box-body">
+                <ul class="profilelinks">{% for g in groups %}<li><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a></li>{% empty %}<li class="muted">—</li>{% endfor %}</ul>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Записи</h4>
+            <div class="profile-box-body">
+                {% for p in posts %}
+                <div class="minifeed-item">
+                    <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>:
+                    {% if p.headline %}{{ p.headline|safe }}{% else %}{{ p.body|truncatewords:20 }}{% endif %}
+                </div>
+                {% empty %}<p class="muted">—</p>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

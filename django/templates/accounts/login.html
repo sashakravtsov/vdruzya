@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}ВДрузья | Вход{% endblock %}
+{% block sidebar %}
+<div id="sidebar">
+    <ol id="nav">
+        <li><a href="{% url 'home' %}">Главная</a></li>
+        <li><a href="{% url 'login' %}">Вход</a></li>
+        <li><a href="{% url 'register' %}">Регистрация</a></li>
+    </ol>
+    <div id="ssponsor"></div>
+</div>
+{% endblock %}
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>Вход</h1></div>
+    <div id="content">
+        {% if error %}<div id="error"><p>{{ error }}</p></div>{% endif %}
+        <form method="post" action="{% url 'login' %}">{% csrf_token %}
+            <div id="loginform">
+                <table class="formtable" border="0" cellspacing="0">
+                    <tr>
+                        <td class="label">E-mail:</td>
+                        <td><input type="email" id="email" class="inputtext" name="email" size="30" required autofocus autocomplete="username"></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Пароль:</td>
+                        <td><input type="password" id="pass" class="inputpassword" name="password" size="30" required autocomplete="current-password"></td>
+                    </tr>
+                </table>
+                <div class="formbuttons">
+                    <input type="submit" class="inputsubmit" value="Войти">
+                </div>
+                <p>Если вы забыли пароль, нажмите <a href="{% url 'password_reset' %}">сюда</a>, чтобы сбросить его.</p>
+                <p class="muted">Нет аккаунта? Регистрация только <a href="{% url 'register' %}">по приглашению</a>.</p>
+            </div>
+        </form>
+    </div>
+    {% include "partials/footer.html" %}
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}

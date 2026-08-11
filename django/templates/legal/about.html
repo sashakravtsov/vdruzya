@@ -1,0 +1,33 @@
+{% extends "legal/base.html" %}
+{% block legal_body %}
+<div class="clearfix">
+    <div class="leftcolumn">
+        <div class="halfwidth">
+            <h4>Проект</h4>
+            <p>ВДрузья — онлайн-каталог, который связывает людей через социальные сети друзей, групп и общих интересов.</p>
+            <p>Профили, стена, фото, сообщения и сообщества — в классическом стиле ранних социальных сетей.</p>
+        </div>
+    </div>
+    <div class="rightcolumn">
+        <div class="halfwidth">
+            <h4>Люди и поддержка</h4>
+            <table cellspacing="0" cellpadding="0" border="0">
+                <tr><td>{{ legal.operator_short|default:"ВДрузья" }}</td><td class="title">Оператор</td></tr>
+                <tr><td><a href="mailto:{{ legal.email }}">{{ legal.email }}</a></td><td class="title">Поддержка</td></tr>
+                {% if legal.inn %}<tr><td>ИНН {{ legal.inn }}</td><td class="title">Реквизиты</td></tr>{% endif %}
+            </table>
+            <p style="margin-top:10px"><a href="{% url 'contacts' %}">Все контакты →</a></p>
+        </div>
+    </div>
+</div>
+<div class="clearfix" style="margin-top:16px">
+    <div class="fullwidth">
+        <h4>Что можно делать</h4>
+        <ul class="bulletpoints">
+            <li><span>Искать людей и добавлять друзей.</span></li>
+            <li><span>Смотреть, как люди связаны друг с другом.</span></li>
+            <li><span>Писать на стену, обмениваться сообщениями и фото.</span></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

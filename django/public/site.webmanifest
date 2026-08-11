@@ -1,0 +1,56 @@
+{
+    "name": "ВДрузья",
+    "short_name": "ВДрузья",
+    "description": "Социальная сеть для друзей, групп, событий и карьеры",
+    "id": "/",
+    "start_url": "/?source=pwa",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#3B5998",
+    "background_color": "#FFFFFF",
+    "lang": "ru",
+    "icons": [
+        {
+            "src": "/favicon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Лента",
+            "url": "/feed",
+            "icons": [{ "src": "/favicon-192x192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Мессенджер",
+            "url": "/messenger",
+            "icons": [{ "src": "/favicon-192x192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Уведомления",
+            "url": "/notifications",
+            "icons": [{ "src": "/favicon-192x192.png", "sizes": "192x192" }]
+        }
+    ]
+}

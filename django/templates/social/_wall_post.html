@@ -1,0 +1,99 @@
+{% load vd %}
+<div class="wallpost" id="post-{{ post.id }}">
+    <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
+        <td class="image">{% avatar post.social_user 50 %}</td>
+        <td>
+            <div class="info">
+                <div class="header">
+                    <a href="{% url 'profile' post.social_user.id %}"><b>{{ post.social_user.name }}</b></a>
+                    {% if post.created_at %}<span class="muted"> · {{ post.created_at|timesince }} назад</span>{% endif %}
+                    {% if me and me.id == post.social_user_id %}
+                    <span class="wallpost-edit">
+                        <a href="{% url 'posts.edit' post.id %}">ред.</a>
+                        ·
+                        <form method="post" action="{% url 'posts.delete' post.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text">
+                    {% if post.mood or post.emoji %}<div class="wall-mood muted">{% if post.emoji %}{{ post.emoji }} {% endif %}{% if post.mood %}настроение: {{ post.mood|mood_ru }}{% endif %}</div>{% endif %}
+                    {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
+                    {% if post.sticker %}
+                      {% if post.sticker_url %}<p><img src="{{ post.sticker_url }}" alt="" class="sticker-inline"></p>
+                      {% else %}<p class="sticker-chip">{{ post.sticker }}</p>{% endif %}
+                    {% endif %}
+                    {% if post.shared_post %}
+                    <div class="news-card">
+                        <a href="{% url 'posts.show' post.shared_post.id %}"><b>{{ post.shared_post.social_user.name }}</b></a>
+                        <div class="muted">{{ post.shared_post.body|truncatewords:30 }}</div>
+                    </div>
+                    {% endif %}
+                    {% with extras=post.media.all %}
+                    {% if extras %}
+                    <div class="group-photo-grid wall-media">
+                        {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
+                    </div>
+                    {% elif post.media_url %}
+                    <p><img src="{{ post.media_url }}" alt="" class="news-photo"></p>
+                    {% endif %}
+                    {% endwith %}
+                    {% if post.kind == 'poll' and post.poll %}
+                    <form method="post" action="{% url 'posts.poll' post.id %}" class="poll-box">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        {% for o in post.poll.options.all %}
+                        <label class="poll-opt"><input type="radio" name="option_id" value="{{ o.id }}" required> {{ o.label }} <span class="muted">({{ o.votes_count }})</span></label>
+                        {% endfor %}
+                        {% if me %}<p><input type="submit" class="inputsubmit" value="Голос"></p>{% endif %}
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="actions">
+                    {% if me %}
+                    <form method="post" action="{% url 'posts.react' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish">Нравится</button>
+                    </form>
+                    ({{ post.likes|default:0 }})
+                    · <a href="#c-{{ post.id }}">Комментировать</a>{% if post.n_comments %} ({{ post.n_comments }}){% endif %}
+                    {% if feed_actions %}
+                    · <a href="{% url 'posts.show' post.id %}">открыть</a>
+                    <details class="inline wall-more"><summary class="linkish">ещё</summary>
+                    <form method="post" action="{% url 'posts.save' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish">{% if post.is_saved %}Убрать{% else %}Сохранить{% endif %}</button>
+                    </form>
+                    ·
+                    <form method="post" action="{% url 'posts.share' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish">Поделиться</button>
+                    </form>
+                    </details>
+                    {% endif %}
+                    {% else %}
+                    ★ {{ post.likes|default:0 }} · комм. {{ post.n_comments|default:0 }}
+                    {% endif %}
+                </div>
+                {% for c in post.comments.all %}
+                <div class="wall-comment muted">
+                    <a href="{% url 'profile' c.social_user.id %}">{{ c.social_user.name }}</a>: {{ c.body }}
+                    {% if me and me.id == c.social_user_id or me and me.id == post.social_user_id %}
+                    <form method="post" action="{% url 'comments.delete' c.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish muted">×</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if comment_form and me %}
+                <form method="post" action="{% url 'comments.store' post.id %}" class="wall-comment" id="c-{{ post.id }}">{% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    {{ comment_form.body }} <input type="submit" class="inputsubmit" value="→">
+                </form>
+                {% endif %}
+            </div>
+        </td>
+    </tr></table>
+</div>

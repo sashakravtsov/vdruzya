@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Друзья {{ owner.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header" class="withsubtitle">
+        <h1>Друзья {{ owner.name }}</h1>
+        <div class="subtitle"><a href="{% url 'profile' owner.id %}" style="color:#fff">← профиль</a></div>
+    </div>
+    <div id="content" class="people-content">
+        <div class="profile-box">
+            <h4>Друзья{% if friends %} ({{ friends|length }}){% endif %}
+                {% if is_own %}<a class="edit" href="{% url 'friends' %}">мои друзья</a>{% endif %}
+            </h4>
+            <div class="profile-box-body">
+                {% for f in friends %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <a class="classic-person-name" href="{% url 'profile' f.id %}">
+                        {% avatar f 50 %}
+                        <span>
+                            <b>{{ f.name }}</b>
+                            {% if f.mutual %}<span class="classic-person-sub">{{ f.mutual }}</span>
+                            {% elif f.city %}<span class="classic-person-sub">{{ f.city }}</span>{% endif %}
+                        </span>
+                    </a>
+                    {% if me and not is_own and f.id != me.id %}
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        {% include "partials/friend_actions.html" with p=f r=f.rel %}
+                    </span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="muted">Список друзей пуст.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

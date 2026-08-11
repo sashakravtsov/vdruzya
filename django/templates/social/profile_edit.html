@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+{% block title %}Редактирование профиля — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="profile-edit-page">
+    <div id="header"><h1>Редактирование профиля</h1></div>
+    <div id="content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <div class="profile-box" id="avatar">
+            <h4>Фото профиля</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'profile.avatar' %}" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="label">Сейчас:</td>
+                            <td>
+                                {% if me.avatar_url %}
+                                <img src="{{ me.avatar_url }}" alt="" class="avatar-edit-preview">
+                                {% else %}
+                                <span class="muted">нет фото</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">Новое:</td>
+                            <td>
+                                <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp" class="inputfile" required>
+                                <div class="file-hint muted">JPEG, PNG или GIF · до 2 МБ</div>
+                            </td>
+                        </tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сменить фото"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Основное</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Имя:</td><td>{{ form.name }}</td></tr>
+                        <tr>
+                            <td class="label">Короткое имя:</td>
+                            <td>
+                                {{ form.slug }}
+                                <div class="file-hint muted">5–32 символа · /profile/{{ me.id }} · /u/{{ me.slug }}</div>
+                                {% if form.slug.errors %}<div class="error">{{ form.slug.errors }}</div>{% endif %}
+                            </td>
+                        </tr>
+                        <tr><td class="label">Статус:</td><td>{{ form.headline }}</td></tr>
+                        <tr><td class="label">О себе:</td><td>{{ form.bio }}</td></tr>
+                        <tr><td class="label">День рождения:</td><td>{{ form.birthday }}</td></tr>
+                        <tr><td class="label">Город:</td><td>{{ form.city }}</td></tr>
+                        <tr><td class="label">Родной город:</td><td>{{ form.hometown }}</td></tr>
+                        <tr><td class="label">Страна:</td><td>{{ form.country }}</td></tr>
+                        <tr><td class="label">Пол:</td><td>{{ form.gender }}</td></tr>
+                        <tr><td class="label">Отношения:</td><td>{{ form.relationship_status }}</td></tr>
+                        <tr><td class="label">Политика:</td><td>{{ form.political_views }}</td></tr>
+                        <tr><td class="label">Языки:</td><td>{{ form.languages_text }}</td></tr>
+                        <tr><td class="label">Интересы:</td><td>{{ form.interests }}</td></tr>
+                        <tr><td class="label">Хобби:</td><td>{{ form.hobbies }}</td></tr>
+                        <tr><td class="label">Работа:</td><td>{{ form.workplace }}</td></tr>
+                        <tr><td class="label">Сайт:</td><td>{{ form.website }}</td></tr>
+                        <tr><td class="label">Музыка:</td><td>{{ form.favorite_music }}</td></tr>
+                        <tr><td class="label">Фильмы:</td><td>{{ form.favorite_movies }}</td></tr>
+                        <tr><td class="label">ТВ:</td><td>{{ form.favorite_tv }}</td></tr>
+                        <tr><td class="label">Книги:</td><td>{{ form.favorite_books }}</td></tr>
+                        <tr><td class="label">Цитаты:</td><td>{{ form.favorite_quotes }}</td></tr>
+                        <tr>
+                            <td></td>
+                            <td><input type="submit" class="inputsubmit" value="Сохранить"> · <a href="{% url 'profile' me.id %}">Отмена</a></td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Образование</h4>
+            <div class="profile-box-body">
+                <ul class="plain">{% for e in education %}<li>{{ e.institution }}{% if e.degree %} — {{ e.degree }}{% endif %}{% if e.field %}, {{ e.field }}{% endif %}</li>{% empty %}<li class="muted">Пока пусто</li>{% endfor %}</ul>
+                <form method="post" action="{% url 'profile.education' %}">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        {% for field in edu_form %}
+                        <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
+                        {% endfor %}
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Опыт</h4>
+            <div class="profile-box-body">
+                <ul class="plain">{% for e in experiences %}<li>{{ e.position }} · {{ e.company_name }}{% if e.period %} <span class="muted">{{ e.period }}</span>{% endif %}</li>{% empty %}<li class="muted">Пока пусто</li>{% endfor %}</ul>
+                <form method="post" action="{% url 'profile.experience' %}">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        {% for field in exp_form %}
+                        <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
+                        {% endfor %}
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

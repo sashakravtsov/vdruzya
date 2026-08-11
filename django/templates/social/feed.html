@@ -1,0 +1,186 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{% if title %}{{ title }}{% else %}Стена{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="feed-page">
+    <div id="header"><h1>{% if title %}{{ title }}{% else %}Добро пожаловать{% if me %}, {{ me.name }}{% endif %}!{% endif %}</h1></div>
+    <div id="content" class="feed-content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+
+        <div class="feed-main">
+            <div class="profile-box feed-wall-box wall-box">
+                <h4>Стена</h4>
+                <div class="profile-box-body">
+            {% if form %}
+            {% url 'posts.store' as compose_action %}
+            {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" album_photos=album_photos %}
+            {% endif %}
+
+            {% for item in items %}
+            {% if item.kind == 'wall' %}
+            {% include "social/_wall_post.html" with post=item.post me=me comment_form=comment_form next=request.get_full_path feed_actions=1 %}
+            {% else %}
+            <div class="news-item news-{{ item.kind }}">
+                {% if item.kind == 'joined' %}
+                    <span class="news-icon ico-group" aria-hidden="true"></span>
+                    <div class="news-body">
+                        <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+                        вступил(а) в группу
+                        <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>.
+                        {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+                    </div>
+                {% elif item.kind == 'created' %}
+                    <span class="news-icon ico-group" aria-hidden="true"></span>
+                    <div class="news-body">
+                        <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+                        создал(а) группу.
+                        <div class="news-card">
+                            <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>
+                            {% if item.group.category %}<div class="muted">{{ item.group.category|ru_label }}</div>{% endif %}
+                            {% if item.group.short_description or item.group.description %}
+                            <div class="muted">Инфо: {{ item.group.short_description|default:item.group.description|truncatewords:24 }}</div>
+                            {% endif %}
+                        </div>
+                        {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+                    </div>
+                {% elif item.kind == 'group_post' %}
+                    <span class="news-icon ico-note" aria-hidden="true"></span>
+                    <div class="news-body">
+                        {% if item.post.posted_as_community %}
+                        <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>
+                        {% else %}
+                        <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+                        написал(а) в
+                        <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+                        {% endif %}
+                        {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+                        <div class="news-card">
+                            <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
+                            {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                            {% if item.post.media_url %}<p><img src="{{ item.post.media_url }}" alt="" class="news-photo"></p>{% endif %}
+                            {% if item.post.kind == 'poll' and item.post.poll %}
+                            <div class="muted">Опрос · {{ item.post.poll.options.all|length }} вариант(ов)</div>
+                            {% endif %}
+                        </div>
+                        <div class="wall-actions muted">
+                            ★ {{ item.post.likes|default:0 }} · комм. {{ item.post.n_comments|default:0 }}
+                            <form method="post" action="{% url 'groups.react' item.group.id item.post.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish">Нравится</button>
+                            </form>
+                        </div>
+                    </div>
+                {% elif item.kind == 'photos' %}
+                    <span class="news-icon ico-note" aria-hidden="true"></span>
+                    <div class="news-body">
+                        <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+                        добавил(а) фото в альбом
+                        <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>.
+                        {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+                        {% if item.photo.url %}
+                        <div class="news-photo-row"><img src="{{ item.photo.url }}" alt="" class="news-photo"></div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% empty %}
+
+            <p class="muted">На стене пока тихо. Напишите статус или вступите в группу.</p>
+            {% endfor %}
+
+            {% if page and page.paginator.num_pages > 1 %}
+            <p class="pager">
+                {% if page.has_previous %}<a href="?p={{ page.previous_page_number }}">← назад</a>{% endif %}
+                стр. {{ page.number }}/{{ page.paginator.num_pages }}
+                {% if page.has_next %}<a href="?p={{ page.next_page_number }}">вперёд →</a>{% endif %}
+            </p>
+            {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="feed-rail">
+            <div class="profile-box">
+                <h4>Заявки</h4>
+                <div class="profile-box-body">
+                    {% if requests %}
+                        {% for r in requests %}
+                        <div class="req-row">
+                            <span class="news-icon ico-group" aria-hidden="true"></span>
+                            <a href="{% url 'profile' r.user.id %}">{{ r.user.name }}</a>
+                            <form method="post" action="{% url 'friends.accept' r.user.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish">принять</button>
+                            </form>
+                            <form method="post" action="{% url 'friends.reject' r.user.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish muted">отклонить</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Нет новых заявок.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if me %}
+            <div class="profile-box">
+                <h4>Мой статус</h4>
+                <div class="profile-box-body status-box">
+                    {% avatar me 40 %}
+                    <div>
+                        <form method="post" action="{% url 'profile.status' %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            {{ status_form.headline }}
+                            <p><input type="submit" class="inputsubmit" value="Обновить"></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Популярные группы{% if popular_groups %}<a class="edit" href="{% url 'groups' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if popular_groups %}
+                        {% for g in popular_groups %}
+                        <div><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a> <span class="muted">({{ g.n }})</span></div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока нет.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Поделились с вами{% if shared %}<a class="edit" href="{% url 'groups' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if shared %}
+                        {% for s in shared %}
+                        <div class="shared-row">
+                            <a href="{% url 'profile' s.social_user.id %}">{{ s.social_user.name }}</a>
+                            в <a href="{{ s.get_absolute_url }}">{{ s.community.name }}</a>
+                            <div class="muted">{{ s.title_line }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока ничего.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Дни рождения</h4>
+                <div class="profile-box-body">
+                    {% if birthdays %}
+                        {% for day, person in birthdays %}
+                        <div><a href="{% url 'profile' person.id %}">{{ person.name }}</a> <span class="muted">· {{ day|date:"j E" }}</span></div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Скоро ни у кого.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
