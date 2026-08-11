@@ -10,7 +10,7 @@ _RE = re.compile(r"^[a-z0-9][a-z0-9_-]{3,30}[a-z0-9]$")
 _RESERVED = frozenset({
     "edit", "members", "join", "leave", "invite", "events", "message", "posts",
     "comments", "status", "avatar", "education", "experience", "block",
-    "follow", "new", "create", "admin", "me", "mine",
+    "new", "create", "admin", "me", "mine",
 })
 
 
