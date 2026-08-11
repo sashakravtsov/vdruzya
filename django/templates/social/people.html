@@ -15,14 +15,14 @@
         </p>
 
         <nav class="page-tabs" aria-label="Разделы людей">
-            <a class="page-tab{% if tab == 'suggested' %} is-active{% endif %}" href="{% url 'people' %}">Рекомендации</a>
+            <a class="page-tab{% if tab == 'suggested' %} is-active{% endif %}" href="{% url 'people' %}">Люди, которых вы можете знать</a>
             <a class="page-tab{% if tab == 'requests' %} is-active{% endif %}" href="?tab=requests">Заявки{% if pending %}<span class="page-tab-badge">{{ pending|length }}</span>{% endif %}</a>
             <a class="page-tab{% if tab == 'search' %} is-active{% endif %}" href="?tab=search{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Поиск</a>
         </nav>
 
         {% if tab == 'suggested' %}
         <div class="profile-box">
-            <h4>Рекомендации</h4>
+            <h4>Люди, которых вы можете знать</h4>
             <div class="profile-box-body">
                 {% for row in suggestions %}
                 <div class="classic-person-row">
@@ -41,7 +41,7 @@
                     </span>
                 </div>
                 {% empty %}
-                <p class="muted">Пока нет рекомендаций — пригласите друзей или откройте поиск.</p>
+                <p class="muted">Пока никого не нашли — пригласите друзей или откройте поиск.</p>
                 <p class="people-top-links"><a href="{% url 'invite.mine' %}">Пригласить</a> · <a href="?tab=search">Найти людей</a></p>
                 {% endfor %}
             </div>

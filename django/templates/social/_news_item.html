@@ -37,14 +37,11 @@
                 <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
                 {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
                 {% if item.post.media_url %}<p><img src="{{ item.post.media_url }}" alt="" class="news-photo"></p>{% endif %}
-                {% if item.post.kind == 'poll' and item.post.poll %}
-                <div class="muted">Опрос · {{ item.post.poll.options.all|length }} вариант(ов)</div>
-                {% endif %}
             </div>
             <div class="wall-actions muted">
                 ★ {{ item.post.likes|default:0 }} · комм. {{ item.post.n_comments|default:0 }}
                 <form method="post" action="{% url 'groups.react' item.group.id item.post.id %}" class="inline">{% csrf_token %}
-                    <button type="submit" class="linkish">Нравится</button>
+                    <button type="submit" class="linkish">Мне нравится</button>
                 </form>
             </div>
         </div>

@@ -27,13 +27,18 @@ def _member(me, group):
 
 @login_required
 def group_edit(request, pk):
+    from apps.social.media import save_image
+
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     if not _admin(me, group):
         messages.error(request, "Только администратор.")
         return redirect("groups.show", pk=pk)
-    form = GroupForm(request.POST or None, instance=group)
+    form = GroupForm(request.POST or None, request.FILES or None, instance=group)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
+        pic = form.cleaned_data.get("picture")
+        if pic:
+            obj.cover_path = save_image(pic, "groups")
         obj.updated_at = now()
         obj.save()
         cache.delete(f"news:{me.id}:60")
@@ -88,11 +93,11 @@ def join_cancel(request, pk):
 def group_message(request, pk):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     if not me or not group.messaging_enabled:
-        messages.error(request, "Чат группы недоступен.")
+        messages.error(request, "Сообщения группы недоступны.")
         return redirect("groups.show", pk=pk)
     # Open groups: any logged-in user may start a thread (Laravel CommunityPolicy::message).
     if group.privacy == "closed" and not _member(me, group):
-        messages.error(request, "Чат доступен участникам.")
+        messages.error(request, "Сообщения доступны участникам.")
         return redirect("groups.show", pk=pk)
     conv = Conversation.objects.filter(community_id=group.id).order_by("id").first()
     if not conv:

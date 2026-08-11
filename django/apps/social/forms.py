@@ -302,6 +302,8 @@ class CreateGroupForm(forms.Form):
 
 
 class GroupForm(forms.ModelForm):
+    picture = forms.ImageField(required=False, label="Картинка", widget=_file())
+
     class Meta:
         model = Community
         fields = (
@@ -312,7 +314,7 @@ class GroupForm(forms.ModelForm):
             "slug": "Короткое имя",
             "short_description": "Последние новости",
             "posting_policy": "Кто пишет",
-            "messaging_enabled": "Чат группы",
+            "messaging_enabled": "Сообщения группы",
         }
         widgets = {
             "name": _in(style="width:100%"),

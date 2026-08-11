@@ -40,18 +40,11 @@
                     <p><img src="{{ p.media_url }}" alt="" class="news-photo"></p>
                     {% endif %}
                     {% endwith %}
-                    {% if p.kind == 'poll' and p.poll %}
-                    <ul class="plain muted">
-                        {% for o in p.poll.options.all %}
-                        <li>{{ o.label }} ({{ o.votes_count }})</li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
                 </div>
                 <div class="actions">
                     {% if is_member %}
                     <form method="post" action="{% url 'groups.react' group.id p.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish">Нравится</button>
+                        <button type="submit" class="linkish">Мне нравится</button>
                     </form>
                     ({{ p.likes|default:0 }})
                     · <a href="#c-{{ p.id }}">Комментировать</a>{% if p.n_comments %} ({{ p.n_comments }}){% endif %}

@@ -11,10 +11,10 @@
         {% if messages %}{% for flash in messages %}<div class="flash">{{ flash }}</div>{% endfor %}{% endif %}
 
         <div class="messages-inbox profile-box">
-            <h4>Диалоги</h4>
+            <h4>Входящие</h4>
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'messenger' %}">
-                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск по диалогам и тексту…" aria-label="Поиск диалогов">
+                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск по сообщениям…" aria-label="Поиск сообщений">
                     {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                     <input type="submit" class="inputbutton" value="Найти">
                 </form>
@@ -54,7 +54,7 @@
                         </td>
                     </tr></table>
                 </div>
-                {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет диалогов.{% endif %}</p>{% endfor %}
+                {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</p>{% endfor %}
                 {% if conversations %}
                 <p class="msg-bulk">
                     {% if folder == 'archive' %}

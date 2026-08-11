@@ -22,12 +22,6 @@
                 </div>
                 <div class="text">
                     {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
-                    {% if post.shared_post %}
-                    <div class="news-card">
-                        <a href="{% url 'posts.show' post.shared_post.id %}"><b>{{ post.shared_post.social_user.name }}</b></a>
-                        <div class="muted">{{ post.shared_post.body|truncatewords:30 }}</div>
-                    </div>
-                    {% endif %}
                     {% with extras=post.media.all %}
                     {% if extras %}
                     <div class="group-photo-grid wall-media">
@@ -37,19 +31,12 @@
                     <p><img src="{{ post.media_url }}" alt="" class="news-photo"></p>
                     {% endif %}
                     {% endwith %}
-                    {% if post.kind == 'poll' and post.poll %}
-                    <ul class="plain muted">
-                        {% for o in post.poll.options.all %}
-                        <li>{{ o.label }} ({{ o.votes_count }})</li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
                 </div>
                 <div class="actions">
                     {% if me %}
                     <form method="post" action="{% url 'posts.react' post.id %}" class="inline">{% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
-                        <button type="submit" class="linkish">Нравится</button>
+                        <button type="submit" class="linkish">Мне нравится</button>
                     </form>
                     ({{ post.likes|default:0 }})
                     · <a href="#c-{{ post.id }}">Комментировать</a>{% if post.n_comments %} ({{ post.n_comments }}){% endif %}
