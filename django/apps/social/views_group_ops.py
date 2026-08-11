@@ -54,7 +54,7 @@ def group_members(request, pk):
     rows = (
         CommunityMember.objects.filter(community=group)
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__languages")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .order_by("social_user__name")[:200]
     )
     return render(

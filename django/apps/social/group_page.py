@@ -35,12 +35,12 @@ def posts_qs(group):
     return (
         CommunityPost.objects.filter(community=group)
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__languages")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .prefetch_related(
             Prefetch(
                 "comments",
                 queryset=CommunityPostComment.objects.select_related("social_user")
-                .defer("social_user__looking_for", "social_user__languages").order_by("id"),
+                .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
             ),
             "poll__options", "media",
         )
@@ -69,11 +69,11 @@ def page_ctx(request, group, me):
     ctx.update(
         members=list(
             SocialProfile.objects.filter(memberships__community=group)
-            .defer("looking_for", "languages").order_by("name")[:6]
+            .defer("looking_for", "interested_in", "languages").order_by("name")[:6]
         ),
         officers=list(
             SocialProfile.objects.filter(memberships__community=group, memberships__role__in=_ADMIN)
-            .defer("looking_for", "languages").distinct()[:12]
+            .defer("looking_for", "interested_in", "languages").distinct()[:12]
         ),
         related=list(
             Community.objects.filter(category=group.category).exclude(pk=group.pk)
@@ -93,7 +93,7 @@ def page_ctx(request, group, me):
     if is_member and me:
         member_ids = CommunityMember.objects.filter(community=group).values("social_user_id")
         ctx["invite_friends"] = list(
-            accepted_friends(me, limit=40).exclude(id__in=member_ids).defer("looking_for", "languages")[:12]
+            accepted_friends(me, limit=40).exclude(id__in=member_ids).defer("looking_for", "interested_in", "languages")[:12]
         )
         ctx["album_photos"] = list(
             Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]

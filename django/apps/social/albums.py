@@ -82,7 +82,7 @@ def comments_for(photo, limit=80):
     return list(
         PhotoComment.objects.filter(photo=photo)
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__languages")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .order_by("id")[:limit]
     )
 

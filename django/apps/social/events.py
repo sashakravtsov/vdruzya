@@ -53,7 +53,7 @@ def list_events(me, tab="upcoming"):
     """Tabs: upcoming | past | hosting | going | invited."""
     qs = annotate_counts(
         Event.objects.select_related("host", "community").defer(
-            "host__looking_for", "host__languages",
+            "host__looking_for", "host__interested_in", "host__languages",
         )
     )
     t = now()

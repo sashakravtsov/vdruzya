@@ -30,7 +30,7 @@ def accepted_friends(profile: SocialProfile, limit=6):
 
 def get_profile(pk: int) -> SocialProfile:
     return get_object_or_404(
-        SocialProfile.objects.select_related("user").defer("looking_for", "languages"),
+        SocialProfile.objects.select_related("user").defer("looking_for", "interested_in", "languages"),
         pk=pk,
     )
 
@@ -57,14 +57,14 @@ def feed_queryset(viewer=None):
         qs.select_related("social_user", "shared_post", "shared_post__social_user")
         .defer(
             "search_vector",
-            "social_user__looking_for", "social_user__languages",
-            "shared_post__social_user__looking_for", "shared_post__social_user__languages",
+            "social_user__looking_for", "social_user__interested_in", "social_user__languages",
+            "shared_post__social_user__looking_for", "shared_post__social_user__interested_in", "shared_post__social_user__languages",
         )
         .prefetch_related(
             Prefetch(
                 "comments",
                 queryset=Comment.objects.select_related("social_user")
-                .defer("social_user__looking_for", "social_user__languages")
+                .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
                 .order_by("id"),
             ),
             "media",
@@ -110,13 +110,13 @@ def wall_posts_for(profile, limit=20, viewer=None):
     qs = (
         Post.objects.filter(Q(topic=key) | (Q(social_user=profile) & ~Q(topic__startswith="wall:")))
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__languages", "search_vector")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages", "search_vector")
         .prefetch_related(
             "media", "poll__options",
             Prefetch(
                 "comments",
                 queryset=Comment.objects.select_related("social_user")
-                .defer("social_user__looking_for", "social_user__languages").order_by("id"),
+                .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
             ),
         )
         .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
@@ -190,7 +190,7 @@ def _add_group_posts(items, blocked, member_ids, limit):
     from apps.social.models import CommunityPost, Photo
     qs = (
         CommunityPost.objects.select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__languages")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .prefetch_related("poll__options", "media")
         .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
         .filter(_visible_group_q(member_ids))
@@ -205,7 +205,7 @@ def _add_group_posts(items, blocked, member_ids, limit):
 def _add_joins(items, blocked, member_ids, limit):
     qs = (
         CommunityMember.objects.select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__languages")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .filter(_visible_group_q(member_ids))
         .order_by("-id")
     )
@@ -276,7 +276,7 @@ def shared_with(viewer, limit=6):
         CommunityPost.objects.filter(community_id__in=ids)
         .exclude(social_user=viewer)
         .select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__languages")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .order_by("-id")[:limit]
     )
 

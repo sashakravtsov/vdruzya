@@ -1,7 +1,6 @@
 """Classic FB Profile page assembly — short helpers, no view bloat."""
 from apps.social.albums import visible_q
 from apps.social.models import Album, Education, Photo
-from apps.social.services import friend_ids
 
 
 def networks_for(profile, education=None) -> list[str]:
@@ -32,7 +31,7 @@ def is_friend(relation) -> bool:
 
 def can_view_full(me, profile, relation) -> bool:
     """Limited Profile: non-friends see only name/pic/networks/actions."""
-    if not me or me.id == profile.id:
+    if me and me.id == profile.id:
         return True
     vis = getattr(profile, "profile_visibility", None) or "public"
     if vis != "friends":
