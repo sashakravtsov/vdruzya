@@ -14,7 +14,7 @@ from django.test import Client
 
 from apps.accounts.models import User
 from apps.social.models import Education, Post, SocialProfile
-from apps.social.profile_page import can_write_wall
+from apps.social.profile_page import can_write_wall, wall_post_visibility
 from apps.social.services import (
     can_manage_wall_post, feed_queryset, friend_count, friend_ids, now, profile_of, wall_posts_for,
 )
@@ -283,6 +283,38 @@ def main():
     assert b"__public_wall_note__" in r.content
     ok("public wall note visible to non-friend")
     Post.objects.filter(pk=pub.id).delete()
+
+    # wall_view=self → private posts (friends must not see/comment via feed)
+    assert wall_post_visibility(SocialProfile(wall_view="self")) == "private"
+    assert wall_post_visibility(SocialProfile(wall_view="friends")) == "friends"
+    me.wall_view = "self"
+    me.save(update_fields=["wall_view"])
+    t = now()
+    priv = Post.objects.create(
+        social_user=me, body="__private_wall_note__", topic=f"wall:{me.id}",
+        visibility=wall_post_visibility(me), kind="text", created_at=t, updated_at=t,
+    )
+    assert priv.visibility == "private"
+    assert priv in wall_posts_for(me, 20, viewer=me)
+    buddy_id = next(iter(friend_ids(me)), None)
+    if buddy_id:
+        buddy = SocialProfile.objects.get(pk=buddy_id)
+        assert priv not in wall_posts_for(me, 20, viewer=buddy)
+        assert not feed_queryset(buddy).filter(pk=priv.id).exists()
+        c_b = Client(HTTP_HOST="vdruzya.ru")
+        c_b.force_login(User.objects.get(pk=buddy.user_id))
+        r = c_b.get(f"/posts/{priv.id}", secure=True)
+        assert r.status_code == 404
+        r = c_b.post(
+            f"/posts/{priv.id}/comment",
+            {"body": "should fail", "next": "/feed"},
+            secure=True, follow=True,
+        )
+        assert not priv.comments.filter(body="should fail").exists()
+        ok("wall_view=self private: friend cannot view/comment")
+    else:
+        ok("wall_view=self private: friend cannot view/comment (skipped)")
+    Post.objects.filter(pk=priv.id).delete()
     me.wall_view = prev_wall
     me.save(update_fields=["wall_view"])
 

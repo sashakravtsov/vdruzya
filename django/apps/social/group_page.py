@@ -42,7 +42,7 @@ def posts_qs(group):
                 queryset=CommunityPostComment.objects.select_related("social_user")
                 .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
             ),
-            "poll__options", "media",
+            "media",
         )
         .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
     )

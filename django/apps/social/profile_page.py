@@ -82,8 +82,13 @@ def can_view_wall(me, profile, relation) -> bool:
 
 
 def wall_post_visibility(profile) -> str:
-    """Visibility for notes/posts on this wall — matches who may view the wall."""
-    return "public" if (getattr(profile, "wall_view", None) or "public") == "public" else "friends"
+    """Post visibility mirrors wall_view: public / friends / self→private."""
+    view = getattr(profile, "wall_view", None) or "public"
+    if view == "public":
+        return "public"
+    if view == "self":
+        return "private"
+    return "friends"
 
 
 def friend_tiles(me, profile, *, can_see: bool, relation, limit=6, prefer_mutual=True):
