@@ -48,9 +48,11 @@ def messenger(request):
     elif conversations and not compose:
         active = conversations[0]
 
+    members = []
     if active:
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
+        members = ch.others(active, me)
         before = request.GET.get("before")
         try:
             chat_messages, has_older = ch.thread(active, before_id=before)
@@ -64,16 +66,19 @@ def messenger(request):
         chat_messages, has_older = [], False
 
     friends = list(friends_of(me, limit=200))
+    reply_to = request.GET.get("reply")
+    form = MessageForm(initial={"reply_to": reply_to} if reply_to else None)
     return render(
         request,
         "social/messenger.html",
         {
             "conversations": conversations,
             "active": active,
+            "members": members,
             "chat_messages": chat_messages,
             "has_older": has_older,
             "me": me,
-            "form": MessageForm(),
+            "form": form,
             "compose_form": ComposeMessageForm(friends),
             "compose_mode": bool(compose),
             "friends": friends,
@@ -100,18 +105,22 @@ def message_send(request, conversation_id):
     except Http404:
         messages.error(request, "Диалог недоступен.")
         return redirect("messenger")
-    form = MessageForm(request.POST)
+    form = MessageForm(request.POST, request.FILES)
     if not form.is_valid():
         if ch.wants_json(request):
             return JsonResponse({"error": "empty"}, status=400)
-        messages.error(request, "Напишите текст сообщения.")
+        messages.error(request, "Напишите текст или приложите фото.")
         return redirect(f"/messenger?c={conversation_id}")
     try:
-        m = ch.post_message(me, conv, form.cleaned_data["body"])
+        m = ch.post_message(
+            me, conv, form.cleaned_data.get("body") or "",
+            reply_to_id=form.cleaned_data.get("reply_to"),
+            upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
+        )
     except ValueError:
         if ch.wants_json(request):
             return JsonResponse({"error": "empty"}, status=400)
-        messages.error(request, "Напишите текст сообщения.")
+        messages.error(request, "Напишите текст или приложите фото.")
         return redirect(f"/messenger?c={conversation_id}")
     ch.after_send(m)
     if ch.wants_json(request):
@@ -163,20 +172,24 @@ def messenger_compose(request):
     if not me:
         return redirect("messenger")
     friends = list(friends_of(me, limit=200))
-    form = ComposeMessageForm(friends, request.POST)
-    if not form.is_valid() or not form.cleaned_data.get("to"):
-        messages.error(request, "Выберите друга.")
+    form = ComposeMessageForm(friends, request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, "Выберите друга и напишите сообщение.")
         return redirect("/messenger?compose=1")
-    other = get_object_or_404(SocialProfile, pk=int(form.cleaned_data["to"]))
-    err = ch.can_dm(me, other)
-    if err:
-        messages.error(request, err)
+    ids = [int(x) for x in form.cleaned_data["to"]]
+    recipients = list(SocialProfile.objects.filter(id__in=ids))
+    conv = ch.start_thread(me, recipients, subject=(form.cleaned_data.get("subject") or "").strip())
+    if not conv:
+        messages.error(request, "Писать можно только друзьям.")
         return redirect("/messenger?compose=1")
-    conv = ch.dm_find_or_create(me, other)
-    body = (form.cleaned_data.get("body") or "").strip()
-    if body:
-        m = ch.post_message(me, conv, body)
+    try:
+        m = ch.post_message(
+            me, conv, form.cleaned_data.get("body") or "",
+            upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
+        )
         ch.after_send(m)
+    except ValueError:
+        pass
     return redirect(f"/messenger?c={conv.id}")
 
 

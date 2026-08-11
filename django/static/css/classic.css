@@ -1176,6 +1176,12 @@ button.linkish, .profile-box-body button.linkish {
 .messages-thread .chat-line .msg-del,
 .messages-thread .chat-line .msg-del-btn { float: right; margin-left: 6px; }
 .messages-thread .chat-compose .file-hint { display: block; margin-top: 4px; }
+.messages-thread .chat-quote {
+  margin: 4px 0; padding: 4px 6px; border-left: solid 3px #D8DFEA; background: #f7f7f7; font-size: 10px;
+}
+.messages-thread .chat-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
+.messages-thread .msg-members { margin: 0 0 8px; font-size: 11px; }
+.messages-thread .msg-reply { margin-left: 6px; }
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"] {
   width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;

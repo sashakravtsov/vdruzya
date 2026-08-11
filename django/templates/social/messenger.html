@@ -47,10 +47,18 @@
             <h4>Новое сообщение</h4>
             <div class="profile-box-body">
                 {% if friends %}
-                <form method="post" action="{% url 'messenger.compose' %}" class="compose-new">{% csrf_token %}
+                <form method="post" action="{% url 'messenger.compose' %}" class="compose-new" enctype="multipart/form-data">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
-                        <tr><td class="label">Кому:</td><td>{{ compose_form.to }}</td></tr>
+                        <tr>
+                            <td class="label">Кому:</td>
+                            <td>
+                                {{ compose_form.to }}
+                                <div class="file-hint muted">Можно выбрать нескольких друзей (Ctrl/⌘)</div>
+                            </td>
+                        </tr>
+                        <tr><td class="label">Тема:</td><td>{{ compose_form.subject }}</td></tr>
                         <tr><td class="label">Сообщение:</td><td>{{ compose_form.body }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ compose_form.photo }}</td></tr>
                         <tr>
                             <td></td>
                             <td>
@@ -86,6 +94,11 @@
             </h4>
             <div class="profile-box-body">
                 {% if active %}
+                {% if members|length > 1 %}
+                <p class="msg-members muted">Участники:
+                    {% for p in members %}<a href="{% url 'profile' p.id %}">{{ p.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+                </p>
+                {% endif %}
                 {% if has_older %}
                 <p class="chat-older"><a href="?c={{ active.id }}&amp;before={{ chat_messages.0.id }}">← более ранние сообщения</a></p>
                 {% endif %}
@@ -94,22 +107,33 @@
                     <div class="chat-line{% if m.social_user_id == me.id %} is-mine{% endif %}" data-id="{{ m.id }}">
                         <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
                         {% if m.created_at %}<span class="muted chat-time"> · {{ m.created_at|timesince }} назад</span>{% endif %}
+                        <a class="linkish muted msg-reply" href="?c={{ active.id }}&amp;reply={{ m.id }}#chat-form" data-reply="{{ m.id }}" data-name="{{ m.social_user.name }}" data-body="{{ m.body|truncatechars:60 }}">ответить</a>
                         {% if m.social_user_id == me.id %}
                         <form method="post" action="{% url 'messages.delete' m.id %}" class="inline msg-del" data-ajax="1">{% csrf_token %}
                             <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
                             <button type="submit" class="linkish muted" title="Удалить">×</button>
                         </form>
                         {% endif %}
+                        {% if m.reply_to %}
+                        <div class="chat-quote muted">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatechars:80 }}</div>
+                        {% endif %}
                         <div class="chat-body">
                             {% if m.message_type == 'sticker' %}
                             <span class="sticker-chip">{{ m.body }}</span>
-                            {% else %}{{ m.body|linebreaksbr }}{% endif %}
+                            {% elif m.body and m.body != '[фото]' %}{{ m.body|linebreaksbr }}{% endif %}
+                            {% if m.attachment_url %}<p><img src="{{ m.attachment_url }}" alt="" class="chat-photo"></p>{% endif %}
                         </div>
                     </div>
                     {% empty %}<p class="muted" id="chat-empty">Напишите первое сообщение.</p>{% endfor %}
                 </div>
-                <form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" id="chat-form">{% csrf_token %}
+                <form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" id="chat-form" enctype="multipart/form-data">{% csrf_token %}
+                    {{ form.reply_to }}
+                    <div id="reply-banner" class="chat-quote muted" style="{% if not form.reply_to.value %}display:none{% endif %}">
+                        Ответ{% if form.reply_to.value %} #{{ form.reply_to.value }}{% endif %}
+                        <button type="button" class="linkish" id="reply-clear">отмена</button>
+                    </div>
                     {{ form.body }}
+                    <p class="wallposter-file">Фото: {{ form.photo }}</p>
                     <input type="submit" class="inputsubmit" value="Отправить">
                     <span class="muted file-hint">Enter — отправить · Shift+Enter — новая строка</span>
                 </form>
@@ -130,14 +154,32 @@
                   if (!log || !form) return;
                   const me = String(log.dataset.me || '');
                   const csrf = (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+                  const replyInput = form.querySelector('[name=reply_to]');
+                  const replyBanner = document.getElementById('reply-banner');
                   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
                   const ws = new WebSocket(`${proto}://${location.host}/ws/messenger/{{ active.id }}`);
+
+                  const setReply = (id, name, body) => {
+                    if (!replyInput) return;
+                    replyInput.value = id || '';
+                    if (replyBanner) {
+                      replyBanner.style.display = id ? '' : 'none';
+                      if (id) replyBanner.firstChild.textContent = 'Ответ ' + (name || '') + ': ' + (body || '') + ' ';
+                    }
+                  };
+                  document.getElementById('reply-clear')?.addEventListener('click', () => setReply(''));
+                  document.querySelectorAll('.msg-reply').forEach((a) => {
+                    a.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      setReply(a.dataset.reply, a.dataset.name, a.dataset.body);
+                      form.querySelector('textarea')?.focus();
+                    });
+                  });
 
                   const append = (d) => {
                     if (!d || !d.id || d.event === 'delete') return;
                     if (log.querySelector('[data-id="' + d.id + '"]')) return;
-                    const empty = document.getElementById('chat-empty');
-                    if (empty) empty.remove();
+                    document.getElementById('chat-empty')?.remove();
                     const line = document.createElement('div');
                     line.className = 'chat-line' + (String(d.user_id) === me ? ' is-mine' : '');
                     line.dataset.id = d.id;
@@ -147,13 +189,11 @@
                     b.textContent = d.name || '';
                     a.appendChild(b);
                     line.appendChild(a);
-                    if (String(d.user_id) === me) {
-                      const del = document.createElement('button');
-                      del.type = 'button';
-                      del.className = 'linkish muted msg-del-btn';
-                      del.textContent = '×';
-                      del.addEventListener('click', () => delMsg(d.id));
-                      line.appendChild(del);
+                    if (d.reply_to_id) {
+                      const q = document.createElement('div');
+                      q.className = 'chat-quote muted';
+                      q.textContent = (d.reply_name || '') + ': ' + (d.reply_body || '');
+                      line.appendChild(q);
                     }
                     const body = document.createElement('div');
                     body.className = 'chat-body';
@@ -162,29 +202,24 @@
                       chip.className = 'sticker-chip';
                       chip.textContent = d.body || '';
                       body.appendChild(chip);
-                    } else {
+                    } else if (d.body && d.body !== '[фото]') {
                       body.appendChild(document.createTextNode(d.body || ''));
+                    }
+                    if (d.attachment_url) {
+                      const img = document.createElement('img');
+                      img.src = d.attachment_url;
+                      img.className = 'chat-photo';
+                      img.alt = '';
+                      const p = document.createElement('p');
+                      p.appendChild(img);
+                      body.appendChild(p);
                     }
                     line.appendChild(body);
                     log.appendChild(line);
                     log.scrollTop = log.scrollHeight;
                   };
 
-                  const removeLine = (id) => {
-                    const el = log.querySelector('[data-id="' + id + '"]');
-                    if (el) el.remove();
-                  };
-
-                  const delMsg = async (id) => {
-                    const fd = new FormData();
-                    fd.append('csrfmiddlewaretoken', csrf);
-                    const r = await fetch('/messages/' + id + '/delete', {
-                      method: 'POST', body: fd,
-                      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                      credentials: 'same-origin',
-                    });
-                    if (r.ok) removeLine(id);
-                  };
+                  const removeLine = (id) => log.querySelector('[data-id="' + id + '"]')?.remove();
 
                   ws.onmessage = (e) => {
                     try {
@@ -194,9 +229,7 @@
                     } catch (_) {}
                   };
 
-                  const postAjax = async (action, data) => {
-                    const fd = data instanceof FormData ? data : new FormData();
-                    if (!(data instanceof FormData)) Object.entries(data).forEach(([k, v]) => fd.append(k, v));
+                  const postAjax = async (action, fd) => {
                     if (!fd.has('csrfmiddlewaretoken')) fd.append('csrfmiddlewaretoken', csrf);
                     const r = await fetch(action, {
                       method: 'POST', body: fd,
@@ -209,23 +242,27 @@
 
                   form.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const ta = form.querySelector('textarea, input[name=body]');
-                    const body = (ta && ta.value || '').trim();
-                    if (!body) return;
-                    const d = await postAjax(form.action, new FormData(form));
-                    if (d) { append(d); if (ta) ta.value = ''; }
-                    else form.submit();
+                    const fd = new FormData(form);
+                    const body = (fd.get('body') || '').toString().trim();
+                    const hasPhoto = form.querySelector('[name=photo]')?.files?.length;
+                    if (!body && !hasPhoto) return;
+                    const d = await postAjax(form.action, fd);
+                    if (d) {
+                      append(d);
+                      const ta = form.querySelector('textarea');
+                      if (ta) ta.value = '';
+                      const file = form.querySelector('[name=photo]');
+                      if (file) file.value = '';
+                      setReply('');
+                    } else form.submit();
                   });
 
-                  const ta = form.querySelector('textarea');
-                  if (ta) {
-                    ta.addEventListener('keydown', (e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        form.requestSubmit();
-                      }
-                    });
-                  }
+                  form.querySelector('textarea')?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      form.requestSubmit();
+                    }
+                  });
 
                   document.querySelectorAll('.sticker-form').forEach((sf) => {
                     sf.addEventListener('submit', async (e) => {

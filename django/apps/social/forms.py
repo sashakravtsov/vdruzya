@@ -145,22 +145,47 @@ class CommentForm(forms.ModelForm):
 
 
 class MessageForm(forms.ModelForm):
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = Message
         fields = ("body",)
         widgets = {"body": _ta(2, placeholder="Написать сообщение…", style="width:80%")}
 
+    def clean(self):
+        data = super().clean()
+        if not (data.get("body") or "").strip() and not self.files.get("photo"):
+            self.add_error("body", "Напишите текст или приложите фото.")
+        return data
+
 
 class ComposeMessageForm(forms.Form):
-    to = forms.ChoiceField(choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
+    to = forms.MultipleChoiceField(
+        choices=(),
+        widget=forms.SelectMultiple(attrs={"class": "inputtext", "size": "6", "style": "width:100%;max-width:420px"}),
+    )
+    subject = forms.CharField(
+        required=False, max_length=160, label="Тема",
+        widget=_in(placeholder="Тема (необязательно)", style="width:100%"),
+    )
     body = forms.CharField(
         required=False,
-        widget=_ta(3, placeholder="Сообщение…", style="width:100%"),
+        widget=_ta(4, placeholder="Сообщение…", style="width:100%"),
     )
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
     def __init__(self, friends, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["to"].choices = [("", "— выберите друга —")] + [(str(p.id), p.name) for p in friends]
+        self.fields["to"].choices = [(str(p.id), p.name) for p in friends]
+
+    def clean(self):
+        data = super().clean()
+        if not data.get("to"):
+            self.add_error("to", "Выберите хотя бы одного друга.")
+        if not (data.get("body") or "").strip() and not self.files.get("photo"):
+            self.add_error("body", "Напишите текст или приложите фото.")
+        return data
 
 
 class AlbumForm(forms.ModelForm):
