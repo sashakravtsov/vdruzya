@@ -1,22 +1,25 @@
-"""Classic Facebook inbox — DMs, group chats, attachments, broadcast."""
+"""Classic Facebook inbox — DMs, group threads, attachments, broadcast."""
 from __future__ import annotations
 
 from datetime import timedelta
+from functools import wraps
 from pathlib import Path
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, F, OuterRef, Prefetch, Q, Subquery
 from django.http import Http404, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
 from apps.social.media import save_image
-from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile, Sticker
-from apps.social.services import friend_ids, now
+from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile
+from apps.social.services import friend_ids, now, profile_of
 
 
 def is_member(me, conversation_id) -> bool:
@@ -31,6 +34,26 @@ def require_member(me, conversation_id) -> Conversation:
     if not is_member(me, conv.id):
         raise Http404("not a member")
     return conv
+
+
+def member_post(view):
+    """login + POST + atomic + membership; view(request, me, conv, ...)."""
+    @login_required
+    @transaction.atomic
+    @wraps(view)
+    def wrap(request, conversation_id, *args, **kwargs):
+        if request.method != "POST":
+            return redirect("messenger")
+        me = profile_of(request.user)
+        if not me:
+            return redirect("messenger")
+        try:
+            conv = require_member(me, conversation_id)
+        except Http404:
+            messages.error(request, "Диалог недоступен.")
+            return redirect("messenger")
+        return view(request, me, conv, *args, **kwargs)
+    return wrap
 
 
 def peer(conv: Conversation, me) -> SocialProfile | None:
@@ -78,20 +101,47 @@ def mark_unread(me, conv: Conversation):
     cache.delete(f"nav:{me.id}")
 
 
-def leave(me, conv: Conversation):
-    ConversationMember.objects.filter(conversation=conv, social_user=me).delete()
-    cache.delete(f"nav:{me.id}")
-
-
 def leave_many(me, conversation_ids: list[int]) -> int:
-    n = 0
-    for cid in conversation_ids:
-        if is_member(me, cid):
-            ConversationMember.objects.filter(conversation_id=cid, social_user=me).delete()
-            n += 1
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation_id__in=conversation_ids,
+    ).delete()[0]
     if n:
         cache.delete(f"nav:{me.id}")
     return n
+
+
+def leave(me, conv: Conversation):
+    leave_many(me, [conv.id])
+
+
+def set_title(me, conv: Conversation, title: str):
+    title = (title or "").strip()[:160] or None
+    Conversation.objects.filter(pk=conv.pk).update(title=title)
+    conv.title = title
+
+
+def add_members(me, conv: Conversation, profiles: list[SocialProfile]) -> list[SocialProfile]:
+    if conv.community_id:
+        raise PermissionError("Нельзя менять чат сообщества.")
+    added = []
+    have = set(
+        ConversationMember.objects.filter(conversation=conv).values_list("social_user_id", flat=True)
+    )
+    for p in profiles:
+        if p.id in have or can_dm(me, p) is not None:
+            continue
+        ConversationMember.objects.create(conversation=conv, social_user=p)
+        have.add(p.id)
+        added.append(p)
+    if added:
+        _invalidate_members(conv.id)
+        if not conv.title:
+            peeps = [m.social_user for m in
+                     ConversationMember.objects.filter(conversation=conv).select_related("social_user")
+                     if m.social_user_id != me.id]
+            title = ", ".join(p.name for p in peeps[:3]) + ("…" if len(peeps) > 3 else "")
+            set_title(me, conv, title)
+    return added
 
 
 def _invalidate_members(conv_id):
@@ -147,7 +197,11 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
     )
     q = (q or "").strip()
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(members__social_user__name__icontains=q)).distinct()
+        qs = qs.filter(
+            Q(title__icontains=q)
+            | Q(members__social_user__name__icontains=q)
+            | Q(messages__body__icontains=q)
+        ).distinct()
 
     fetch = max(limit + offset, limit) * (3 if (q or unread_only or sent_only) else 1)
     rows = list(qs[: fetch + 1])
@@ -174,24 +228,28 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
     return page, len(out) > offset + limit
 
 
-def _msg_qs(conv):
-    return (
+def _msg_qs(conv, q=""):
+    qs = (
         Message.objects.filter(conversation=conv)
         .select_related("social_user", "reply_to", "reply_to__social_user")
     )
+    q = (q or "").strip()
+    if q:
+        qs = qs.filter(body__icontains=q)
+    return qs
 
 
-def thread(conv: Conversation, limit=50):
-    rows = list(_msg_qs(conv).order_by("-id")[:limit])
+def thread(conv: Conversation, limit=50, q=""):
+    rows = list(_msg_qs(conv, q).order_by("-id")[:limit])
     rows.reverse()
-    has_older = bool(rows) and Message.objects.filter(conversation=conv, id__lt=rows[0].id).exists()
+    has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
     return rows, has_older
 
 
-def older(conv: Conversation, before_id, limit=40):
-    rows = list(_msg_qs(conv).filter(id__lt=int(before_id)).order_by("-id")[:limit])
+def older(conv: Conversation, before_id, limit=40, q=""):
+    rows = list(_msg_qs(conv, q).filter(id__lt=int(before_id)).order_by("-id")[:limit])
     rows.reverse()
-    has_older = bool(rows) and Message.objects.filter(conversation=conv, id__lt=rows[0].id).exists()
+    has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
     return rows, has_older
 
 
@@ -238,15 +296,13 @@ def dm_find_or_create(me, other: SocialProfile) -> Conversation:
 
 
 def start_thread(me, recipients: list[SocialProfile], subject="") -> Conversation | None:
-    """Classic compose: 1 friend → DM; several → group thread with optional subject."""
     ok = [other for other in recipients if can_dm(me, other) is None]
     if not ok:
         return None
     if len(ok) == 1:
         conv = dm_find_or_create(me, ok[0])
         if subject and not conv.title:
-            Conversation.objects.filter(pk=conv.pk).update(title=subject[:160])
-            conv.title = subject[:160]
+            set_title(me, conv, subject)
         return conv
     t = now()
     title = (subject or ", ".join(p.name for p in ok[:3]) + ("…" if len(ok) > 3 else ""))[:160]
@@ -331,10 +387,6 @@ def post_message(
     _invalidate_members(conv.id)
     notify_peers(me, conv, m)
     return m
-
-
-def post_sticker(me, conv: Conversation, sticker: Sticker) -> Message:
-    return post_message(me, conv, sticker.phrase or sticker.title, message_type="sticker", sticker_id=sticker.id)
 
 
 def forward_message(me, message_id, other: SocialProfile) -> tuple[Message, Conversation]:

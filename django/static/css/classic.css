@@ -1160,7 +1160,9 @@ button.linkish, .profile-box-body button.linkish {
 .messages-inbox .msg-thread.is-active a { font-weight: bold; }
 .messages-inbox .msg-thread.is-unread .msg-name { font-weight: bold; }
 .messages-inbox .msg-bulk,
+.messages-inbox .msg-bulk-top,
 .messages-inbox .msg-pager { margin: 8px 0 0; font-size: 11px; }
+.messages-inbox .msg-bulk-top { margin: 0 0 6px; }
 .messages-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
 .messages-thread .chat-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
 .messages-thread .chat-line .chat-body { margin: 2px 0 0; white-space: pre-wrap; }
@@ -1170,8 +1172,6 @@ button.linkish, .profile-box-body button.linkish {
 .messages-thread .chat-compose .inputtext {
   width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
-.messages-thread .chat-stickers { margin-top: 4px; }
-.messages-thread .sticker-btn { margin: 2px; font-size: 11px; }
 .messages-thread .compose-new .inputtext,
 .messages-thread .compose-new textarea { width: 100%; max-width: 420px; }
 .messages-thread > h4 .edit { float: right; font-weight: normal; }
@@ -1188,6 +1188,18 @@ button.linkish, .profile-box-body button.linkish {
 .messages-thread .msg-fwd-toggle { margin-left: 6px; }
 .messages-thread .msg-fwd-box { margin: 4px 0; }
 .messages-thread .chat-seen { font-size: 10px; margin-top: 2px; }
+.messages-thread .msg-meta { margin: 0 0 8px; font-size: 11px; }
+.messages-thread .msg-meta summary { cursor: pointer; margin-bottom: 6px; }
+.messages-thread .msg-title-form,
+.messages-thread .msg-invite-form,
+.messages-thread .msg-thread-filter { margin: 0 0 8px; }
+.messages-thread .msg-title-form .inputtext,
+.messages-thread .msg-invite-form select,
+.messages-thread .msg-thread-filter .inputtext {
+  width: 70%; max-width: 320px; box-sizing: border-box; border: 1px solid #BDC7D8;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.messages-thread .msg-invite-form select { display: block; margin: 4px 0; }
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"] {
   width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;

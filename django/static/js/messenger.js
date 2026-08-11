@@ -196,19 +196,12 @@
     }
   });
 
-  document.querySelectorAll('.sticker-form').forEach((sf) => {
-    sf.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const d = await postAjax(sf.action, new FormData(sf));
-      if (d) append(d); else sf.submit();
-    });
-  });
-
   olderBtn?.addEventListener('click', async (e) => {
     e.preventDefault();
     const before = log.querySelector('.chat-line')?.dataset.id;
     if (!before) return;
-    const r = await fetch(`/messenger/${cid}/older?before=${before}`, {
+    const tq = encodeURIComponent(log.dataset.tq || olderBtn.dataset.tq || '');
+    const r = await fetch(`/messenger/${cid}/older?before=${before}${tq ? '&tq=' + tq : ''}`, {
       headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
     });

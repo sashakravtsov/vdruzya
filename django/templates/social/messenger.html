@@ -14,7 +14,7 @@
             <h4>Диалоги</h4>
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'messenger' %}">
-                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск…" aria-label="Поиск диалогов">
+                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск по диалогам и тексту…" aria-label="Поиск диалогов">
                     {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                     <input type="submit" class="inputbutton" value="Найти">
                 </form>
@@ -26,6 +26,11 @@
                     <a href="{% url 'messenger' %}?folder=unread{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'unread' %} class="is-on"{% endif %}>непрочитанные</a>
                 </p>
                 <form method="post" action="{% url 'messenger.archive' %}" id="inbox-bulk">{% csrf_token %}
+                {% if conversations %}
+                <p class="msg-bulk-top muted">
+                    <label><input type="checkbox" id="msg-check-all"> все</label>
+                </p>
+                {% endif %}
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
                     <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
@@ -103,20 +108,51 @@
                         <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Убрать диалог из входящих?');">{% csrf_token %}
                             <button type="submit" class="linkish muted">убрать</button>
                         </form>
+                        {% if active.peer %}
+                        ·
+                        <form method="post" action="{% url 'profile.block' active.peer.id %}" class="inline" onsubmit="return confirm('Заблокировать пользователя?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">блок</button>
+                        </form>
+                        {% endif %}
                     </span>
                 {% else %}Переписка{% endif %}
             </h4>
             <div class="profile-box-body">
                 {% if active %}
-                {% if members|length > 1 %}
+                {% if members %}
                 <p class="msg-members muted">Участники:
                     {% for p in members %}<a href="{% url 'profile' p.id %}">{{ p.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
                 </p>
                 {% endif %}
+                <details class="msg-meta">
+                    <summary class="linkish muted">тема и участники</summary>
+                    <form method="post" action="{% url 'messenger.title' active.id %}" class="msg-title-form">{% csrf_token %}
+                        <label class="muted">Тема:</label>
+                        <input class="inputtext" type="text" name="title" value="{{ active.title|default:'' }}" maxlength="160" placeholder="Без темы">
+                        <input type="submit" class="inputbutton" value="Сохранить">
+                    </form>
+                    {% if invite_friends and not active.community_id %}
+                    <form method="post" action="{% url 'messenger.invite' active.id %}" class="msg-invite-form">{% csrf_token %}
+                        <label class="muted">Добавить друзей:</label>
+                        <select name="ids" class="inputtext" multiple size="4">
+                            {% for f in invite_friends %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+                        </select>
+                        <input type="submit" class="inputbutton" value="Добавить">
+                    </form>
+                    {% endif %}
+                </details>
+                <form method="get" class="msg-thread-filter" action="{% url 'messenger' %}">
+                    <input type="hidden" name="c" value="{{ active.id }}">
+                    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+                    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+                    <input class="inputtext" type="text" name="tq" value="{{ tq }}" placeholder="Найти в переписке…">
+                    <input type="submit" class="inputbutton" value="Найти">
+                    {% if tq %}<a href="?c={{ active.id }}" class="muted">сбросить</a>{% endif %}
+                </form>
                 {% if has_older %}
-                <p class="chat-older"><a href="#" id="chat-older">← более ранние сообщения</a></p>
+                <p class="chat-older"><a href="#" id="chat-older" data-tq="{{ tq }}">← более ранние сообщения</a></p>
                 {% endif %}
-                <div id="chat-log" class="chat-log" data-me="{{ me.id }}" data-cid="{{ active.id }}">
+                <div id="chat-log" class="chat-log" data-me="{{ me.id }}" data-cid="{{ active.id }}" data-tq="{{ tq }}">
                     {% for m in chat_messages %}
                     <div class="chat-line{% if m.social_user_id == me.id %} is-mine{% endif %}" data-id="{{ m.id }}">
                         <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
@@ -150,7 +186,7 @@
                         </div>
                         {% if m.social_user_id == me.id and m.read_at %}<div class="muted chat-seen">прочитано</div>{% endif %}
                     </div>
-                    {% empty %}<p class="muted" id="chat-empty">Напишите первое сообщение.</p>{% endfor %}
+                    {% empty %}<p class="muted" id="chat-empty">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
                 </div>
                 <form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" id="chat-form" enctype="multipart/form-data">{% csrf_token %}
                     {{ form.reply_to }}
@@ -163,16 +199,6 @@
                     <input type="submit" class="inputsubmit" value="Отправить">
                     <span class="muted file-hint">Enter — отправить · Shift+Enter — новая строка</span>
                 </form>
-                {% if stickers %}
-                <div class="chat-stickers" id="chat-stickers">
-                    {% for s in stickers %}
-                    <form method="post" action="{% url 'messages.sticker' active.id %}" class="inline sticker-form">{% csrf_token %}
-                        <input type="hidden" name="sticker_id" value="{{ s.id }}">
-                        <button type="submit" class="inputbutton sticker-btn" style="background:{{ s.background_color }};color:{{ s.foreground_color }}">{{ s.title }}</button>
-                    </form>
-                    {% endfor %}
-                </div>
-                {% endif %}
                 <script src="{% static 'js/messenger.js' %}" defer></script>
                 {% else %}
                 <p class="muted">Выберите диалог слева или <a href="{% url 'messenger' %}?compose=1">напишите сообщение</a>.</p>
@@ -182,4 +208,9 @@
         </div>
     </div>
 </div>
+<script>
+document.getElementById('msg-check-all')?.addEventListener('change', (e) => {
+  document.querySelectorAll('#inbox-bulk [name=ids]').forEach((cb) => { cb.checked = e.target.checked; });
+});
+</script>
 {% endblock %}
