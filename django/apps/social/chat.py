@@ -102,9 +102,11 @@ def mark_unread(me, conv: Conversation):
 
 
 def leave_many(me, conversation_ids: list[int]) -> int:
+    """Soft-archive (classic Remove from Inbox) — membership kept, recoverable."""
+    t = now()
     n = ConversationMember.objects.filter(
-        social_user=me, conversation_id__in=conversation_ids,
-    ).delete()[0]
+        social_user=me, conversation_id__in=conversation_ids, archived_at__isnull=True,
+    ).update(archived_at=t, updated_at=t)
     if n:
         cache.delete(f"nav:{me.id}")
     return n
@@ -112,6 +114,25 @@ def leave_many(me, conversation_ids: list[int]) -> int:
 
 def leave(me, conv: Conversation):
     leave_many(me, [conv.id])
+
+
+def restore_many(me, conversation_ids: list[int]) -> int:
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation_id__in=conversation_ids, archived_at__isnull=False,
+    ).update(archived_at=None, updated_at=now())
+    if n:
+        cache.delete(f"nav:{me.id}")
+    return n
+
+
+def restore(me, conv: Conversation):
+    restore_many(me, [conv.id])
+
+
+def report_spam(me, conv: Conversation) -> SocialProfile | None:
+    """Classic Report as Spam: archive thread; return DM peer for optional block."""
+    leave(me, conv)
+    return peer(conv, me)
 
 
 def set_title(me, conv: Conversation, title: str):
@@ -150,6 +171,10 @@ def _invalidate_members(conv_id):
 
 
 def _revive_dm(conv: Conversation, me):
+    """Re-add dropped DM peers and pull archived members back to inbox."""
+    ConversationMember.objects.filter(conversation=conv, archived_at__isnull=False).update(
+        archived_at=None, updated_at=now(),
+    )
     if conv.community_id:
         return
     past = set(Message.objects.filter(conversation=conv).values_list("social_user_id", flat=True))
@@ -178,16 +203,25 @@ def _snippet(c, me) -> str:
     return f"{who}: {text}" if who else text
 
 
-def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
+def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, archived_only=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
+    mine = Message.objects.filter(conversation_id=OuterRef("pk"), social_user=me).order_by("-id")
+    member_q = Q(members__social_user=me)
+    if archived_only:
+        member_q &= Q(members__archived_at__isnull=False)
+    else:
+        member_q &= Q(members__archived_at__isnull=True)
     qs = (
-        Conversation.objects.filter(members__social_user=me)
+        Conversation.objects.filter(member_q)
         .annotate(
             last_body=Subquery(last.values("body")[:1]),
             last_at=Subquery(last.values("created_at")[:1]),
             last_type=Subquery(last.values("message_type")[:1]),
             last_from_id=Subquery(last.values("social_user_id")[:1]),
             last_attach=Subquery(last.values("attachment_path")[:1]),
+            my_last_body=Subquery(mine.values("body")[:1]),
+            my_last_at=Subquery(mine.values("created_at")[:1]),
+            my_last_attach=Subquery(mine.values("attachment_path")[:1]),
         )
         .prefetch_related(
             Prefetch("members", queryset=ConversationMember.objects.select_related("social_user"))
@@ -202,8 +236,10 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
             | Q(members__social_user__name__icontains=q)
             | Q(messages__body__icontains=q)
         ).distinct()
+    if sent_only:
+        qs = qs.filter(my_last_at__isnull=False).order_by(F("my_last_at").desc(nulls_last=True), "-id")
 
-    fetch = max(limit + offset, limit) * (3 if (q or unread_only or sent_only) else 1)
+    fetch = max(limit + offset, limit) * (3 if (q or unread_only or sent_only or archived_only) else 1)
     rows = list(qs[: fetch + 1])
     my_read = {
         row.conversation_id: row.last_read_at
@@ -213,15 +249,18 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
     for c in rows:
         c.display_name = label(c, me)
         c.peer = peer(c, me)
-        c.snippet = _snippet(c, me)
+        if sent_only:
+            text = (c.my_last_body or "").strip() or ("[фото]" if c.my_last_attach else "")
+            c.snippet = f"Вы: {text[:80]}" if text else ""
+            c.last_at = c.my_last_at or c.last_at
+        else:
+            c.snippet = _snippet(c, me)
         read_at = my_read.get(c.id)
         c.unread = bool(
             c.last_from_id and c.last_from_id != me.id and c.last_at
             and (read_at is None or c.last_at > read_at)
         )
         if unread_only and not c.unread:
-            continue
-        if sent_only and c.last_from_id != me.id:
             continue
         out.append(c)
     page = out[offset: offset + limit]

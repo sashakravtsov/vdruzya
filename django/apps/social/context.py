@@ -16,12 +16,16 @@ def classic(request):
         else:
             unread_n = Notification.objects.filter(social_user=me, seen=False).count()
             unread_m = (
-                Message.objects.filter(conversation__members__social_user=me)
+                Message.objects.filter(
+                    conversation__members__social_user=me,
+                    conversation__members__archived_at__isnull=True,
+                )
                 .exclude(social_user=me)
                 .filter(
                     Q(conversation__members__last_read_at__isnull=True)
                     | Q(created_at__gt=F("conversation__members__last_read_at")),
                     conversation__members__social_user=me,
+                    conversation__members__archived_at__isnull=True,
                 )
                 .distinct()
                 .count()

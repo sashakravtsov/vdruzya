@@ -21,6 +21,9 @@ class ConversationMember(models.Model):
     conversation = models.ForeignKey(Conversation, models.DO_NOTHING, related_name="members")
     social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="conversations")
     last_read_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False

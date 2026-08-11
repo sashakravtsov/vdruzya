@@ -10,7 +10,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
 from apps.social.friendship import friends_of
-from apps.social.models import SocialProfile
+from apps.social.models import ConversationMember, SocialProfile
 from apps.social.services import profile_of
 from apps.social.throttle import throttle
 
@@ -44,8 +44,11 @@ def messenger(request):
     q = (request.GET.get("q") or "").strip()
     tq = (request.GET.get("tq") or "").strip()
     folder = (request.GET.get("folder") or "inbox").strip()
-    unread_only = folder == "unread" or request.GET.get("unread") == "1"
+    if folder not in ("inbox", "sent", "unread", "archive"):
+        folder = "inbox"
+    unread_only = folder == "unread"
     sent_only = folder == "sent"
+    archived_only = folder == "archive"
     try:
         page = max(1, int(request.GET.get("page") or 1))
     except (TypeError, ValueError):
@@ -53,7 +56,8 @@ def messenger(request):
     compose = request.GET.get("compose") or request.GET.get("new")
     to_id = request.GET.get("to")
     conversations, has_more = ch.inbox(
-        me, limit=40, offset=(page - 1) * 40, q=q, unread_only=unread_only, sent_only=sent_only,
+        me, limit=40, offset=(page - 1) * 40, q=q,
+        unread_only=unread_only, sent_only=sent_only, archived_only=archived_only,
     )
 
     active = None
@@ -68,12 +72,17 @@ def messenger(request):
         active = conversations[0]
 
     members, chat_messages, has_older = [], [], False
+    is_archived = False
     if active:
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
         chat_messages, has_older = ch.thread(active, q=tq)
-        ch.mark_read(me, active)
+        is_archived = ConversationMember.objects.filter(
+            conversation=active, social_user=me, archived_at__isnull=False,
+        ).exists()
+        if not is_archived:
+            ch.mark_read(me, active)
         for c in conversations:
             if c.id == active.id:
                 c.unread = False
@@ -89,6 +98,7 @@ def messenger(request):
         "members": members,
         "chat_messages": chat_messages,
         "has_older": has_older,
+        "is_archived": is_archived,
         "me": me,
         "form": MessageForm(initial={"reply_to": reply_to} if reply_to else None),
         "compose_form": _compose_form(friends, to=preselect),
@@ -97,7 +107,7 @@ def messenger(request):
         "invite_friends": invite_friends,
         "q": q,
         "tq": tq,
-        "folder": "unread" if unread_only else ("sent" if sent_only else "inbox"),
+        "folder": folder,
         "page": page,
         "has_more": has_more,
     })
@@ -187,7 +197,7 @@ def messenger_compose(request):
 @ch.member_post
 def messenger_leave(request, me, conv):
     ch.leave(me, conv)
-    messages.info(request, "Диалог убран из входящих.")
+    messages.info(request, "Диалог перенесён в архив.")
     return redirect("messenger")
 
 
@@ -198,9 +208,35 @@ def messenger_archive(request):
     me = _me(request)
     if not me:
         return redirect("messenger")
-    n = ch.leave_many(me, _int_ids(request.POST.getlist("ids")))
+    ids = _int_ids(request.POST.getlist("ids"))
+    action = (request.POST.get("action") or "archive").strip()
+    if action == "restore":
+        n = ch.restore_many(me, ids)
+        if n:
+            messages.info(request, f"Возвращено во входящие: {n}.")
+        return redirect("/messenger?folder=archive")
+    n = ch.leave_many(me, ids)
     if n:
-        messages.info(request, f"Убрано диалогов: {n}.")
+        messages.info(request, f"В архиве: {n}.")
+    return redirect("messenger")
+
+
+@ch.member_post
+def messenger_restore(request, me, conv):
+    ch.restore(me, conv)
+    messages.info(request, "Диалог возвращён во входящие.")
+    return redirect(f"/messenger?c={conv.id}")
+
+
+@ch.member_post
+def messenger_spam(request, me, conv):
+    from apps.social.friendship import block_user
+    peer = ch.report_spam(me, conv)
+    if peer and request.POST.get("block") == "1":
+        block_user(me, peer)
+        messages.info(request, f"Помечено как спам, {peer.name} заблокирован.")
+    else:
+        messages.info(request, "Диалог помечен как спам и убран в архив.")
     return redirect("messenger")
 
 

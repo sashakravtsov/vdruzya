@@ -23,9 +23,12 @@
                     ·
                     <a href="{% url 'messenger' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
                     ·
+                    <a href="{% url 'messenger' %}?folder=archive{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'archive' %} class="is-on"{% endif %}>архив</a>
+                    ·
                     <a href="{% url 'messenger' %}?folder=unread{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'unread' %} class="is-on"{% endif %}>непрочитанные</a>
                 </p>
                 <form method="post" action="{% url 'messenger.archive' %}" id="inbox-bulk">{% csrf_token %}
+                {% if folder == 'archive' %}<input type="hidden" name="action" value="restore">{% endif %}
                 {% if conversations %}
                 <p class="msg-bulk-top muted">
                     <label><input type="checkbox" id="msg-check-all"> все</label>
@@ -48,7 +51,7 @@
                 {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет диалогов.{% endif %}</p>{% endfor %}
                 {% if conversations %}
                 <p class="msg-bulk">
-                    <input type="submit" class="inputbutton" value="Убрать выбранные">
+                    <input type="submit" class="inputbutton" value="{% if folder == 'archive' %}Вернуть во входящие{% else %}В архив{% endif %}">
                 </p>
                 {% endif %}
                 </form>
@@ -101,18 +104,29 @@
                     {{ active.display_name|default:active.title|default:"Переписка" }}
                     {% endif %}
                     <span class="edit msg-actions">
+                        {% if is_archived %}
+                        <form method="post" action="{% url 'messenger.restore' active.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted">во входящие</button>
+                        </form>
+                        {% else %}
                         <form method="post" action="{% url 'messenger.unread' active.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted">непрочит.</button>
                         </form>
                         ·
-                        <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Убрать диалог из входящих?');">{% csrf_token %}
-                            <button type="submit" class="linkish muted">убрать</button>
+                        <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Перенести диалог в архив?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">в архив</button>
+                        </form>
+                        ·
+                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Пометить как спам и убрать в архив?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">спам</button>
                         </form>
                         {% if active.peer %}
                         ·
-                        <form method="post" action="{% url 'profile.block' active.peer.id %}" class="inline" onsubmit="return confirm('Заблокировать пользователя?');">{% csrf_token %}
-                            <button type="submit" class="linkish muted">блок</button>
+                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Спам и заблокировать?');">{% csrf_token %}
+                            <input type="hidden" name="block" value="1">
+                            <button type="submit" class="linkish muted">спам+блок</button>
                         </form>
+                        {% endif %}
                         {% endif %}
                     </span>
                 {% else %}Переписка{% endif %}
