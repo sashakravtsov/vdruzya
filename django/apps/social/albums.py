@@ -1,11 +1,39 @@
-"""Album/photo media helpers."""
+"""Album visibility + photo media helpers."""
 from pathlib import Path
 
 from django.conf import settings
+from django.db.models import Q
 
 from apps.social.media import save_image
 from apps.social.models import Photo
-from apps.social.services import now
+from apps.social.services import friend_ids, now
+
+
+def visible_q(viewer):
+    if not viewer:
+        return Q(visibility="public")
+    return (
+        Q(visibility="public")
+        | Q(social_user=viewer)
+        | Q(visibility="friends", social_user_id__in=friend_ids(viewer))
+    )
+
+
+def can_view(album, viewer) -> bool:
+    v = album.visibility or "friends"
+    if v == "public":
+        return True
+    if not viewer:
+        return False
+    if album.social_user_id == viewer.id:
+        return True
+    if v == "friends":
+        return album.social_user_id in friend_ids(viewer)
+    return False
+
+
+def can_edit(album, viewer) -> bool:
+    return bool(viewer and album.social_user_id == viewer.id)
 
 
 def save_photos(album, files, title=""):

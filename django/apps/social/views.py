@@ -6,7 +6,6 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page, never_cache
 from django.views.decorators.http import require_POST
-from django.views.decorators.vary import vary_on_cookie
 
 from apps.social.forms import CommentForm, MessageForm, PostForm
 from apps.social.models import (
@@ -64,7 +63,7 @@ def feed(request):
 def profile(request, pk):
     from apps.social.models import Album, Block, Education, Experience, Photo
     from apps.social.services import friend_ids, mini_feed, wall_posts_for
-    from apps.social.album_access import visible_q
+    from apps.social.albums import visible_q
     from apps.social.views_albums import albums_for_profile
     from apps.social import friendship as fr
     user = get_profile(pk)

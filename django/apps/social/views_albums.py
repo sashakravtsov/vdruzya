@@ -6,8 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
-from apps.social.album_access import can_edit, can_view, visible_q
-from apps.social.album_media import delete_photo_file, neighbors, save_photos
+from apps.social.albums import can_edit, can_view, delete_photo_file, neighbors, save_photos, visible_q
 from apps.social.forms import AlbumForm, PhotoUploadForm
 from apps.social.models import Album, Photo
 from apps.social.services import get_profile, now, profile_of
