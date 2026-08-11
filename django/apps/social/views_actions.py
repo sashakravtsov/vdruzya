@@ -16,8 +16,8 @@ from apps.social.services import now as _now, profile_of
 
 @login_required
 def profile_edit(request):
-    from apps.social.forms import EducationForm, ExperienceForm
-    from apps.social.models import Education, Experience
+    from apps.social.forms import EducationForm
+    from apps.social.models import Education
     me = profile_of(request.user)
     form = ProfileForm(request.POST or None, instance=me)
     if request.method == "POST" and form.is_valid():
@@ -33,9 +33,7 @@ def profile_edit(request):
             "form": form,
             "me": me,
             "edu_form": EducationForm(),
-            "exp_form": ExperienceForm(),
             "education": Education.objects.filter(social_user=me)[:20],
-            "experiences": Experience.objects.filter(social_user=me)[:20],
         },
     )
 
@@ -132,6 +130,7 @@ def comment_create(request, post_id):
 @require_POST
 @transaction.atomic
 def react(request, post_id):
+    from apps.social import notify
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
     existing = Reaction.objects.filter(post=post, social_user=me, type="like").first()
@@ -139,7 +138,32 @@ def react(request, post_id):
         existing.delete()
     elif me:
         Reaction.objects.create(post=post, social_user=me, type="like", created_at=_now())
+        if post.social_user_id != me.id:
+            notify.push(
+                post.social_user_id,
+                title="Нравится",
+                body=f"{me.name} нравится ваша запись",
+                type="like",
+                url=f"/posts/{post.id}",
+            )
     return redirect(request.POST.get("next") or "feed")
+
+
+@login_required
+@require_POST
+def poke(request, pk):
+    from apps.social import notify
+    from apps.social.friendship import other_or_404
+    me = profile_of(request.user)
+    other = other_or_404(pk)
+    out = notify.poke(me, other)
+    if out == "ok":
+        messages.info(request, f"Вы подмигнули {other.name}.")
+    elif out == "pending":
+        messages.info(request, "Подмигивание уже отправлено.")
+    elif out == "blocked":
+        return redirect(request.POST.get("next") or f"/profile/{pk}")
+    return redirect(request.POST.get("next") or f"/profile/{pk}")
 
 
 @login_required
@@ -210,19 +234,5 @@ def education_add(request):
         row.social_user = me
         row.save()
         messages.success(request, "Образование добавлено.")
-    return redirect("profile.edit")
-
-
-@login_required
-@require_POST
-def experience_add(request):
-    from apps.social.forms import ExperienceForm
-    me, form = profile_of(request.user), ExperienceForm(request.POST)
-    if me and form.is_valid():
-        row = form.save(commit=False)
-        row.social_user = me
-        row.description = row.description or ""
-        row.save()
-        messages.success(request, "Опыт добавлен.")
     return redirect("profile.edit")
 

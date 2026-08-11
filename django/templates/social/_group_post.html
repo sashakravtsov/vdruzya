@@ -30,9 +30,7 @@
                     {% endif %}
                 </div>
                 <div class="text">
-                    {% if p.mood or p.emoji %}<div class="wall-mood muted">{% if p.emoji %}{{ p.emoji }} {% endif %}{% if p.mood %}настроение: {{ p.mood|mood_ru }}{% endif %}</div>{% endif %}
                     {% if p.body %}{{ p.body|linebreaksbr }}{% endif %}
-                    {% if p.sticker_url %}<p><img src="{{ p.sticker_url }}" alt="" class="sticker-inline"></p>{% endif %}
                     {% with extras=p.media.all %}
                     {% if extras %}
                     <div class="group-photo-grid wall-media">

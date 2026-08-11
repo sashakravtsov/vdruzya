@@ -25,6 +25,7 @@
                 {% elif user.is_authenticated %}
                     {% if relation and relation.status == 'accepted' %}
                         <form method="post" action="{% url 'friends.remove' profile.id %}">{% csrf_token %}<button type="submit">Удалить из друзей</button></form>
+                        <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
                     {% elif relation and relation.status == 'pending' and relation.user_id == me.id %}
                         <span class="muted">Заявка отправлена</span>
                         <form method="post" action="{% url 'friends.cancel' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Отменить заявку</button></form>
@@ -140,12 +141,6 @@
                     <div class="profile-subsection">
                         <h5>Учёба</h5>
                         <ul class="plain">{% for e in education %}<li>{{ e.institution }}{% if e.degree %} — {{ e.degree }}{% endif %}{% if e.field %}, {{ e.field }}{% endif %}{% if e.start_year or e.end_year %} <span class="muted">({{ e.start_year }}–{{ e.end_year }})</span>{% endif %}</li>{% endfor %}</ul>
-                    </div>
-                    {% endif %}
-                    {% if experiences %}
-                    <div class="profile-subsection">
-                        <h5>Работа</h5>
-                        <ul class="plain">{% for e in experiences %}<li><b>{{ e.position }}</b> · {{ e.company_name }} <span class="muted">{{ e.period }}</span></li>{% endfor %}</ul>
                     </div>
                     {% endif %}
                 </div>

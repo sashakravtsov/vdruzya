@@ -19,12 +19,7 @@
                     {% endif %}
                 </div>
                 <div class="text">
-                    {% if post.mood or post.emoji %}<div class="wall-mood muted">{% if post.emoji %}{{ post.emoji }} {% endif %}{% if post.mood %}настроение: {{ post.mood|mood_ru }}{% endif %}</div>{% endif %}
                     {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
-                    {% if post.sticker %}
-                      {% if post.sticker_url %}<p><img src="{{ post.sticker_url }}" alt="" class="sticker-inline"></p>
-                      {% else %}<p class="sticker-chip">{{ post.sticker }}</p>{% endif %}
-                    {% endif %}
                     {% if post.shared_post %}
                     <div class="news-card">
                         <a href="{% url 'posts.show' post.shared_post.id %}"><b>{{ post.shared_post.social_user.name }}</b></a>

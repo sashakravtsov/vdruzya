@@ -59,7 +59,7 @@ def feed(request):
 
 @login_not_required
 def profile(request, pk):
-    from apps.social.models import Album, Block, Education, Experience, Photo
+    from apps.social.models import Album, Block, Education, Photo
     from apps.social.services import friend_ids, mini_feed, wall_posts_for
     from apps.social.albums import visible_q
     from apps.social.views_albums import albums_for_profile
@@ -100,7 +100,6 @@ def profile(request, pk):
             "albums": albums, "posts": posts, "relation": relation, "blocked": blocked,
             "mutual": mutual, "mutual_text": mutual_text,
             "education": Education.objects.filter(social_user=user)[:10],
-            "experiences": Experience.objects.filter(social_user=user)[:10],
             "stats": {
                 "friends": friend_count,
                 "photos": n_photos,

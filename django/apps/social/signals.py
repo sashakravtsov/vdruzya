@@ -37,17 +37,40 @@ def comment_notify(sender, instance, created, **kwargs):
         body=f"{instance.social_user.name}: {instance.body}"[:255],
         seen=False,
         type="comment",
-        url="/feed",
+        url=f"/posts/{instance.post_id}",
         created_at=now(),
     )
     transaction.on_commit(lambda p=payload: _notify(**p))
 
 
 @receiver(post_save, sender=Post)
-def index_post(sender, instance, **kwargs):
+def index_post(sender, instance, created, **kwargs):
     pk = instance.pk
 
     def _fts():
         Post.objects.filter(pk=pk).update(search_vector=SearchVector("body", config="simple"))
 
     transaction.on_commit(_fts)
+
+    # Wall note on someone else's wall
+    if not created:
+        return
+    topic = instance.topic or ""
+    if not topic.startswith("wall:"):
+        return
+    try:
+        owner_id = int(topic.split(":", 1)[1])
+    except (TypeError, ValueError):
+        return
+    if owner_id == instance.social_user_id:
+        return
+    payload = dict(
+        social_user_id=owner_id,
+        title="Запись на стене",
+        body=f"{instance.social_user.name} написал(а) на вашей стене"[:255],
+        seen=False,
+        type="wall",
+        url=f"/profile/{owner_id}",
+        created_at=now(),
+    )
+    transaction.on_commit(lambda p=payload: _notify(**p))
