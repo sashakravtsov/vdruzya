@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db.models import Q
 
 from apps.social.media import save_image
-from apps.social.models import Photo
+from apps.social.models import Notification, Photo, PhotoComment
 from apps.social.services import friend_ids, now
 
 
@@ -56,6 +56,7 @@ def save_photos(album, files, title=""):
 
 def delete_photo_file(photo):
     from django.core.files.storage import default_storage
+    PhotoComment.objects.filter(photo=photo).delete()
     if photo.path:
         try:
             default_storage.delete(photo.path)
@@ -64,8 +65,8 @@ def delete_photo_file(photo):
     photo.delete()
 
 
-def neighbors(album, photo_id, limit=120):
-    ids = list(album.photos.order_by("id").values_list("id", flat=True)[:limit])
+def neighbors(album, photo_id):
+    ids = list(album.photos.order_by("id").values_list("id", flat=True))
     if photo_id not in ids:
         return None, None, 0, 0
     i = ids.index(photo_id)
@@ -75,3 +76,39 @@ def neighbors(album, photo_id, limit=120):
         len(ids),
         i + 1,
     )
+
+
+def comments_for(photo, limit=80):
+    return list(
+        PhotoComment.objects.filter(photo=photo)
+        .select_related("social_user")
+        .defer("social_user__looking_for", "social_user__languages")
+        .order_by("id")[:limit]
+    )
+
+
+def add_comment(me, photo, album, body: str):
+    body = (body or "").strip()[:1000]
+    if not me or not body or not can_view(album, me):
+        return None
+    row = PhotoComment.objects.create(photo=photo, social_user=me, body=body, created_at=now())
+    owner_id = album.social_user_id
+    if owner_id and owner_id != me.id:
+        Notification.objects.create(
+            social_user_id=owner_id,
+            title="Комментарий к фото",
+            body=f"{me.name} прокомментировал(а) фото"[:255],
+            seen=False, type="photo_comment",
+            url=f"/albums/{album.id}/photos/{photo.id}",
+            created_at=now(),
+        )
+    return row
+
+
+def delete_comment(me, comment: PhotoComment, album) -> bool:
+    if not me or not comment:
+        return False
+    if comment.social_user_id != me.id and not can_edit(album, me):
+        return False
+    comment.delete()
+    return True

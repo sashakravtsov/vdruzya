@@ -67,7 +67,21 @@ def main():
 
     r = c.get(f"/albums/{a.id}/photos/{ph.id}", secure=True)
     assert r.status_code == 200 and "Красиво".encode() in r.content
+    assert "Комментарии".encode() in r.content
     ok("photo show")
+
+    r = c.post(f"/albums/{a.id}/photos/{ph.id}/comment", {"body": "Классное фото"}, secure=True, follow=True)
+    assert r.status_code == 200
+    from apps.social.models import PhotoComment
+    cm = PhotoComment.objects.filter(photo=ph, body="Классное фото").first()
+    assert cm
+    ok("photo comment")
+
+    r = c.post(
+        f"/albums/{a.id}/photos/{ph.id}/comments/{cm.id}/delete", {}, secure=True, follow=True,
+    )
+    assert r.status_code == 200 and not PhotoComment.objects.filter(pk=cm.id).exists()
+    ok("photo comment delete")
 
     r = c.post(f"/albums/{a.id}/photos/{ph.id}/caption", {"title": "Новая"}, secure=True, follow=True)
     assert Photo.objects.get(pk=ph.id).title == "Новая"

@@ -49,6 +49,19 @@ class Photo(models.Model):
         return media_url(self.path)
 
 
+class PhotoComment(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    photo = models.ForeignKey(Photo, models.DO_NOTHING, related_name="comments")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="photo_comments")
+    body = models.TextField()
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "photo_comments"
+        ordering = ["id"]
+
+
 class Event(models.Model):
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255)

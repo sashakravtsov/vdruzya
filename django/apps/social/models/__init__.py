@@ -9,7 +9,7 @@ from .groups import (
     CommunityPostMedia, CommunityPostReaction,
 )
 from .chat import Conversation, ConversationMember, Message, Notification
-from .more import Album, Event, EventAttendee, Photo
+from .more import Album, Event, EventAttendee, Photo, PhotoComment
 
 __all__ = [
     "PgJSON", "SocialProfile", "Friendship", "Block", "Education", "Experience",
@@ -19,5 +19,5 @@ __all__ = [
     "Community", "CommunityMember", "CommunityPost", "CommunityPostComment", "CommunityPostReaction",
     "CommunityPostMedia", "CommunityJoinRequest",
     "Conversation", "ConversationMember", "Message", "Notification",
-    "Album", "Photo", "Event", "EventAttendee",
+    "Album", "Photo", "PhotoComment", "Event", "EventAttendee",
 ]

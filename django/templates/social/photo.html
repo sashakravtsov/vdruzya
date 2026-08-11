@@ -24,11 +24,14 @@
             <h4>{{ photo.title|default:"Фото" }}</h4>
             <div class="profile-box-body photo-view">
                 {% if photo.url %}
-                <img class="photo-view-img" src="{{ photo.url }}" alt="{{ photo.title }}">
+                  {% if next_id %}<a href="{% url 'albums.photos.show' album.id next_id %}">{% endif %}
+                    <img class="photo-view-img" src="{{ photo.url }}" alt="{{ photo.title }}">
+                  {% if next_id %}</a>{% endif %}
                 {% else %}
                 <div class="photo-view-fallback" style="background:{{ photo.color|default:'#3B5998' }}">{{ photo.title|slice:":1"|upper }}</div>
                 {% endif %}
                 {% if photo.title %}<p class="photo-caption">{{ photo.title }}</p>{% endif %}
+                {% if photo.created_at %}<p class="muted">Добавлено {{ photo.created_at|date:"j E Y" }}</p>{% endif %}
 
                 {% if is_owner %}
                 <form method="post" action="{% url 'albums.photos.caption' album.id photo.id %}" class="photo-caption-form">{% csrf_token %}
@@ -52,6 +55,34 @@
                 </form>
                 <form id="photo-cover-form" method="post" action="{% url 'albums.photos.cover' album.id photo.id %}">{% csrf_token %}</form>
                 <form id="photo-del-form" method="post" action="{% url 'albums.photos.delete' album.id photo.id %}">{% csrf_token %}</form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Комментарии{% if comments %} ({{ comments|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% for c in comments %}
+                <div class="wall-comment muted">
+                    <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
+                    {{ c.body }}
+                    {% if is_owner or me and me.id == c.social_user_id %}
+                    <form method="post" action="{% url 'albums.photos.comment.delete' album.id photo.id c.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="muted">Комментариев пока нет.</p>
+                {% endfor %}
+
+                {% if me %}
+                <form method="post" action="{% url 'albums.photos.comment' album.id photo.id %}" class="wall-comment">{% csrf_token %}
+                    <input class="inputtext" name="body" maxlength="1000" placeholder="Написать комментарий…" style="width:70%" required autocomplete="off">
+                    <input type="submit" class="inputsubmit" value="→">
+                </form>
+                {% else %}
+                <p class="muted"><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы комментировать.</p>
                 {% endif %}
             </div>
         </div>

@@ -6,9 +6,12 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
-from apps.social.albums import can_edit, can_view, delete_photo_file, neighbors, save_photos, visible_q
+from apps.social.albums import (
+    add_comment, can_edit, can_view, comments_for, delete_comment, delete_photo_file,
+    neighbors, save_photos, visible_q,
+)
 from apps.social.forms import AlbumForm, PhotoUploadForm
-from apps.social.models import Album, Photo
+from apps.social.models import Album, Photo, PhotoComment
 from apps.social.services import get_profile, now, profile_of
 
 
@@ -149,9 +152,34 @@ def photo_show(request, album_id, photo_id):
     prev_id, next_id, n, pos = neighbors(album, photo.id)
     return render(
         request, "social/photo.html",
-        {"album": album, "photo": photo, "me": me, "is_owner": can_edit(album, me),
-         "prev_id": prev_id, "next_id": next_id, "n": n, "pos": pos},
+        {
+            "album": album, "photo": photo, "me": me, "is_owner": can_edit(album, me),
+            "prev_id": prev_id, "next_id": next_id, "n": n, "pos": pos,
+            "comments": comments_for(photo),
+        },
     )
+
+
+@login_required
+@require_POST
+def photo_comment(request, album_id, photo_id):
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    photo = get_object_or_404(Photo, pk=photo_id, album=album)
+    if not add_comment(me, photo, album, request.POST.get("body")):
+        messages.error(request, "Не удалось добавить комментарий.")
+    return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
+
+
+@login_required
+@require_POST
+def photo_comment_delete(request, album_id, photo_id, comment_id):
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    comment = get_object_or_404(PhotoComment, pk=comment_id, photo_id=photo_id, photo__album=album)
+    if not delete_comment(me, comment, album):
+        messages.error(request, "Нельзя удалить.")
+    return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
 
 
 @login_required
