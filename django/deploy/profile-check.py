@@ -77,7 +77,7 @@ def main():
     assert r.status_code == 200
     assert "Лента новостей".encode() in r.content
     assert b"wallposter" not in r.content
-    assert "Что у вас нового".encode() in r.content
+    assert "Что у вас нового".encode() not in r.content
     ok("news feed")
 
     r = c.get("/pokes", secure=True)

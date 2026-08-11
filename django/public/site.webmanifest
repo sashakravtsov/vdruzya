@@ -1,12 +1,11 @@
 {
     "name": "ВДрузья",
     "short_name": "ВДрузья",
-    "description": "Социальная сеть для друзей, групп и событий",
+    "description": "Копия Facebook.com (~2006)",
     "id": "/",
-    "start_url": "/?source=pwa",
+    "start_url": "/",
     "scope": "/",
-    "display": "standalone",
-    "orientation": "portrait-primary",
+    "display": "browser",
     "theme_color": "#3B5998",
     "background_color": "#FFFFFF",
     "lang": "ru",
@@ -22,35 +21,6 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
-        },
-        {
-            "src": "/favicon-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "/apple-touch-icon.png",
-            "sizes": "180x180",
-            "type": "image/png",
-            "purpose": "any"
-        }
-    ],
-    "shortcuts": [
-        {
-            "name": "Лента",
-            "url": "/feed",
-            "icons": [{ "src": "/favicon-192x192.png", "sizes": "192x192" }]
-        },
-        {
-            "name": "Мессенджер",
-            "url": "/messenger",
-            "icons": [{ "src": "/favicon-192x192.png", "sizes": "192x192" }]
-        },
-        {
-            "name": "Уведомления",
-            "url": "/notifications",
-            "icons": [{ "src": "/favicon-192x192.png", "sizes": "192x192" }]
         }
     ]
 }

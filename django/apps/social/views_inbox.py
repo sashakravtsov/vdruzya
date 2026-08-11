@@ -43,7 +43,7 @@ def _go(conv_id=None, *, compose=False, folder="inbox"):
 
 @login_required
 @never_cache
-def messenger(request):
+def inbox_home(request):
     me = _me(request)
     if not me:
         return redirect("home")
@@ -70,7 +70,7 @@ def messenger(request):
             active = ch.require_member(me, int(active_id))
         except (Http404, TypeError, ValueError):
             messages.error(request, "Сообщение недоступно.")
-            return redirect("messenger")
+            return redirect("inbox")
 
     if active:
         active.display_name = ch.label(active, me)
@@ -85,7 +85,7 @@ def messenger(request):
 
     friends = list(friends_of(me, limit=200))
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
-    return render(request, "social/messenger.html", {
+    return render(request, "social/inbox.html", {
         "conversations": conversations,
         "active": active,
         "members": members,
@@ -102,6 +102,7 @@ def messenger(request):
         "folder": folder,
         "page": page,
         "has_more": has_more,
+        "nav": "inbox",
     })
 
 
@@ -127,13 +128,13 @@ def message_send(request, me, conv):
 @login_required
 @require_POST
 @transaction.atomic
-def messenger_start(request, pk):
+def inbox_start(request, pk):
     me = _me(request)
     other = get_object_or_404(SocialProfile, pk=pk)
     err = ch.can_dm(me, other)
     if err:
         messages.error(request, err)
-        return redirect(request.POST.get("next") or "messenger")
+        return redirect(request.POST.get("next") or "inbox")
     return redirect(_go(ch.dm_find_or_create(me, other).id))
 
 
@@ -141,10 +142,10 @@ def messenger_start(request, pk):
 @require_POST
 @transaction.atomic
 @throttle("msg", 40, 60)
-def messenger_compose(request):
+def inbox_compose(request):
     me = _me(request)
     if not me:
-        return redirect("messenger")
+        return redirect("inbox")
     friends = list(friends_of(me, limit=200))
     form = _compose_form(friends, request.POST, request.FILES)
     if not form.is_valid():
@@ -172,10 +173,10 @@ def messenger_compose(request):
 
 
 @ch.member_post
-def messenger_leave(request, me, conv):
+def inbox_leave(request, me, conv):
     ch.leave(me, conv)
     messages.info(request, "Сообщение удалено из входящих.")
-    return redirect("messenger")
+    return redirect("inbox")
 
 
 @login_required
@@ -184,12 +185,12 @@ def messenger_leave(request, me, conv):
 def message_delete(request, message_id):
     me = _me(request)
     if not me:
-        return redirect("messenger")
+        return redirect("inbox")
     try:
         cid = ch.delete_message(me, message_id)
     except Http404:
-        return redirect("messenger")
+        return redirect("inbox")
     except PermissionError:
         messages.error(request, "Можно удалить только своё сообщение.")
-        return redirect(request.POST.get("next") or "messenger")
+        return redirect(request.POST.get("next") or "inbox")
     return redirect(request.POST.get("next") or _go(cid))

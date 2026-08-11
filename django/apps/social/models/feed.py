@@ -32,10 +32,6 @@ class Post(models.Model):
         from apps.social.media import media_url
         return media_url(self.media_path)
 
-    @property
-    def sticker_url(self):
-        from apps.social.media import sticker_url as _url
-        return _url(self.sticker)
 
 class PostMedia(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -67,6 +63,7 @@ class Comment(models.Model):
         ordering = ["id"]
 
 class Reaction(models.Model):
+    """Legacy likes table (FB 2009+) — kept unmanaged for orphan cleanup only."""
     id = models.BigAutoField(primary_key=True)
     post = models.ForeignKey(Post, models.DO_NOTHING, related_name="reactions")
     social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="reactions")
@@ -76,14 +73,4 @@ class Reaction(models.Model):
     class Meta:
         managed = False
         db_table = "reactions"
-
-class SavedPost(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="saved")
-    post = models.ForeignKey(Post, models.DO_NOTHING, related_name="saves")
-    created_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        managed = False
-        db_table = "saved_posts"
 

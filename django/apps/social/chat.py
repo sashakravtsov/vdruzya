@@ -41,15 +41,15 @@ def member_post(view):
     @wraps(view)
     def wrap(request, conversation_id, *args, **kwargs):
         if request.method != "POST":
-            return redirect("messenger")
+            return redirect("inbox")
         me = profile_of(request.user)
         if not me:
-            return redirect("messenger")
+            return redirect("inbox")
         try:
             conv = require_member(me, conversation_id)
         except Http404:
             messages.error(request, "Диалог недоступен.")
-            return redirect("messenger")
+            return redirect("inbox")
         return view(request, me, conv, *args, **kwargs)
     return wrap
 
@@ -208,8 +208,6 @@ def _snippet(c, me) -> str:
     text = (c.last_body or "").strip()
     if not text and c.last_attach:
         text = "[фото]"
-    elif c.last_type == "sticker" and text:
-        text = f"[стикер] {text}"
     text = text[:80]
     if not text:
         return ""

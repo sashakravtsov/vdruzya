@@ -1,7 +1,7 @@
 {% load vd %}
 {# Relation-dependent action links (classic left rail). #}
 {% if relation and relation.status == 'accepted' %}
-<form method="post" action="{% url 'messenger.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
+<form method="post" action="{% url 'inbox.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
 <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
 <form method="post" action="{% url 'friends.remove' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Удалить из друзей</button></form>
 {% elif relation and relation.status == 'pending' and relation.user_id == me.id %}

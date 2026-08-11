@@ -5,7 +5,7 @@
 <div id="pagebody" class="messages-page">
     <div id="header" class="withsubtitle">
         <h1>Входящие</h1>
-        <div class="subtitle"><a href="{% url 'messenger' %}?compose=1" style="color:#fff">Написать сообщение</a></div>
+        <div class="subtitle"><a href="{% url 'inbox' %}?compose=1" style="color:#fff">Написать сообщение</a></div>
     </div>
     <div id="content" class="messages-content">
         {% if messages %}{% for flash in messages %}<div class="flash">{{ flash }}</div>{% endfor %}{% endif %}
@@ -13,15 +13,15 @@
         <div class="messages-inbox profile-box">
             <h4>{% if folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h4>
             <div class="profile-box-body">
-                <form method="get" class="msg-filter" action="{% url 'messenger' %}">
+                <form method="get" class="msg-filter" action="{% url 'inbox' %}">
                     <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск…" aria-label="Поиск сообщений">
                     {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                     <input type="submit" class="inputbutton" value="Найти">
                 </form>
                 <p class="msg-tabs muted">
-                    <a href="{% url 'messenger' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if folder == 'inbox' %} class="is-on"{% endif %}>входящие</a>
+                    <a href="{% url 'inbox' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if folder == 'inbox' %} class="is-on"{% endif %}>входящие</a>
                     ·
-                    <a href="{% url 'messenger' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
+                    <a href="{% url 'inbox' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
                 </p>
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
@@ -49,7 +49,7 @@
 
         <div class="messages-thread profile-box">
             {% if compose_mode %}
-            {% include "social/_messenger_compose.html" %}
+            {% include "social/_inbox_compose.html" %}
             {% else %}
             <h4>
                 {% if active %}
@@ -60,7 +60,7 @@
                     {{ active.display_name|default:"Сообщение" }}
                     {% endif %}
                     <span class="edit msg-actions">
-                        <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Удалить из входящих?');">{% csrf_token %}
+                        <form method="post" action="{% url 'inbox.leave' active.id %}" class="inline" onsubmit="return confirm('Удалить из входящих?');">{% csrf_token %}
                             <button type="submit" class="linkish muted">удалить</button>
                         </form>
                     </span>
@@ -68,9 +68,9 @@
             </h4>
             <div class="profile-box-body">
                 {% if active %}
-                {% include "social/_messenger_thread.html" %}
+                {% include "social/_inbox_thread.html" %}
                 {% else %}
-                <p class="muted">Выберите сообщение слева или <a href="{% url 'messenger' %}?compose=1">напишите новое</a>.</p>
+                <p class="muted">Выберите сообщение слева или <a href="{% url 'inbox' %}?compose=1">напишите новое</a>.</p>
                 {% endif %}
             </div>
             {% endif %}

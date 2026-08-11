@@ -74,30 +74,3 @@ class Notification(models.Model):
         db_table = "notifications"
         ordering = ["-id"]
 
-
-class StickerPack(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    slug = models.CharField(max_length=255)
-    title = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        managed = False
-        db_table = "sticker_packs"
-
-
-class Sticker(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    pack = models.ForeignKey(StickerPack, models.DO_NOTHING, related_name="stickers", db_column="sticker_pack_id")
-    slug = models.CharField(max_length=255)
-    title = models.CharField(max_length=255)
-    phrase = models.CharField(max_length=255, null=True, blank=True)
-    background_color = models.CharField(max_length=32, default="#e8f3ff")
-    foreground_color = models.CharField(max_length=32, default="#2f6fed")
-    sort_order = models.SmallIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        managed = False
-        db_table = "stickers"
-        ordering = ["sort_order", "id"]

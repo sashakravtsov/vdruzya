@@ -33,14 +33,6 @@ def media_url(path: str | None) -> str | None:
         return f"{base}/{p.lstrip('/')}"
 
 
-def sticker_url(value: str | None) -> str:
-    if not value:
-        return ""
-    if "://" in value:
-        return value
-    return media_url(value) or value
-
-
 def save_image(upload, folder: str) -> str:
     ext = Path(upload.name).suffix.lower() or ".jpg"
     if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:

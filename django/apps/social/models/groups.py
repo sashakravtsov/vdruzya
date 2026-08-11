@@ -114,11 +114,6 @@ class CommunityPost(models.Model):
             return f"{base}#topic-{self.id}"
         return f"{base}?topic={self.id}#board"
 
-    @property
-    def sticker_url(self):
-        from apps.social.media import sticker_url as _url
-        return _url(self.sticker)
-
 
 class CommunityPostMedia(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -150,17 +145,6 @@ class CommunityPostComment(models.Model):
     class Meta:
         managed = False
         db_table = "community_post_comments"
-
-class CommunityPostReaction(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    post = models.ForeignKey(CommunityPost, models.DO_NOTHING, related_name="reactions", db_column="community_post_id")
-    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="community_reactions")
-    type = models.CharField(max_length=40, default="like")
-    created_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        managed = False
-        db_table = "community_post_reactions"
 
 class CommunityJoinRequest(models.Model):
     id = models.BigAutoField(primary_key=True)

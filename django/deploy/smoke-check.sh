@@ -16,7 +16,7 @@ for path in \
   /apple-touch-icon.png:200 /favicon-32x32.png:200 \
   /password-reset:200 \
   /sitemap.xml:200 /robots.txt:200 \
-  /sw.js:200 /offline.html:200 /feed:302 /inbox:302 /messenger:301 /activity:301 \
+  /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /messenger:301 /activity:301 \
   /app:410 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
@@ -92,16 +92,31 @@ if curl -sL "${BASE_URL}/profile/aleksandr-kravtsov" | grep -Eq 'https://s3\.vdr
 else
   echo "FAIL profile HTML missing S3 avatar"; FAIL=1
 fi
-# FB-2006: no live Messenger client
+# FB-2006: no live Messenger / PWA / polls surface
 if [[ -f "${ROOT}/django/static/js/messenger.js" ]] || [[ -f "${ROOT}/django/apps/social/consumers.py" ]]; then
   echo "FAIL WS messenger leftovers present"; FAIL=1
 else
   echo "OK   no WS messenger leftovers"
 fi
+if [[ -f "${ROOT}/django/public/sw.js" ]] || [[ -f "${ROOT}/django/public/offline.html" ]]; then
+  echo "FAIL PWA leftovers present"; FAIL=1
+else
+  echo "OK   no PWA leftovers"
+fi
+if [[ -f "${ROOT}/django/apps/social/models/polls.py" ]]; then
+  echo "FAIL polls module still present"; FAIL=1
+else
+  echo "OK   no polls module"
+fi
 if grep -q 'CHANNEL_LAYERS' "${ROOT}/django/config/settings.py" 2>/dev/null; then
   echo "FAIL CHANNEL_LAYERS still configured"; FAIL=1
 else
   echo "OK   no CHANNEL_LAYERS"
+fi
+if grep -q 'Что у вас нового' "${ROOT}/django/templates/social/feed.html" 2>/dev/null; then
+  echo "FAIL feed still has status publisher"; FAIL=1
+else
+  echo "OK   feed has no status publisher"
 fi
 echo "== Wall/Groups feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/wall-groups-check.py; then

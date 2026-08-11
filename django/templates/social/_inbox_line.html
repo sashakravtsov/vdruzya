@@ -4,7 +4,7 @@
     {% if m.created_at %}<span class="muted chat-time"> · {{ m.created_at|date:"j E, H:i" }}</span>{% endif %}
     {% if m.social_user_id == me.id %}
     <form method="post" action="{% url 'messages.delete' m.id %}" class="inline msg-del">{% csrf_token %}
-        <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
+        <input type="hidden" name="next" value="{% url 'inbox' %}?c={{ active.id }}">
         <button type="submit" class="linkish muted" title="Удалить">×</button>
     </form>
     {% endif %}

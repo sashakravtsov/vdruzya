@@ -37,7 +37,7 @@
                         </span>
                     </a>
                     <span class="classic-inline-actions classic-inline-actions-friend">
-                        <form method="post" action="{% url 'messenger.start' f.id %}">{% csrf_token %}
+                        <form method="post" action="{% url 'inbox.start' f.id %}">{% csrf_token %}
                             <button type="submit" class="linkish">Написать</button>
                         </form>
                     </span>

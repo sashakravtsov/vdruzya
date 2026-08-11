@@ -8,22 +8,6 @@
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
         <div class="feed-main">
-            {% if me and status_form %}
-            <div class="profile-box">
-                <h4>Что у вас нового?</h4>
-                <div class="profile-box-body status-box">
-                    {% avatar me 40 %}
-                    <div>
-                        <form method="post" action="{% url 'profile.status' %}">{% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.path }}">
-                            {{ status_form.headline }}
-                            <p><input type="submit" class="inputsubmit" value="Обновить статус"></p>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
             <div class="profile-box feed-wall-box wall-box">
                 <h4>Новости</h4>
                 <div class="profile-box-body">
@@ -34,7 +18,7 @@
             {% include "social/_news_item.html" %}
             {% endif %}
             {% empty %}
-            <p class="muted">Пока тихо. Обновите статус или найдите друзей.</p>
+            <p class="muted">Пока тихо. <a href="{% url 'friends' %}">Найдите друзей</a> или напишите на чью-нибудь стену.</p>
             {% endfor %}
 
             {% if page and page.paginator.num_pages > 1 %}

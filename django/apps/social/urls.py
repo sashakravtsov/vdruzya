@@ -7,7 +7,7 @@ from . import views_meta as meta
 from . import views_albums as albums
 from . import views_friends as friends
 from . import views_events as events
-from . import views_messenger as msg
+from . import views_inbox as inbox
 from . import views_wall_ops as wall
 
 urlpatterns = [
@@ -37,12 +37,12 @@ urlpatterns = [
     path("groups/<int:pk>", browse.group_show, name="groups.show"),
     path("groups/<slug:slug>", browse.group_slug_redirect, name="groups.slug"),
     path("g/<slug:slug>", browse.group_slug_redirect, name="groups.vanity"),
-    path("inbox", msg.messenger, name="messenger"),
-    path("inbox/compose", msg.messenger_compose, name="messenger.compose"),
-    path("inbox/start/<int:pk>", msg.messenger_start, name="messenger.start"),
-    path("inbox/<int:conversation_id>/message", msg.message_send, name="messages.store"),
-    path("inbox/<int:conversation_id>/leave", msg.messenger_leave, name="messenger.leave"),
-    path("messages/<int:message_id>/delete", msg.message_delete, name="messages.delete"),
+    path("inbox", inbox.inbox_home, name="inbox"),
+    path("inbox/compose", inbox.inbox_compose, name="inbox.compose"),
+    path("inbox/start/<int:pk>", inbox.inbox_start, name="inbox.start"),
+    path("inbox/<int:conversation_id>/message", inbox.message_send, name="inbox.message"),
+    path("inbox/<int:conversation_id>/leave", inbox.inbox_leave, name="inbox.leave"),
+    path("messages/<int:message_id>/delete", inbox.message_delete, name="messages.delete"),
     # Legacy Messenger URLs → Inbox
     path("messenger", meta.redirect_permanent, {"to": "/inbox"}, name="messenger.legacy"),
     path("messenger/<path:rest>", meta.redirect_messenger_legacy),

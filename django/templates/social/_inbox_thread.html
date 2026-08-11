@@ -8,10 +8,10 @@
 {% endif %}
 <div id="chat-log" class="chat-log">
     {% for m in chat_messages %}
-    {% include "social/_messenger_line.html" %}
+    {% include "social/_inbox_line.html" %}
     {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}
 </div>
-<form method="post" action="{% url 'messages.store' active.id %}" class="chat-compose" enctype="multipart/form-data">{% csrf_token %}
+<form method="post" action="{% url 'inbox.message' active.id %}" class="chat-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.body }}
     <p class="wallposter-file">Фото: {{ form.photo }}</p>
     <input type="submit" class="inputsubmit" value="Отправить">
