@@ -258,11 +258,32 @@ class PostForm(forms.ModelForm):
         return data
 
 
+_COMMENT_WIDGET = _in(style="width:80%", placeholder="Написать комментарий…", maxlength="2000", autocomplete="off")
+
+
+def _clean_comment_body(form):
+    body = (form.cleaned_data.get("body") or "").strip()
+    if not body:
+        raise forms.ValidationError("Напишите комментарий.")
+    return body
+
+
+class CommentBodyForm(forms.Form):
+    """Shared body field for wall / group / photo comments (classic FB: flat text)."""
+    body = forms.CharField(max_length=2000, widget=_COMMENT_WIDGET)
+
+    def clean_body(self):
+        return _clean_comment_body(self)
+
+
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ("body",)
-        widgets = {"body": _in(style="width:80%", placeholder="Комментарий")}
+        widgets = {"body": _COMMENT_WIDGET}
+
+    def clean_body(self):
+        return _clean_comment_body(self)
 
 
 class MessageForm(forms.ModelForm):

@@ -1,4 +1,4 @@
-{# Group wall — archive wallpost chrome. Expects: p, group, is_member, is_admin, me #}
+{# Group wall — archive wallpost chrome. Expects: p, group, is_member, is_admin, me, comment_form #}
 {% load vd %}
 <div class="wallpost" id="topic-{{ p.id }}">
     <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
@@ -53,13 +53,16 @@
                     {% endif %}
                 </div>
                 {% for c in p.comments.all %}
-                {% include "social/_group_comment.html" with c=c group=group me=me is_admin=is_admin %}
+                {% url 'groups.comments.delete' group.id c.id as del_url %}
+                {% if is_admin or me and me.id == c.social_user_id %}
+                {% include "social/_comment_row.html" with c=c can_delete=1 delete_url=del_url %}
+                {% else %}
+                {% include "social/_comment_row.html" with c=c can_delete=0 delete_url=del_url %}
+                {% endif %}
                 {% endfor %}
                 {% if is_member %}
-                <form method="post" action="{% url 'groups.comment' group.id p.id %}" class="wall-comment" id="c-{{ p.id }}">{% csrf_token %}
-                    <input class="inputtext" name="body" style="width:70%" placeholder="Написать комментарий…" required>
-                    <input type="submit" class="inputsubmit" value="→">
-                </form>
+                {% url 'groups.comment' group.id p.id as c_action %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=p.id form=comment_form %}
                 {% endif %}
             </div>
         </td>

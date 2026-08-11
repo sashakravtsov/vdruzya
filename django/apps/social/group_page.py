@@ -1,7 +1,7 @@
 """Group page data builders — short helpers only."""
 from django.db.models import Count, Prefetch
 
-from apps.social.forms import CommunityPostForm, GroupEventForm
+from apps.social.forms import CommentBodyForm, CommunityPostForm, GroupEventForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPost, CommunityPostComment,
     Event, Photo, SocialProfile,
@@ -60,6 +60,7 @@ def page_ctx(request, group, me):
         "form": CommunityPostForm(auto_id="id_w_%s", initial={"board": "wall"}),
         "board_form": CommunityPostForm(auto_id="id_b_%s", initial={"board": "discussion"}),
         "photo_form": CommunityPostForm(auto_id="id_ph_%s", initial={"board": "wall"}),
+        "comment_form": CommentBodyForm(auto_id=False) if is_member else None,
         "event_form": GroupEventForm() if is_admin else None,
     }
     if not can_view:

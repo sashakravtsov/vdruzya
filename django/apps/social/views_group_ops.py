@@ -6,19 +6,17 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 
-from apps.social.forms import CommunityPostForm, GroupForm
+from apps.social.forms import CommentBodyForm, CommunityPostForm, GroupForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPost,
     CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember,
     Notification, SocialProfile,
 )
-from apps.social.services import now, profile_of
-
-_ADMIN = ("admin", "moderator", "creator", "officer")
+from apps.social.services import can_manage_group_comment, is_group_admin, now, profile_of
 
 
 def _admin(me, group):
-    return bool(me and CommunityMember.objects.filter(community=group, social_user=me, role__in=_ADMIN).exists())
+    return is_group_admin(me, group)
 
 
 def _member(me, group):
@@ -141,7 +139,7 @@ def _post_redirect(pk, post):
 def group_comment_delete(request, pk, comment_id):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     c = get_object_or_404(CommunityPostComment.objects.select_related("post"), pk=comment_id, post__community=group)
-    if not me or (c.social_user_id != me.id and not _admin(me, group)):
+    if not can_manage_group_comment(me, c, group):
         return redirect("groups.show", pk=pk)
     post = c.post
     c.delete()
@@ -179,19 +177,6 @@ def group_post_edit(request, pk, post_id):
         return redirect("groups.show", pk=pk)
     form.fields["board"].initial = post.topic if post.topic in ("wall", "discussion") else "discussion"
     return render(request, "social/group_post_edit.html", {"group": group, "post": post, "form": form, "me": me, "is_admin": _admin(me, group)})
-
-
-@login_required
-@require_POST
-def group_comment_update(request, pk, comment_id):
-    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    c = get_object_or_404(CommunityPostComment.objects.select_related("post"), pk=comment_id, post__community=group)
-    body = (request.POST.get("body") or "").strip()
-    if me and c.social_user_id == me.id and body:
-        c.body = body[:2000]
-        c.save(update_fields=["body"])
-        messages.success(request, "Комментарий обновлён.")
-    return _post_redirect(pk, c.post)
 
 
 @login_required
@@ -319,12 +304,14 @@ def group_post(request, pk):
 def group_comment(request, pk, post_id):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
-    body = (request.POST.get("body") or "").strip()
-    if me and _member(me, group) and body:
-        CommunityPostComment.objects.create(post=post, social_user=me, body=body, created_at=now())
+    form = CommentBodyForm(request.POST)
+    if me and _member(me, group) and form.is_valid():
+        CommunityPostComment.objects.create(
+            post=post, social_user=me, body=form.cleaned_data["body"], created_at=now(),
+        )
     if post.topic == "wall":
-        return redirect(f"/groups/{pk}#topic-{post.id}")
-    return redirect(f"/groups/{pk}?topic={post.id}#board")
+        return redirect(f"/groups/{pk}#c-{post.id}")
+    return redirect(f"/groups/{pk}?topic={post.id}#c-{post.id}")
 
 
 @login_required

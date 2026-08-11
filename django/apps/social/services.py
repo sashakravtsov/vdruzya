@@ -112,6 +112,31 @@ def can_manage_wall_comment(me, comment) -> bool:
     return can_manage_wall_post(me, post)
 
 
+_GROUP_ADMIN = ("admin", "moderator", "creator", "officer")
+
+
+def is_group_admin(me, group) -> bool:
+    return bool(
+        me and group
+        and CommunityMember.objects.filter(community=group, social_user=me, role__in=_GROUP_ADMIN).exists()
+    )
+
+
+def can_manage_group_comment(me, comment, group=None) -> bool:
+    if not me or not comment:
+        return False
+    if comment.social_user_id == me.id:
+        return True
+    g = group or getattr(getattr(comment, "post", None), "community", None)
+    return is_group_admin(me, g)
+
+
+def can_manage_photo_comment(me, comment, album) -> bool:
+    if not me or not comment or not album:
+        return False
+    return comment.social_user_id == me.id or album.social_user_id == me.id
+
+
 def wall_posts_for(profile, limit=20, viewer=None):
     """Own wall posts + notes on this wall. No status / picture / polls (classic Profile Wall)."""
     key = f"wall:{profile.id}"

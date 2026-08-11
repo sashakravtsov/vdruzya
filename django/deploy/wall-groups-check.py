@@ -108,9 +108,21 @@ def main():
         fail("wall post not saved")
     ok("group wall post")
 
+    r = get(f"/groups/{g.id}")
+    body = r.content.decode()
+    if f'id="c-{post_row.id}"' not in body or "wall-comment-compose" not in body:
+        fail("group comment compose missing")
+    if f'href="#c-{post_row.id}"' not in body:
+        fail("group comment reveal link missing")
+    if f"/groups/{g.id}/comments/" in body and "/edit" in body:
+        fail("group comment edit should be removed")
+    ok("group comment reveal chrome")
+
     r = post(f"/groups/{g.id}/posts/{post_row.id}/comment", {"body": "probe c"})
     if r.status_code != 200:
         fail("comment")
+    if not post_row.comments.filter(body="probe c").exists():
+        fail("group comment not saved")
     post(f"/groups/{g.id}/posts/{post_row.id}/react", {})
     ok("comment+react")
 

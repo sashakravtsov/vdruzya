@@ -59,28 +59,23 @@
             </div>
         </div>
 
-        <div class="profile-box">
+        <div class="profile-box photo-comments">
             <h4>Комментарии{% if comments %} ({{ comments|length }}){% endif %}</h4>
             <div class="profile-box-body">
                 {% for c in comments %}
-                <div class="wall-comment muted">
-                    <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
-                    {{ c.body }}
-                    {% if is_owner or me and me.id == c.social_user_id %}
-                    <form method="post" action="{% url 'albums.photos.comment.delete' album.id photo.id c.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish muted">удалить</button>
-                    </form>
-                    {% endif %}
-                </div>
+                {% url 'albums.photos.comment.delete' album.id photo.id c.id as del_url %}
+                {% if is_owner or me and me.id == c.social_user_id %}
+                {% include "social/_comment_row.html" with c=c can_delete=1 delete_url=del_url %}
+                {% else %}
+                {% include "social/_comment_row.html" with c=c can_delete=0 delete_url=del_url %}
+                {% endif %}
                 {% empty %}
                 <p class="muted">Комментариев пока нет.</p>
                 {% endfor %}
 
                 {% if me %}
-                <form method="post" action="{% url 'albums.photos.comment' album.id photo.id %}" class="wall-comment">{% csrf_token %}
-                    <input class="inputtext" name="body" maxlength="1000" placeholder="Написать комментарий…" style="width:70%" required autocomplete="off">
-                    <input type="submit" class="inputsubmit" value="→">
-                </form>
+                {% url 'albums.photos.comment' album.id photo.id as c_action %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id form=comment_form open=1 %}
                 {% else %}
                 <p class="muted"><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы комментировать.</p>
                 {% endif %}

@@ -233,7 +233,30 @@ button.linkish, .profile-box-body button.linkish {
   background: 0; border: 0; color: var(--fb); font: 11px var(--font); cursor: pointer; padding: 0;
 }
 .wall-actions { margin: 4px 0; }
-.wall-comment { margin: 4px 0 0; }
+/* Classic FB flat comments (wall / group / photo) */
+.wall-comment {
+  display: flex; align-items: flex-start; gap: 6px;
+  margin: 0; padding: 4px 5px; font-size: 11px; line-height: 14px;
+  background: #eceff5; border-top: solid 1px #d8dfea;
+}
+.wall-comment .wc-ava { flex: 0 0 32px; }
+.wall-comment .wc-ava img,
+.wall-comment .wc-ava .avatar-fallback {
+  width: 32px; height: 32px; border: 1px solid #b3b3b3; object-fit: cover;
+}
+.wall-comment .wc-body { flex: 1 1 auto; min-width: 0; }
+.wall-comment .wc-time { margin-top: 2px; }
+.wall-comment .wc-del { margin-left: auto; }
+.wall-comment-compose {
+  display: none; margin: 0; padding: 4px 5px; font-size: 11px;
+  background: #eceff5; border-top: solid 1px #d8dfea;
+}
+.wall-comment-compose:target,
+.wall-comment-compose.is-open { display: block; }
+.wall-comment-compose input[type="text"],
+.wall-comment-compose .inputtext { width: 80%; }
+.photo-comments .wall-comment:first-child,
+.photo-comments .wall-comment-compose:first-child { border-top: 0; }
 #header.withsubtitle .subtitle {
   float: right; font-weight: normal; font-size: 11px; line-height: 23px; white-space: nowrap;
 }
@@ -933,26 +956,6 @@ button.linkish, .profile-box-body button.linkish {
   color: #777;
 }
 .wallpost .info .actions a:hover { text-decoration: underline; }
-.wallpost .wall-comment {
-  display: flex; align-items: flex-start; gap: 6px;
-  margin: 0; padding: 4px 5px; font-size: 11px; line-height: 14px;
-  background: #eceff5; border-top: solid 1px #d8dfea;
-}
-.wallpost .wall-comment .wc-ava { flex: 0 0 32px; }
-.wallpost .wall-comment .wc-ava img,
-.wallpost .wall-comment .wc-ava .avatar-fallback {
-  width: 32px; height: 32px; border: 1px solid #b3b3b3; object-fit: cover;
-}
-.wallpost .wall-comment .wc-body { flex: 1 1 auto; min-width: 0; }
-.wallpost .wall-comment .wc-time { margin-top: 2px; }
-.wallpost .wall-comment .wc-del { margin-left: auto; }
-.wallpost .wall-comment-compose {
-  display: none; margin: 0; padding: 4px 5px; font-size: 11px;
-  background: #eceff5; border-top: solid 1px #d8dfea;
-}
-.wallpost .wall-comment-compose:target,
-.wallpost .wall-comment-compose.is-open { display: block; }
-.wallpost .wall-comment-compose input[type="text"] { width: 80%; }
 .profile .minifeed-item {
   margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
   font-size: 11px; line-height: 14px;

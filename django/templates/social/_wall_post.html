@@ -56,26 +56,12 @@
                     {% endif %}
                 </div>
                 {% for c in post.comments.all %}
-                <div class="wall-comment">
-                    <span class="wc-ava">{% avatar c.social_user 32 %}</span>
-                    <div class="wc-body">
-                        <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
-                        {{ c.body }}
-                        {% if c.created_at %}<div class="muted wc-time">{{ c.created_at|timesince }} назад</div>{% endif %}
-                    </div>
-                    {% if me|can_manage_comment:c %}
-                    <form method="post" action="{% url 'comments.delete' c.id %}" class="inline wc-del">{% csrf_token %}
-                        <input type="hidden" name="next" value="{{ next }}">
-                        <button type="submit" class="linkish muted">×</button>
-                    </form>
-                    {% endif %}
-                </div>
+                {% url 'comments.delete' c.id as del_url %}
+                {% include "social/_comment_row.html" with c=c can_delete=me|can_manage_comment:c delete_url=del_url next=next %}
                 {% endfor %}
                 {% if comment_form and me %}
-                <form method="post" action="{% url 'comments.store' post.id %}" class="wall-comment-compose{% if comment_form.errors %} is-open{% endif %}" id="c-{{ post.id }}">{% csrf_token %}
-                    <input type="hidden" name="next" value="{{ next }}">
-                    {{ comment_form.body }} <input type="submit" class="inputsubmit" value="→">
-                </form>
+                {% url 'comments.store' post.id as c_action %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=post.id form=comment_form next=next %}
                 {% endif %}
             </div>
         </td>
