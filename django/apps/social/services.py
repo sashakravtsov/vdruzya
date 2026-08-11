@@ -51,14 +51,16 @@ def friend_count(profile: SocialProfile) -> int:
 
 
 def post_visible_q(viewer, *, author_field="social_user_id") -> Q:
-    """Shared visibility: public / friends-of-author / own. Empty visibility ≡ public."""
+    """Public / friends-of-author / friends-of-wall-owner / own. Empty visibility ≡ public."""
     if not viewer:
         return Q(visibility="public") | Q(visibility="")
     fids = friend_ids(viewer) | {viewer.id}
     af = author_field
+    wall_topics = [f"wall:{i}" for i in fids]
     return (
         Q(visibility="public") | Q(visibility="")
         | Q(visibility="friends", **{f"{af}__in": fids})
+        | Q(visibility="friends", topic__in=wall_topics)
         | Q(**{af: viewer.id})
     )
 
@@ -165,16 +167,11 @@ def wall_posts_for(profile, limit=20, viewer=None):
         .annotate(n_comments=Count("comments", distinct=True))
     )
     if viewer and viewer.id == profile.id:
-        pass
-    elif viewer:
-        friend = profile.id in friend_ids(viewer)
-        vis = Q(visibility="public") | Q(visibility="") | Q(social_user=viewer)
-        if friend:
-            vis |= Q(visibility="friends")
-        qs = qs.filter(vis).exclude(visibility="private")
-        qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
+        pass  # owner sees private notes too
     else:
-        qs = qs.filter(Q(visibility="public") | Q(visibility="")).exclude(visibility="private")
+        qs = qs.filter(post_visible_q(viewer))
+        if viewer:
+            qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
     return qs.order_by("-id")[:limit]
 
 

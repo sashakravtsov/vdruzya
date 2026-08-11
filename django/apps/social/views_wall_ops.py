@@ -22,6 +22,7 @@ def post_edit(request, post_id):
         messages.error(request, "Нельзя редактировать.")
         return redirect(request.GET.get("next") or "feed")
     on_wall = (post.topic or "").startswith("wall:")
+    nxt = request.POST.get("next") or request.GET.get("next") or "/feed"
     form = PostForm(request.POST or None, request.FILES or None, instance=post, simple=on_wall)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
@@ -43,8 +44,11 @@ def post_edit(request, post_id):
             obj.save(update_fields=["media_path", "kind"])
         cache.delete(f"news:{me.id}:60")
         messages.success(request, "Запись обновлена.")
-        return redirect(request.POST.get("next") or "feed")
-    return render(request, "social/post_edit.html", {"form": form, "post": post, "me": me})
+        return redirect(nxt)
+    return render(
+        request, "social/post_edit.html",
+        {"form": form, "post": post, "me": me, "next": nxt},
+    )
 
 
 def post_show(request, post_id):

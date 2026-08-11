@@ -11,11 +11,13 @@
                     {% elif post.wall_note_owner %}
                     написал(а) на стену <a href="{% url 'profile' post.wall_note_owner.id %}">{{ post.wall_note_owner.name }}</a>
                     {% endif %}
-                    {% if post.created_at %}<span class="muted"> · {{ post.created_at|timesince }} назад</span>{% endif %}
+                    {% if post.created_at %}
+                    <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.id %}">{{ post.created_at|timesince }} назад</a></span>
+                    {% endif %}
                     {% if me|can_manage_post:post %}
                     <span class="wallpost-edit">
-                        {% if me.id == post.social_user_id and not wall_owner %}
-                        <a href="{% url 'posts.edit' post.id %}">ред.</a>
+                        {% if me.id == post.social_user_id %}
+                        <a href="{% url 'posts.edit' post.id %}{% if next %}?next={{ next|urlencode }}{% endif %}">ред.</a>
                         ·
                         {% endif %}
                         <form method="post" action="{% url 'posts.delete' post.id %}" class="inline">{% csrf_token %}

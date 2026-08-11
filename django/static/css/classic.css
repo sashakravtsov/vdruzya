@@ -948,6 +948,8 @@ button.linkish, .profile-box-body button.linkish {
   border-bottom: solid 1px #D8DFEA;
   font-size: 11px;
 }
+.wallpost .info .header a.muted { color: #777; font-weight: normal; }
+.wallpost .info .header a.muted:hover { text-decoration: underline; }
 .wallpost .info .text { padding: 5px; background: #fff; font-size: 11px; line-height: 14px; }
 .wallpost .info .actions {
   padding: 3px 5px;

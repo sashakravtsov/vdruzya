@@ -16,7 +16,7 @@ from apps.accounts.models import User
 from apps.social.models import Education, Post, SocialProfile
 from apps.social.profile_page import can_write_wall
 from apps.social.services import (
-    can_manage_wall_post, friend_count, friend_ids, now, profile_of, wall_posts_for,
+    can_manage_wall_post, feed_queryset, friend_count, friend_ids, now, profile_of, wall_posts_for,
 )
 
 
@@ -216,6 +216,38 @@ def main():
     assert f'action="/posts/{note.id}/delete"'.encode() in r.content
     assert "Мне нравится".encode() not in r.content
     ok("wall note + owner delete UI")
+
+    # Friend of wall owner (not necessarily of author) can open + comment friends-visibility notes
+    buddy_id = next((i for i in friend_ids(me) if i != other.id), None)
+    if buddy_id:
+        buddy = SocialProfile.objects.select_related("user").get(pk=buddy_id)
+        assert feed_queryset(buddy).filter(pk=note.id).exists()
+        assert note in wall_posts_for(me, 20, viewer=buddy)
+        c_buddy = Client(HTTP_HOST="vdruzya.ru")
+        c_buddy.force_login(buddy.user)
+        r = c_buddy.get(f"/posts/{note.id}", secure=True)
+        assert r.status_code == 200 and b"__profile_check_wall_note__" in r.content
+        r = c_buddy.post(
+            f"/posts/{note.id}/comment",
+            {"body": "__buddy_wall_comment__", "next": f"/profile/{me.id}"},
+            secure=True, follow=True,
+        )
+        assert r.status_code == 200
+        assert note.comments.filter(body="__buddy_wall_comment__").exists()
+        ok("wall friend can view+comment note by non-mutual author")
+    else:
+        ok("wall friend can view+comment note by non-mutual author (skipped, no buddy)")
+
+    # Author can edit their note from the host's wall
+    if other.user_id:
+        c_auth = Client(HTTP_HOST="vdruzya.ru")
+        c_auth.force_login(User.objects.get(pk=other.user_id))
+        r = c_auth.get(f"/profile/{me.id}", secure=True)
+        assert r.status_code == 200
+        assert f'/posts/{note.id}/edit'.encode() in r.content
+        ok("wall author edit on profile")
+    else:
+        ok("wall author edit on profile (skipped)")
 
     r = c.post(f"/posts/{note.id}/delete", {"next": f"/profile/{me.id}"}, secure=True)
     assert r.status_code in (301, 302)
