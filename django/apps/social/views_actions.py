@@ -72,7 +72,8 @@ def post_create(request):
         post.kind = "photo" if (files or albums) else "text"
         post.created_at = post.updated_at = _now()
         post.save()
-        path = attach_wall(post, files, me, albums)
+        # Classic profile wall note: one photo; feed composer keeps multi-attach.
+        path = attach_wall(post, files, me, albums, max_photos=1 if wall_to else 10)
         if path:
             post.media_path = path
             if post.kind == "text":
@@ -110,6 +111,8 @@ def status_update(request):
 @login_required
 @require_POST
 def comment_create(request, post_id):
+    from django.urls import reverse
+
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
     form = CommentForm(request.POST)
@@ -117,7 +120,10 @@ def comment_create(request, post_id):
         c = form.save(commit=False)
         c.post, c.social_user, c.created_at = post, me, _now()
         c.save()
-    return redirect(request.POST.get("next") or "feed")
+    nxt = request.POST.get("next") or reverse("feed")
+    if "#" not in nxt:
+        nxt = f"{nxt}#c-{post_id}"
+    return redirect(nxt)
 
 
 @login_required

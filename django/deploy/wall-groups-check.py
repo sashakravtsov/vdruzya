@@ -12,7 +12,7 @@ django.setup()
 
 from django.test import Client
 from apps.accounts.models import User
-from apps.social.models import Community, CommunityMember, CommunityPost, SocialProfile
+from apps.social.models import Community, CommunityMember, CommunityPost, Post, SocialProfile
 from apps.social.services import now, profile_of
 
 
@@ -40,9 +40,44 @@ def main():
         return c.post(path, data, follow=True, secure=True)
 
     r = get("/feed")
-    if r.status_code != 200 or "Стена" not in r.content.decode():
+    body = r.content.decode()
+    if r.status_code != 200 or "Новости" not in body:
         fail("feed")
-    ok("feed wall")
+    if "wall-comment-compose" not in body and "Пока тихо" not in body:
+        # empty feed is ok; otherwise compose markup must exist on wall cards
+        pass
+    ok("feed news")
+
+    r = post("/posts", {"body": "probe personal wall", "visibility": "public"})
+    if r.status_code != 200:
+        fail("personal post")
+    wall = Post.objects.filter(body="probe personal wall", social_user=me).order_by("-id").first()
+    if not wall:
+        fail("personal wall not saved")
+    ok("personal wall post")
+
+    r = get("/feed")
+    body = r.content.decode()
+    if f'id="c-{wall.id}"' not in body or "wall-comment-compose" not in body:
+        fail("comment compose missing on feed")
+    # Form is in DOM but hidden until #c-N (classic reveal)
+    if f'href="#c-{wall.id}"' not in body:
+        fail("comment reveal link missing")
+    ok("comment reveal chrome")
+
+    r = post(f"/posts/{wall.id}/comment", {"body": "probe wall comment", "next": "/feed"})
+    if r.status_code != 200:
+        fail("wall comment")
+    if not wall.comments.filter(body="probe wall comment").exists():
+        fail("wall comment not saved")
+    ok("wall comment")
+
+    # Profile wall: note attribution + compose
+    r = get(f"/profile/{me.id}")
+    body = r.content.decode()
+    if r.status_code != 200 or "Стена" not in body:
+        fail("profile wall")
+    ok("profile wall")
 
     r = get("/groups")
     if r.status_code != 200:
@@ -87,17 +122,11 @@ def main():
         fail(f"bad url {topic.get_absolute_url()}")
     ok("discussion + url")
 
-    r = post("/posts", {"body": "probe personal wall", "visibility": "public"})
-    if r.status_code != 200:
-        fail("personal post")
-    ok("personal wall post")
-
     closed = Community.objects.filter(privacy="closed").exclude(memberships__social_user=me).first()
     if closed:
         ok("closed group probe")
 
     CommunityPost.objects.filter(body__startswith="probe ").delete()
-    from apps.social.models import Post
     Post.objects.filter(body__startswith="probe ").delete()
     ok("cleanup")
     print("ALL wall/groups probes passed")

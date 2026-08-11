@@ -934,8 +934,25 @@ button.linkish, .profile-box-body button.linkish {
 }
 .wallpost .info .actions a:hover { text-decoration: underline; }
 .wallpost .wall-comment {
-  margin: 4px 0 0; padding: 2px 5px; font-size: 11px; background: #fff;
+  display: flex; align-items: flex-start; gap: 6px;
+  margin: 0; padding: 4px 5px; font-size: 11px; line-height: 14px;
+  background: #eceff5; border-top: solid 1px #d8dfea;
 }
+.wallpost .wall-comment .wc-ava { flex: 0 0 32px; }
+.wallpost .wall-comment .wc-ava img,
+.wallpost .wall-comment .wc-ava .avatar-fallback {
+  width: 32px; height: 32px; border: 1px solid #b3b3b3; object-fit: cover;
+}
+.wallpost .wall-comment .wc-body { flex: 1 1 auto; min-width: 0; }
+.wallpost .wall-comment .wc-time { margin-top: 2px; }
+.wallpost .wall-comment .wc-del { margin-left: auto; }
+.wallpost .wall-comment-compose {
+  display: none; margin: 0; padding: 4px 5px; font-size: 11px;
+  background: #eceff5; border-top: solid 1px #d8dfea;
+}
+.wallpost .wall-comment-compose:target,
+.wallpost .wall-comment-compose.is-open { display: block; }
+.wallpost .wall-comment-compose input[type="text"] { width: 80%; }
 .profile .minifeed-item {
   margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
   font-size: 11px; line-height: 14px;
@@ -990,9 +1007,6 @@ button.linkish, .profile-box-body button.linkish {
 .wallpost-edit a { color: #3B5998; }
 .wallpost .info .actions .linkish,
 .wallpost .info .actions a { color: #3B5998; }
-.wallpost .wall-comment {
-  margin: 4px 0 0; padding: 2px 5px; font-size: 11px; background: #fff;
-}
 .wallpost td.image .avatar-fallback.group-mark {
   width: 50px; height: 50px; display: grid; place-items: center;
   color: #fff; font: bold 20px/1 "lucida grande", tahoma, verdana, arial, sans-serif;

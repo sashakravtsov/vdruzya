@@ -3,7 +3,8 @@ from apps.social.media import save_image
 from apps.social.models import CommunityPostMedia, Photo, PostMedia
 from apps.social.services import now
 
-_MAX = 10
+_MAX_WALL = 10
+_MAX_GROUP = 50
 
 
 def _album_rows(me, album_ids, limit, make_row):
@@ -17,12 +18,14 @@ def _album_rows(me, album_ids, limit, make_row):
     return rows
 
 
-def attach_wall(post, files, me, album_ids=()):
+def attach_wall(post, files, me, album_ids=(), *, max_photos=_MAX_WALL):
+    """Personal / profile wall: classic FB allowed one photo per wall note."""
+    cap = max(0, int(max_photos))
     t, rows = now(), []
-    for f in (files or [])[:_MAX]:
+    for f in (files or [])[:cap]:
         rows.append(PostMedia(post=post, path=save_image(f, "posts"), photo_id=None, sort_order=len(rows), created_at=t))
     rows += _album_rows(
-        me, album_ids, max(0, _MAX - len(rows)),
+        me, album_ids, max(0, cap - len(rows)),
         lambda path, pid, i: PostMedia(post=post, path=path, photo_id=pid, sort_order=i, created_at=t),
     )
     if not rows:
@@ -33,13 +36,13 @@ def attach_wall(post, files, me, album_ids=()):
 
 def attach_group(post, files, me, album_ids=()):
     t, rows = now(), []
-    for f in files or []:
+    for f in (files or [])[:_MAX_GROUP]:
         rows.append(CommunityPostMedia(
             post=post, path=save_image(f, "groups"), photo_id=None,
             sort_order=len(rows), created_at=t, updated_at=t,
         ))
     rows += _album_rows(
-        me, album_ids, 50,
+        me, album_ids, max(0, _MAX_GROUP - len(rows)),
         lambda path, pid, i: CommunityPostMedia(
             post=post, path=path, photo_id=pid, sort_order=i, created_at=t, updated_at=t,
         ),

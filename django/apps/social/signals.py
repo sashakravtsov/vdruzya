@@ -29,18 +29,28 @@ def friendship_notify(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Comment)
 def comment_notify(sender, instance, created, **kwargs):
-    if not created or instance.post.social_user_id == instance.social_user_id:
+    if not created:
         return
-    payload = dict(
-        social_user_id=instance.post.social_user_id,
-        title="Новый комментарий",
-        body=f"{instance.social_user.name}: {instance.body}"[:255],
-        seen=False,
-        type="comment",
-        url=f"/posts/{instance.post_id}",
-        created_at=now(),
-    )
-    transaction.on_commit(lambda p=payload: _notify(**p))
+    from apps.social.services import wall_owner_id
+
+    commenter = instance.social_user_id
+    targets = {instance.post.social_user_id, wall_owner_id(instance.post)} - {None, commenter}
+    if not targets:
+        return
+    body = f"{instance.social_user.name}: {instance.body}"[:255]
+    url = f"/posts/{instance.post_id}#c-{instance.post_id}"
+    t = now()
+    for uid in targets:
+        payload = dict(
+            social_user_id=uid,
+            title="Новый комментарий",
+            body=body,
+            seen=False,
+            type="comment",
+            url=url,
+            created_at=t,
+        )
+        transaction.on_commit(lambda p=payload: _notify(**p))
 
 
 @receiver(post_save, sender=Post)

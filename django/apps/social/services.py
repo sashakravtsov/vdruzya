@@ -113,13 +113,12 @@ def can_manage_wall_comment(me, comment) -> bool:
 
 
 def wall_posts_for(profile, limit=20, viewer=None):
-    """Own wall posts + notes on this wall. No status / polls (classic Profile Wall)."""
+    """Own wall posts + notes on this wall. No status / picture / polls (classic Profile Wall)."""
     key = f"wall:{profile.id}"
     qs = (
         Post.objects.filter(Q(topic=key) | (Q(social_user=profile) & ~Q(topic__startswith="wall:")))
-        .exclude(kind="status")
-        .exclude(topic="status")
-        .exclude(topic="picture")
+        .exclude(kind__in=("status", "picture", "poll"))
+        .exclude(topic__in=("status", "picture"))
         .select_related("social_user")
         .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages", "search_vector")
         .prefetch_related(
@@ -130,7 +129,7 @@ def wall_posts_for(profile, limit=20, viewer=None):
                 .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
             ),
         )
-        .annotate(n_comments=Count("comments", distinct=True))
+        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
     )
     if viewer and viewer.id == profile.id:
         pass
@@ -275,8 +274,26 @@ def _add_photos(items, blocked, limit):
         })
 
 
+def _attach_wall_notes(posts):
+    """Mark cross-wall notes for News Feed attribution (flat, no extra queries in template)."""
+    from apps.social.models import SocialProfile
+
+    need = set()
+    for p in posts:
+        topic = getattr(p, "topic", None) or ""
+        wid = wall_owner_id(p) if topic.startswith("wall:") else None
+        if wid and wid != p.social_user_id:
+            need.add(wid)
+            p._wall_note_id = wid
+        else:
+            p._wall_note_id = None
+    owners = SocialProfile.objects.in_bulk(need) if need else {}
+    for p in posts:
+        p.wall_note_owner = owners.get(p._wall_note_id) if p._wall_note_id else None
+
+
 def news_items(viewer=None, limit=40):
-    """FB-2006 News Feed: wall + group activity, newest first."""
+    """FB-2006 News Feed: wall notes + group activity. Status/picture/polls live in Mini-Feed."""
     from django.core.cache import cache
     key = f"news:{getattr(viewer, 'id', 0)}:{limit}"
     cached = cache.get(key)
@@ -289,7 +306,13 @@ def news_items(viewer=None, limit=40):
     member_ids = set(
         CommunityMember.objects.filter(social_user=viewer).values_list("community_id", flat=True)
     ) if viewer else set()
-    for p in feed_queryset(viewer)[:limit]:
+    posts = list(
+        feed_queryset(viewer)
+        .exclude(kind__in=("status", "picture", "poll"))
+        .exclude(topic__in=("status", "picture"))[:limit]
+    )
+    _attach_wall_notes(posts)
+    for p in posts:
         items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})
     _add_group_posts(items, blocked, member_ids, limit)
     _add_joins(items, blocked, member_ids, limit)
