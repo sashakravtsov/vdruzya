@@ -8,7 +8,7 @@ from .groups import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPost, CommunityPostComment,
     CommunityPostMedia, CommunityPostReaction,
 )
-from .chat import Conversation, ConversationMember, Message, Notification, Sticker, StickerPack
+from .chat import Conversation, ConversationMember, Message, Notification
 from .more import Album, Event, EventAttendee, Photo
 
 __all__ = [
