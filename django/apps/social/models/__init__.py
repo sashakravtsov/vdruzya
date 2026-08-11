@@ -1,5 +1,5 @@
 from .fields import PgJSON
-from .people import Block, Education, Experience, Friendship, SocialProfile, UserFollow
+from .people import Block, Education, Experience, Friendship, SocialProfile
 from .feed import Comment, Post, PostMedia, Reaction, SavedPost
 from .polls import (
     CommunityPollOption, CommunityPollVote, CommunityPostPoll, PollOption, PollVote, PostPoll,
@@ -9,15 +9,15 @@ from .groups import (
     CommunityPostMedia, CommunityPostReaction,
 )
 from .chat import Conversation, ConversationMember, Message, Notification, Sticker, StickerPack
-from .more import Album, Event, EventAttendee, Photo, PushSubscription
+from .more import Album, Event, EventAttendee, Photo
 
 __all__ = [
-    "PgJSON", "SocialProfile", "Friendship", "UserFollow", "Block", "Education", "Experience",
+    "PgJSON", "SocialProfile", "Friendship", "Block", "Education", "Experience",
     "Post", "PostMedia", "Comment", "Reaction", "SavedPost",
     "PostPoll", "PollOption", "PollVote",
     "CommunityPostPoll", "CommunityPollOption", "CommunityPollVote",
     "Community", "CommunityMember", "CommunityPost", "CommunityPostComment", "CommunityPostReaction",
     "CommunityPostMedia", "CommunityJoinRequest",
     "Conversation", "ConversationMember", "Message", "Notification", "StickerPack", "Sticker",
-    "Album", "Photo", "Event", "EventAttendee", "PushSubscription",
+    "Album", "Photo", "Event", "EventAttendee",
 ]

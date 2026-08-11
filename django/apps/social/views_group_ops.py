@@ -380,3 +380,42 @@ def join_accept(request, pk, request_id):
     CommunityJoinRequest.objects.filter(pk=req.pk).update(status="accepted")
     messages.success(request, "Заявка принята.")
     return redirect("groups.show", pk=pk)
+
+
+@login_required
+@require_POST
+def group_join(request, pk):
+    me = profile_of(request.user)
+    group = get_object_or_404(Community, pk=pk)
+    if not me:
+        return redirect("groups.show", pk=pk)
+    if CommunityMember.objects.filter(community=group, social_user=me).exists():
+        return redirect("groups.show", pk=pk)
+    if group.join_mode == "open" and group.privacy != "closed":
+        CommunityMember.objects.create(community=group, social_user=me, role="member", created_at=now())
+        messages.success(request, f"Вы в группе «{group.name}».")
+        cache.delete(f"news:{me.id}:60")
+    else:
+        CommunityJoinRequest.objects.get_or_create(
+            community=group, social_user=me,
+            defaults={"status": "pending", "created_at": now()},
+        )
+        messages.info(request, "Заявка на вступление отправлена.")
+    return redirect("groups.show", pk=pk)
+
+
+@login_required
+@require_POST
+def group_leave(request, pk):
+    me = profile_of(request.user)
+    group = get_object_or_404(Community, pk=pk)
+    row = CommunityMember.objects.filter(community=group, social_user=me).first()
+    if not row:
+        return redirect("groups.show", pk=pk)
+    if row.role == "admin" and not CommunityMember.objects.filter(community=group, role="admin").exclude(pk=row.pk).exists():
+        messages.error(request, "Нельзя выйти: вы единственный администратор.")
+        return redirect("groups.show", pk=pk)
+    row.delete()
+    cache.delete(f"news:{me.id}:60")
+    messages.success(request, f"Вы вышли из «{group.name}».")
+    return redirect("groups")

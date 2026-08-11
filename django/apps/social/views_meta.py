@@ -1,8 +1,7 @@
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.sitemaps import Sitemap
 from django.contrib.sitemaps.views import sitemap as django_sitemap
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import render
 
 from apps.social.models import SocialProfile
@@ -53,11 +52,6 @@ def robots(_request):
 @login_not_required
 def sitemap(request):
     return django_sitemap(request, sitemaps=SITEMAPS)
-
-
-@login_not_required
-def vapid_config(_request):
-    return JsonResponse({"publicKey": getattr(settings, "VAPID_PUBLIC_KEY", "") or ""})
 
 
 @login_not_required

@@ -4,7 +4,6 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
-    PUSH_ENABLED=(bool, False),
     EMAIL_USE_TLS=(bool, True),
 )
 environ.Env.read_env(BASE_DIR / ".env")
@@ -186,7 +185,7 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="").strip("'\"")
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=EMAIL_PORT == 465)
 EMAIL_USE_TLS = False if EMAIL_USE_SSL else env.bool("EMAIL_USE_TLS", default=EMAIL_PORT == 587)
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=20)
-_from = env("DEFAULT_FROM_EMAIL", default="noreply@vlyubvi.ru").strip("'\"")
+_from = env("DEFAULT_FROM_EMAIL", default="noreply@vdruzya.ru").strip("'\"")
 DEFAULT_FROM_EMAIL = _from if "<" in _from else f"ВДрузья <{_from}>"
 SERVER_EMAIL = env("SERVER_EMAIL", default=_from).strip("'\"")
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST else "django.core.mail.backends.console.EmailBackend"
@@ -194,7 +193,6 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if EMAIL_HOST else
 VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
 VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
 VAPID_SUBJECT = env("VAPID_SUBJECT", default="")
-PUSH_ENABLED = env.bool("PUSH_ENABLED", default=False)
 
 LEGAL_OPERATOR_NAME = env("LEGAL_OPERATOR_NAME", default="").strip("'\"")
 LEGAL_OPERATOR_SHORT = env("LEGAL_OPERATOR_SHORT", default="").strip("'\"")

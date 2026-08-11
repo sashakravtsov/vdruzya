@@ -103,16 +103,6 @@ class Friendship(models.Model):
         managed = False
         db_table = "friendships"
 
-class UserFollow(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    follower = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="following")
-    following = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="followers")
-    created_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        managed = False
-        db_table = "user_follows"
-
 class Block(models.Model):
     id = models.BigAutoField(primary_key=True)
     blocker = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="blocks_out")

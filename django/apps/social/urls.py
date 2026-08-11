@@ -5,7 +5,6 @@ from . import views_browse as browse
 from . import views_group_ops as gops
 from . import views_legal as legal
 from . import views_meta as meta
-from . import views_more as more
 from . import views_albums as albums
 from . import views_friends as friends
 from . import views_wall_ops as wall
@@ -22,8 +21,8 @@ urlpatterns = [
     path("groups", browse.groups, name="groups"),
     path("groups/<int:pk>/edit", gops.group_edit, name="groups.edit"),
     path("groups/<int:pk>/members", gops.group_members, name="groups.members"),
-    path("groups/<int:pk>/join", more.group_join, name="groups.join"),
-    path("groups/<int:pk>/leave", more.group_leave, name="groups.leave"),
+    path("groups/<int:pk>/join", gops.group_join, name="groups.join"),
+    path("groups/<int:pk>/leave", gops.group_leave, name="groups.leave"),
     path("groups/<int:pk>/join/cancel", gops.join_cancel, name="groups.join.cancel"),
     path("groups/<int:pk>/invite", gops.group_invite, name="groups.invite"),
     path("groups/<int:pk>/events", gops.group_event_create, name="groups.events"),
@@ -43,7 +42,7 @@ urlpatterns = [
     path("groups/<slug:slug>", browse.group_slug_redirect, name="groups.slug"),
     path("g/<slug:slug>", browse.group_slug_redirect, name="groups.vanity"),
     path("messenger", views.messenger, name="messenger"),
-    path("messenger/start/<int:pk>", more.messenger_start, name="messenger.start"),
+    path("messenger/start/<int:pk>", act.messenger_start, name="messenger.start"),
     path("messenger/<int:conversation_id>/message", act.message_send, name="messages.store"),
     path("messenger/<int:conversation_id>/sticker", act.sticker_send, name="messages.sticker"),
     path("activity", views.activity, name="activity"),
@@ -62,8 +61,8 @@ urlpatterns = [
     path("albums/<int:album_id>/delete", albums.album_delete, name="albums.delete"),
     path("compose/album-photos", albums.compose_album_photos, name="compose.album-photos"),
     path("profile/<int:pk>/albums", albums.profile_albums, name="profile.albums"),
-    path("events", more.events, name="events"),
-    path("events/<int:event_id>/rsvp", more.event_rsvp, name="events.rsvp"),
+    path("events", browse.events, name="events"),
+    path("events/<int:event_id>/rsvp", browse.event_rsvp, name="events.rsvp"),
     path("profile/edit", act.profile_edit, name="profile.edit"),
     path("profile/status", act.status_update, name="profile.status"),
     path("profile/education", act.education_add, name="profile.education"),
@@ -71,7 +70,6 @@ urlpatterns = [
     path("profile/avatar", act.avatar_upload, name="profile.avatar"),
     path("profile/<int:pk>/block", act.block_toggle, name="profile.block"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),
-    path("profile/<int:pk>/follow", act.follow_toggle, name="follow.toggle"),
     path("profile/<int:pk>", views.profile, name="profile"),
     path("profile/<slug:slug>", browse.profile_slug_redirect, name="profile.slug"),
     path("u/<slug:slug>", browse.profile_slug_redirect, name="profile.vanity"),
@@ -104,6 +102,4 @@ urlpatterns = [
     path("landing", legal.landing, name="landing"),
     path("sitemap.xml", meta.sitemap, name="sitemap"),
     path("robots.txt", meta.robots, name="robots"),
-    path("push/config", meta.vapid_config, name="push.config"),
-    path("push-subscriptions", more.push_store, name="push.store"),
 ]

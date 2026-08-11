@@ -116,10 +116,70 @@ def mini_feed(profile, limit=8):
     return items[:limit]
 
 
+
+
+def _visible_group_q(member_ids):
+    return Q(community__privacy="public") | Q(community_id__in=member_ids) | Q(community__privacy="")
+
+
+def _add_group_posts(items, blocked, member_ids, limit):
+    from apps.social.models import CommunityPost, Photo
+    qs = (
+        CommunityPost.objects.select_related("social_user", "community")
+        .defer("social_user__looking_for", "social_user__languages")
+        .prefetch_related("poll__options", "media")
+        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .filter(_visible_group_q(member_ids))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for p in qs[:limit]:
+        items.append({"kind": "group_post", "at": p.created_at, "post": p, "actor": p.social_user, "group": p.community})
+
+
+def _add_joins(items, blocked, member_ids, limit):
+    qs = (
+        CommunityMember.objects.select_related("social_user", "community")
+        .defer("social_user__looking_for", "social_user__languages")
+        .filter(_visible_group_q(member_ids))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for m in qs[:limit]:
+        items.append({"kind": "joined", "at": m.created_at, "actor": m.social_user, "group": m.community})
+
+
+def _add_created(items, blocked, member_ids):
+    qs = Community.objects.select_related("creator").filter(creator__isnull=False).order_by("-id")
+    if blocked:
+        qs = qs.exclude(creator_id__in=blocked)
+    for g in qs[:20]:
+        if g.privacy == "closed" and g.id not in member_ids:
+            continue
+        items.append({"kind": "created", "at": g.created_at, "actor": g.creator, "group": g})
+
+
+def _add_photos(items, blocked, limit):
+    from apps.social.models import Photo
+    qs = (
+        Photo.objects.select_related("album", "album__social_user")
+        .exclude(path__isnull=True).exclude(path="")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(album__social_user_id__in=blocked)
+    for ph in qs[:limit]:
+        items.append({
+            "kind": "photos", "at": ph.created_at, "photo": ph,
+            "actor": ph.album.social_user, "album": ph.album,
+        })
+
+
 def news_items(viewer=None, limit=40):
     """FB-2006 News Feed: wall + group activity, newest first."""
     from django.core.cache import cache
-    from apps.social.news_feed import add_created, add_group_posts, add_joins, add_photos
     key = f"news:{getattr(viewer, 'id', 0)}:{limit}"
     cached = cache.get(key)
     if cached is not None:
@@ -133,10 +193,10 @@ def news_items(viewer=None, limit=40):
     ) if viewer else set()
     for p in feed_queryset(viewer)[:limit]:
         items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})
-    add_group_posts(items, blocked, member_ids, limit)
-    add_joins(items, blocked, member_ids, limit)
-    add_created(items, blocked, member_ids)
-    add_photos(items, blocked, limit)
+    _add_group_posts(items, blocked, member_ids, limit)
+    _add_joins(items, blocked, member_ids, limit)
+    _add_created(items, blocked, member_ids)
+    _add_photos(items, blocked, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)

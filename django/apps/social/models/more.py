@@ -74,17 +74,3 @@ class EventAttendee(models.Model):
     class Meta:
         managed = False
         db_table = "event_attendees"
-
-
-class PushSubscription(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="push")
-    endpoint = models.CharField(max_length=500)
-    public_key = models.CharField(max_length=255)
-    auth_token = models.CharField(max_length=255)
-    content_encoding = models.CharField(max_length=40, default="aes128gcm")
-    created_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        managed = False
-        db_table = "push_subscriptions"

@@ -11,7 +11,7 @@ from django.views.decorators.vary import vary_on_cookie
 from apps.social.forms import CommentForm, MessageForm, PostForm
 from apps.social.models import (
     Community, Conversation, ConversationMember, Friendship, Message, Notification,
-    Post, SocialProfile, UserFollow,
+    Post, SocialProfile,
 )
 from apps.social.services import accepted_friends, get_profile, now as _now, profile_of
 
@@ -99,12 +99,10 @@ def profile(request, pk):
             "mutual": mutual,
             "education": Education.objects.filter(social_user=user)[:10],
             "experiences": Experience.objects.filter(social_user=user)[:10],
-            "following": bool(me and UserFollow.objects.filter(follower=me, following=user).exists()),
             "stats": {
                 "friends": friend_count,
                 "photos": n_photos,
                 "groups": Community.objects.filter(memberships__social_user=user).count(),
-                "followers": UserFollow.objects.filter(following=user).count(),
             },
             "form": PostForm() if can_wall else None,
             "comment_form": CommentForm() if me else None,

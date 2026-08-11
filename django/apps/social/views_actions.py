@@ -13,7 +13,6 @@ from apps.social.models import (
     Reaction,
     SavedPost,
     SocialProfile,
-    UserFollow,
 )
 from apps.social.services import now as _now, profile_of
 
@@ -192,18 +191,8 @@ def comment_delete(request, comment_id):
     return redirect(request.POST.get("next") or "feed")
 
 
-@login_required
-@require_POST
-def follow_toggle(request, pk):
-    me, other = profile_of(request.user), get_object_or_404(SocialProfile, pk=pk)
-    if me and me.id != other.id:
-        row = UserFollow.objects.filter(follower=me, following=other).first()
-        if row:
-            row.delete()
-        else:
-            UserFollow.objects.create(follower=me, following=other, created_at=_now())
-    return redirect("profile", pk=pk)
 
+@login_required
 
 @login_required
 @require_POST
@@ -314,3 +303,27 @@ def sticker_send(request, conversation_id):
                 {"type": "chat.message", "body": m.body, "name": me.name, "id": m.id},
             )
     return redirect(f"/messenger?c={conversation_id}")
+
+@login_required
+@require_POST
+@transaction.atomic
+def messenger_start(request, pk):
+    from apps.social.models import ConversationMember
+    me = profile_of(request.user)
+    other = get_object_or_404(SocialProfile, pk=pk)
+    if not me or me.id == other.id:
+        return redirect("messenger")
+    mine = set(ConversationMember.objects.filter(social_user=me).values_list("conversation_id", flat=True))
+    shared = mine & set(ConversationMember.objects.filter(social_user=other).values_list("conversation_id", flat=True))
+    if shared:
+        cid = min(shared)
+    else:
+        now = _now()
+        conv = Conversation.objects.create(created_at=now, updated_at=now)
+        ConversationMember.objects.bulk_create([
+            ConversationMember(conversation=conv, social_user=me),
+            ConversationMember(conversation=conv, social_user=other),
+        ])
+        cid = conv.id
+    return redirect(f"/messenger?c={cid}")
+

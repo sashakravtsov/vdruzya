@@ -1,8 +1,5 @@
-/* Django frontend — no third-party realtime vendors */
+/* Classic FB chrome helpers */
 (() => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
-  }
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.share-btn');
     if (!b) return;
