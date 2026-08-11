@@ -14,11 +14,13 @@
     <div id="content" class="profile-content">
         <div class="profile-left">
             <div class="profile-picture">
+                {% if is_own %}<a href="{% url 'albums' %}">{% else %}<a href="{% url 'profile.albums' profile.id %}">{% endif %}
                 {% if profile.avatar_url %}
                     <img src="{{ profile.avatar_url }}" alt="">
                 {% else %}
                     <div class="avatar-fallback" style="background:{{ profile.avatar_color|default:'#D8DFEA' }}">{{ profile.name|slice:":1"|upper }}</div>
                 {% endif %}
+                </a>
             </div>
             <div class="profile-action-links">
                 {% if is_own %}<a href="{% url 'albums' %}">Смотреть фотографии ({{ stats.photos }})</a>
@@ -64,13 +66,6 @@
                         {{ status_form.headline }}
                         <p style="margin-top:6px"><input type="submit" class="inputsubmit" value="Обновить"></p>
                     </form>
-                </div>
-            </div>
-            {% elif profile.headline %}
-            <div class="profile-box">
-                <h4>Статус</h4>
-                <div class="profile-box-body">
-                    <p><b>{{ profile.name }}</b> — {{ profile.headline }}</p>
                 </div>
             </div>
             {% endif %}
@@ -132,7 +127,7 @@
                             {% if profile.birthday_display %}<tr><td class="label">День рождения:</td><td>{{ profile|birthday_tags }}</td></tr>{% endif %}
                             {% if profile.city %}<tr><td class="label">Город:</td><td>{{ profile.city|tag }}{% if profile.country %}, {{ profile.country|tag }}{% endif %}</td></tr>{% endif %}
                             {% if profile.hometown %}<tr><td class="label">Родной город:</td><td>{{ profile.hometown|tag }}</td></tr>{% endif %}
-                            {% if profile.relationship_status %}<tr><td class="label">Отношения:</td><td>{{ profile.relationship_status|ru_label|tag }}</td></tr>{% endif %}
+                            {% if profile.relationship_status %}<tr><td class="label">Отношения:</td><td>{{ profile.relationship_status|ru_label|tag }}{% if profile.relationship_with %} с <a href="{% url 'profile' profile.relationship_with.id %}">{{ profile.relationship_with.name }}</a>{% endif %}</td></tr>{% endif %}
                             {% if profile.interested_in_label %}<tr><td class="label">Интересуюсь:</td><td>{{ profile.interested_in_label|tags }}</td></tr>{% endif %}
                             {% if profile.looking_for_label %}<tr><td class="label">Ищу:</td><td>{{ profile.looking_for_label|tags }}</td></tr>{% endif %}
                             {% if profile.political_views %}<tr><td class="label">Политика:</td><td>{{ profile.political_views|ru_label|tag }}</td></tr>{% endif %}
@@ -142,12 +137,13 @@
                     </div>
                     {% endif %}
 
-                    {% if profile.show_email and profile.user.email or profile.website or profile.show_phone and profile.phone %}
+                    {% if profile.show_email and profile.user.email or profile.website or profile.show_phone and profile.phone or profile.telegram_username %}
                     <div class="profile-subsection">
                         <h5>Контакты</h5>
                         <table class="infotable">
                             {% if profile.show_email and profile.user.email %}<tr><td class="label">Email:</td><td>{{ profile.user.email }}</td></tr>{% endif %}
                             {% if profile.show_phone and profile.phone %}<tr><td class="label">Телефон:</td><td>{{ profile.phone }}</td></tr>{% endif %}
+                            {% if profile.telegram_username %}<tr><td class="label">Имя в сети:</td><td>{{ profile.telegram_username }}</td></tr>{% endif %}
                             {% if profile.website %}<tr><td class="label">Сайт:</td><td><a href="{{ profile.website }}" rel="nofollow noopener">{{ profile.website }}</a></td></tr>{% endif %}
                         </table>
                     </div>

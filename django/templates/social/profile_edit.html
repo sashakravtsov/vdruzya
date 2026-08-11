@@ -54,7 +54,7 @@
                     <tr><td class="label">Родной город:</td><td>{{ form.hometown }}</td></tr>
                     <tr><td class="label">Страна:</td><td>{{ form.country }}</td></tr>
                     <tr><td class="label">Пол:</td><td>{{ form.gender }}</td></tr>
-                    <tr><td class="label">Отношения:</td><td>{{ form.relationship_status }}</td></tr>
+                    <tr><td class="label">Отношения:</td><td>{{ form.relationship_status }} {{ form.relationship_with }}</td></tr>
                     <tr><td class="label">Интересуюсь:</td><td>{{ form.interested_in_choices }}</td></tr>
                     <tr><td class="label">Ищу:</td><td>{{ form.looking_for_choices }}</td></tr>
                     <tr><td class="label">Политика:</td><td>{{ form.political_views }}</td></tr>
@@ -69,6 +69,7 @@
             <div class="profile-box-body">
                 <table class="formtable" cellpadding="0" cellspacing="0">
                     <tr><td class="label">Сайт:</td><td>{{ form.website }}</td></tr>
+                    <tr><td class="label">Имя в сети:</td><td>{{ form.telegram_username }}</td></tr>
                     <tr><td class="label">Телефон:</td><td>{{ form.phone }} · <label>{{ form.show_phone }} показывать</label></td></tr>
                     <tr><td class="label">Email:</td><td><label>{{ form.show_email }} показывать ({{ me.user.email }})</label></td></tr>
                 </table>
@@ -124,18 +125,22 @@
                     {% for e in education %}
                     <li>
                         {{ e.institution }}{% if e.degree %} — {{ e.degree }}{% endif %}{% if e.field %}, {{ e.field }}{% endif %}
+                        <a class="muted" href="{% url 'profile.edit' %}?edu={{ e.id }}">ред.</a>
                         <form method="post" action="{% url 'profile.education.delete' e.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted">удалить</button>
                         </form>
                     </li>
                     {% empty %}<li class="muted">Пока пусто</li>{% endfor %}
                 </ul>
-                <form method="post" action="{% url 'profile.education' %}">{% csrf_token %}
+                <form method="post" action="{% if edu_edit %}{% url 'profile.education.edit' edu_edit.id %}{% else %}{% url 'profile.education' %}{% endif %}">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         {% for field in edu_form %}
                         <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
                         {% endfor %}
-                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+                        <tr><td></td><td>
+                            <input type="submit" class="inputsubmit" value="{% if edu_edit %}Сохранить{% else %}Добавить{% endif %}">
+                            {% if edu_edit %} · <a href="{% url 'profile.edit' %}">Отмена</a>{% endif %}
+                        </td></tr>
                     </table>
                 </form>
             </div>
@@ -148,18 +153,22 @@
                     {% for e in experiences %}
                     <li>
                         <b>{{ e.position }}</b> · {{ e.company_name }}{% if e.period %} <span class="muted">{{ e.period }}</span>{% endif %}
+                        <a class="muted" href="{% url 'profile.edit' %}?exp={{ e.id }}">ред.</a>
                         <form method="post" action="{% url 'profile.experience.delete' e.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted">удалить</button>
                         </form>
                     </li>
                     {% empty %}<li class="muted">Пока пусто</li>{% endfor %}
                 </ul>
-                <form method="post" action="{% url 'profile.experience' %}">{% csrf_token %}
+                <form method="post" action="{% if exp_edit %}{% url 'profile.experience.edit' exp_edit.id %}{% else %}{% url 'profile.experience' %}{% endif %}">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         {% for field in exp_form %}
                         <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
                         {% endfor %}
-                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+                        <tr><td></td><td>
+                            <input type="submit" class="inputsubmit" value="{% if exp_edit %}Сохранить{% else %}Добавить{% endif %}">
+                            {% if exp_edit %} · <a href="{% url 'profile.edit' %}">Отмена</a>{% endif %}
+                        </td></tr>
                     </table>
                 </form>
             </div>

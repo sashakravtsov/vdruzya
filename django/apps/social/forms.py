@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from apps.social.categories import CHOICES as GROUP_CATS
 from apps.social.models import (
     Album, Comment, Community, CommunityPost, Education, Experience,
@@ -80,9 +81,10 @@ class ProfileForm(forms.ModelForm):
         model = SocialProfile
         fields = (
             "name", "slug", "headline", "bio", "city", "hometown", "country", "gender", "birthday",
-            "birthday_visibility", "relationship_status", "political_views", "religious_views",
-            "interests", "hobbies", "workplace", "education_note", "website", "phone", "show_phone",
-            "show_email", "profile_visibility", "wall_write", "wall_view",
+            "birthday_visibility", "relationship_status", "relationship_with", "political_views",
+            "religious_views", "interests", "hobbies", "workplace", "education_note",
+            "website", "phone", "show_phone", "show_email", "telegram_username",
+            "profile_visibility", "wall_write", "wall_view",
             "favorite_music", "favorite_movies", "favorite_tv", "favorite_books", "favorite_quotes",
         )
         labels = {
@@ -91,6 +93,8 @@ class ProfileForm(forms.ModelForm):
             "education_note": "Образование", "workplace": "Место работы",
             "phone": "Телефон", "show_phone": "Показывать телефон",
             "show_email": "Показывать email",
+            "telegram_username": "Имя в сети",
+            "relationship_with": "С кем",
             "profile_visibility": "Кто видит профиль",
             "wall_write": "Кто пишет на стену",
             "wall_view": "Кто видит стену",
@@ -102,6 +106,7 @@ class ProfileForm(forms.ModelForm):
             "hometown": _in(), "country": _in(),
             "workplace": _in(style="width:100%"), "education_note": _in(style="width:100%"),
             "website": _in(style="width:100%"), "phone": _in(),
+            "telegram_username": _in(placeholder="AIM / ICQ / ник", style="width:100%"),
             "religious_views": _in(style="width:100%"),
             "bio": _ta(4), "interests": _ta(2), "hobbies": _ta(2),
             "favorite_music": _ta(2), "favorite_movies": _ta(2), "favorite_tv": _ta(2),
@@ -132,7 +137,16 @@ class ProfileForm(forms.ModelForm):
                 required=False, label=label, choices=choices,
                 widget=forms.Select(attrs={"class": "inputtext"}),
             )
+        self.fields["relationship_with"].required = False
+        self.fields["relationship_with"].empty_label = "—"
+        self.fields["relationship_with"].widget.attrs["class"] = "inputtext"
         if self.instance and self.instance.pk:
+            from apps.social.services import accepted_friends
+            qs = accepted_friends(self.instance, 200)
+            cur = self.instance.relationship_with_id
+            if cur:
+                qs = SocialProfile.objects.filter(Q(pk__in=qs) | Q(pk=cur)).order_by("name")
+            self.fields["relationship_with"].queryset = qs
             self.fields["languages_text"].initial = self.instance.languages_label()
             raw = self.instance.looking_for
             if isinstance(raw, list):
@@ -140,6 +154,12 @@ class ProfileForm(forms.ModelForm):
             raw = self.instance.interested_in
             if isinstance(raw, list):
                 self.fields["interested_in_choices"].initial = [str(x) for x in raw]
+        else:
+            self.fields["relationship_with"].queryset = SocialProfile.objects.none()
+
+    def clean_telegram_username(self):
+        raw = (self.cleaned_data.get("telegram_username") or "").strip().lstrip("@")
+        return raw[:255] or None
 
     def clean_slug(self):
         from apps.social.slugs import clean_short_slug
@@ -164,6 +184,10 @@ class ProfileForm(forms.ModelForm):
             ("wall_view", "public"),
         ):
             setattr(obj, f, self.cleaned_data.get(f) or default)
+        if (obj.relationship_status or "") not in {
+            "in_a_relationship", "engaged", "married", "complicated",
+        }:
+            obj.relationship_with = None
         if commit:
             obj.save()
         return obj

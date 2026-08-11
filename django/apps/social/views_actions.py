@@ -26,14 +26,19 @@ def profile_edit(request):
         obj.save()
         messages.success(request, "Профиль сохранён.")
         return redirect(obj)
+    edu_id, exp_id = request.GET.get("edu"), request.GET.get("exp")
+    edu_row = Education.objects.filter(pk=edu_id, social_user=me).first() if edu_id else None
+    exp_row = Experience.objects.filter(pk=exp_id, social_user=me).first() if exp_id else None
     return render(
         request,
         "social/profile_edit.html",
         {
             "form": form,
             "me": me,
-            "edu_form": EducationForm(),
-            "exp_form": ExperienceForm(),
+            "edu_form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
+            "exp_form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),
+            "edu_edit": edu_row,
+            "exp_edit": exp_row,
             "education": Education.objects.filter(social_user=me)[:20],
             "experiences": Experience.objects.filter(social_user=me)[:20],
         },
@@ -237,14 +242,15 @@ def block_toggle(request, pk):
 
 @login_required
 @require_POST
-def education_add(request):
+def education_save(request, pk=None):
     from apps.social.forms import EducationForm
-    me, form = profile_of(request.user), EducationForm(request.POST)
+    from apps.social.models import Education
+    me = profile_of(request.user)
+    row = get_object_or_404(Education, pk=pk, social_user=me) if pk else Education(social_user=me)
+    form = EducationForm(request.POST, instance=row)
     if me and form.is_valid():
-        row = form.save(commit=False)
-        row.social_user = me
-        row.save()
-        messages.success(request, "Образование добавлено.")
+        form.save()
+        messages.success(request, "Образование сохранено." if pk else "Образование добавлено.")
     return redirect("profile.edit")
 
 
@@ -260,15 +266,17 @@ def education_delete(request, pk):
 
 @login_required
 @require_POST
-def experience_add(request):
+def experience_save(request, pk=None):
     from apps.social.forms import ExperienceForm
-    me, form = profile_of(request.user), ExperienceForm(request.POST)
+    from apps.social.models import Experience
+    me = profile_of(request.user)
+    row = get_object_or_404(Experience, pk=pk, social_user=me) if pk else Experience(social_user=me)
+    form = ExperienceForm(request.POST, instance=row)
     if me and form.is_valid():
-        row = form.save(commit=False)
-        row.social_user = me
-        row.description = row.description or ""
-        row.save()
-        messages.success(request, "Работа добавлена.")
+        obj = form.save(commit=False)
+        obj.description = obj.description or ""
+        obj.save()
+        messages.success(request, "Работа сохранена." if pk else "Работа добавлена.")
     return redirect("profile.edit")
 
 

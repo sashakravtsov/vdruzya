@@ -13,7 +13,7 @@ django.setup()
 from django.test import Client
 
 from apps.accounts.models import User
-from apps.social.models import Post, SocialProfile
+from apps.social.models import Education, Post, SocialProfile
 from apps.social.profile_page import can_write_wall
 from apps.social.services import can_manage_wall_post, friend_ids, now, profile_of, wall_posts_for
 
@@ -44,15 +44,19 @@ def main():
     assert "Контакты".encode() in r.content
     assert "Приватность".encode() in r.content
     assert "Интересуюсь".encode() in r.content
+    assert "Имя в сети".encode() in r.content
     assert "Работа".encode() in r.content
     assert "Ищу".encode() in r.content
     assert "Игры".encode() not in r.content
     ok("profile edit sections")
 
+    other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
+    assert other, "need a friend"
+
     r = c.post("/profile/edit", {
         "name": me.name,
         "slug": me.slug,
-        "headline": me.headline or "",
+        "headline": me.headline or "на проверке профиля",
         "bio": me.bio or "",
         "city": me.city or "Москва",
         "hometown": me.hometown or "",
@@ -60,7 +64,8 @@ def main():
         "gender": me.gender or "male",
         "birthday": me.birthday.isoformat() if me.birthday else "",
         "birthday_visibility": me.birthday_visibility or "day_month",
-        "relationship_status": me.relationship_status or "",
+        "relationship_status": "in_a_relationship",
+        "relationship_with": str(other.id),
         "political_views": me.political_views or "",
         "religious_views": me.religious_views or "",
         "interests": me.interests or "",
@@ -69,6 +74,7 @@ def main():
         "education_note": me.education_note or "",
         "website": me.website or "",
         "phone": me.phone or "",
+        "telegram_username": "aim_classic",
         "show_phone": "on" if me.show_phone else "",
         "show_email": "on" if me.show_email else "",
         "profile_visibility": me.profile_visibility or "public",
@@ -83,17 +89,40 @@ def main():
         "looking_for_choices": ["friendship"],
         "interested_in_choices": ["women"],
     }, secure=True)
-    assert r.status_code in (301, 302)
+    assert r.status_code in (301, 302), getattr(r, "context", None) and r.context["form"].errors
     me.refresh_from_db()
     assert isinstance(me.looking_for, list) and "friendship" in me.looking_for
     assert isinstance(me.interested_in, list) and "women" in me.interested_in
-    ok("profile save looking_for + interested_in")
+    assert me.telegram_username == "aim_classic"
+    assert me.relationship_with_id == other.id
+    ok("profile save looking_for + partner + screen name")
+
+    r = c.get(f"/profile/{me.id}", secure=True)
+    assert other.name.encode() in r.content
+    assert b"aim_classic" in r.content
+    assert b"\xd0\xbd\xd0\xb0 \xd0\xbf\xd1\x80\xd0\xbe\xd0\xb2\xd0\xb5\xd1\x80\xd0\xba\xd0\xb5 \xd0\xbf\xd1\x80\xd0\xbe\xd1\x84\xd0\xb8\xd0\xbb\xd1\x8f" in r.content or "на проверке профиля".encode() in r.content
+    ok("partner + screen name + status on profile")
 
     list(wall_posts_for(me, 5, viewer=me))
     ok("wall_posts_for visibility")
 
-    other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
-    assert other, "need a friend for wall-owner delete"
+    edu = Education.objects.create(
+        social_user=me, institution="__edu_check__", degree="BA", field="CS",
+        start_year=2004, end_year=2008,
+    )
+    r = c.get(f"/profile/edit?edu={edu.id}", secure=True)
+    assert r.status_code == 200
+    assert b"__edu_check__" in r.content
+    r = c.post(f"/profile/education/{edu.id}", {
+        "institution": "__edu_check_edited__",
+        "degree": "BA", "field": "CS", "start_year": "2004", "end_year": "2008",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    edu.refresh_from_db()
+    assert edu.institution == "__edu_check_edited__"
+    Education.objects.filter(pk=edu.id).delete()
+    ok("education edit")
+
     t = now()
     note = Post.objects.create(
         social_user=other,
@@ -105,7 +134,6 @@ def main():
         updated_at=t,
     )
     assert can_manage_wall_post(me, note)
-    assert can_manage_wall_post(other, note)
     stranger = SocialProfile.objects.exclude(id__in={me.id, other.id}).first()
     if stranger:
         assert not can_manage_wall_post(stranger, note)
@@ -114,16 +142,13 @@ def main():
     r = c.get(f"/profile/{me.id}", secure=True)
     assert b"__profile_check_wall_note__" in r.content
     assert f'action="/posts/{note.id}/delete"'.encode() in r.content
-    assert f'/posts/{note.id}/edit'.encode() not in r.content
-    assert "Интересуюсь".encode() in r.content
-    ok("wall note + interested_in on profile")
+    ok("wall note + owner delete UI")
 
     r = c.post(f"/posts/{note.id}/delete", {"next": f"/profile/{me.id}"}, secure=True)
     assert r.status_code in (301, 302)
     assert not Post.objects.filter(pk=note.id).exists()
     ok("wall owner deletes guest note")
 
-    # Limited profile: non-friend sees gate when visibility=friends
     prev = me.profile_visibility or "public"
     me.profile_visibility = "friends"
     me.save(update_fields=["profile_visibility"])

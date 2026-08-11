@@ -23,6 +23,10 @@ class SocialProfile(models.Model):
     country = models.CharField(max_length=120, null=True, blank=True)
     district = models.CharField(max_length=120, null=True, blank=True)
     relationship_status = models.CharField(max_length=40, null=True, blank=True)
+    relationship_with = models.ForeignKey(
+        "self", models.DO_NOTHING, null=True, blank=True, related_name="relationship_partners",
+        db_column="relationship_with_id",
+    )
     looking_for = PgJSON(null=True, blank=True)
     interested_in = PgJSON(null=True, blank=True)
     languages = PgJSON(null=True, blank=True)

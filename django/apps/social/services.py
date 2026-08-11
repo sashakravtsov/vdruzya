@@ -30,7 +30,8 @@ def accepted_friends(profile: SocialProfile, limit=6):
 
 def get_profile(pk: int) -> SocialProfile:
     return get_object_or_404(
-        SocialProfile.objects.select_related("user").defer("looking_for", "interested_in", "languages"),
+        SocialProfile.objects.select_related("user", "relationship_with")
+        .defer("looking_for", "interested_in", "languages"),
         pk=pk,
     )
 
