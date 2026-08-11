@@ -49,7 +49,8 @@ def main():
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert "Лента новостей".encode() in r.content
-    assert b'action="/posts"' not in r.content  # no wall compose on news feed
+    assert b"wallposter" not in r.content  # no wall compose on news feed
+    assert "Что у вас нового".encode() in r.content
     ok("news feed")
 
     r = c.get("/pokes", secure=True)
