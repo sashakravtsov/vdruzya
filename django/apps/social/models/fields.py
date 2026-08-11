@@ -4,10 +4,17 @@ from django.db.models import Field
 
 
 class PgJSON(Field):
+    """Postgres json/jsonb column; dumps list/dict for the json adapter."""
+
     def db_type(self, connection):
-        return "jsonb"
+        return "json"
 
     def from_db_value(self, value, expression, connection):
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return value
         return value
 
     def to_python(self, value):
