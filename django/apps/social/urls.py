@@ -59,6 +59,7 @@ urlpatterns = [
     path("messages/<int:message_id>/forward", msg.message_forward, name="messages.forward"),
     path("activity", views.activity, name="activity"),
     path("notifications", views.activity, name="notifications"),
+    path("pokes", views.pokes, name="pokes"),
     path("notifications/<int:notification_id>/read", views.notification_read, name="notifications.read"),
     path("notifications/read-all", views.notifications_read_all, name="notifications.read-all"),
     path("search", browse.search, name="search"),

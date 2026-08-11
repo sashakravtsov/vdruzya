@@ -1,29 +1,40 @@
 {% extends "layout.html" %}
 {% load vd %}
-{% block title %}{% if title %}{{ title }}{% else %}Стена{% endif %} — ВДрузья{% endblock %}
+{% block title %}Лента новостей — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="feed-page">
-    <div id="header"><h1>{% if title %}{{ title }}{% else %}Добро пожаловать{% if me %}, {{ me.name }}{% endif %}!{% endif %}</h1></div>
+    <div id="header"><h1>Лента новостей</h1></div>
     <div id="content" class="feed-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
         <div class="feed-main">
-            <div class="profile-box feed-wall-box wall-box">
-                <h4>Стена</h4>
-                <div class="profile-box-body">
-            {% if form %}
-            {% url 'posts.store' as compose_action %}
-            {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" album_photos=album_photos %}
+            {% if me and status_form %}
+            <div class="profile-box">
+                <h4>Что у вас нового?</h4>
+                <div class="profile-box-body status-box">
+                    {% avatar me 40 %}
+                    <div>
+                        <form method="post" action="{% url 'profile.status' %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            {{ status_form.headline }}
+                            <p><input type="submit" class="inputsubmit" value="Обновить статус"></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
+            <div class="profile-box feed-wall-box wall-box">
+                <h4>Новости</h4>
+                <div class="profile-box-body">
             {% for item in items %}
             {% if item.kind == 'wall' %}
-            {% include "social/_wall_post.html" with post=item.post me=me comment_form=comment_form next=request.get_full_path feed_actions=1 %}
+            {% include "social/_wall_post.html" with post=item.post me=me comment_form=comment_form next=request.get_full_path %}
             {% else %}
             {% include "social/_news_item.html" %}
             {% endif %}
             {% empty %}
-            <p class="muted">На стене пока тихо. Напишите статус или вступите в группу.</p>
+            <p class="muted">Пока тихо. Обновите статус или найдите друзей.</p>
             {% endfor %}
 
             {% if page and page.paginator.num_pages > 1 %}
@@ -61,22 +72,6 @@
                 </div>
             </div>
 
-            {% if me and status_form %}
-            <div class="profile-box">
-                <h4>Мой статус</h4>
-                <div class="profile-box-body status-box">
-                    {% avatar me 40 %}
-                    <div>
-                        <form method="post" action="{% url 'profile.status' %}">{% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.path }}">
-                            {{ status_form.headline }}
-                            <p><input type="submit" class="inputsubmit" value="Обновить"></p>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
             <div class="profile-box">
                 <h4>Популярные группы{% if popular_groups %}<a class="edit" href="{% url 'groups' %}">все</a>{% endif %}</h4>
                 <div class="profile-box-body">
@@ -91,7 +86,7 @@
             </div>
 
             <div class="profile-box">
-                <h4>Поделились с вами{% if shared %}<a class="edit" href="{% url 'groups' %}">все</a>{% endif %}</h4>
+                <h4>Из групп{% if shared %}<a class="edit" href="{% url 'groups' %}?mine=1">мои</a>{% endif %}</h4>
                 <div class="profile-box-body">
                     {% if shared %}
                         {% for s in shared %}

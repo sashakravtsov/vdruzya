@@ -242,7 +242,6 @@
                     <a href="{% url 'login' %}?next={{ request.path }}">Войти</a>
                 {% endif %}
                 <a href="{% url 'contacts' %}?subject=group-{{ group.id }}">Пожаловаться на группу</a>
-                <button type="button" class="linkish share-btn" data-url="{{ request.build_absolute_uri }}">Поделиться +</button>
             </div>
 
             {% if is_member and invite_friends %}

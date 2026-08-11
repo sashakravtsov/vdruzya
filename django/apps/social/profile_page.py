@@ -81,10 +81,11 @@ def friend_tiles(me, profile, *, can_see: bool, relation, limit=6):
     return [], False
 
 
-def build_context(profile, me):
+def build_context(profile, me, tab="wall"):
     """Full template context for classic Profile."""
     from apps.social import friendship as fr
 
+    tab = tab if tab in ("wall", "info", "photos", "friends") else "wall"
     relation = blocked = None
     can_see = fr.can_see_friends(me, profile)
     if me and me.id != profile.id:
@@ -104,16 +105,20 @@ def build_context(profile, me):
 
     education = list(Education.objects.filter(social_user=profile)[:10]) if full else []
     experiences = list(Experience.objects.filter(social_user=profile)[:10]) if full else []
-    friends, friends_are_mutual = friend_tiles(me, profile, can_see=can_see, relation=relation)
+    friend_limit = 30 if tab == "friends" else 6
+    friends, friends_are_mutual = friend_tiles(
+        me, profile, can_see=can_see, relation=relation, limit=friend_limit,
+    )
+    photo_limit = 24 if tab == "photos" else 8
     vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me))
     return {
-        "profile": profile, "me": me, "is_own": is_own, "limited": not full,
+        "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
         "friends": friends, "friends_are_mutual": friends_are_mutual,
         "communities": (
             list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
             if full else []
         ),
-        "photos": recent_photos(profile, me, 8) if full else [],
+        "photos": recent_photos(profile, me, photo_limit) if full else [],
         "posts": wall_posts_for(profile, 20, viewer=me) if show_wall else [],
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,

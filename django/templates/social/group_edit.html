@@ -30,10 +30,6 @@
                         <tr><td class="label">Вступление:</td><td>{{ form.join_mode }}</td></tr>
                         <tr><td class="label">Кто пишет:</td><td>{{ form.posting_policy }}</td></tr>
                         <tr><td class="label">Чат:</td><td>{{ form.messaging_enabled }} включён</td></tr>
-                        {% if group.cover_url %}
-                        <tr><td class="label">Сейчас:</td><td><img src="{{ group.cover_url }}" alt="" class="cover-edit-preview"></td></tr>
-                        {% endif %}
-                        {% include "social/_file_row.html" with field=form.cover label="Обложка" %}
                         <tr>
                             <td></td>
                             <td>

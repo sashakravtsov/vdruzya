@@ -138,6 +138,7 @@ ul.bulletpoints li span { color: #000; }
 #tabs .activetab a { color: #fff; background: var(--fb); }
 #tabs .activetab a:hover { text-decoration: none; }
 #tabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.profile #tabs.profile-tabs { margin: 0 0 12px; padding-top: 0; text-align: left; }
 .legal-content #tabs { margin: 10px 0 16px; }
 .legal-content .infocontent { margin: 0 0 10px; }
 #loginform input[type="password"],

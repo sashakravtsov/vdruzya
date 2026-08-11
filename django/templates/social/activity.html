@@ -6,6 +6,7 @@
     <div id="content">
         <div class="profile-box">
             <h4>Уведомления
+                <a class="edit" href="{% url 'pokes' %}">подмигивания</a>
                 <form method="post" action="{% url 'notifications.read-all' %}" class="inline edit">{% csrf_token %}
                     <button type="submit" class="linkish">прочитать все</button>
                 </form>

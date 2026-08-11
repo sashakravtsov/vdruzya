@@ -6,14 +6,26 @@
     <div id="header"><h1>Поиск</h1></div>
     <div id="content">
         <div class="profile-box">
-            <h4>Найти</h4>
+            <h4>Найти людей</h4>
             <div class="profile-box-body">
                 <form method="get">
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td class="label">Запрос:</td>
+                            <td class="label">Имя:</td>
+                            <td><input class="inputtext" name="name" value="{{ name }}" style="width:220px"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Город:</td>
+                            <td><input class="inputtext" name="city" value="{{ city }}" style="width:220px"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Учёба / работа:</td>
+                            <td><input class="inputtext" name="school" value="{{ school }}" style="width:220px"></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Везде:</td>
                             <td>
-                                <input class="inputtext" name="q" value="{{ q }}" style="width:280px">
+                                <input class="inputtext" name="q" value="{{ q }}" style="width:220px" placeholder="общий запрос">
                                 <input type="submit" class="inputsubmit" value="Найти">
                             </td>
                         </tr>
@@ -21,7 +33,7 @@
                 </form>
             </div>
         </div>
-        {% if q %}
+        {% if searched %}
         <div class="profile-box">
             <h4>Люди</h4>
             <div class="profile-box-body">

@@ -111,43 +111,64 @@ def group_show(request, pk):
 @login_required
 def search(request):
     from apps.social import friendship as fr
-    from apps.social.models import Block, Post
+    from apps.social.models import Block, Education, Post
 
     q = (request.GET.get("q") or "").strip()
+    name = (request.GET.get("name") or "").strip()
+    city = (request.GET.get("city") or "").strip()
+    school = (request.GET.get("school") or "").strip()
     me = profile_of(request.user)
     people = groups_qs = posts = []
-    if q:
+    searched = bool(q or name or city or school)
+    if searched:
         ban = set()
         if me:
             ban |= set(Block.objects.filter(blocker=me).values_list("blocked_id", flat=True))
             ban |= set(Block.objects.filter(blocked=me).values_list("blocker_id", flat=True))
             ban.add(me.id)
-        people = list(
-            SocialProfile.objects.annotate(sim=TrigramSimilarity("name", q))
-            .filter(Q(sim__gt=0.2) | Q(slug__icontains=q) | Q(city__icontains=q))
-            .exclude(id__in=ban)
-            .order_by("-sim")[:20]
-        )
+        term = name or q
+        qs = SocialProfile.objects.all()
+        if term:
+            qs = qs.annotate(sim=TrigramSimilarity("name", term)).filter(
+                Q(sim__gt=0.15) | Q(slug__icontains=term) | Q(name__icontains=term)
+            )
+        if city:
+            qs = qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))
+        if school:
+            edu_ids = Education.objects.filter(institution__icontains=school).values("social_user_id")
+            qs = qs.filter(
+                Q(id__in=edu_ids) | Q(workplace__icontains=school) | Q(education_note__icontains=school)
+            )
+        if term:
+            qs = qs.order_by("-sim")
+        else:
+            qs = qs.order_by("name")
+        people = list(qs.exclude(id__in=ban)[:20])
         if me:
             rel = fr.relations_for(me, [p.id for p in people])
             for p in people:
                 n = fr.mutual_count(me, p)
                 p.rel = rel.get(p.id)
                 p.mutual = fr.mutual_label(n) if n else ""
-        groups_qs = Community.objects.filter(Q(name__icontains=q) | Q(slug__icontains=q))[:20]
-        query = SearchQuery(q, config="simple", search_type="websearch")
-        posts = (
-            Post.objects.annotate(
-                rank=SearchRank("search_vector", query),
-                headline=SearchHeadline("body", query, config="simple", start_sel="<b>", stop_sel="</b>", max_words=32),
+        gq = q or name or school or city
+        groups_qs = Community.objects.filter(Q(name__icontains=gq) | Q(slug__icontains=gq))[:20]
+        if q or name:
+            query = SearchQuery(q or name, config="simple", search_type="websearch")
+            posts = (
+                Post.objects.annotate(
+                    rank=SearchRank("search_vector", query),
+                    headline=SearchHeadline("body", query, config="simple", start_sel="<b>", stop_sel="</b>", max_words=32),
+                )
+                .filter(search_vector=query)
+                .select_related("social_user")
+                .order_by("-rank")[:20]
             )
-            .filter(search_vector=query)
-            .select_related("social_user")
-            .order_by("-rank")[:20]
-        )
     return render(
         request, "social/search.html",
-        {"q": q, "people": people, "groups": groups_qs, "posts": posts, "me": me},
+        {
+            "q": q, "name": name, "city": city, "school": school,
+            "searched": searched, "people": people, "groups": groups_qs, "posts": posts, "me": me,
+        },
     )
 
 

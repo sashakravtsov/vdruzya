@@ -59,7 +59,6 @@
                 <p class="msg-bulk">
                     {% if folder == 'archive' %}
                     <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='restore'">Вернуть</button>
-                    <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='purge';return confirm('Удалить выбранные навсегда?');">Удалить</button>
                     {% else %}
                     <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='archive'">В архив</button>
                     <button type="submit" class="inputbutton" onclick="document.getElementById('bulk-action').value='unread'">Непрочит.</button>
@@ -92,10 +91,6 @@
                         <form method="post" action="{% url 'messenger.restore' active.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted">во входящие</button>
                         </form>
-                        ·
-                        <form method="post" action="{% url 'messenger.purge' active.id %}" class="inline" onsubmit="return confirm('Удалить диалог навсегда?');">{% csrf_token %}
-                            <button type="submit" class="linkish muted">удалить</button>
-                        </form>
                         {% else %}
                         <form method="post" action="{% url 'messenger.unread' active.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted">непрочит.</button>
@@ -104,17 +99,6 @@
                         <form method="post" action="{% url 'messenger.leave' active.id %}" class="inline" onsubmit="return confirm('Перенести диалог в архив?');">{% csrf_token %}
                             <button type="submit" class="linkish muted">в архив</button>
                         </form>
-                        ·
-                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Пометить как спам и убрать в архив?');">{% csrf_token %}
-                            <button type="submit" class="linkish muted">спам</button>
-                        </form>
-                        {% if active.peer %}
-                        ·
-                        <form method="post" action="{% url 'messenger.spam' active.id %}" class="inline" onsubmit="return confirm('Спам и заблокировать {{ active.peer.name }}?');">{% csrf_token %}
-                            <input type="hidden" name="block" value="1">
-                            <button type="submit" class="linkish muted">спам+блок</button>
-                        </form>
-                        {% endif %}
                         {% endif %}
                     </span>
                 {% else %}Переписка{% endif %}

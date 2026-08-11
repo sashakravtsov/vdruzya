@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Подмигивания — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="pokes-page">
+    <div id="header"><h1>Подмигивания</h1></div>
+    <div id="content">
+        <div class="profile-box">
+            <h4>Кто подмигнул</h4>
+            <div class="profile-box-body">
+                {% for n in items %}
+                <div class="notify-row{% if not n.seen %} is-unread{% endif %}">
+                    <div class="notify-body">
+                        {% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>
+                        {% else %}<b>{{ n.body|default:n.title }}</b>{% endif %}
+                        {% if n.created_at %}<span class="muted"> · {{ n.created_at|timesince }} назад</span>{% endif %}
+                    </div>
+                    {% if n.poker_id %}
+                    <form method="post" action="{% url 'profile.poke' n.poker_id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'pokes' %}">
+                        <button type="submit" class="linkish">подмигнуть в ответ</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% empty %}<p class="muted">Пока никто не подмигнул.</p>{% endfor %}
+            </div>
+        </div>
+        <p class="muted"><a href="{% url 'activity' %}">← к уведомлениям</a></p>
+    </div>
+</div>
+{% endblock %}

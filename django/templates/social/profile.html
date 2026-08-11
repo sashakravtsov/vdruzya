@@ -99,6 +99,15 @@
         </div>
 
         <div class="profile-right">
+            {% if not limited %}
+            <div id="tabs" class="profile-tabs">
+                <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                <div class="{% if tab == 'info' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=info">Информация</a></div>
+                <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                <div class="{% if tab == 'friends' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=friends">Друзья</a></div>
+            </div>
+            {% endif %}
+
             {% if limited %}
             <div class="profile-box">
                 <h4>Ограниченный профиль</h4>
@@ -106,7 +115,7 @@
                     <p class="muted">Полная информация, стена и лента доступны только друзьям.</p>
                 </div>
             </div>
-            {% else %}
+            {% elif tab == 'info' %}
 
             <div class="profile-box">
                 <h4>Информация{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>{% endif %}</h4>
@@ -188,7 +197,18 @@
             </div>
 
             <div class="profile-box">
-                <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все</a>{% endif %}</h4>
+                <h4>Группы ({{ stats.groups }})</h4>
+                <div class="profile-box-body">
+                    {% if communities %}
+                    <ul class="profilelinks">{% for c in communities %}<li><a href="{% url 'groups.show' c.id %}">{{ c.name }}</a></li>{% endfor %}</ul>
+                    {% else %}<p class="muted">Пока ни в одной группе.</p>{% endif %}
+                </div>
+            </div>
+
+            {% elif tab == 'photos' %}
+
+            <div class="profile-box">
+                <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все альбомы</a>{% endif %}</h4>
                 <div class="profile-box-body profile-photo-thumbs" id="photos">
                     {% for ph in photos %}
                     <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
@@ -201,14 +221,31 @@
                 </div>
             </div>
 
+            {% elif tab == 'friends' %}
+
             <div class="profile-box">
-                <h4>Группы ({{ stats.groups }})</h4>
+                <h4>Друзья ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
                 <div class="profile-box-body">
-                    {% if communities %}
-                    <ul class="profilelinks">{% for c in communities %}<li><a href="{% url 'groups.show' c.id %}">{{ c.name }}</a></li>{% endfor %}</ul>
-                    {% else %}<p class="muted">Пока ни в одной группе.</p>{% endif %}
+                    {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
+                    {% if friends %}
+                    <div class="profile-friend-grid">
+                        {% for f in friends %}
+                        <a class="profile-friend-tile" href="{% url 'profile' f.id %}">
+                            {% avatar f 50 %}
+                            <span>{{ f.name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <p><a href="{% if is_own %}{% url 'friends' %}{% else %}{% url 'profile.friends' profile.id %}{% endif %}">Смотреть всех</a></p>
+                    {% elif can_see_friends %}
+                    <p class="muted">Список друзей пуст.</p>
+                    {% else %}
+                    <p class="muted">Список друзей доступен только друзьям.</p>
+                    {% endif %}
                 </div>
             </div>
+
+            {% else %}
 
             <div class="profile-box">
                 <h4>Мини-лента</h4>

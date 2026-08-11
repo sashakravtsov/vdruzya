@@ -32,13 +32,9 @@ def group_edit(request, pk):
     if not _admin(me, group):
         messages.error(request, "Только администратор.")
         return redirect("groups.show", pk=pk)
-    form = GroupForm(request.POST or None, request.FILES or None, instance=group)
+    form = GroupForm(request.POST or None, instance=group)
     if request.method == "POST" and form.is_valid():
-        from apps.social.media import save_image
         obj = form.save(commit=False)
-        cover = request.FILES.get("cover")
-        if cover:
-            obj.cover_path = save_image(cover, "groups")
         obj.updated_at = now()
         obj.save()
         cache.delete(f"news:{me.id}:60")

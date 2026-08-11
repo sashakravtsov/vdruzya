@@ -307,8 +307,6 @@ class CreateGroupForm(forms.Form):
 
 
 class GroupForm(forms.ModelForm):
-    cover = forms.ImageField(required=False, label="Обложка", widget=_file())
-
     class Meta:
         model = Community
         fields = (

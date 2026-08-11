@@ -57,11 +57,6 @@
                     · <a href="#c-{{ post.id }}">Комментировать</a>{% if post.n_comments %} ({{ post.n_comments }}){% endif %}
                     {% if feed_actions %}
                     · <a href="{% url 'posts.show' post.id %}">открыть</a>
-                    ·
-                    <form method="post" action="{% url 'posts.share' post.id %}" class="inline">{% csrf_token %}
-                        <input type="hidden" name="next" value="{{ next }}">
-                        <button type="submit" class="linkish">Поделиться</button>
-                    </form>
                     {% endif %}
                     {% else %}
                     ★ {{ post.likes|default:0 }} · комм. {{ post.n_comments|default:0 }}

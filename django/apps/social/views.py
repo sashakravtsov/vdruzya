@@ -3,15 +3,13 @@ from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page, never_cache
 from django.views.decorators.http import require_POST
 
-from apps.social.forms import CommentForm, PostForm
-from apps.social.models import (
-    Community, Friendship, Notification, Post, SocialProfile,
-)
-from apps.social.services import get_profile, now as _now, profile_of
+from apps.social.forms import CommentForm
+from apps.social.models import Community, Notification
+from apps.social.services import get_profile, profile_of
 
 
 @login_not_required
@@ -30,7 +28,6 @@ def _home_anon(request):
 @never_cache
 def feed(request):
     from apps.social.forms import StatusForm
-    from apps.social.models import Photo
     from apps.social.services import news_items, shared_with, upcoming_birthdays
     me = profile_of(request.user)
     page = Paginator(news_items(me, 60), 20).get_page(request.GET.get("p"))
@@ -41,18 +38,14 @@ def feed(request):
         .filter(Q(privacy="public") | Q(privacy=""))
         .order_by("-n", "name")[:6]
     )
-    album_photos = list(
-        Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]
-    ) if me else []
     return render(
         request, "social/feed.html",
         {
             "items": page, "page": page, "me": me,
-            "form": PostForm(), "comment_form": CommentForm(),
+            "comment_form": CommentForm(),
             "status_form": StatusForm(initial={"headline": me.headline if me else ""}),
             "requests": pending, "birthdays": upcoming_birthdays(me),
             "shared": shared_with(me), "popular_groups": popular,
-            "album_photos": album_photos,
         },
     )
 
@@ -66,16 +59,36 @@ def profile(request, pk):
     me = profile_of(request.user) if request.user.is_authenticated else None
     if me and me.id != user.id and fr.is_blocked(me, user):
         return render(request, "social/profile_blocked.html", {"who": user, "me": me}, status=403)
-    return render(request, "social/profile.html", pp.build_context(user, me))
+    tab = (request.GET.get("tab") or "wall").lower()
+    return render(request, "social/profile.html", pp.build_context(user, me, tab=tab))
+
+
+@login_required
+@never_cache
+def pokes(request):
+    """Classic FB Pokes inbox."""
+    me = profile_of(request.user)
+    items = list(
+        Notification.objects.filter(social_user=me, type="poke").order_by("-id")[:50]
+    ) if me else []
+    for n in items:
+        try:
+            n.poker_id = int((n.url or "").rstrip("/").rsplit("/", 1)[-1])
+        except (TypeError, ValueError):
+            n.poker_id = None
+    if me:
+        Notification.objects.filter(social_user=me, type="poke", seen=False).update(seen=True)
+        cache.delete(f"nav:{me.id}")
+    return render(request, "social/pokes.html", {"items": items, "me": me})
 
 
 @login_required
 @never_cache
 def activity(request):
     me = profile_of(request.user)
-    items = list(Notification.objects.filter(social_user=me)[:50]) if me else []
+    items = list(Notification.objects.filter(social_user=me).exclude(type="poke")[:50]) if me else []
     if me:
-        Notification.objects.filter(social_user=me, seen=False).update(seen=True)
+        Notification.objects.filter(social_user=me, seen=False).exclude(type="poke").update(seen=True)
         cache.delete(f"nav:{me.id}")
     return render(request, "social/activity.html", {"items": items, "me": me})
 

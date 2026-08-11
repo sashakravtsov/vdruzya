@@ -32,11 +32,35 @@ def main():
     r = c.get(f"/profile/{me.id}", secure=True)
     assert r.status_code == 200
     assert me.name.encode() in r.content
-    assert "Информация".encode() in r.content
+    assert b"?tab=wall" in r.content
+    assert b"?tab=info" in r.content
+    assert b"?tab=photos" in r.content
+    assert b"?tab=friends" in r.content
     assert "Мини-лента".encode() in r.content
-    assert "Фото".encode() in r.content
     assert "Стена".encode() in r.content
-    ok("own profile sections")
+    ok("own profile wall tab")
+
+    r = c.get(f"/profile/{me.id}?tab=info", secure=True)
+    assert r.status_code == 200
+    assert "Информация".encode() in r.content
+    assert "Мини-лента".encode() not in r.content
+    ok("profile info tab")
+
+    r = c.get("/feed", secure=True)
+    assert r.status_code == 200
+    assert "Лента новостей".encode() in r.content
+    assert b'action="/posts"' not in r.content  # no wall compose on news feed
+    ok("news feed")
+
+    r = c.get("/pokes", secure=True)
+    assert r.status_code == 200
+    assert "Подмигивания".encode() in r.content
+    ok("pokes inbox")
+
+    r = c.get("/search?name=а&city=", secure=True)
+    assert r.status_code == 200
+    assert "Найти людей".encode() in r.content
+    ok("advanced search")
 
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
