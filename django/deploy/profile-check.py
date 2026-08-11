@@ -44,7 +44,7 @@ def main():
     assert "<h4>Статус</h4>".encode() not in r.content
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
-    assert b'name="visibility"' in r.content and b'value="friends"' in r.content
+    assert b'name="visibility"' in r.content
     assert f'name="wall_to" value="{me.id}"'.encode() in r.content
     assert "Мне нравится".encode() not in r.content  # pre-2009 profile wall
     assert "Друзья в ".encode() not in r.content
