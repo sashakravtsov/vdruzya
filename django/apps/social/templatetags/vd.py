@@ -11,7 +11,7 @@ _LABELS = {
     "friendship": "Дружба",
     "dating": "Знакомства",
     "relationship": "Отношения",
-    "networking": "Нетворкинг",
+    "networking": "Деловые контакты",
     "day_month": "День и месяц",
     "full": "Полная дата",
     "age": "Только возраст",
