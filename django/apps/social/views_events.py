@@ -35,6 +35,9 @@ def events_home(request):
     mine = ev.statuses_map(me, [e.id for e in items])
     for e in items:
         e.my_status = mine.get(e.id, "")
+    if tab == "invited" and me:
+        from apps.social.models import Notification
+        Notification.objects.filter(social_user=me, type="event_invite", seen=False).update(seen=True)
     return render(
         request, "social/events.html",
         {"events": items, "me": me, "tab": tab, "nav": "events"},

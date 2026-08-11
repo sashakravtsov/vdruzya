@@ -56,7 +56,7 @@
                         <a href="{% url 'events.show' e.id %}">подробнее</a>
                     </span>
                 </div>
-                {% empty %}<p class="muted">Нет событий.</p>{% endfor %}
+                {% empty %}<p class="muted">{% if tab == 'invited' %}Нет приглашений.{% else %}Нет событий.{% endif %}</p>{% endfor %}
             </div>
         </div>
     </div>

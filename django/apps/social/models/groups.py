@@ -71,9 +71,39 @@ class CommunityPost(models.Model):
         from apps.social.media import media_url
         return media_url(self.media_path)
 
+    @staticmethod
+    def pack_topic(subject: str, body: str) -> str:
+        """Store discussion as subject\\n\\nbody (no separate title column)."""
+        subject = (subject or "").strip()[:120]
+        body = (body or "").strip()
+        if subject:
+            return f"{subject}\n\n{body}" if body else subject
+        return body
+
+    @property
+    def subject(self) -> str:
+        """Discussion topic subject; empty on wall posts."""
+        if (self.topic or "") == "wall":
+            return ""
+        body = self.body or ""
+        if "\n\n" in body:
+            return body.split("\n\n", 1)[0].strip()[:120]
+        return body.split("\n", 1)[0].strip()[:120]
+
+    @property
+    def body_text(self) -> str:
+        """Message body without subject line (discussion) or full wall body."""
+        body = self.body or ""
+        if (self.topic or "") == "wall":
+            return body
+        if "\n\n" in body:
+            return body.split("\n\n", 1)[1]
+        parts = body.split("\n", 1)
+        return parts[1] if len(parts) > 1 else ""
+
     @property
     def title_line(self) -> str:
-        line = (self.body or "").strip().split("\n", 1)[0].strip()
+        line = self.subject or (self.body or "").strip().split("\n", 1)[0].strip()
         if not line:
             return "Фото" if self.kind == "photo" or self.media_path else "Тема"
         return line[:80] + ("…" if len(line) > 80 else "")

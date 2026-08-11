@@ -1,4 +1,57 @@
-{# Open discussion thread (FB 2005). Expects: p, group, is_member, is_admin, me #}
-<div class="discuss-open">
-{% include "social/_group_post.html" %}
+{# Open discussion thread (FB 2006). Expects: p, group, is_member, is_admin, me, comment_form #}
+{% load vd %}
+<div class="discuss-open" id="topic-{{ p.id }}">
+    <h5 class="discuss-subject">{{ p.title_line }}</h5>
+    <div class="discuss-op">
+        <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
+            <td class="image">
+                {% if p.posted_as_community %}
+                <span class="avatar-fallback group-mark" style="background:{{ group.cover_color|default:'#3B5998' }}">{{ group.name|slice:":1"|upper }}</span>
+                {% else %}
+                {% avatar p.social_user 50 %}
+                {% endif %}
+            </td>
+            <td>
+                <div class="info">
+                    <div class="header">
+                        {% if p.posted_as_community %}
+                        <a href="{% url 'groups.show' group.id %}"><b>{{ group.name }}</b></a>
+                        {% else %}
+                        <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
+                        {% endif %}
+                        {% if p.created_at %}<span class="muted"> · {{ p.created_at|timesince }} назад</span>{% endif %}
+                        {% if is_admin or me and me.id == p.social_user_id %}
+                        <span class="wallpost-edit">
+                            <a href="{% url 'groups.posts.edit' group.id p.id %}">ред.</a>
+                            ·
+                            <form method="post" action="{% url 'groups.posts.delete' group.id p.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish muted">удалить</button>
+                            </form>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="text">
+                        {% if p.body_text %}{{ p.body_text|linebreaksbr }}{% elif p.body and not p.subject %}{{ p.body|linebreaksbr }}{% endif %}
+                        {% with extras=p.media.all %}
+                        {% if extras %}
+                        <div class="wall-media-grid">
+                            {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
+                        </div>
+                        {% elif p.media_url %}
+                        <p><img src="{{ p.media_url }}" alt="" class="news-photo"></p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </td>
+        </tr></table>
+    </div>
+    <div class="discuss-replies">
+        <h5>Ответы{% if p.n_comments %} ({{ p.n_comments }}){% endif %}</h5>
+        {% comment_thread p.comments.all preview=0 kind="group" group=group %}
+        {% if is_member and comment_form %}
+        {% url 'groups.comment' group.id p.id as c_action %}
+        {% include "social/_comment_compose.html" with action=c_action compose_id=p.id form=comment_form open=1 %}
+        {% endif %}
+    </div>
 </div>

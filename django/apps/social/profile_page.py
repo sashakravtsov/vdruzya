@@ -14,18 +14,25 @@ TABS = frozenset({"wall", "info", "photos", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
 
 
-def networks_for(profile, education=None) -> list[str]:
-    """Classic left-rail Networks: city + schools + workplace."""
+def networks_for(profile, education=None) -> list[dict]:
+    """Classic left-rail Networks: city / school / workplace → Find Friends filters."""
+    from urllib.parse import urlencode
+
     if education is None:
         education = list(Education.objects.filter(social_user=profile)[:3])
-    out = []
-    if profile.city:
-        out.append(profile.city)
+    out, seen = [], set()
+
+    def add(label, **params):
+        label = (label or "").strip()
+        if not label or label.lower() in seen:
+            return
+        seen.add(label.lower())
+        out.append({"label": label, "href": "/people?" + urlencode({"tab": "search", **params})})
+
+    add(profile.city, city=profile.city or "")
     for e in education[:3]:
-        if e.institution and e.institution not in out:
-            out.append(e.institution)
-    if profile.workplace and profile.workplace not in out:
-        out.append(profile.workplace)
+        add(e.institution, school=e.institution or "")
+    add(profile.workplace, workplace=profile.workplace or "")
     return out
 
 

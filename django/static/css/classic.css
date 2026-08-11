@@ -352,6 +352,16 @@ button.linkish .ico { margin-right: 2px; }
 .discuss-open {
   margin: 10px 0 0; padding: 10px; background: #f7f7f7; border-top: solid 1px #3B5998;
 }
+.discuss-compose { margin: 0 0 12px; }
+.discuss-compose .formtable .inputtext,
+.discuss-compose .formtable textarea { width: 100%; max-width: 480px; box-sizing: border-box; }
+.discuss-subject {
+  margin: 0 0 8px; font: bold 13px "lucida grande", tahoma, verdana, arial, sans-serif; color: #333;
+}
+.discuss-op { margin: 0 0 12px; padding: 0 0 10px; border-bottom: solid 1px #D8DFEA; }
+.discuss-replies > h5 {
+  margin: 0 0 8px; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif; color: #333;
+}
 .group-catalog { display: grid; gap: 8px; }
 .group-tile {
   display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px;

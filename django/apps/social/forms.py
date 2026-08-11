@@ -406,6 +406,10 @@ class GroupForm(forms.ModelForm):
 
 
 class CommunityPostForm(forms.ModelForm):
+    subject = forms.CharField(
+        required=False, max_length=120, label="Тема",
+        widget=_in(placeholder="Тема обсуждения", style="width:100%"),
+    )
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
     board = forms.ChoiceField(
         choices=[("discussion", "Доска обсуждений"), ("wall", "Стена группы")],
@@ -421,10 +425,23 @@ class CommunityPostForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["body"].required = False
+        inst = getattr(self, "instance", None)
+        if inst and inst.pk and (inst.topic or "") != "wall" and not self.is_bound:
+            self.fields["subject"].initial = inst.subject
+            self.fields["body"].initial = inst.body_text
 
     def clean(self):
         data = super().clean()
-        if not (data.get("body") or "").strip() and not _has_media(self):
+        board = data.get("board") or "discussion"
+        body = (data.get("body") or "").strip()
+        subject = (data.get("subject") or "").strip()
+        has_media = _has_media(self)
+        if board == "discussion":
+            if not subject:
+                self.add_error("subject", "Укажите тему.")
+            if not body and not has_media:
+                self.add_error("body", "Напишите сообщение.")
+        elif not body and not has_media:
             self.add_error("body", "Напишите текст или выберите фото.")
         return data
 

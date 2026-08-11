@@ -1,6 +1,6 @@
 """Browse FBVs: people, groups, search — short only."""
 from django.contrib.auth.decorators import login_not_required, login_required
-from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchRank, TrigramSimilarity
+from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchRank
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
@@ -14,7 +14,7 @@ from apps.social.services import now as _now, profile_of
 
 
 # Bump when group.html / rail markup changes (avoids stale 304 HTML in browsers).
-_GROUP_UI = "g8"
+_GROUP_UI = "g9"
 
 
 def _group_etag(request, pk):
@@ -90,11 +90,20 @@ def groups(request):
         Community.objects.exclude(category="")
         .values_list("category", flat=True).distinct().order_by("category")
     )
+    invites = []
+    if mine and me:
+        from apps.social.models import Notification
+        invites = list(
+            Notification.objects.filter(social_user=me, type="group_invite", seen=False).order_by("-id")[:20]
+        )
+        if invites:
+            Notification.objects.filter(pk__in=[n.id for n in invites]).update(seen=True)
     return render(
         request, "social/groups.html",
         {
             "page": page, "communities": page, "me": me, "form": form,
             "q": q, "mine": mine, "category": category, "categories": list(cats),
+            "invites": invites,
         },
     )
 
@@ -111,7 +120,7 @@ def group_show(request, pk):
 @login_required
 def search(request):
     from apps.social import friendship as fr
-    from apps.social.models import Block, Education, Post
+    from apps.social.models import Post
 
     q = (request.GET.get("q") or "").strip()
     name = (request.GET.get("name") or "").strip()
@@ -120,36 +129,14 @@ def search(request):
     me = profile_of(request.user)
     people = groups_qs = posts = []
     searched = bool(q or name or city or school)
-    if searched:
-        ban = set()
-        if me:
-            ban |= set(Block.objects.filter(blocker=me).values_list("blocked_id", flat=True))
-            ban |= set(Block.objects.filter(blocked=me).values_list("blocker_id", flat=True))
-            ban.add(me.id)
-        term = name or q
-        qs = SocialProfile.objects.all()
-        if term:
-            qs = qs.annotate(sim=TrigramSimilarity("name", term)).filter(
-                Q(sim__gt=0.15) | Q(slug__icontains=term) | Q(name__icontains=term)
-            )
-        if city:
-            qs = qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))
-        if school:
-            edu_ids = Education.objects.filter(institution__icontains=school).values("social_user_id")
-            qs = qs.filter(
-                Q(id__in=edu_ids) | Q(workplace__icontains=school) | Q(education_note__icontains=school)
-            )
-        if term:
-            qs = qs.order_by("-sim")
-        else:
-            qs = qs.order_by("name")
-        people = list(qs.exclude(id__in=ban)[:20])
-        if me:
-            rel = fr.relations_for(me, [p.id for p in people])
-            for p in people:
-                n = fr.mutual_count(me, p)
-                p.rel = rel.get(p.id)
-                p.mutual = fr.mutual_label(n) if n else ""
+    if searched and me:
+        page = fr.find_people(me, q=name or q, city=city, school=school, page=1, per=20)
+        people = list(page)
+        rel = fr.relations_for(me, [p.id for p in people])
+        for p in people:
+            n = fr.mutual_count(me, p)
+            p.rel = rel.get(p.id)
+            p.mutual = fr.mutual_label(n) if n else ""
         gq = q or name or school or city
         groups_qs = Community.objects.filter(Q(name__icontains=gq) | Q(slug__icontains=gq))[:20]
         if q or name:

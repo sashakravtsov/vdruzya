@@ -32,6 +32,24 @@
         {% endif %}
 
         {% if mine %}
+        {% if invites %}
+        <div class="profile-box" style="margin-bottom:12px">
+            <h4>Приглашения в группы</h4>
+            <div class="profile-box-body">
+                {% for n in invites %}
+                <div class="classic-person-row">
+                    <span>
+                        <b>{{ n.title }}</b>
+                        {% if n.body %}<span class="classic-person-sub">{{ n.body }}</span>{% endif %}
+                    </span>
+                    <span class="classic-inline-actions">
+                        {% if n.url %}<a href="{{ n.url }}">Открыть</a>{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
         {# FB 2005 My Groups table: Name | Type | Members | actions #}
         {% if communities %}
         <table class="mygroups-table" cellspacing="0" cellpadding="0">

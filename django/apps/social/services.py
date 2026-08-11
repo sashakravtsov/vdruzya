@@ -373,7 +373,7 @@ def news_items(viewer=None, limit=40):
     return items
 
 
-def shared_with(viewer, limit=6):
+def group_updates(viewer, limit=6):
     """Right-rail: recent posts from joined groups."""
     if not viewer:
         return []
@@ -385,6 +385,10 @@ def shared_with(viewer, limit=6):
         .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .order_by("-id")[:limit]
     )
+
+
+# Back-compat alias
+shared_with = group_updates
 
 
 def upcoming_birthdays(viewer=None, days=14):

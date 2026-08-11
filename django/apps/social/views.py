@@ -27,7 +27,7 @@ def _home_anon(request):
 @never_cache
 def feed(request):
     from apps.social.forms import StatusForm
-    from apps.social.services import news_items, shared_with, upcoming_birthdays
+    from apps.social.services import group_updates, news_items, upcoming_birthdays
     me = profile_of(request.user)
     page = Paginator(news_items(me, 60), 20).get_page(request.GET.get("p"))
     from apps.social import friendship as fr
@@ -44,7 +44,7 @@ def feed(request):
             "comment_form": CommentForm(),
             "status_form": StatusForm(initial={"headline": me.headline if me else ""}),
             "requests": pending, "birthdays": upcoming_birthdays(me),
-            "shared": shared_with(me), "popular_groups": popular,
+            "shared": group_updates(me), "popular_groups": popular,
         },
     )
 

@@ -142,13 +142,28 @@ def main():
         fail("group comment not saved")
     ok("group comment")
 
-    r = post(f"/groups/{g.id}/posts", {"body": "probe topic django", "board": "discussion"})
-    topic = CommunityPost.objects.filter(community=g, body="probe topic django").order_by("-id").first()
+    r = post(
+        f"/groups/{g.id}/posts",
+        {"subject": "probe subject", "body": "probe topic django", "board": "discussion"},
+    )
+    if r.status_code != 200:
+        fail(f"discussion post {r.status_code}")
+    topic = CommunityPost.objects.filter(community=g, body__contains="probe topic django").order_by("-id").first()
     if not topic or topic.topic != "discussion":
         fail("discussion topic")
+    if topic.subject != "probe subject":
+        fail(f"discussion subject missing ({topic.subject!r})")
+    if topic.body_text != "probe topic django":
+        fail(f"discussion body_text ({topic.body_text!r})")
     if "topic=" not in topic.get_absolute_url():
         fail(f"bad url {topic.get_absolute_url()}")
-    ok("discussion + url")
+    r = get(f"/groups/{g.id}?topic={topic.id}")
+    body = r.content.decode()
+    if "probe subject" not in body or "discuss-open" not in body:
+        fail("discussion thread chrome missing")
+    if "discuss-compose" in body:
+        fail("compose should hide while topic open")
+    ok("discussion subject + thread")
 
     closed = Community.objects.filter(privacy="closed").exclude(memberships__social_user=me).first()
     if closed:

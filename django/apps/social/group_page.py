@@ -1,5 +1,5 @@
 """Group page data builders — short helpers only."""
-from django.db.models import Count, Prefetch
+from django.db.models import Count, F, Prefetch
 
 from apps.social.forms import CommentBodyForm, CommunityPostForm, GroupEventForm
 from apps.social.models import (
@@ -66,7 +66,7 @@ def page_ctx(request, group, me):
     if not can_view:
         return ctx
     qs = posts_qs(group)
-    discuss = qs.exclude(topic="wall")
+    discuss = qs.exclude(topic="wall").order_by(F("updated_at").desc(nulls_last=True), "-id")
     ctx.update(
         members=list(
             SocialProfile.objects.filter(memberships__community=group)

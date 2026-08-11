@@ -129,10 +129,14 @@ def group_post_edit(request, pk, post_id):
     form = CommunityPostForm(request.POST or None, request.FILES or None, instance=post)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
-        obj.body = (obj.body or "").strip()
         board = form.cleaned_data.get("board")
         if board in ("wall", "discussion"):
             obj.topic = board
+        body = (obj.body or "").strip()
+        if obj.topic == "discussion":
+            obj.body = CommunityPost.pack_topic(form.cleaned_data.get("subject") or "", body)
+        else:
+            obj.body = body
         if _admin(me, group):
             obj.posted_as_community = bool(request.POST.get("as_community"))
         obj.updated_at = now()
@@ -144,7 +148,7 @@ def group_post_edit(request, pk, post_id):
                 obj.kind = "photo"
             obj.save(update_fields=["media_path", "kind"])
         messages.success(request, "Запись обновлена.")
-        return redirect("groups.show", pk=pk)
+        return redirect(obj)
     form.fields["board"].initial = post.topic if post.topic in ("wall", "discussion") else "discussion"
     return render(request, "social/group_post_edit.html", {"group": group, "post": post, "form": form, "me": me, "is_admin": _admin(me, group)})
 
@@ -243,6 +247,7 @@ def group_post(request, pk):
             return redirect("groups.show", pk=pk)
         form = CommunityPostForm(req.POST, req.FILES)
         if not form.is_valid():
+            messages.error(req, "Проверьте тему и текст.")
             return redirect("groups.show", pk=pk)
         p = form.save(commit=False)
         p.community, p.social_user = group, me
@@ -251,7 +256,11 @@ def group_post(request, pk):
         files = list(req.FILES.getlist("photo"))
         albums = req.POST.getlist("album_photos")
         p.created_at = p.updated_at = now()
-        p.body = (p.body or "").strip()
+        body = (p.body or "").strip()
+        if p.topic == "discussion":
+            p.body = CommunityPost.pack_topic(form.cleaned_data.get("subject") or "", body)
+        else:
+            p.body = body
         p.kind = "photo" if (files or albums) else "text"
         p.save()
         path = attach_group(p, files, me, albums)
@@ -261,7 +270,7 @@ def group_post(request, pk):
                 p.kind = "photo"
             p.save(update_fields=["media_path", "kind"])
         bump_news()
-        messages.success(req, "Запись в группе опубликована.")
+        messages.success(req, "Тема создана." if p.topic == "discussion" else "Запись на стене опубликована.")
         if p.topic == "wall":
             return redirect(f"/groups/{pk}#topic-{p.id}")
         return redirect(f"/groups/{pk}?topic={p.id}#board")
@@ -276,13 +285,15 @@ def group_comment(request, pk, post_id):
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
     form = CommentBodyForm(request.POST)
     if me and _member(me, group) and form.is_valid():
+        t = now()
         CommunityPostComment.objects.create(
-            post=post, social_user=me, body=form.cleaned_data["body"], created_at=now(),
+            post=post, social_user=me, body=form.cleaned_data["body"], created_at=t,
         )
+        CommunityPost.objects.filter(pk=post.pk).update(updated_at=t)
         bump_news()
     if post.topic == "wall":
         return redirect(f"/groups/{pk}#c-{post.id}")
-    return redirect(f"/groups/{pk}?topic={post.id}#c-{post.id}")
+    return redirect(f"/groups/{pk}?topic={post.id}#board")
 
 
 @login_required

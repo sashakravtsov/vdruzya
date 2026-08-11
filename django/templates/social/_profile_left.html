@@ -27,7 +27,7 @@
 <div class="profile-box">
     <h4>Сети</h4>
     <div class="profile-box-body">
-        <ul class="plain">{% for n in networks %}<li><a href="{% url 'search' %}?q={{ n|urlencode }}">{{ n }}</a></li>{% endfor %}</ul>
+        <ul class="plain">{% for n in networks %}<li><a href="{{ n.href }}">{{ n.label }}</a></li>{% endfor %}</ul>
     </div>
 </div>
 {% endif %}
