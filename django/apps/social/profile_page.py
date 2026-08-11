@@ -339,5 +339,4 @@ def build_context(profile, me, tab="wall"):
         "can_see_friends": can_see,
         "mini": mini_feed(profile, viewer=me) if wall else [],
         "status_form": StatusForm(initial={"headline": profile.headline or ""}) if is_own else None,
-        "wall_owner": profile,
     }

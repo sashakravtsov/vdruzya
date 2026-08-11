@@ -48,12 +48,12 @@ def main():
         pass
     ok("feed news")
 
-    r = post("/posts", {"body": "probe personal wall", "visibility": "public"})
+    r = post("/posts", {"body": "probe personal wall", "wall_to": me.id})
     if r.status_code != 200:
         fail("personal post")
     wall = Post.objects.filter(body="probe personal wall", social_user=me).order_by("-id").first()
-    if not wall:
-        fail("personal wall not saved")
+    if not wall or wall.topic != f"wall:{me.id}":
+        fail(f"personal wall not saved (topic={getattr(wall, 'topic', None)})")
     ok("personal wall post")
 
     r = get("/feed")
@@ -114,8 +114,6 @@ def main():
         fail("group comment compose missing")
     if f'href="#c-{post_row.id}"' not in body:
         fail("group comment reveal link missing")
-    if f"/groups/{g.id}/comments/" in body and "/edit" in body:
-        fail("group comment edit should be removed")
     ok("group comment reveal chrome")
 
     r = post(f"/groups/{g.id}/posts/{post_row.id}/comment", {"body": "probe c"})

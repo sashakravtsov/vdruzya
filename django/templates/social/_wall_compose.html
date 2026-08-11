@@ -1,4 +1,4 @@
-{# Classic FB wall: text + photo. Profile uses simple=1 (no «ещё» / visibility UI). #}
+{# Classic FB wall poster. simple=1 → profile (text+one photo). Else group (ещё / album / as_community). #}
 <form method="post" action="{{ action }}" enctype="multipart/form-data" class="wallposter">{% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     {% if wall_to %}<input type="hidden" name="wall_to" value="{{ wall_to }}">{% endif %}
@@ -10,15 +10,10 @@
         </span>
         {% if simple %}
         {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }}</p>{% endif %}
-        {% elif form.visibility and not wall_to or form.photo or show_as_community or album_photos %}
+        {% else %}
         <details class="compose-more">
             <summary class="linkish">ещё</summary>
-            {% if form.visibility and not wall_to %}
-            <p class="wallposter-vis">Кому: {{ form.visibility }}</p>
-            {% endif %}
-            {% if form.photo %}
-            <p class="wallposter-file">Фото: {{ form.photo }}</p>
-            {% endif %}
+            {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }}</p>{% endif %}
             {% if show_as_community %}
             <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
             {% endif %}

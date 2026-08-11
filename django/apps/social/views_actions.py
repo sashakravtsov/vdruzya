@@ -42,46 +42,38 @@ def post_create(request):
 
     @throttle("posts", 20, 60)
     def _go(req):
+        from apps.social.profile_page import wall_post_visibility
+
         me = profile_of(req.user)
-        simple = bool(req.POST.get("wall_to"))
-        form = PostForm(req.POST, req.FILES, simple=simple)
+        form = PostForm(req.POST, req.FILES, simple=True)
         if not (form.is_valid() and me):
             return redirect(req.POST.get("next") or "feed")
+        target = get_object_or_404(SocialProfile, pk=req.POST.get("wall_to") or me.id)
+        rel = None
+        if target.id != me.id:
+            rel = Friendship.objects.filter(
+                Q(user=me, friend=target) | Q(user=target, friend=me)
+            ).first()
+        if not can_write_wall(me, target, rel):
+            messages.error(req, "Писать на стену нельзя.")
+            return redirect(target)
         post = form.save(commit=False)
         post.social_user = me
         post.body = (post.body or "").strip()
-        post.topic = "thought"
-        if "visibility" not in form.fields:
-            post.visibility = post.visibility or "friends"
+        post.topic = f"wall:{target.id}"
+        post.visibility = wall_post_visibility(target)
         files = list(req.FILES.getlist("photo"))
-        albums = req.POST.getlist("album_photos")
-        wall_to = req.POST.get("wall_to")
-        if wall_to:
-            from apps.social.profile_page import wall_post_visibility
-            target = get_object_or_404(SocialProfile, pk=wall_to)
-            rel = None
-            if target.id != me.id:
-                rel = Friendship.objects.filter(
-                    Q(user=me, friend=target) | Q(user=target, friend=me)
-                ).first()
-            if not can_write_wall(me, target, rel):
-                messages.error(req, "Писать на стену нельзя.")
-                return redirect(target)
-            post.topic = f"wall:{target.id}"
-            post.visibility = wall_post_visibility(target)
-        post.kind = "photo" if (files or albums) else "text"
+        post.kind = "photo" if files else "text"
         post.created_at = post.updated_at = _now()
         post.save()
-        # Classic profile wall note: one photo; feed composer keeps multi-attach.
-        path = attach_wall(post, files, me, albums, max_photos=1 if wall_to else 10)
+        path = attach_wall(post, files, me, max_photos=1)
         if path:
             post.media_path = path
-            if post.kind == "text":
-                post.kind = "photo"
+            post.kind = "photo"
             post.save(update_fields=["media_path", "kind"])
         cache.delete(f"news:{me.id}:60")
         messages.success(req, "Запись опубликована.")
-        return redirect(req.POST.get("next") or "feed")
+        return redirect(req.POST.get("next") or target)
 
     return _go(request)
 
@@ -112,9 +104,10 @@ def status_update(request):
 @require_POST
 def comment_create(request, post_id):
     from django.urls import reverse
+    from apps.social.services import feed_queryset
 
     me = profile_of(request.user)
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(feed_queryset(me), pk=post_id)
     form = CommentForm(request.POST)
     if form.is_valid() and me:
         c = form.save(commit=False)
@@ -131,8 +124,10 @@ def comment_create(request, post_id):
 @transaction.atomic
 def react(request, post_id):
     from apps.social import notify
+    from apps.social.services import feed_queryset
+
     me = profile_of(request.user)
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(feed_queryset(me), pk=post_id)
     existing = Reaction.objects.filter(post=post, social_user=me, type="like").first()
     if existing:
         existing.delete()

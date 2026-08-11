@@ -3,7 +3,6 @@ from apps.social.media import save_image
 from apps.social.models import CommunityPostMedia, Photo, PostMedia
 from apps.social.services import now
 
-_MAX_WALL = 10
 _MAX_GROUP = 50
 
 
@@ -18,8 +17,8 @@ def _album_rows(me, album_ids, limit, make_row):
     return rows
 
 
-def attach_wall(post, files, me, album_ids=(), *, max_photos=_MAX_WALL):
-    """Personal / profile wall: classic FB allowed one photo per wall note."""
+def attach_wall(post, files, me, album_ids=(), *, max_photos=1):
+    """Profile wall note — classic FB: one photo (album pick optional filler)."""
     cap = max(0, int(max_photos))
     t, rows = now(), []
     for f in (files or [])[:cap]:

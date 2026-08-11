@@ -29,7 +29,7 @@
                     {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
                     {% with extras=post.media.all %}
                     {% if extras %}
-                    <div class="group-photo-grid wall-media">
+                    <div class="wall-media-grid">
                         {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
                     </div>
                     {% elif post.media_url %}
@@ -48,9 +48,6 @@
                     ·
                     {% endif %}
                     <a href="#c-{{ post.id }}">Комментировать</a>{% if post.n_comments %} ({{ post.n_comments }}){% endif %}
-                    {% if feed_actions %}
-                    · <a href="{% url 'posts.show' post.id %}">открыть</a>
-                    {% endif %}
                     {% else %}
                     {% if not wall_owner %}★ {{ post.likes|default:0 }} · {% endif %}комм. {{ post.n_comments|default:0 }}
                     {% endif %}

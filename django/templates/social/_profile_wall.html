@@ -37,7 +37,7 @@
         {% url 'posts.store' as compose_action %}
         {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit=is_own|yesno:"Опубликовать,Написать на стену" simple=1 %}
         {% elif user.is_authenticated and not can_wall %}
-        <p class="muted">На стену могут писать только друзья.</p>
+        <p class="muted">{% if profile.wall_write == "self" %}На стену может писать только {{ profile.name }}.{% else %}На стену могут писать только друзья.{% endif %}</p>
         {% endif %}
         {% for post in posts %}
         {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path wall_owner=profile %}

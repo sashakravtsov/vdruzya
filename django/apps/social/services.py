@@ -50,23 +50,29 @@ def friend_count(profile: SocialProfile) -> int:
     return len(friend_ids(profile))
 
 
-def feed_queryset(viewer=None):
-    qs = Post.objects.all()
-    if viewer:
-        fids = friend_ids(viewer) | {viewer.id}
-        qs = qs.filter(
-            Q(visibility="public")
-            | Q(visibility="friends", social_user_id__in=fids)
-            | Q(social_user_id=viewer.id)
-        ).exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
-    else:
-        qs = qs.filter(visibility="public")
+def post_visible_q(viewer, *, author_field="social_user_id") -> Q:
+    """Shared visibility: public / friends-of-author / own. Empty visibility ≡ public."""
+    if not viewer:
+        return Q(visibility="public") | Q(visibility="")
+    fids = friend_ids(viewer) | {viewer.id}
+    af = author_field
     return (
-        qs.select_related("social_user", "shared_post", "shared_post__social_user")
+        Q(visibility="public") | Q(visibility="")
+        | Q(visibility="friends", **{f"{af}__in": fids})
+        | Q(**{af: viewer.id})
+    )
+
+
+def feed_queryset(viewer=None):
+    """Posts the viewer may open (permalink / comment / react). Not the News Feed circle."""
+    qs = Post.objects.filter(post_visible_q(viewer)).exclude(kind__in=("status", "picture", "poll", "share"))
+    if viewer:
+        qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
+    return (
+        qs.select_related("social_user")
         .defer(
             "search_vector",
             "social_user__looking_for", "social_user__interested_in", "social_user__languages",
-            "shared_post__social_user__looking_for", "shared_post__social_user__interested_in", "shared_post__social_user__languages",
         )
         .prefetch_related(
             Prefetch(
@@ -76,7 +82,6 @@ def feed_queryset(viewer=None):
                 .order_by("id"),
             ),
             "media",
-            "poll__options",
         )
         .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
     )
@@ -138,11 +143,14 @@ def can_manage_photo_comment(me, comment, album) -> bool:
 
 
 def wall_posts_for(profile, limit=20, viewer=None):
-    """Own wall posts + notes on this wall. No status / picture / polls (classic Profile Wall)."""
+    """Notes on this wall (`wall:{id}`). Legacy own posts without wall topic still listed."""
     key = f"wall:{profile.id}"
     qs = (
-        Post.objects.filter(Q(topic=key) | (Q(social_user=profile) & ~Q(topic__startswith="wall:")))
-        .exclude(kind__in=("status", "picture", "poll"))
+        Post.objects.filter(
+            Q(topic=key)
+            | (Q(social_user=profile) & ~Q(topic__startswith="wall:"))
+        )
+        .exclude(kind__in=("status", "picture", "poll", "share"))
         .exclude(topic__in=("status", "picture"))
         .select_related("social_user")
         .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages", "search_vector")
@@ -154,15 +162,15 @@ def wall_posts_for(profile, limit=20, viewer=None):
                 .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
             ),
         )
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .annotate(n_comments=Count("comments", distinct=True))
     )
     if viewer and viewer.id == profile.id:
         pass
     elif viewer:
         friend = profile.id in friend_ids(viewer)
-        vis = Q(visibility="public") | Q(social_user=viewer)
+        vis = Q(visibility="public") | Q(visibility="") | Q(social_user=viewer)
         if friend:
-            vis |= Q(visibility="friends") | Q(visibility="")
+            vis |= Q(visibility="friends")
         qs = qs.filter(vis).exclude(visibility="private")
         qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
     else:
@@ -240,69 +248,8 @@ def mini_feed(profile, limit=8, viewer=None):
     return items[:limit]
 
 
-def _visible_group_q(member_ids):
-    return Q(community__privacy="public") | Q(community_id__in=member_ids) | Q(community__privacy="")
-
-
-def _add_group_posts(items, blocked, member_ids, limit):
-    from apps.social.models import CommunityPost, Photo
-    qs = (
-        CommunityPost.objects.select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
-        .prefetch_related("poll__options", "media")
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
-        .filter(_visible_group_q(member_ids))
-        .order_by("-id")
-    )
-    if blocked:
-        qs = qs.exclude(social_user_id__in=blocked)
-    for p in qs[:limit]:
-        items.append({"kind": "group_post", "at": p.created_at, "post": p, "actor": p.social_user, "group": p.community})
-
-
-def _add_joins(items, blocked, member_ids, limit):
-    qs = (
-        CommunityMember.objects.select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
-        .filter(_visible_group_q(member_ids))
-        .order_by("-id")
-    )
-    if blocked:
-        qs = qs.exclude(social_user_id__in=blocked)
-    for m in qs[:limit]:
-        items.append({"kind": "joined", "at": m.created_at, "actor": m.social_user, "group": m.community})
-
-
-def _add_created(items, blocked, member_ids):
-    qs = Community.objects.select_related("creator").filter(creator__isnull=False).order_by("-id")
-    if blocked:
-        qs = qs.exclude(creator_id__in=blocked)
-    for g in qs[:20]:
-        if g.privacy == "closed" and g.id not in member_ids:
-            continue
-        items.append({"kind": "created", "at": g.created_at, "actor": g.creator, "group": g})
-
-
-def _add_photos(items, blocked, limit):
-    from apps.social.models import Photo
-    qs = (
-        Photo.objects.select_related("album", "album__social_user")
-        .exclude(path__isnull=True).exclude(path="")
-        .order_by("-id")
-    )
-    if blocked:
-        qs = qs.exclude(album__social_user_id__in=blocked)
-    for ph in qs[:limit]:
-        items.append({
-            "kind": "photos", "at": ph.created_at, "photo": ph,
-            "actor": ph.album.social_user, "album": ph.album,
-        })
-
-
-def _attach_wall_notes(posts):
+def attach_wall_notes(posts):
     """Mark cross-wall notes for News Feed attribution (flat, no extra queries in template)."""
-    from apps.social.models import SocialProfile
-
     need = set()
     for p in posts:
         topic = getattr(p, "topic", None) or ""
@@ -317,32 +264,102 @@ def _attach_wall_notes(posts):
         p.wall_note_owner = owners.get(p._wall_note_id) if p._wall_note_id else None
 
 
+def _add_group_posts(items, blocked, member_ids, limit):
+    """Only groups the viewer belongs to (classic News Feed)."""
+    if not member_ids:
+        return
+    qs = (
+        CommunityPost.objects.select_related("social_user", "community")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .prefetch_related("media")
+        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .filter(community_id__in=member_ids)
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for p in qs[:limit]:
+        items.append({"kind": "group_post", "at": p.created_at, "post": p, "actor": p.social_user, "group": p.community})
+
+
+def _add_joins(items, blocked, fids, limit):
+    if not fids:
+        return
+    qs = (
+        CommunityMember.objects.select_related("social_user", "community")
+        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .filter(social_user_id__in=fids)
+        .exclude(community__privacy="closed")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for m in qs[:limit]:
+        items.append({"kind": "joined", "at": m.created_at, "actor": m.social_user, "group": m.community})
+
+
+def _add_created(items, blocked, fids):
+    if not fids:
+        return
+    qs = (
+        Community.objects.select_related("creator")
+        .filter(creator_id__in=fids)
+        .exclude(privacy="closed")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(creator_id__in=blocked)
+    for g in qs[:20]:
+        items.append({"kind": "created", "at": g.created_at, "actor": g.creator, "group": g})
+
+
+def _add_photos(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import Photo
+    qs = (
+        Photo.objects.select_related("album", "album__social_user")
+        .filter(album__social_user_id__in=fids)
+        .exclude(path__isnull=True).exclude(path="")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(album__social_user_id__in=blocked)
+    for ph in qs[:limit]:
+        items.append({
+            "kind": "photos", "at": ph.created_at, "photo": ph,
+            "actor": ph.album.social_user, "album": ph.album,
+        })
+
+
 def news_items(viewer=None, limit=40):
-    """FB-2006 News Feed: wall notes + group activity. Status/picture/polls live in Mini-Feed."""
+    """FB-2006 News Feed: friends' circle + own groups. Status/picture → Mini-Feed."""
     from django.core.cache import cache
     key = f"news:{getattr(viewer, 'id', 0)}:{limit}"
     cached = cache.get(key)
     if cached is not None:
         return cached
     items = []
+    fids = (friend_ids(viewer) | {viewer.id}) if viewer else set()
     blocked = (
         list(Block.objects.filter(blocker=viewer).values_list("blocked_id", flat=True)) if viewer else []
     )
     member_ids = set(
         CommunityMember.objects.filter(social_user=viewer).values_list("community_id", flat=True)
     ) if viewer else set()
+    wall_topics = [f"wall:{i}" for i in fids]
     posts = list(
         feed_queryset(viewer)
-        .exclude(kind__in=("status", "picture", "poll"))
+        .filter(Q(social_user_id__in=fids) | Q(topic__in=wall_topics))
         .exclude(topic__in=("status", "picture"))[:limit]
-    )
-    _attach_wall_notes(posts)
+    ) if fids else []
+    attach_wall_notes(posts)
     for p in posts:
         items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})
     _add_group_posts(items, blocked, member_ids, limit)
-    _add_joins(items, blocked, member_ids, limit)
-    _add_created(items, blocked, member_ids)
-    _add_photos(items, blocked, limit)
+    _add_joins(items, blocked, fids, limit)
+    _add_created(items, blocked, fids)
+    _add_photos(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)
