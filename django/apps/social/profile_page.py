@@ -283,7 +283,6 @@ def build_context(profile, me, tab="wall"):
     can_wall = can_write_wall(me, profile, relation) if full else False
     show_wall = can_view_wall(me, profile, relation) if full else False
     wall = tab == "wall" and full
-    wall_vis = wall_post_visibility(profile)
 
     education = experiences = []
     boxes = []
@@ -338,7 +337,6 @@ def build_context(profile, me, tab="wall"):
         "can_wall": can_wall,
         "show_wall": show_wall,
         "can_see_friends": can_see,
-        "wall_visibility": wall_vis,
         "mini": mini_feed(profile, viewer=me) if wall else [],
         "status_form": StatusForm(initial={"headline": profile.headline or ""}) if is_own else None,
         "wall_owner": profile,
