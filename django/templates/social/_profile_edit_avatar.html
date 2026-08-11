@@ -23,5 +23,10 @@
                 <tr><td></td><td><input type="submit" class="inputsubmit" value="Сменить фото"></td></tr>
             </table>
         </form>
+        {% if me.avatar_url %}
+        <form method="post" action="{% url 'profile.avatar.clear' %}" class="avatar-clear">{% csrf_token %}
+            <button type="submit" class="linkish muted">Удалить фото</button>
+        </form>
+        {% endif %}
     </div>
 </div>

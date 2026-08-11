@@ -252,6 +252,9 @@ button.linkish, .profile-box-body button.linkish {
 #header.withsubtitle .subtitle {
   float: right; font-weight: normal; font-size: 11px; line-height: 23px; white-space: nowrap;
 }
+.profile #header.withsubtitle .subtitle.profile-status-bar {
+  white-space: normal; max-width: 58%; line-height: 1.35; padding-top: 2px;
+}
 .profile-section-head {
   background: var(--line); color: var(--fb); font: bold 11px/16px var(--font);
   margin: 0 0 6px; padding: 2px 5px;

@@ -6,7 +6,7 @@ from apps.social.forms import CommentForm, PostForm, StatusForm
 from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
 )
-from apps.social.services import friend_ids, mini_feed, wall_posts_for
+from apps.social.services import friend_count, mini_feed, wall_posts_for
 
 TABS = frozenset({"wall", "info", "photos", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
@@ -81,6 +81,11 @@ def can_view_wall(me, profile, relation) -> bool:
     return True
 
 
+def wall_post_visibility(profile) -> str:
+    """Visibility for notes/posts on this wall — matches who may view the wall."""
+    return "public" if (getattr(profile, "wall_view", None) or "public") == "public" else "friends"
+
+
 def friend_tiles(me, profile, *, can_see: bool, relation, limit=6):
     """Own/friend view: friends. Visitor: mutuals first when available."""
     from apps.social import friendship as fr
@@ -109,7 +114,10 @@ def _relation(me, profile):
 
 
 def _info_empty(profile, education, experiences) -> bool:
+    """Empty only when there is nothing to show (Member Since alone still counts)."""
     p = profile
+    if p.created_at:
+        return False
     return not any((
         p.gender, p.birthday, p.city, p.hometown, p.relationship_status,
         p.looking_for_label(), p.interested_in_label(), p.political_views,
@@ -140,14 +148,12 @@ def build_context(profile, me, tab="wall"):
         list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
         if full else []
     )
-    friends_rail, friends_are_mutual = friend_tiles(
-        me, profile, can_see=can_see, relation=relation, limit=6,
+    tile_limit = 30 if tab == "friends" else 6
+    friends_all, friends_are_mutual = friend_tiles(
+        me, profile, can_see=can_see, relation=relation, limit=tile_limit,
     )
-    friends_tab = friends_rail
-    if tab == "friends":
-        friends_tab, _ = friend_tiles(
-            me, profile, can_see=can_see, relation=relation, limit=30,
-        )
+    friends_rail = friends_all[:6]
+    friends_tab = friends_all if tab == "friends" else friends_rail
     vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me))
     rail_photos = recent_photos(profile, me, 4) if full else []
 
@@ -160,6 +166,8 @@ def build_context(profile, me, tab="wall"):
         info_empty = _info_empty(profile, education, experiences)
     if full and tab == "photos":
         albums = profile_albums(profile, me, 12)
+
+    n_friends = mutual if friends_are_mutual else friend_count(profile)
 
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
@@ -176,8 +184,8 @@ def build_context(profile, me, tab="wall"):
         "info_empty": info_empty,
         "networks": networks_for(profile, edu_rail),
         "stats": {
-            "friends": len(friend_ids(profile)),
-            "photos": Photo.objects.filter(album__in=vis_albums).count(),
+            "friends": n_friends,
+            "photos": Photo.objects.filter(album__in=vis_albums).count() if full else 0,
             "groups": (
                 Community.objects.filter(memberships__social_user=profile).distinct().count()
                 if full else 0

@@ -79,6 +79,7 @@ def post_create(request):
         albums = req.POST.getlist("album_photos")
         wall_to = req.POST.get("wall_to")
         if wall_to:
+            from apps.social.profile_page import wall_post_visibility
             target = get_object_or_404(SocialProfile, pk=wall_to)
             rel = None
             if target.id != me.id:
@@ -89,7 +90,7 @@ def post_create(request):
                 messages.error(req, "Писать на стену нельзя.")
                 return redirect(target)
             post.topic = f"wall:{target.id}"
-            post.visibility = "friends"
+            post.visibility = wall_post_visibility(target)
         post.kind = "photo" if (files or albums) else "text"
         post.created_at = post.updated_at = _now()
         post.save()
@@ -220,7 +221,24 @@ def avatar_upload(request):
         me.avatar_path = save_image(f, "avatars")
         me.updated_at = _now()
         me.save(update_fields=["avatar_path", "updated_at"])
+        Post.objects.create(
+            social_user=me, body="", visibility="friends",
+            kind="photo", topic="picture", media_path=me.avatar_path,
+            created_at=_now(), updated_at=_now(),
+        )
         messages.success(request, "Аватар обновлён.")
+    return redirect("/profile/edit?section=picture")
+
+
+@login_required
+@require_POST
+def avatar_clear(request):
+    me = profile_of(request.user)
+    if me and me.avatar_path:
+        me.avatar_path = None
+        me.updated_at = _now()
+        me.save(update_fields=["avatar_path", "updated_at"])
+        messages.info(request, "Фото удалено.")
     return redirect("/profile/edit?section=picture")
 
 

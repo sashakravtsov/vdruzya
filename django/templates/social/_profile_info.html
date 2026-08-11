@@ -37,7 +37,7 @@
             {% if profile.show_email and profile.user.email %}<tr><td class="label">Email:</td><td>{{ profile.user.email }}</td></tr>{% endif %}
             {% if profile.show_phone and profile.phone %}<tr><td class="label">Телефон:</td><td>{{ profile.phone }}</td></tr>{% endif %}
             {% if profile.telegram_username %}<tr><td class="label">Имя в сети:</td><td>{{ profile.telegram_username }}</td></tr>{% endif %}
-            {% if profile.website %}<tr><td class="label">Сайт:</td><td><a href="{{ profile.website }}" rel="nofollow noopener">{{ profile.website }}</a></td></tr>{% endif %}
+            {% if profile.website %}<tr><td class="label">Сайт:</td><td><a href="{{ profile.website|external_url }}" rel="nofollow noopener">{{ profile.website }}</a></td></tr>{% endif %}
         </table>
     </div>
 </div>

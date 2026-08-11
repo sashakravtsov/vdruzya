@@ -45,7 +45,9 @@ def main():
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
     assert b'name="visibility"' in r.content and b'value="friends"' in r.content
+    assert f'name="wall_to" value="{me.id}"'.encode() in r.content
     assert "Мне нравится".encode() not in r.content  # pre-2009 profile wall
+    assert "Друзья в ".encode() not in r.content
     ok("own profile wall tab")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
@@ -199,18 +201,46 @@ def main():
     assert not Post.objects.filter(pk=note.id).exists()
     ok("wall owner deletes guest note")
 
-    prev = me.profile_visibility or "public"
-    me.profile_visibility = "friends"
-    me.save(update_fields=["profile_visibility"])
+    r = c.get("/profile/edit?section=picture", secure=True)
+    assert r.status_code == 200
+    assert b'action="/profile/avatar"' in r.content
+    assert b'action="/profile/avatar/clear"' in r.content or "нет фото".encode() in r.content
+    ok("profile picture edit")
+
+    # Public wall: stranger who can view profile sees public wall notes
+    prev_wall = me.wall_view or "public"
+    me.wall_view = "public"
+    me.save(update_fields=["wall_view"])
+    t = now()
+    pub = Post.objects.create(
+        social_user=other, body="__public_wall_note__", topic=f"wall:{me.id}",
+        visibility="public", kind="text", created_at=t, updated_at=t,
+    )
     fids = friend_ids(me) | {me.id, other.id}
     stranger = SocialProfile.objects.exclude(id__in=fids).exclude(user_id__isnull=True).first()
-    assert stranger, "need non-friend for limited profile"
+    assert stranger, "need non-friend"
     c2 = Client(HTTP_HOST="vdruzya.ru")
     c2.force_login(User.objects.get(pk=stranger.user_id))
+    # Ensure stranger can see full profile
+    prev = me.profile_visibility or "public"
+    me.profile_visibility = "public"
+    me.save(update_fields=["profile_visibility"])
+    r = c2.get(f"/profile/{me.id}", secure=True)
+    assert r.status_code == 200
+    assert b"__public_wall_note__" in r.content
+    ok("public wall note visible to non-friend")
+    Post.objects.filter(pk=pub.id).delete()
+    me.wall_view = prev_wall
+    me.save(update_fields=["wall_view"])
+
+    me.profile_visibility = "friends"
+    me.save(update_fields=["profile_visibility"])
     r = c2.get(f"/profile/{me.id}", secure=True)
     assert r.status_code == 200
     assert "Мини-лента".encode() not in r.content
     assert b"?tab=wall" not in r.content
+    assert "Профиль доступен только друзьям".encode() in r.content
+    assert "Друзья (".encode() not in r.content
     ok("limited profile for non-friend")
     me.profile_visibility = prev
     me.save(update_fields=["profile_visibility"])

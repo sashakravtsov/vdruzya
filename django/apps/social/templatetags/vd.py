@@ -121,6 +121,17 @@ def birthday_tags(profile):
 
 
 @register.filter
+def external_url(url):
+    """Ensure website href has a scheme (classic Contact Info)."""
+    u = (url or "").strip()
+    if not u:
+        return ""
+    if not u.startswith(("http://", "https://", "//")):
+        return "https://" + u
+    return u
+
+
+@register.filter
 def can_manage_post(me, post):
     from apps.social.services import can_manage_wall_post
     return can_manage_wall_post(me, post)

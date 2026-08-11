@@ -10,7 +10,7 @@
                     {% if post.created_at %}<span class="muted"> · {{ post.created_at|timesince }} назад</span>{% endif %}
                     {% if me|can_manage_post:post %}
                     <span class="wallpost-edit">
-                        {% if me.id == post.social_user_id %}
+                        {% if me.id == post.social_user_id and not wall_owner %}
                         <a href="{% url 'posts.edit' post.id %}">ред.</a>
                         ·
                         {% endif %}

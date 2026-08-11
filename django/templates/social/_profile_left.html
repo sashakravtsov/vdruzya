@@ -1,6 +1,6 @@
 {% load vd %}
 <div class="profile-picture">
-    {% if is_own %}<a href="{% url 'albums' %}">{% else %}<a href="{% url 'profile.albums' profile.id %}">{% endif %}
+    {% if is_own %}<a href="{% url 'profile.edit' %}?section=picture">{% else %}<a href="?tab=photos">{% endif %}
     {% if profile.avatar_url %}
         <img src="{{ profile.avatar_url }}" alt="">
     {% else %}
@@ -14,7 +14,7 @@
         <a href="{% url 'profile.edit' %}">Редактировать профиль</a>
         <a href="{% url 'profile.edit' %}?section=picture">Изменить фото</a>
     {% elif user.is_authenticated %}
-        <a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>
+        {% if not limited %}<a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>{% endif %}
         {% if relation and relation.status == 'accepted' %}
             <form method="post" action="{% url 'messenger.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
             <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
@@ -22,18 +22,17 @@
         {% elif relation and relation.status == 'pending' and relation.user_id == me.id %}
             <span class="muted">Заявка отправлена</span>
             <form method="post" action="{% url 'friends.cancel' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Отменить заявку</button></form>
-            <form method="post" action="{% url 'messenger.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
+            <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
         {% elif relation and relation.status == 'pending' %}
             <form method="post" action="{% url 'friends.accept' profile.id %}">{% csrf_token %}<button type="submit">Принять заявку</button></form>
             <form method="post" action="{% url 'friends.reject' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Отклонить</button></form>
         {% else %}
             <form method="post" action="{% url 'friends.request' profile.id %}">{% csrf_token %}<button type="submit">Добавить в друзья</button></form>
-            <form method="post" action="{% url 'messenger.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
             <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
         {% endif %}
         <form method="post" action="{% url 'profile.block' profile.id %}">{% csrf_token %}<button type="submit" class="muted">{% if blocked %}Разблокировать{% else %}Заблокировать{% endif %}</button></form>
     {% else %}
-        <a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>
+        {% if not limited %}<a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>{% endif %}
         <a href="{% url 'login' %}?next={{ request.path }}">Войти, чтобы добавить в друзья</a>
     {% endif %}
 </div>
@@ -47,14 +46,15 @@
 </div>
 {% endif %}
 
+{% if not limited and can_see_friends %}
 <div class="profile-box">
     <h4>{% if friends_are_mutual %}Общие друзья{% else %}Друзья{% endif %} ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
     <div class="profile-box-body">
-        {% if profile.city and not friends_are_mutual %}<p>Друзья в {{ profile.city|tag }}</p>{% endif %}
-        {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
+        {% if mutual and not friends_are_mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
         {% include "social/_profile_friend_grid.html" with friends=friends compact=1 %}
     </div>
 </div>
+{% endif %}
 
 {% if not limited and rail_photos %}
 <div class="profile-box">

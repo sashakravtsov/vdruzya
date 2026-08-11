@@ -10,12 +10,14 @@
             создал(а) группу <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
             {% elif item.kind == 'photo' %}
             добавил(а) фото в <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>
+            {% elif item.kind == 'picture' %}
+            обновил(а) фото профиля
             {% elif item.kind == 'friend' and item.other %}
             теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
             {% elif item.kind == 'status' %}
             обновил(а) статус: {{ item.post.body|truncatewords:16 }}
             {% elif item.kind == 'wall' %}
-            написал(а) на стену: {{ item.post.body|truncatewords:12 }}
+            написал(а) на стену{% if item.wall_name %} <a href="{% url 'profile' item.wall_id %}">{{ item.wall_name }}</a>{% endif %}: {{ item.post.body|truncatewords:12 }}
             {% else %}
             написал(а): {{ item.post.body|truncatewords:16 }}
             {% endif %}
@@ -33,11 +35,7 @@
     <div class="profile-box-body">
         {% if form %}
         {% url 'posts.store' as compose_action %}
-        {% if is_own %}
-        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path submit="Опубликовать" simple=1 %}
-        {% else %}
-        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit="Написать на стену" simple=1 %}
-        {% endif %}
+        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit=is_own|yesno:"Опубликовать,Написать на стену" simple=1 %}
         {% elif user.is_authenticated and not can_wall %}
         <p class="muted">На стену могут писать только друзья.</p>
         {% endif %}
@@ -46,6 +44,13 @@
         {% empty %}
         <p class="muted">На стене пока пусто.</p>
         {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="profile-box wall-box">
+    <h4>Стена</h4>
+    <div class="profile-box-body">
+        <p class="muted">Стена закрыта.</p>
     </div>
 </div>
 {% endif %}

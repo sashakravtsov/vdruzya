@@ -35,6 +35,12 @@
             {% endif %}
 
             {% if limited %}
+            <div class="profile-box">
+                <h4>Информация</h4>
+                <div class="profile-box-body">
+                    <p class="muted">Профиль доступен только друзьям. Вы видите имя, фото и сети.</p>
+                </div>
+            </div>
             {% elif tab == 'info' %}
             {% include "social/_profile_info.html" %}
             {% elif tab == 'photos' %}

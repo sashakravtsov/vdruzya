@@ -88,6 +88,7 @@ urlpatterns = [
     path("profile/experience/<int:pk>", act.experience_save, name="profile.experience.edit"),
     path("profile/experience/<int:pk>/delete", act.experience_delete, name="profile.experience.delete"),
     path("profile/avatar", act.avatar_upload, name="profile.avatar"),
+    path("profile/avatar/clear", act.avatar_clear, name="profile.avatar.clear"),
     path("profile/<int:pk>/block", act.block_toggle, name="profile.block"),
     path("profile/<int:pk>/poke", act.poke, name="profile.poke"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),

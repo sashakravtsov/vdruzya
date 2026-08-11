@@ -43,6 +43,12 @@ def friend_ids(profile: SocialProfile) -> set[int]:
     )
 
 
+def friend_count(profile: SocialProfile) -> int:
+    return Friendship.objects.filter(status="accepted").filter(
+        Q(user_id=profile.id) | Q(friend_id=profile.id)
+    ).count()
+
+
 def feed_queryset(viewer=None):
     qs = Post.objects.all()
     if viewer:
@@ -106,23 +112,24 @@ def can_manage_wall_comment(me, comment) -> bool:
 
 
 def wall_posts_for(profile, limit=20, viewer=None):
-    """Own posts (not notes on others' walls) + notes written on this wall. No status."""
+    """Own wall posts + notes on this wall. No status / polls (classic Profile Wall)."""
     key = f"wall:{profile.id}"
     qs = (
         Post.objects.filter(Q(topic=key) | (Q(social_user=profile) & ~Q(topic__startswith="wall:")))
         .exclude(kind="status")
         .exclude(topic="status")
+        .exclude(topic="picture")
         .select_related("social_user")
         .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages", "search_vector")
         .prefetch_related(
-            "media", "poll__options",
+            "media",
             Prefetch(
                 "comments",
                 queryset=Comment.objects.select_related("social_user")
                 .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
             ),
         )
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .annotate(n_comments=Count("comments", distinct=True))
     )
     if viewer and viewer.id == profile.id:
         pass
@@ -153,18 +160,34 @@ def mini_feed(profile, limit=8, viewer=None):
     show_wall = can_view_wall(viewer, profile, relation)
 
     items = []
-    if show_wall:
-        for p in Post.objects.filter(social_user=profile).order_by("-id")[:limit]:
-            if not own:
-                vis = p.visibility or "public"
-                if vis == "private":
-                    continue
-                if vis == "friends" and not friends:
-                    continue
-            kind = "status" if (p.kind == "status" or p.topic == "status") else (
-                "wall" if (p.topic or "").startswith("wall:") else "post"
-            )
-            items.append({"kind": kind, "at": p.created_at, "post": p})
+    wall_ids = set()
+    for p in Post.objects.filter(social_user=profile).order_by("-id")[:limit]:
+        if not own:
+            vis = p.visibility or "public"
+            if vis == "private":
+                continue
+            if vis == "friends" and not friends:
+                continue
+        topic = p.topic or ""
+        if p.kind == "status" or topic == "status":
+            kind = "status"
+        elif topic == "picture":
+            kind = "picture"
+        elif topic.startswith("wall:"):
+            oid = wall_owner_id(p)
+            if oid and oid != profile.id:
+                kind = "wall"
+                wall_ids.add(oid)
+            else:
+                kind = "post"
+        else:
+            kind = "post"
+        if kind in ("wall", "post") and not show_wall:
+            continue
+        row = {"kind": kind, "at": p.created_at, "post": p}
+        if kind == "wall":
+            row["wall_id"] = oid
+        items.append(row)
     if friends or own:
         for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:
             items.append({"kind": "joined", "at": m.created_at, "group": m.community})
@@ -183,6 +206,11 @@ def mini_feed(profile, limit=8, viewer=None):
         ):
             other = f.friend if f.user_id == profile.id else f.user
             items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
+    if wall_ids:
+        names = dict(SocialProfile.objects.filter(id__in=wall_ids).values_list("id", "name"))
+        for it in items:
+            if it.get("wall_id"):
+                it["wall_name"] = names.get(it["wall_id"])
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     return items[:limit]
 
