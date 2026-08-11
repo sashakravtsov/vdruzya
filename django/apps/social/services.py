@@ -21,12 +21,13 @@ def profile_of(user) -> SocialProfile | None:
     return getattr(user, "profile", None) or SocialProfile.objects.filter(user_id=user.id).first()
 
 
-def accepted_friends(profile: SocialProfile, limit=6):
-    """Owner's friends by name — subquery, no full id set in Python."""
+def accepted_friends(profile: SocialProfile, limit=None):
+    """Owner's friends by name (unsliced QS — chain .exclude/.filter, then slice)."""
     pid = profile.id
     out = Friendship.objects.filter(status="accepted", user_id=pid).values("friend_id")
     inn = Friendship.objects.filter(status="accepted", friend_id=pid).values("user_id")
-    return SocialProfile.objects.filter(Q(id__in=out) | Q(id__in=inn)).order_by("name")[:limit]
+    qs = SocialProfile.objects.filter(Q(id__in=out) | Q(id__in=inn)).order_by("name")
+    return qs[:limit] if limit is not None else qs
 
 
 def get_profile(pk: int) -> SocialProfile:

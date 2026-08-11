@@ -93,7 +93,7 @@ def page_ctx(request, group, me):
     if is_member and me:
         member_ids = CommunityMember.objects.filter(community=group).values("social_user_id")
         ctx["invite_friends"] = list(
-            accepted_friends(me, limit=40).exclude(id__in=member_ids).defer("looking_for", "interested_in", "languages")[:12]
+            accepted_friends(me).exclude(id__in=member_ids).defer("looking_for", "interested_in", "languages")[:12]
         )
         ctx["album_photos"] = list(
             Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]

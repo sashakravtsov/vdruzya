@@ -96,7 +96,7 @@ def friend_tiles(me, profile, *, can_see: bool, relation, limit=6, prefer_mutual
         if mutuals:
             return mutuals, True
     if can_see:
-        return list(accepted_friends(profile, limit)), False
+        return list(accepted_friends(profile)[:limit]), False
     return [], False
 
 

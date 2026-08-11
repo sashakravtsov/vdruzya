@@ -164,7 +164,7 @@ class ProfileForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             from apps.social.services import accepted_friends
             if "relationship_with" in self.fields:
-                qs = accepted_friends(self.instance, 200)
+                qs = accepted_friends(self.instance)
                 cur = self.instance.relationship_with_id
                 if cur:
                     qs = SocialProfile.objects.filter(Q(pk__in=qs) | Q(pk=cur)).order_by("name")
