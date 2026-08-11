@@ -34,10 +34,10 @@ def require_member(me, conversation_id) -> Conversation:
 
 
 def peer(conv: Conversation, me) -> SocialProfile | None:
-    others = [m.social_user for m in conv.members.all() if m.social_user_id != me.id]
-    if conv.community_id or len(others) != 1:
+    peeps = others(conv, me)
+    if conv.community_id or len(peeps) != 1:
         return None
-    return others[0]
+    return peeps[0]
 
 
 def others(conv: Conversation, me) -> list[SocialProfile]:
@@ -56,7 +56,12 @@ def label(conv: Conversation, me) -> str:
 
 
 def mark_read(me, conv: Conversation):
-    ConversationMember.objects.filter(conversation=conv, social_user=me).update(last_read_at=now())
+    t = now()
+    ConversationMember.objects.filter(conversation=conv, social_user=me).update(last_read_at=t)
+    Message.objects.filter(conversation=conv, read_at__isnull=True).exclude(social_user=me).update(read_at=t)
+    Notification.objects.filter(
+        social_user=me, type="message", seen=False, url=f"/messenger?c={conv.id}",
+    ).update(seen=True)
     cache.delete(f"nav:{me.id}")
 
 
@@ -78,6 +83,17 @@ def leave(me, conv: Conversation):
     cache.delete(f"nav:{me.id}")
 
 
+def leave_many(me, conversation_ids: list[int]) -> int:
+    n = 0
+    for cid in conversation_ids:
+        if is_member(me, cid):
+            ConversationMember.objects.filter(conversation_id=cid, social_user=me).delete()
+            n += 1
+    if n:
+        cache.delete(f"nav:{me.id}")
+    return n
+
+
 def _invalidate_members(conv_id):
     for pid in ConversationMember.objects.filter(conversation_id=conv_id).values_list("social_user_id", flat=True):
         cache.delete(f"nav:{pid}")
@@ -95,7 +111,24 @@ def _revive_dm(conv: Conversation, me):
         ConversationMember.objects.create(conversation=conv, social_user_id=pid)
 
 
-def inbox(me, limit=40, q="", unread_only=False, sent_only=False):
+def _snippet(c, me) -> str:
+    text = (c.last_body or "").strip()
+    if not text and c.last_attach:
+        text = "[фото]"
+    elif c.last_type == "sticker" and text:
+        text = f"[стикер] {text}"
+    text = text[:80]
+    if not text:
+        return ""
+    names = {m.social_user_id: m.social_user.name for m in c.members.all()}
+    if c.last_from_id == me.id:
+        who = "Вы"
+    else:
+        who = names.get(c.last_from_id) or ""
+    return f"{who}: {text}" if who else text
+
+
+def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     qs = (
         Conversation.objects.filter(members__social_user=me)
@@ -116,7 +149,8 @@ def inbox(me, limit=40, q="", unread_only=False, sent_only=False):
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(members__social_user__name__icontains=q)).distinct()
 
-    rows = list(qs[: limit * 3 if (q or unread_only or sent_only) else limit])
+    fetch = max(limit + offset, limit) * (3 if (q or unread_only or sent_only) else 1)
+    rows = list(qs[: fetch + 1])
     my_read = {
         row.conversation_id: row.last_read_at
         for row in ConversationMember.objects.filter(social_user=me, conversation_id__in=[c.id for c in rows])
@@ -125,11 +159,7 @@ def inbox(me, limit=40, q="", unread_only=False, sent_only=False):
     for c in rows:
         c.display_name = label(c, me)
         c.peer = peer(c, me)
-        c.snippet = (c.last_body or "")[:80]
-        if not c.snippet and c.last_attach:
-            c.snippet = "[фото]"
-        elif c.last_type == "sticker" and c.snippet:
-            c.snippet = f"[стикер] {c.snippet}"
+        c.snippet = _snippet(c, me)
         read_at = my_read.get(c.id)
         c.unread = bool(
             c.last_from_id and c.last_from_id != me.id and c.last_at
@@ -140,24 +170,26 @@ def inbox(me, limit=40, q="", unread_only=False, sent_only=False):
         if sent_only and c.last_from_id != me.id:
             continue
         out.append(c)
-        if len(out) >= limit:
-            break
-    return out
+    page = out[offset: offset + limit]
+    return page, len(out) > offset + limit
 
 
-def thread(conv: Conversation, before_id=None, limit=50):
-    qs = (
+def _msg_qs(conv):
+    return (
         Message.objects.filter(conversation=conv)
         .select_related("social_user", "reply_to", "reply_to__social_user")
     )
-    if before_id:
-        bid = int(before_id)
-        older = list(qs.filter(id__lt=bid).order_by("-id")[:limit])
-        start = older[-1].id if older else bid
-        rows = list(qs.filter(id__gte=start).order_by("id")[:500])
-        has_older = bool(older) and Message.objects.filter(conversation=conv, id__lt=start).exists()
-        return rows, has_older
-    rows = list(qs.order_by("-id")[:limit])
+
+
+def thread(conv: Conversation, limit=50):
+    rows = list(_msg_qs(conv).order_by("-id")[:limit])
+    rows.reverse()
+    has_older = bool(rows) and Message.objects.filter(conversation=conv, id__lt=rows[0].id).exists()
+    return rows, has_older
+
+
+def older(conv: Conversation, before_id, limit=40):
+    rows = list(_msg_qs(conv).filter(id__lt=int(before_id)).order_by("-id")[:limit])
     rows.reverse()
     has_older = bool(rows) and Message.objects.filter(conversation=conv, id__lt=rows[0].id).exists()
     return rows, has_older
@@ -207,10 +239,7 @@ def dm_find_or_create(me, other: SocialProfile) -> Conversation:
 
 def start_thread(me, recipients: list[SocialProfile], subject="") -> Conversation | None:
     """Classic compose: 1 friend → DM; several → group thread with optional subject."""
-    ok = []
-    for other in recipients:
-        if can_dm(me, other) is None:
-            ok.append(other)
+    ok = [other for other in recipients if can_dm(me, other) is None]
     if not ok:
         return None
     if len(ok) == 1:
@@ -272,9 +301,12 @@ def _save_attach(upload):
 def post_message(
     me, conv: Conversation, body: str = "", *,
     message_type="text", sticker_id=None, reply_to_id=None, upload=None,
+    copy_from: Message | None = None,
 ) -> Message:
     body = (body or "").strip()
     path, aname, amime = _save_attach(upload)
+    if copy_from and copy_from.attachment_path and not path:
+        path, aname, amime = copy_from.attachment_path, copy_from.attachment_name, copy_from.attachment_mime
     if not body and not path and message_type == "text":
         raise ValueError("empty")
     reply = None
@@ -305,6 +337,19 @@ def post_sticker(me, conv: Conversation, sticker: Sticker) -> Message:
     return post_message(me, conv, sticker.phrase or sticker.title, message_type="sticker", sticker_id=sticker.id)
 
 
+def forward_message(me, message_id, other: SocialProfile) -> tuple[Message, Conversation]:
+    src = get_object_or_404(Message.objects.select_related("social_user"), pk=message_id)
+    require_member(me, src.conversation_id)
+    err = can_dm(me, other)
+    if err:
+        raise PermissionError(err)
+    conv = dm_find_or_create(me, other)
+    quote = (src.body or "").strip() or ("[фото]" if src.attachment_path else "")
+    body = f"Переслано от {src.social_user.name}:\n{quote}"[:4000]
+    m = post_message(me, conv, body, copy_from=src if src.attachment_path else None)
+    return m, conv
+
+
 def delete_message(me, message_id) -> int:
     m = get_object_or_404(Message, pk=message_id)
     require_member(me, m.conversation_id)
@@ -330,6 +375,8 @@ def ws_payload(m: Message) -> dict:
         "reply_to_id": reply.id if reply else None,
         "reply_name": reply.social_user.name if reply else "",
         "reply_body": (reply.body or "")[:80] if reply else "",
+        "created_at": m.created_at.strftime("%d.%m.%Y %H:%M") if m.created_at else "",
+        "read_at": bool(m.read_at),
     }
 
 

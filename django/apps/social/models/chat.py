@@ -7,6 +7,7 @@ class Conversation(models.Model):
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255, null=True, blank=True)
     community_id = models.BigIntegerField(null=True, blank=True)
+    community_peer_id = models.BigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

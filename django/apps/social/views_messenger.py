@@ -5,7 +5,7 @@ from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
@@ -23,6 +23,11 @@ def _conv(me, conversation_id):
     return ch.require_member(me, conversation_id)
 
 
+def _compose_form(friends, data=None, files=None, to=None):
+    initial = {"to": [str(to)]} if to else None
+    return ComposeMessageForm(friends, data, files, initial=initial)
+
+
 @login_required
 @never_cache
 def messenger(request):
@@ -34,8 +39,16 @@ def messenger(request):
     folder = (request.GET.get("folder") or "inbox").strip()
     unread_only = request.GET.get("unread") == "1" or folder == "unread"
     sent_only = folder == "sent"
+    try:
+        page = max(1, int(request.GET.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    limit, offset = 40, (page - 1) * 40
     compose = request.GET.get("compose") or request.GET.get("new")
-    conversations = ch.inbox(me, q=q, unread_only=unread_only, sent_only=sent_only)
+    to_id = request.GET.get("to")
+    conversations, has_more = ch.inbox(
+        me, limit=limit, offset=offset, q=q, unread_only=unread_only, sent_only=sent_only,
+    )
 
     active = None
     active_id = request.GET.get("c")
@@ -53,11 +66,7 @@ def messenger(request):
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
-        before = request.GET.get("before")
-        try:
-            chat_messages, has_older = ch.thread(active, before_id=before)
-        except (TypeError, ValueError):
-            chat_messages, has_older = ch.thread(active)
+        chat_messages, has_older = ch.thread(active)
         ch.mark_read(me, active)
         for c in conversations:
             if c.id == active.id:
@@ -68,6 +77,9 @@ def messenger(request):
     friends = list(friends_of(me, limit=200))
     reply_to = request.GET.get("reply")
     form = MessageForm(initial={"reply_to": reply_to} if reply_to else None)
+    preselect = None
+    if to_id and str(to_id).isdigit():
+        preselect = int(to_id)
     return render(
         request,
         "social/messenger.html",
@@ -79,17 +91,37 @@ def messenger(request):
             "has_older": has_older,
             "me": me,
             "form": form,
-            "compose_form": ComposeMessageForm(friends),
-            "compose_mode": bool(compose),
+            "compose_form": _compose_form(friends, to=preselect),
+            "compose_mode": bool(compose) or (bool(preselect) and not active_id),
             "friends": friends,
             "q": q,
             "folder": "unread" if unread_only else ("sent" if sent_only else "inbox"),
+            "page": page,
+            "has_more": has_more,
             "stickers": (
                 list(Sticker.objects.filter(is_active=True).order_by("sort_order")[:24])
                 if active else []
             ),
         },
     )
+
+
+@login_required
+@require_GET
+@never_cache
+def messages_older(request, conversation_id):
+    me = _me(request)
+    if not me:
+        return JsonResponse({"error": "auth"}, status=401)
+    try:
+        conv = _conv(me, conversation_id)
+        rows, has_older = ch.older(conv, request.GET.get("before"))
+    except (Http404, TypeError, ValueError):
+        return JsonResponse({"error": "gone"}, status=404)
+    return JsonResponse({
+        "has_older": has_older,
+        "messages": [ch.ws_payload(m) for m in rows],
+    })
 
 
 @login_required
@@ -172,7 +204,7 @@ def messenger_compose(request):
     if not me:
         return redirect("messenger")
     friends = list(friends_of(me, limit=200))
-    form = ComposeMessageForm(friends, request.POST, request.FILES)
+    form = _compose_form(friends, request.POST, request.FILES)
     if not form.is_valid():
         messages.error(request, "Выберите друга и напишите сообщение.")
         return redirect("/messenger?compose=1")
@@ -212,6 +244,25 @@ def messenger_leave(request, conversation_id):
 @login_required
 @require_POST
 @transaction.atomic
+def messenger_archive(request):
+    me = _me(request)
+    if not me:
+        return redirect("messenger")
+    ids = []
+    for x in request.POST.getlist("ids"):
+        try:
+            ids.append(int(x))
+        except (TypeError, ValueError):
+            pass
+    n = ch.leave_many(me, ids)
+    if n:
+        messages.info(request, f"Убрано диалогов: {n}.")
+    return redirect("messenger")
+
+
+@login_required
+@require_POST
+@transaction.atomic
 def messenger_unread(request, conversation_id):
     me = _me(request)
     if not me:
@@ -222,6 +273,28 @@ def messenger_unread(request, conversation_id):
         return redirect("messenger")
     ch.mark_unread(me, conv)
     return redirect("messenger")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+@throttle("msg", 20, 60)
+def message_forward(request, message_id):
+    me = _me(request)
+    if not me:
+        return redirect("messenger")
+    other = get_object_or_404(SocialProfile, pk=request.POST.get("to"))
+    try:
+        _m, conv = ch.forward_message(me, message_id, other)
+        ch.after_send(_m)
+    except Http404:
+        messages.error(request, "Сообщение недоступно.")
+        return redirect("messenger")
+    except PermissionError as e:
+        messages.error(request, str(e) or "Нельзя переслать.")
+        return redirect(request.POST.get("next") or "messenger")
+    messages.success(request, "Сообщение переслано.")
+    return redirect(f"/messenger?c={conv.id}")
 
 
 @login_required

@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load static vd %}
 {% block title %}Сообщения — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="messages-page">
@@ -25,25 +25,39 @@
                     ·
                     <a href="{% url 'messenger' %}?folder=unread{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'unread' %} class="is-on"{% endif %}>непрочитанные</a>
                 </p>
+                <form method="post" action="{% url 'messenger.archive' %}" id="inbox-bulk">{% csrf_token %}
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
                     <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
+                        <td class="msg-check"><input type="checkbox" name="ids" value="{{ c.id }}" aria-label="Выбрать диалог"></td>
                         <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<span class="avatar-fallback group-mark" style="width:32px;height:32px;font-size:12px;display:grid;place-items:center;background:#3B5998;color:#fff">Г</span>{% endif %}</td>
                         <td>
                             <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
                                 <span class="msg-name">{{ c.display_name }}</span>
-                                {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:48 }}</span>{% endif %}
-                                {% if c.last_at %}<span class="msg-when muted">{{ c.last_at|timesince }} назад</span>{% endif %}
+                                {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:52 }}</span>{% endif %}
+                                {% if c.last_at %}<span class="msg-when muted">{{ c.last_at|date:"j E, H:i" }}</span>{% endif %}
                             </a>
                         </td>
                     </tr></table>
                 </div>
                 {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет диалогов.{% endif %}</p>{% endfor %}
+                {% if conversations %}
+                <p class="msg-bulk">
+                    <input type="submit" class="inputbutton" value="Убрать выбранные">
+                </p>
+                {% endif %}
+                </form>
+                {% if has_more or page > 1 %}
+                <p class="msg-pager muted">
+                    {% if page > 1 %}<a href="?page={{ page|add:'-1' }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← новее</a>{% endif %}
+                    {% if has_more %}{% if page > 1 %} · {% endif %}<a href="?page={{ page|add:1 }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">старее →</a>{% endif %}
+                </p>
+                {% endif %}
             </div>
         </div>
 
         <div class="messages-thread profile-box">
-            {% if compose_mode or compose_form and not active %}
+            {% if compose_mode %}
             <h4>Новое сообщение</h4>
             <div class="profile-box-body">
                 {% if friends %}
@@ -100,20 +114,31 @@
                 </p>
                 {% endif %}
                 {% if has_older %}
-                <p class="chat-older"><a href="?c={{ active.id }}&amp;before={{ chat_messages.0.id }}">← более ранние сообщения</a></p>
+                <p class="chat-older"><a href="#" id="chat-older">← более ранние сообщения</a></p>
                 {% endif %}
-                <div id="chat-log" class="chat-log" data-me="{{ me.id }}">
+                <div id="chat-log" class="chat-log" data-me="{{ me.id }}" data-cid="{{ active.id }}">
                     {% for m in chat_messages %}
                     <div class="chat-line{% if m.social_user_id == me.id %} is-mine{% endif %}" data-id="{{ m.id }}">
                         <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
-                        {% if m.created_at %}<span class="muted chat-time"> · {{ m.created_at|timesince }} назад</span>{% endif %}
-                        <a class="linkish muted msg-reply" href="?c={{ active.id }}&amp;reply={{ m.id }}#chat-form" data-reply="{{ m.id }}" data-name="{{ m.social_user.name }}" data-body="{{ m.body|truncatechars:60 }}">ответить</a>
+                        {% if m.created_at %}<span class="muted chat-time"> · {{ m.created_at|date:"j E, H:i" }}</span>{% endif %}
+                        <a class="linkish muted msg-reply" href="#chat-form" data-reply="{{ m.id }}" data-name="{{ m.social_user.name }}" data-body="{{ m.body|truncatechars:60 }}">ответить</a>
+                        <a class="linkish muted msg-fwd-toggle" href="#">переслать</a>
                         {% if m.social_user_id == me.id %}
                         <form method="post" action="{% url 'messages.delete' m.id %}" class="inline msg-del" data-ajax="1">{% csrf_token %}
                             <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
                             <button type="submit" class="linkish muted" title="Удалить">×</button>
                         </form>
                         {% endif %}
+                        <div class="msg-fwd-box" style="display:none">
+                            <form method="post" action="{% url 'messages.forward' m.id %}" class="inline">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'messenger' %}?c={{ active.id }}">
+                                <select name="to" class="inputtext" required>
+                                    <option value="">Другу…</option>
+                                    {% for f in friends %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+                                </select>
+                                <input type="submit" class="inputbutton" value="OK">
+                            </form>
+                        </div>
                         {% if m.reply_to %}
                         <div class="chat-quote muted">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatechars:80 }}</div>
                         {% endif %}
@@ -123,6 +148,7 @@
                             {% elif m.body and m.body != '[фото]' %}{{ m.body|linebreaksbr }}{% endif %}
                             {% if m.attachment_url %}<p><img src="{{ m.attachment_url }}" alt="" class="chat-photo"></p>{% endif %}
                         </div>
+                        {% if m.social_user_id == me.id and m.read_at %}<div class="muted chat-seen">прочитано</div>{% endif %}
                     </div>
                     {% empty %}<p class="muted" id="chat-empty">Напишите первое сообщение.</p>{% endfor %}
                 </div>
@@ -147,143 +173,7 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-                <script>
-                (() => {
-                  const log = document.getElementById('chat-log');
-                  const form = document.getElementById('chat-form');
-                  if (!log || !form) return;
-                  const me = String(log.dataset.me || '');
-                  const csrf = (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
-                  const replyInput = form.querySelector('[name=reply_to]');
-                  const replyBanner = document.getElementById('reply-banner');
-                  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-                  const ws = new WebSocket(`${proto}://${location.host}/ws/messenger/{{ active.id }}`);
-
-                  const setReply = (id, name, body) => {
-                    if (!replyInput) return;
-                    replyInput.value = id || '';
-                    if (replyBanner) {
-                      replyBanner.style.display = id ? '' : 'none';
-                      if (id) replyBanner.firstChild.textContent = 'Ответ ' + (name || '') + ': ' + (body || '') + ' ';
-                    }
-                  };
-                  document.getElementById('reply-clear')?.addEventListener('click', () => setReply(''));
-                  document.querySelectorAll('.msg-reply').forEach((a) => {
-                    a.addEventListener('click', (e) => {
-                      e.preventDefault();
-                      setReply(a.dataset.reply, a.dataset.name, a.dataset.body);
-                      form.querySelector('textarea')?.focus();
-                    });
-                  });
-
-                  const append = (d) => {
-                    if (!d || !d.id || d.event === 'delete') return;
-                    if (log.querySelector('[data-id="' + d.id + '"]')) return;
-                    document.getElementById('chat-empty')?.remove();
-                    const line = document.createElement('div');
-                    line.className = 'chat-line' + (String(d.user_id) === me ? ' is-mine' : '');
-                    line.dataset.id = d.id;
-                    const a = document.createElement('a');
-                    a.href = '/profile/' + d.user_id;
-                    const b = document.createElement('b');
-                    b.textContent = d.name || '';
-                    a.appendChild(b);
-                    line.appendChild(a);
-                    if (d.reply_to_id) {
-                      const q = document.createElement('div');
-                      q.className = 'chat-quote muted';
-                      q.textContent = (d.reply_name || '') + ': ' + (d.reply_body || '');
-                      line.appendChild(q);
-                    }
-                    const body = document.createElement('div');
-                    body.className = 'chat-body';
-                    if (d.message_type === 'sticker') {
-                      const chip = document.createElement('span');
-                      chip.className = 'sticker-chip';
-                      chip.textContent = d.body || '';
-                      body.appendChild(chip);
-                    } else if (d.body && d.body !== '[фото]') {
-                      body.appendChild(document.createTextNode(d.body || ''));
-                    }
-                    if (d.attachment_url) {
-                      const img = document.createElement('img');
-                      img.src = d.attachment_url;
-                      img.className = 'chat-photo';
-                      img.alt = '';
-                      const p = document.createElement('p');
-                      p.appendChild(img);
-                      body.appendChild(p);
-                    }
-                    line.appendChild(body);
-                    log.appendChild(line);
-                    log.scrollTop = log.scrollHeight;
-                  };
-
-                  const removeLine = (id) => log.querySelector('[data-id="' + id + '"]')?.remove();
-
-                  ws.onmessage = (e) => {
-                    try {
-                      const d = JSON.parse(e.data);
-                      if (d.event === 'delete') removeLine(d.id);
-                      else append(d);
-                    } catch (_) {}
-                  };
-
-                  const postAjax = async (action, fd) => {
-                    if (!fd.has('csrfmiddlewaretoken')) fd.append('csrfmiddlewaretoken', csrf);
-                    const r = await fetch(action, {
-                      method: 'POST', body: fd,
-                      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                      credentials: 'same-origin',
-                    });
-                    if (!r.ok) return null;
-                    return r.json();
-                  };
-
-                  form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const fd = new FormData(form);
-                    const body = (fd.get('body') || '').toString().trim();
-                    const hasPhoto = form.querySelector('[name=photo]')?.files?.length;
-                    if (!body && !hasPhoto) return;
-                    const d = await postAjax(form.action, fd);
-                    if (d) {
-                      append(d);
-                      const ta = form.querySelector('textarea');
-                      if (ta) ta.value = '';
-                      const file = form.querySelector('[name=photo]');
-                      if (file) file.value = '';
-                      setReply('');
-                    } else form.submit();
-                  });
-
-                  form.querySelector('textarea')?.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      form.requestSubmit();
-                    }
-                  });
-
-                  document.querySelectorAll('.sticker-form').forEach((sf) => {
-                    sf.addEventListener('submit', async (e) => {
-                      e.preventDefault();
-                      const d = await postAjax(sf.action, new FormData(sf));
-                      if (d) append(d); else sf.submit();
-                    });
-                  });
-
-                  document.querySelectorAll('.msg-del').forEach((sf) => {
-                    sf.addEventListener('submit', async (e) => {
-                      e.preventDefault();
-                      const id = sf.closest('[data-id]')?.dataset.id;
-                      const d = await postAjax(sf.action, new FormData(sf));
-                      if (d && id) removeLine(id); else sf.submit();
-                    });
-                  });
-
-                  log.scrollTop = log.scrollHeight;
-                })();
-                </script>
+                <script src="{% static 'js/messenger.js' %}" defer></script>
                 {% else %}
                 <p class="muted">Выберите диалог слева или <a href="{% url 'messenger' %}?compose=1">напишите сообщение</a>.</p>
                 {% endif %}
