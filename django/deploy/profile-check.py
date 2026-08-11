@@ -44,7 +44,7 @@ def main():
     assert "<h4>Статус</h4>".encode() not in r.content
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
-    assert b'name="visibility"' in r.content
+    assert b'name="visibility"' not in r.content  # server sets from wall_view
     assert f'name="wall_to" value="{me.id}"'.encode() in r.content
     assert "Мне нравится".encode() not in r.content  # pre-2009 profile wall
     assert "Друзья в ".encode() not in r.content
@@ -58,8 +58,9 @@ def main():
 
     r = c.get(f"/profile/{me.id}?tab=photos", secure=True)
     assert r.status_code == 200
-    assert b'id="photos"' in r.content
-    assert b"profile-photo-thumbs" not in r.content  # thumbs stay on left rail
+    right = r.content.split(b'class="profile-right"', 1)[-1]
+    assert b'id="photos"' in right
+    assert b"profile-photo-thumbs" not in right  # thumbs stay on left rail
     ok("profile photos tab albums")
 
     r = c.get(f"/profile/{me.id}?tab=friends", secure=True)

@@ -190,6 +190,11 @@ class ProfileForm(forms.ModelForm):
         """Screen name (AIM / ICQ / nick) — classic Contact Info."""
         return (self.cleaned_data.get("telegram_username") or "").strip()[:255] or None
 
+    def clean_website(self):
+        from apps.social.templatetags.vd import external_url
+        raw = (self.cleaned_data.get("website") or "").strip()[:255]
+        return external_url(raw) or None
+
     def clean_slug(self):
         from apps.social.slugs import clean_short_slug
         s = clean_short_slug(self.cleaned_data["slug"])
@@ -227,7 +232,7 @@ class ProfileForm(forms.ModelForm):
 
 
 class PostForm(forms.ModelForm):
-    """Classic FB wall: text + photo."""
+    """Classic FB wall: text + photo. simple=True → profile wall (one photo, no visibility UI)."""
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
 
     class Meta:
@@ -238,9 +243,13 @@ class PostForm(forms.ModelForm):
             "visibility": forms.Select(choices=[("public", "Всем"), ("friends", "Друзьям"), ("private", "Только мне")]),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, simple=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.simple = simple
         self.fields["body"].required = False
+        if simple:
+            self.fields["photo"].widget = _file()
+            self.fields.pop("visibility", None)
 
     def clean(self):
         data = super().clean()

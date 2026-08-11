@@ -22,10 +22,11 @@ def profile_of(user) -> SocialProfile | None:
 
 
 def accepted_friends(profile: SocialProfile, limit=6):
-    ids = list(friend_ids(profile))[:limit]
-    if not ids:
-        return SocialProfile.objects.none()
-    return SocialProfile.objects.filter(id__in=ids).order_by("name")
+    """Owner's friends by name — subquery, no full id set in Python."""
+    pid = profile.id
+    out = Friendship.objects.filter(status="accepted", user_id=pid).values("friend_id")
+    inn = Friendship.objects.filter(status="accepted", friend_id=pid).values("user_id")
+    return SocialProfile.objects.filter(Q(id__in=out) | Q(id__in=inn)).order_by("name")[:limit]
 
 
 def get_profile(pk: int) -> SocialProfile:

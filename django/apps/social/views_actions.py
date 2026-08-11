@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.social.forms import CommentForm, PostForm, ProfileForm
+from apps.social.forms import CommentForm, PostForm
 from apps.social.models import (
     Comment,
     Post,
@@ -16,43 +16,18 @@ from apps.social.services import now as _now, profile_of
 
 @login_required
 def profile_edit(request):
-    from apps.social.forms import EducationForm, ExperienceForm
-    from apps.social.models import Education, Experience
-    from apps.social.profile_page import EDIT_SECTIONS
+    from apps.social.profile_page import build_edit_context
 
     me = profile_of(request.user)
-    section = (request.GET.get("section") or request.POST.get("section") or "basic").lower()
-    if section not in EDIT_SECTIONS:
-        section = "basic"
-    form = ProfileForm(request.POST or None, instance=me, section=section)
+    ctx = build_edit_context(me, request)
+    form = ctx["form"]
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
         obj.updated_at = _now()
         obj.save()
         messages.success(request, "Профиль сохранён.")
-        return redirect(f"{request.path}?section={section}")
-    edu_id, exp_id = request.GET.get("edu"), request.GET.get("exp")
-    edu_row = Education.objects.filter(pk=edu_id, social_user=me).first() if edu_id else None
-    exp_row = Experience.objects.filter(pk=exp_id, social_user=me).first() if exp_id else None
-    if edu_row:
-        section = "eduwork"
-    if exp_row:
-        section = "eduwork"
-    return render(
-        request,
-        "social/profile_edit.html",
-        {
-            "form": form,
-            "me": me,
-            "section": section,
-            "edu_form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
-            "exp_form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),
-            "edu_edit": edu_row,
-            "exp_edit": exp_row,
-            "education": Education.objects.filter(social_user=me)[:20],
-            "experiences": Experience.objects.filter(social_user=me)[:20],
-        },
-    )
+        return redirect(f"{request.path}?section={ctx['section']}")
+    return render(request, "social/profile_edit.html", ctx)
 
 
 @login_required
@@ -68,13 +43,16 @@ def post_create(request):
     @throttle("posts", 20, 60)
     def _go(req):
         me = profile_of(req.user)
-        form = PostForm(req.POST, req.FILES)
+        simple = bool(req.POST.get("wall_to"))
+        form = PostForm(req.POST, req.FILES, simple=simple)
         if not (form.is_valid() and me):
             return redirect(req.POST.get("next") or "feed")
         post = form.save(commit=False)
         post.social_user = me
         post.body = (post.body or "").strip()
         post.topic = "thought"
+        if "visibility" not in form.fields:
+            post.visibility = post.visibility or "friends"
         files = list(req.FILES.getlist("photo"))
         albums = req.POST.getlist("album_photos")
         wall_to = req.POST.get("wall_to")
