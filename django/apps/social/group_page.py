@@ -44,7 +44,7 @@ def posts_qs(group):
             ),
             "media",
         )
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .annotate(n_comments=Count("comments", distinct=True))
     )
 
 

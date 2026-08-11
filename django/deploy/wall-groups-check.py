@@ -77,15 +77,17 @@ def main():
         post(f"/posts/{wall.id}/comment", {"body": text, "next": "/feed"})
     r = get("/feed")
     body = r.content.decode()
-    if "ico-comment" not in body or "ico-thumb" not in body:
-        fail("classic action icons missing on feed")
+    if "ico-comment" not in body:
+        fail("comment icon missing on feed")
+    if "ico-thumb" in body or "Нравится" in body or "react-btn" in body:
+        fail("likes are not Facebook 2006")
     if "Показать предыдущие комментарии" not in body:
         fail("many-comments collapse missing")
     if "probe c0" not in body:
         fail("older comment should be in collapsed block")
     if "probe c2" not in body:
         fail("recent comment should be visible")
-    ok("icons + many-comments collapse")
+    ok("comment icons + many-comments collapse")
 
     # Profile wall: note attribution + compose
     r = get(f"/profile/{me.id}")
@@ -138,8 +140,12 @@ def main():
         fail("comment")
     if not post_row.comments.filter(body="probe c").exists():
         fail("group comment not saved")
+    from apps.social.models import CommunityPostReaction
+    before = CommunityPostReaction.objects.filter(post=post_row).count()
     post(f"/groups/{g.id}/posts/{post_row.id}/react", {})
-    ok("comment+react")
+    if CommunityPostReaction.objects.filter(post=post_row).count() != before:
+        fail("group react must be stubbed (no likes in 2006)")
+    ok("comment + react stub")
 
     r = post(f"/groups/{g.id}/posts", {"body": "probe topic django", "board": "discussion"})
     topic = CommunityPost.objects.filter(community=g, body="probe topic django").order_by("-id").first()

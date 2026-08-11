@@ -220,11 +220,6 @@
                 {% if can_view %}<a href="#wall">Стена</a><a href="#board">Доска обсуждений</a>{% endif %}
                 {% if user.is_authenticated %}
                     {% if is_member %}
-                        {% if group.messaging_enabled %}
-                        <form method="post" action="{% url 'groups.message' group.id %}">{% csrf_token %}
-                            <button type="submit">Написать группе</button>
-                        </form>
-                        {% endif %}
                         {% if is_admin %}<a href="{% url 'groups.edit' group.id %}">Редактировать группу{% if pending %} ({{ pending|length }}){% endif %}</a>{% endif %}
                         <form method="post" action="{% url 'groups.leave' group.id %}">{% csrf_token %}
                             <button type="submit">Выйти из группы</button>

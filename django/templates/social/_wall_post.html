@@ -41,17 +41,9 @@
                 </div>
                 <div class="actions">
                     {% if me %}
-                    {% if not wall_owner %}
-                    <form method="post" action="{% url 'posts.react' post.id %}" class="inline wall-act">{% csrf_token %}
-                        <input type="hidden" name="next" value="{{ next }}">
-                        <button type="submit" class="linkish"><span class="ico ico-thumb" aria-hidden="true"></span>Мне нравится</button>
-                    </form>
-                    <span class="muted">({{ post.likes|default:0 }})</span>
-                    ·
-                    {% endif %}
                     <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment" aria-hidden="true"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
                     {% else %}
-                    {% if not wall_owner %}<span class="ico ico-thumb" aria-hidden="true"></span> {{ post.likes|default:0 }} · {% endif %}<span class="ico ico-comment" aria-hidden="true"></span> {{ post.n_comments|default:0 }}
+                    <span class="ico ico-comment" aria-hidden="true"></span> {{ post.n_comments|default:0 }}
                     {% endif %}
                 </div>
                 {% comment_thread post.comments.all preview=comment_preview|default_if_none:2 kind="wall" expand=comment_expand %}

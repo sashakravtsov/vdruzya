@@ -131,27 +131,8 @@
             {% endif %}
 
             <div class="profile-box">
-                <h4>Люди, которых вы можете знать</h4>
+                <h4>Найти людей</h4>
                 <div class="profile-box-body">
-                    {% for row in suggestions %}
-                    <div class="classic-person-row classic-person-row-side">
-                        <a class="classic-person-name" href="{% url 'profile' row.user.id %}">
-                            {% avatar row.user 32 %}
-                            <span>
-                                <b>{{ row.user.name }}</b>
-                                {% if row.subtitle %}<span class="classic-person-sub">{{ row.subtitle }}</span>{% endif %}
-                            </span>
-                        </a>
-                        <span class="classic-inline-actions">
-                            <form method="post" action="{% url 'friends.request' row.user.id %}">{% csrf_token %}
-                                <input type="hidden" name="next" value="{% url 'friends' %}">
-                                <button type="submit" class="linkish">Добавить</button>
-                            </form>
-                        </span>
-                    </div>
-                    {% empty %}
-                    <p class="muted">Нет рекомендаций.</p>
-                    {% endfor %}
                     <p class="friends-side-foot">
                         <a href="{% url 'people' %}">Люди</a>
                         ·

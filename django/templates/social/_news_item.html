@@ -39,11 +39,7 @@
                 {% if item.post.media_url %}<p><img src="{{ item.post.media_url }}" alt="" class="news-photo"></p>{% endif %}
             </div>
             <div class="wall-actions muted">
-                <span class="ico ico-thumb" aria-hidden="true"></span> {{ item.post.likes|default:0 }}
-                · <span class="ico ico-comment" aria-hidden="true"></span> {{ item.post.n_comments|default:0 }}
-                <form method="post" action="{% url 'groups.react' item.group.id item.post.id %}" class="inline">{% csrf_token %}
-                    <button type="submit" class="linkish">Мне нравится</button>
-                </form>
+                <span class="ico ico-comment" aria-hidden="true"></span> {{ item.post.n_comments|default:0 }}
             </div>
         </div>
     {% elif item.kind == 'photos' %}

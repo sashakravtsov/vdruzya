@@ -33,7 +33,6 @@ def profile_edit(request):
 @login_required
 @require_POST
 def post_create(request):
-    from django.core.cache import cache
     from django.db.models import Q
     from apps.social.models import Friendship
     from apps.social.profile_page import can_write_wall
@@ -121,26 +120,9 @@ def comment_create(request, post_id):
 
 @login_required
 @require_POST
-@transaction.atomic
 def react(request, post_id):
-    from apps.social import notify
-    from apps.social.services import feed_queryset
-
-    me = profile_of(request.user)
-    post = get_object_or_404(feed_queryset(me), pk=post_id)
-    existing = Reaction.objects.filter(post=post, social_user=me, type="like").first()
-    if existing:
-        existing.delete()
-    elif me:
-        Reaction.objects.create(post=post, social_user=me, type="like", created_at=_now())
-        if post.social_user_id != me.id:
-            notify.push(
-                post.social_user_id,
-                title="Нравится",
-                body=f"{me.name} нравится ваша запись",
-                type="like",
-                url=f"/posts/{post.id}",
-            )
+    """FB 2006: likes arrived in 2009 — route kept as stub."""
+    get_object_or_404(Post, pk=post_id)
     return redirect(request.POST.get("next") or "feed")
 
 

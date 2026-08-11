@@ -302,9 +302,9 @@ class MessageForm(forms.ModelForm):
 
 
 class ComposeMessageForm(forms.Form):
-    to = forms.MultipleChoiceField(
+    to = forms.ChoiceField(
         choices=(),
-        widget=forms.SelectMultiple(attrs={"class": "inputtext", "size": "6", "style": "width:100%;max-width:420px"}),
+        widget=forms.Select(attrs={"class": "inputtext", "style": "width:100%;max-width:420px"}),
     )
     subject = forms.CharField(
         required=False, max_length=160, label="Тема",
@@ -318,12 +318,12 @@ class ComposeMessageForm(forms.Form):
 
     def __init__(self, friends, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["to"].choices = [(str(p.id), p.name) for p in friends]
+        self.fields["to"].choices = [("", "— выберите друга —")] + [(str(p.id), p.name) for p in friends]
 
     def clean(self):
         data = super().clean()
         if not data.get("to"):
-            self.add_error("to", "Выберите хотя бы одного друга.")
+            self.add_error("to", "Выберите друга.")
         if not (data.get("body") or "").strip() and not self.files.get("photo"):
             self.add_error("body", "Напишите текст или приложите фото.")
         return data
@@ -371,13 +371,12 @@ class GroupForm(forms.ModelForm):
         model = Community
         fields = (
             "name", "slug", "category", "short_description", "description",
-            "privacy", "join_mode", "posting_policy", "messaging_enabled",
+            "privacy", "join_mode", "posting_policy",
         )
         labels = {
             "slug": "Короткое имя",
             "short_description": "Последние новости",
             "posting_policy": "Кто пишет",
-            "messaging_enabled": "Сообщения группы",
         }
         widgets = {
             "name": _in(style="width:100%"),
@@ -389,7 +388,6 @@ class GroupForm(forms.ModelForm):
             "posting_policy": forms.Select(choices=[
                 ("members", "Только участники"), ("admins", "Только админы"), ("everyone", "Все (открытая стена)"),
             ]),
-            "messaging_enabled": forms.CheckboxInput(),
         }
 
     def __init__(self, *args, **kwargs):

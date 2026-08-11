@@ -16,7 +16,6 @@ CSRF_TRUSTED_ORIGINS = [u for u in [env("CSRF_TRUSTED_ORIGIN", default="")] if u
 
 INSTALLED_APPS = [
     "daphne",
-    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -202,13 +201,6 @@ LEGAL_BANK_NAME = env("LEGAL_BANK_NAME", default="").strip("'\"")
 LEGAL_BANK_ACCOUNT = env("LEGAL_BANK_ACCOUNT", default="").strip("'\"")
 LEGAL_BANK_BIK = env("LEGAL_BANK_BIK", default="").strip("'\"")
 LEGAL_BANK_CORR = env("LEGAL_BANK_CORR", default="").strip("'\"")
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [REDIS_URL]},
-    }
-}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_FAILURE_VIEW = "apps.social.views_meta.csrf_failure"

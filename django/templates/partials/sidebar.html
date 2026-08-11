@@ -17,7 +17,6 @@
         <a href="{% url 'events' %}"{% if nav == 'events' %} class="is-on"{% endif %}>Мои события</a>
         <a href="{% url 'messenger' %}"{% if nav == 'messenger' %} class="is-on"{% endif %}>Мои сообщения{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
         <a href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>
-        <a href="{% url 'activity' %}"{% if nav == 'activity' or nav == 'notifications' %} class="is-on"{% endif %}>Уведомления{% if unread_notifications %} ({{ unread_notifications }}){% endif %}</a>
         <a href="{% url 'account' %}"{% if nav == 'account' %} class="is-on"{% endif %}>Мой аккаунт</a>
     </div>
     {% endcache %}

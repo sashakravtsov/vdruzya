@@ -1,16 +1,16 @@
-"""Messenger FBVs — classic Facebook inbox."""
+"""Messenger FBVs — classic Facebook Inbox (HTTP, 1:1)."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST
 
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
 from apps.social.friendship import friends_of
-from apps.social.models import Conversation, ConversationMember, Message, SocialProfile
+from apps.social.models import SocialProfile
 from apps.social.services import profile_of
 from apps.social.throttle import throttle
 
@@ -22,7 +22,7 @@ def _me(request):
 
 
 def _compose_form(friends, data=None, files=None, to=None):
-    return ComposeMessageForm(friends, data, files, initial={"to": [str(to)]} if to else None)
+    return ComposeMessageForm(friends, data, files, initial={"to": str(to)} if to else None)
 
 
 def _int_ids(values):
@@ -57,6 +57,7 @@ def messenger(request):
     compose = request.GET.get("compose") or request.GET.get("new")
     to_id = request.GET.get("to")
     page = _page(request)
+    show_all = request.GET.get("all") == "1"
     conversations, has_more = ch.inbox(
         me, limit=40, offset=(page - 1) * 40, q=q,
         unread_only=folder == "unread",
@@ -73,13 +74,12 @@ def messenger(request):
         except (Http404, TypeError, ValueError):
             messages.error(request, "Диалог недоступен.")
             return redirect("messenger")
-    # Do not auto-open first thread — mark-unread would be undone by mark_read.
 
     if active:
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
-        chat_messages, has_older = ch.thread(active, q=tq)
+        chat_messages, has_older = ch.thread(active, q=tq, all_messages=show_all)
         is_archived = ch.is_archived(me, active)
         if not is_archived:
             ch.mark_read(me, active)
@@ -88,7 +88,6 @@ def messenger(request):
                 c.unread = False
 
     friends = list(friends_of(me, limit=200))
-    have = {p.id for p in members} | ({active.peer.id} if active and active.peer else set())
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
     return render(request, "social/messenger.html", {
         "conversations": conversations,
@@ -96,13 +95,13 @@ def messenger(request):
         "members": members,
         "chat_messages": chat_messages,
         "has_older": has_older,
+        "show_all": show_all,
         "is_archived": is_archived,
         "me": me,
         "form": MessageForm(),
         "compose_form": _compose_form(friends, to=preselect),
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
-        "invite_friends": [f for f in friends if f.id not in have],
         "q": q,
         "tq": tq,
         "folder": folder,
@@ -112,18 +111,10 @@ def messenger(request):
 
 
 @login_required
-@require_GET
 @never_cache
 def messages_older(request, conversation_id):
-    me = _me(request)
-    if not me:
-        return JsonResponse({"error": "auth"}, status=401)
-    try:
-        conv = ch.require_member(me, conversation_id)
-        rows, has_older = ch.older(conv, request.GET.get("before"), q=request.GET.get("tq") or "")
-    except (Http404, TypeError, ValueError):
-        return JsonResponse({"error": "gone"}, status=404)
-    return JsonResponse({"has_older": has_older, "messages": [ch.ws_payload(m) for m in rows]})
+    """HTTP fallback for «earlier messages» — full thread via ?all=1."""
+    return redirect(f"/messenger?c={int(conversation_id)}&all=1")
 
 
 @ch.member_post
@@ -132,22 +123,17 @@ def message_send(request, me, conv):
     form = MessageForm(request.POST, request.FILES)
     go = f"/messenger?c={conv.id}"
     if not form.is_valid():
-        if ch.wants_json(request):
-            return JsonResponse({"error": "empty"}, status=400)
         messages.error(request, "Напишите текст или приложите фото.")
         return redirect(go)
     try:
-        m = ch.post_message(
+        ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
         )
     except ValueError:
-        if ch.wants_json(request):
-            return JsonResponse({"error": "empty"}, status=400)
         messages.error(request, "Напишите текст или приложите фото.")
         return redirect(go)
-    ch.after_send(m)
-    return ch.json_message(m) if ch.wants_json(request) else redirect(go)
+    return redirect(go)
 
 
 @login_required
@@ -176,21 +162,25 @@ def messenger_compose(request):
     if not form.is_valid():
         messages.error(request, "Выберите друга и напишите сообщение.")
         return redirect("/messenger?compose=1")
-    recipients = list(SocialProfile.objects.filter(id__in=_int_ids(form.cleaned_data["to"])))
-    conv = ch.start_thread(me, recipients, subject=(form.cleaned_data.get("subject") or "").strip())
+    try:
+        tid = int(form.cleaned_data["to"])
+    except (TypeError, ValueError):
+        messages.error(request, "Выберите друга и напишите сообщение.")
+        return redirect("/messenger?compose=1")
+    other = SocialProfile.objects.filter(id=tid).first()
+    if not other:
+        messages.error(request, "Писать можно только друзьям.")
+        return redirect("/messenger?compose=1")
+    conv = ch.start_thread(me, [other], subject=(form.cleaned_data.get("subject") or "").strip())
     if not conv:
         messages.error(request, "Писать можно только друзьям.")
         return redirect("/messenger?compose=1")
-    had_msgs = Message.objects.filter(conversation=conv).exists()
     try:
-        ch.after_send(ch.post_message(
+        ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
-        ))
+        )
     except ValueError:
-        if not had_msgs and len(recipients) > 1:
-            ConversationMember.objects.filter(conversation=conv).delete()
-            Conversation.objects.filter(pk=conv.pk).delete()
         messages.error(request, "Напишите текст или приложите фото.")
         return redirect("/messenger?compose=1")
     return redirect(f"/messenger?c={conv.id}")
@@ -252,26 +242,13 @@ def messenger_unread(request, me, conv):
 
 @ch.member_post
 def messenger_title(request, me, conv):
-    ch.set_title(me, conv, request.POST.get("title") or "")
-    messages.success(request, "Тема сохранена.")
+    """FB 2006 Inbox — no group-chat rename UI."""
     return redirect(f"/messenger?c={conv.id}")
 
 
 @ch.member_post
-@throttle("msg", 20, 60)
 def messenger_invite(request, me, conv):
-    people = list(SocialProfile.objects.filter(
-        id__in=_int_ids(request.POST.getlist("ids") or request.POST.getlist("to")),
-    ))
-    try:
-        added = ch.add_members(me, conv, people)
-    except PermissionError as e:
-        messages.error(request, str(e))
-        return redirect(f"/messenger?c={conv.id}")
-    if added:
-        messages.success(request, f"Добавлено: {', '.join(p.name for p in added)}.")
-    else:
-        messages.info(request, "Некого добавить.")
+    """FB 2006 Inbox — no adding members to a thread."""
     return redirect(f"/messenger?c={conv.id}")
 
 
@@ -289,7 +266,4 @@ def message_delete(request, message_id):
     except PermissionError:
         messages.error(request, "Можно удалить только своё сообщение.")
         return redirect(request.POST.get("next") or "messenger")
-    transaction.on_commit(lambda: ch.broadcast_delete(cid, message_id))
-    if ch.wants_json(request):
-        return JsonResponse({"ok": True, "id": message_id, "event": "delete"})
     return redirect(request.POST.get("next") or f"/messenger?c={cid}")

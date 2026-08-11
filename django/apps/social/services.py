@@ -85,7 +85,7 @@ def feed_queryset(viewer=None):
             ),
             "media",
         )
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .annotate(n_comments=Count("comments", distinct=True))
     )
 
 
@@ -269,7 +269,7 @@ def _add_group_posts(items, blocked, member_ids, limit):
         CommunityPost.objects.select_related("social_user", "community")
         .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
         .prefetch_related("media")
-        .annotate(likes=Count("reactions", distinct=True), n_comments=Count("comments", distinct=True))
+        .annotate(n_comments=Count("comments", distinct=True))
         .filter(community_id__in=member_ids)
         .order_by("-id")
     )

@@ -58,7 +58,7 @@ def groups(request):
                 cover_color="#3B5998",
                 join_mode="request" if d["privacy"] == "closed" else "open",
                 posting_policy="members",
-                messaging_enabled=True, creator=me, created_at=_now(), updated_at=_now(),
+                messaging_enabled=False, creator=me, created_at=_now(), updated_at=_now(),
             )
             g.save()
             CommunityMember.objects.create(community=g, social_user=me, role="admin", created_at=_now())

@@ -1,19 +1,17 @@
-"""Classic Facebook inbox — DMs, group threads, attachments, broadcast."""
+"""Classic Facebook Inbox — 1:1 HTTP messages (FB 2006)."""
 from __future__ import annotations
 
 from datetime import timedelta
 from functools import wraps
 from pathlib import Path
 
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, F, OuterRef, Prefetch, Q, Subquery
-from django.http import Http404, JsonResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
@@ -185,30 +183,6 @@ def set_title(me, conv: Conversation, title: str):
     conv.title = title
 
 
-def add_members(me, conv: Conversation, profiles: list[SocialProfile]) -> list[SocialProfile]:
-    if conv.community_id:
-        raise PermissionError("Нельзя менять чат сообщества.")
-    added = []
-    have = set(
-        ConversationMember.objects.filter(conversation=conv).values_list("social_user_id", flat=True)
-    )
-    for p in profiles:
-        if p.id in have or can_dm(me, p) is not None:
-            continue
-        ConversationMember.objects.create(conversation=conv, social_user=p)
-        have.add(p.id)
-        added.append(p)
-    if added:
-        _invalidate_members(conv.id)
-        if not conv.title:
-            peeps = [m.social_user for m in
-                     ConversationMember.objects.filter(conversation=conv).select_related("social_user")
-                     if m.social_user_id != me.id]
-            title = ", ".join(p.name for p in peeps[:3]) + ("…" if len(peeps) > 3 else "")
-            set_title(me, conv, title)
-    return added
-
-
 def _invalidate_members(conv_id):
     for pid in ConversationMember.objects.filter(conversation_id=conv_id).values_list("social_user_id", flat=True):
         cache.delete(f"nav:{pid}")
@@ -320,15 +294,13 @@ def _msg_qs(conv, q=""):
     return qs
 
 
-def thread(conv: Conversation, limit=50, q=""):
-    rows = list(_msg_qs(conv, q).order_by("-id")[:limit])
-    rows.reverse()
-    has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
-    return rows, has_older
-
-
-def older(conv: Conversation, before_id, limit=40, q=""):
-    rows = list(_msg_qs(conv, q).filter(id__lt=int(before_id)).order_by("-id")[:limit])
+def thread(conv: Conversation, limit=50, q="", *, all_messages=False):
+    qs = _msg_qs(conv, q).order_by("-id")
+    if all_messages:
+        rows = list(qs)
+        rows.reverse()
+        return rows, False
+    rows = list(qs[:limit])
     rows.reverse()
     has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
     return rows, has_older
@@ -377,21 +349,13 @@ def dm_find_or_create(me, other: SocialProfile) -> Conversation:
 
 
 def start_thread(me, recipients: list[SocialProfile], subject="") -> Conversation | None:
+    """1:1 only — classic Inbox had no multi-recipient group chat."""
     ok = [other for other in recipients if can_dm(me, other) is None]
-    if not ok:
+    if len(ok) != 1:
         return None
-    if len(ok) == 1:
-        conv = dm_find_or_create(me, ok[0])
-        if subject and not conv.title:
-            set_title(me, conv, subject)
-        return conv
-    t = now()
-    title = (subject or ", ".join(p.name for p in ok[:3]) + ("…" if len(ok) > 3 else ""))[:160]
-    conv = Conversation.objects.create(title=title, created_at=t, updated_at=t)
-    ConversationMember.objects.bulk_create(
-        [ConversationMember(conversation=conv, social_user=me)]
-        + [ConversationMember(conversation=conv, social_user=p) for p in ok]
-    )
+    conv = dm_find_or_create(me, ok[0])
+    if subject and not conv.title:
+        set_title(me, conv, subject)
     return conv
 
 
@@ -474,44 +438,3 @@ def delete_message(me, message_id) -> int:
     return cid
 
 
-def ws_payload(m: Message) -> dict:
-    return {
-        "type": "chat.message",
-        "id": m.id,
-        "body": m.body,
-        "name": m.social_user.name,
-        "user_id": m.social_user_id,
-        "message_type": m.message_type or "text",
-        "attachment_url": m.attachment_url or "",
-        "created_at": m.created_at.strftime("%d.%m.%Y %H:%M") if m.created_at else "",
-    }
-
-
-def broadcast(m: Message):
-    layer = get_channel_layer()
-    if not layer:
-        return
-    async_to_sync(layer.group_send)(f"chat_{m.conversation_id}", ws_payload(m))
-
-
-def broadcast_delete(conversation_id, message_id):
-    layer = get_channel_layer()
-    if not layer:
-        return
-    async_to_sync(layer.group_send)(
-        f"chat_{conversation_id}",
-        {"type": "chat.message", "event": "delete", "id": message_id},
-    )
-
-
-def wants_json(request) -> bool:
-    accept = request.headers.get("Accept", "")
-    return "application/json" in accept or request.headers.get("X-Requested-With") == "XMLHttpRequest"
-
-
-def json_message(m: Message):
-    return JsonResponse(ws_payload(m))
-
-
-def after_send(m: Message):
-    transaction.on_commit(lambda: broadcast(m))

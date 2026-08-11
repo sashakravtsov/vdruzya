@@ -94,7 +94,6 @@ def friends_home(request):
             "friends": friends, "friends_total": total, "page_obj": page,
             "pending": _pending(me),
             "outgoing": list(fr.pending_from(me)[:40]) if me else [],
-            "suggestions": fr.suggestions(me, 12) if me else [],
             "blocked": list(fr.blocked_by(me)[:40]) if me else [],
         },
     )

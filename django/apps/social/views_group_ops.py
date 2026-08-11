@@ -8,8 +8,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from apps.social.forms import CommentBodyForm, CommunityPostForm, GroupForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPost,
-    CommunityPostComment, CommunityPostReaction, Conversation, ConversationMember,
-    Notification, SocialProfile,
+    CommunityPostComment, Notification, SocialProfile,
 )
 from apps.social.services import bump_news, can_manage_group_comment, is_group_admin, now, profile_of
 
@@ -86,30 +85,10 @@ def join_cancel(request, pk):
 
 @login_required
 @require_POST
-@transaction.atomic
 def group_message(request, pk):
-    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    if not me or not group.messaging_enabled:
-        messages.error(request, "Сообщения группы недоступны.")
-        return redirect("groups.show", pk=pk)
-    # Open groups: any logged-in user may start a thread (Laravel CommunityPolicy::message).
-    if group.privacy == "closed" and not _member(me, group):
-        messages.error(request, "Сообщения доступны участникам.")
-        return redirect("groups.show", pk=pk)
-    conv = Conversation.objects.filter(community_id=group.id).order_by("id").first()
-    if not conv:
-        t = now()
-        conv = Conversation.objects.create(title=group.name, community_id=group.id, created_at=t, updated_at=t)
-        ids = list(CommunityMember.objects.filter(community=group).values_list("social_user_id", flat=True)[:40])
-        if me.id not in ids:
-            ids.append(me.id)
-        ConversationMember.objects.bulk_create(
-            [ConversationMember(conversation=conv, social_user_id=i) for i in ids],
-            ignore_conflicts=True,
-        )
-    elif not ConversationMember.objects.filter(conversation=conv, social_user=me).exists():
-        ConversationMember.objects.create(conversation=conv, social_user=me)
-    return redirect(f"/messenger?c={conv.id}")
+    """FB 2006: no group chat — route kept as stub."""
+    get_object_or_404(Community, pk=pk)
+    return redirect("groups.show", pk=pk)
 
 
 @login_required
@@ -316,16 +295,9 @@ def group_comment(request, pk, post_id):
 
 @login_required
 @require_POST
-@transaction.atomic
 def group_react(request, pk, post_id):
-    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    post = get_object_or_404(CommunityPost, pk=post_id, community=group)
-    if me and _member(me, group):
-        row = CommunityPostReaction.objects.filter(post=post, social_user=me, type="like").first()
-        if row:
-            row.delete()
-        else:
-            CommunityPostReaction.objects.create(post=post, social_user=me, type="like", created_at=now())
+    """FB 2006: likes arrived in 2009 — route kept as stub."""
+    get_object_or_404(CommunityPost, pk=post_id, community_id=pk)
     return redirect("groups.show", pk=pk)
 
 
