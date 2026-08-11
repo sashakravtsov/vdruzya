@@ -56,7 +56,7 @@ def main():
     r = c.post("/profile/edit", {
         "name": me.name,
         "slug": me.slug,
-        "headline": me.headline or "на проверке профиля",
+        "headline": "__profile_status_check__",
         "bio": me.bio or "",
         "city": me.city or "Москва",
         "hometown": me.hometown or "",
@@ -100,7 +100,7 @@ def main():
     r = c.get(f"/profile/{me.id}", secure=True)
     assert other.name.encode() in r.content
     assert b"aim_classic" in r.content
-    assert b"\xd0\xbd\xd0\xb0 \xd0\xbf\xd1\x80\xd0\xbe\xd0\xb2\xd0\xb5\xd1\x80\xd0\xba\xd0\xb5 \xd0\xbf\xd1\x80\xd0\xbe\xd1\x84\xd0\xb8\xd0\xbb\xd1\x8f" in r.content or "на проверке профиля".encode() in r.content
+    assert b"__profile_status_check__" in r.content
     ok("partner + screen name + status on profile")
 
     list(wall_posts_for(me, 5, viewer=me))
