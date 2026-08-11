@@ -48,7 +48,7 @@
 
 {% if not limited and can_see_friends %}
 <div class="profile-box">
-    <h4>{% if friends_are_mutual %}Общие друзья{% else %}Друзья{% endif %} ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
+    <h4>{% if friends_are_mutual %}Общие друзья ({{ mutual }}){% else %}Друзья ({{ stats.friends }}){% endif %}{% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
     <div class="profile-box-body">
         {% if mutual and not friends_are_mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
         {% include "social/_profile_friend_grid.html" with friends=friends compact=1 %}

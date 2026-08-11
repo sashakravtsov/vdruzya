@@ -56,9 +56,15 @@ def main():
     assert "Мини-лента".encode() not in r.content
     ok("profile info tab")
 
+    r = c.get(f"/profile/{me.id}?tab=photos", secure=True)
+    assert r.status_code == 200
+    assert b'id="photos"' in r.content
+    assert b"profile-photo-thumbs" not in r.content  # thumbs stay on left rail
+    ok("profile photos tab albums")
+
     r = c.get(f"/profile/{me.id}?tab=friends", secure=True)
     assert r.status_code == 200
-    # left rail still compact (friend tiles appear, page loads)
+    assert "Друзья".encode() in r.content
     ok("profile friends tab")
 
     r = c.get("/feed", secure=True)
@@ -100,6 +106,15 @@ def main():
 
     other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
     assert other, "need a friend"
+
+    r = c.get(f"/profile/{other.id}", secure=True)
+    assert r.status_code == 200
+    r2 = c.get(f"/profile/{other.id}?tab=friends", secure=True)
+    assert r2.status_code == 200
+    right = r2.content.split(b'class="profile-right"', 1)[-1]
+    assert b"<h4>Друзья" in right
+    assert b"<h4>Общие друзья" not in right
+    ok("friend profile: friends tab lists friends")
 
     r = c.post("/profile/edit?section=basic", {
         "name": me.name,

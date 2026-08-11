@@ -3,7 +3,7 @@
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     {% if wall_to %}<input type="hidden" name="wall_to" value="{{ wall_to }}">{% endif %}
     {% if form.board %}{{ form.board }}{% elif board %}<input type="hidden" name="board" value="{{ board }}">{% endif %}
-    {% if simple and form.visibility %}<input type="hidden" name="visibility" value="friends">{% endif %}
+    {% if simple and form.visibility %}<input type="hidden" name="visibility" value="{{ wall_visibility|default:form.initial.visibility|default:'friends' }}">{% endif %}
     {{ form.body }}
     <div class="wallposter-tools">
         <span class="wallposter-go">
