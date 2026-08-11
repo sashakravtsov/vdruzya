@@ -27,20 +27,22 @@ if [[ -d "${ROOT}/app" ]]; then echo "FAIL legacy app/ dir still present"; FAIL=
 if [[ -d "${ROOT}/django/public/build" ]]; then echo "FAIL legacy /build assets still present"; FAIL=1; else echo "OK   no legacy /build"; fi
 code="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/static/css/classic.css")"
 if [[ "$code" == "200" ]]; then echo "OK   classic.css http"; else echo "FAIL classic.css (${code})"; FAIL=1; fi
-if curl -s "${BASE_URL}/static/css/classic.css" | rg -q -- '--tw-|@tailwind|tailwindcss'; then
+if curl -s "${BASE_URL}/static/css/classic.css" | grep -Eq -- '--tw-|@tailwind|tailwindcss'; then
   echo "FAIL classic.css still Tailwind/Vite"; FAIL=1
 else
   echo "OK   classic.css is classic"
 fi
-if curl -sI "${BASE_URL}/login" | rg -qi 'strict-transport-security'; then echo "OK   HSTS"
+if curl -sI "${BASE_URL}/login" | grep -qi 'strict-transport-security'; then echo "OK   HSTS"
 else echo "FAIL HSTS missing"; FAIL=1; fi
-if rg -l 'Illuminate|laravel-echo|window\.Laravel|broadcaster===.reverb|fb-ref/' "${ROOT}/django/public" "${ROOT}/django/staticfiles" -g '!*.gz' 2>/dev/null | head -5 | grep -q .; then
+if grep -RIlE 'Illuminate|laravel-echo|window\.Laravel|broadcaster===.reverb|fb-ref/' \
+    "${ROOT}/django/public" "${ROOT}/django/staticfiles" 2>/dev/null \
+    | grep -v '\.gz$' | head -5 | grep -q .; then
   echo "FAIL legacy realtime/static leftovers"; FAIL=1
 else
   echo "OK   no legacy realtime clients"
 fi
-H="$(curl -sL "${BASE_URL}/" | rg -o 'static/css/classic\.[a-f0-9]+\.css' | head -1 || true)"
-if [[ -n "$H" ]] && curl -s "${BASE_URL}/${H}" | rg -q 'pageheaderbg\.[a-f0-9]+\.png'; then
+H="$(curl -sL "${BASE_URL}/" | grep -oE 'static/css/classic\.[a-f0-9]+\.css' | head -1 || true)"
+if [[ -n "$H" ]] && curl -s "${BASE_URL}/${H}" | grep -Eq 'pageheaderbg\.[a-f0-9]+\.png'; then
   echo "OK   Manifest header image"
 else
   echo "FAIL Manifest header image (${H:-none})"; FAIL=1
@@ -85,10 +87,21 @@ if not (settings.MEDIA_URL or "").startswith("https://s3.vdruzya.ru"):
     print("FAIL MEDIA_URL", settings.MEDIA_URL); raise SystemExit(1)
 print("OK   MEDIA_URL CDN")
 PY
-if curl -sL "${BASE_URL}/profile/aleksandr-kravtsov" | rg -q 'https://s3\.vdruzya\.ru/avatars/'; then
+if curl -sL "${BASE_URL}/profile/aleksandr-kravtsov" | grep -Eq 'https://s3\.vdruzya\.ru/avatars/'; then
   echo "OK   profile HTML has S3 avatar"
 else
   echo "FAIL profile HTML missing S3 avatar"; FAIL=1
+fi
+# FB-2006: no live Messenger client
+if [[ -f "${ROOT}/django/static/js/messenger.js" ]] || [[ -f "${ROOT}/django/apps/social/consumers.py" ]]; then
+  echo "FAIL WS messenger leftovers present"; FAIL=1
+else
+  echo "OK   no WS messenger leftovers"
+fi
+if grep -q 'CHANNEL_LAYERS' "${ROOT}/django/config/settings.py" 2>/dev/null; then
+  echo "FAIL CHANNEL_LAYERS still configured"; FAIL=1
+else
+  echo "OK   no CHANNEL_LAYERS"
 fi
 echo "== Wall/Groups feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/wall-groups-check.py; then
