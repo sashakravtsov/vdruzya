@@ -119,7 +119,7 @@
             </h4>
             <div class="profile-box-body">
                 {% if active %}
-                {% if members %}
+                {% if members|length > 1 %}
                 <p class="msg-members muted">Участники:
                     {% for p in members %}<a href="{% url 'profile' p.id %}">{{ p.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
                 </p>
