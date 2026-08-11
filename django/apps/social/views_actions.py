@@ -44,8 +44,10 @@ def profile_edit(request):
 @require_POST
 def post_create(request):
     from django.core.cache import cache
+    from django.db.models import Q
+    from apps.social.models import Friendship
     from apps.social.polls import attach_post_poll
-    from apps.social.services import friend_ids
+    from apps.social.profile_page import can_write_wall
     from apps.social.throttle import throttle
     from apps.social.attach import attach_wall
 
@@ -65,8 +67,13 @@ def post_create(request):
         wall_to = req.POST.get("wall_to")
         if wall_to:
             target = get_object_or_404(SocialProfile, pk=wall_to)
-            if target.id != me.id and target.id not in friend_ids(me):
-                messages.error(req, "Писать на стену могут только друзья.")
+            rel = None
+            if target.id != me.id:
+                rel = Friendship.objects.filter(
+                    Q(user=me, friend=target) | Q(user=target, friend=me)
+                ).first()
+            if not can_write_wall(me, target, rel):
+                messages.error(req, "Писать на стену нельзя.")
                 return redirect(target)
             post.topic = f"wall:{target.id}"
             post.visibility = "friends"

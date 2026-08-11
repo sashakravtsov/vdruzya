@@ -14,6 +14,7 @@ from django.test import Client
 
 from apps.accounts.models import User
 from apps.social.models import Post, SocialProfile
+from apps.social.profile_page import can_view_full, can_write_wall
 from apps.social.services import can_manage_wall_post, friend_ids, now, profile_of, wall_posts_for
 
 
@@ -41,8 +42,11 @@ def main():
     assert r.status_code == 200
     assert "Основная информация".encode() in r.content
     assert "Контакты".encode() in r.content
+    assert "Приватность".encode() in r.content
+    assert "Интересуюсь".encode() in r.content
     assert "Работа".encode() in r.content
     assert "Ищу".encode() in r.content
+    assert "Игры".encode() not in r.content
     ok("profile edit sections")
 
     r = c.post("/profile/edit", {
@@ -65,19 +69,25 @@ def main():
         "education_note": me.education_note or "",
         "website": me.website or "",
         "phone": me.phone or "",
+        "show_phone": "on" if me.show_phone else "",
+        "show_email": "on" if me.show_email else "",
+        "profile_visibility": me.profile_visibility or "public",
+        "wall_write": me.wall_write or "friends",
+        "wall_view": me.wall_view or "public",
         "favorite_music": me.favorite_music or "",
         "favorite_movies": me.favorite_movies or "",
         "favorite_tv": me.favorite_tv or "",
         "favorite_books": me.favorite_books or "",
-        "favorite_games": me.favorite_games or "",
         "favorite_quotes": me.favorite_quotes or "",
         "languages_text": me.languages_label(),
         "looking_for_choices": ["friendship"],
+        "interested_in_choices": ["women"],
     }, secure=True)
     assert r.status_code in (301, 302)
     me.refresh_from_db()
     assert isinstance(me.looking_for, list) and "friendship" in me.looking_for
-    ok("profile save looking_for")
+    assert isinstance(me.interested_in, list) and "women" in me.interested_in
+    ok("profile save looking_for + interested_in")
 
     list(wall_posts_for(me, 5, viewer=me))
     ok("wall_posts_for visibility")
@@ -99,17 +109,35 @@ def main():
     stranger = SocialProfile.objects.exclude(id__in={me.id, other.id}).first()
     if stranger:
         assert not can_manage_wall_post(stranger, note)
+        assert not can_view_full(stranger, me, None) or (me.profile_visibility or "public") == "public"
+        assert not can_write_wall(stranger, me, None)
 
     r = c.get(f"/profile/{me.id}", secure=True)
     assert b"__profile_check_wall_note__" in r.content
     assert f'action="/posts/{note.id}/delete"'.encode() in r.content
     assert f'/posts/{note.id}/edit'.encode() not in r.content
-    ok("wall note visible; owner delete UI, no edit")
+    assert "Интересуюсь".encode() in r.content
+    ok("wall note + interested_in on profile")
 
     r = c.post(f"/posts/{note.id}/delete", {"next": f"/profile/{me.id}"}, secure=True)
     assert r.status_code in (301, 302)
     assert not Post.objects.filter(pk=note.id).exists()
     ok("wall owner deletes guest note")
+
+    # Limited profile: stranger sees gate when visibility=friends
+    prev = me.profile_visibility or "public"
+    me.profile_visibility = "friends"
+    me.save(update_fields=["profile_visibility"])
+    c2 = Client(HTTP_HOST="vdruzya.ru")
+    if stranger and stranger.user_id:
+        c2.force_login(User.objects.get(pk=stranger.user_id))
+        r = c2.get(f"/profile/{me.id}", secure=True)
+        assert r.status_code == 200
+        assert "Ограниченный профиль".encode() in r.content
+        assert "Мини-лента".encode() not in r.content
+        ok("limited profile for non-friend")
+    me.profile_visibility = prev
+    me.save(update_fields=["profile_visibility"])
 
     print("ALL profile probes passed")
     return 0

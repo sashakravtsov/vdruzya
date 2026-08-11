@@ -135,31 +135,49 @@ def wall_posts_for(profile, limit=20, viewer=None):
     return qs.order_by("-id")[:limit]
 
 
-def mini_feed(profile, limit=8):
-    """FB Mini-Feed: recent activity of one person."""
+def mini_feed(profile, limit=8, viewer=None):
+    """FB Mini-Feed: recent activity of one person (respects viewer)."""
     from apps.social.models import Photo
+    from apps.social.profile_page import can_view_wall, is_friend
+
+    own = bool(viewer and viewer.id == profile.id)
+    relation = None
+    if viewer and not own:
+        relation = Friendship.objects.filter(
+            Q(user=viewer, friend=profile) | Q(user=profile, friend=viewer)
+        ).first()
+    friends = own or is_friend(relation)
+    show_wall = can_view_wall(viewer, profile, relation)
 
     items = []
-    for p in Post.objects.filter(social_user=profile).order_by("-id")[:limit]:
-        kind = "wall" if (p.topic or "").startswith("wall:") else "post"
-        items.append({"kind": kind, "at": p.created_at, "post": p})
-    for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:
-        items.append({"kind": "joined", "at": m.created_at, "group": m.community})
-    for g in Community.objects.filter(creator=profile).order_by("-id")[:4]:
-        items.append({"kind": "created", "at": g.created_at, "group": g})
-    for ph in (
-        Photo.objects.filter(album__social_user=profile).exclude(path="")
-        .select_related("album").order_by("-id")[:limit]
-    ):
-        items.append({"kind": "photo", "at": ph.created_at, "photo": ph, "album": ph.album})
-    for f in (
-        Friendship.objects.filter(status="accepted")
-        .filter(Q(user=profile) | Q(friend=profile))
-        .select_related("user", "friend")
-        .order_by("-updated_at", "-id")[:limit]
-    ):
-        other = f.friend if f.user_id == profile.id else f.user
-        items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
+    if show_wall:
+        for p in Post.objects.filter(social_user=profile).order_by("-id")[:limit]:
+            if not own:
+                vis = p.visibility or "public"
+                if vis == "private":
+                    continue
+                if vis == "friends" and not friends:
+                    continue
+            kind = "wall" if (p.topic or "").startswith("wall:") else "post"
+            items.append({"kind": kind, "at": p.created_at, "post": p})
+    if friends or own:
+        for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:
+            items.append({"kind": "joined", "at": m.created_at, "group": m.community})
+        for g in Community.objects.filter(creator=profile).order_by("-id")[:4]:
+            items.append({"kind": "created", "at": g.created_at, "group": g})
+        for ph in (
+            Photo.objects.filter(album__social_user=profile).exclude(path="")
+            .select_related("album").order_by("-id")[:limit]
+        ):
+            items.append({"kind": "photo", "at": ph.created_at, "photo": ph, "album": ph.album})
+        for f in (
+            Friendship.objects.filter(status="accepted")
+            .filter(Q(user=profile) | Q(friend=profile))
+            .select_related("user", "friend")
+            .order_by("-updated_at", "-id")[:limit]
+        ):
+            other = f.friend if f.user_id == profile.id else f.user
+            items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     return items[:limit]
 

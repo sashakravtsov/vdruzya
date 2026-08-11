@@ -55,16 +55,24 @@ class ProfileForm(forms.ModelForm):
         ("friendship", "Дружба"), ("dating", "Знакомства"),
         ("relationship", "Отношения"), ("networking", "Нетворкинг"),
     ]
+    INTERESTED = [("men", "Мужчины"), ("women", "Женщины")]
     BIRTHDAY_VIS = [
         ("day_month", "День и месяц"), ("full", "Полная дата"),
         ("age", "Только возраст"), ("hide", "Скрыть"),
     ]
+    PROFILE_VIS = [("public", "Всем"), ("friends", "Только друзьям (limited)")]
+    WALL_WRITE = [("friends", "Друзья"), ("self", "Только я")]
+    WALL_VIEW = [("public", "Всем"), ("friends", "Друзья"), ("self", "Только я")]
     languages_text = forms.CharField(
         required=False, label="Языки",
         widget=_in(placeholder="русский, английский", style="width:100%"),
     )
     looking_for_choices = forms.MultipleChoiceField(
         required=False, label="Ищу", choices=LOOKING,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    interested_in_choices = forms.MultipleChoiceField(
+        required=False, label="Интересуюсь", choices=INTERESTED,
         widget=forms.CheckboxSelectMultiple,
     )
 
@@ -74,15 +82,18 @@ class ProfileForm(forms.ModelForm):
             "name", "slug", "headline", "bio", "city", "hometown", "country", "gender", "birthday",
             "birthday_visibility", "relationship_status", "political_views", "religious_views",
             "interests", "hobbies", "workplace", "education_note", "website", "phone", "show_phone",
-            "favorite_music", "favorite_movies", "favorite_tv", "favorite_books",
-            "favorite_games", "favorite_quotes",
+            "show_email", "profile_visibility", "wall_write", "wall_view",
+            "favorite_music", "favorite_movies", "favorite_tv", "favorite_books", "favorite_quotes",
         )
         labels = {
             "slug": "Короткое имя", "birthday": "День рождения",
             "birthday_visibility": "Показ дня рождения", "religious_views": "Религия",
             "education_note": "Образование", "workplace": "Место работы",
             "phone": "Телефон", "show_phone": "Показывать телефон",
-            "favorite_games": "Игры",
+            "show_email": "Показывать email",
+            "profile_visibility": "Кто видит профиль",
+            "wall_write": "Кто пишет на стену",
+            "wall_view": "Кто видит стену",
         }
         widgets = {
             "name": _in(), "slug": _in(placeholder="латиница, 5–32", autocomplete="off"),
@@ -94,7 +105,7 @@ class ProfileForm(forms.ModelForm):
             "religious_views": _in(style="width:100%"),
             "bio": _ta(4), "interests": _ta(2), "hobbies": _ta(2),
             "favorite_music": _ta(2), "favorite_movies": _ta(2), "favorite_tv": _ta(2),
-            "favorite_books": _ta(2), "favorite_games": _ta(2), "favorite_quotes": _ta(2),
+            "favorite_books": _ta(2), "favorite_quotes": _ta(2),
         }
 
     def __init__(self, *args, **kwargs):
@@ -112,11 +123,23 @@ class ProfileForm(forms.ModelForm):
             required=False, label="Показ дня рождения", choices=self.BIRTHDAY_VIS,
             widget=forms.Select(attrs={"class": "inputtext"}),
         )
+        for name, choices, label in (
+            ("profile_visibility", self.PROFILE_VIS, "Кто видит профиль"),
+            ("wall_write", self.WALL_WRITE, "Кто пишет на стену"),
+            ("wall_view", self.WALL_VIEW, "Кто видит стену"),
+        ):
+            self.fields[name] = forms.ChoiceField(
+                required=False, label=label, choices=choices,
+                widget=forms.Select(attrs={"class": "inputtext"}),
+            )
         if self.instance and self.instance.pk:
             self.fields["languages_text"].initial = self.instance.languages_label()
             raw = self.instance.looking_for
             if isinstance(raw, list):
                 self.fields["looking_for_choices"].initial = [str(x) for x in raw]
+            raw = self.instance.interested_in
+            if isinstance(raw, list):
+                self.fields["interested_in_choices"].initial = [str(x) for x in raw]
 
     def clean_slug(self):
         from apps.social.slugs import clean_short_slug
@@ -133,8 +156,14 @@ class ProfileForm(forms.ModelForm):
         raw = (self.cleaned_data.get("languages_text") or "").replace(";", ",")
         langs = [x.strip() for x in raw.split(",") if x.strip()]
         obj.languages = langs or None
-        looking = self.cleaned_data.get("looking_for_choices") or []
-        obj.looking_for = list(looking) or None
+        obj.looking_for = list(self.cleaned_data.get("looking_for_choices") or []) or None
+        obj.interested_in = list(self.cleaned_data.get("interested_in_choices") or []) or None
+        for f, default in (
+            ("profile_visibility", "public"),
+            ("wall_write", "friends"),
+            ("wall_view", "public"),
+        ):
+            setattr(obj, f, self.cleaned_data.get(f) or default)
         if commit:
             obj.save()
         return obj

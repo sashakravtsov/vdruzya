@@ -24,10 +24,15 @@ class SocialProfile(models.Model):
     district = models.CharField(max_length=120, null=True, blank=True)
     relationship_status = models.CharField(max_length=40, null=True, blank=True)
     looking_for = PgJSON(null=True, blank=True)
+    interested_in = PgJSON(null=True, blank=True)
     languages = PgJSON(null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
     phone = models.CharField(max_length=40, null=True, blank=True)
     show_phone = models.BooleanField(default=False)
+    show_email = models.BooleanField(default=False)
+    profile_visibility = models.CharField(max_length=20, default="public")
+    wall_write = models.CharField(max_length=20, default="friends")
+    wall_view = models.CharField(max_length=20, default="public")
     interests = models.TextField(null=True, blank=True)
     hobbies = models.TextField(null=True, blank=True)
     favorite_music = models.TextField(null=True, blank=True)
@@ -99,6 +104,13 @@ class SocialProfile(models.Model):
             "friendship": "Дружба", "dating": "Знакомства",
             "relationship": "Отношения", "networking": "Нетворкинг",
         }
+        return ", ".join(labels.get(str(x), str(x)) for x in raw)
+
+    def interested_in_label(self) -> str:
+        raw = self.interested_in
+        if not isinstance(raw, list) or not raw:
+            return ""
+        labels = {"men": "Мужчины", "women": "Женщины"}
         return ", ".join(labels.get(str(x), str(x)) for x in raw)
 
 class Friendship(models.Model):

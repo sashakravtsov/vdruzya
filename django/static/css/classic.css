@@ -925,6 +925,14 @@ button.linkish, .profile-box-body button.linkish {
 }
 .profile .profile-albums .album .date { color: gray; display: block; }
 .profile .profile-albums .album .album-title { color: #3B5998; font-weight: bold; }
+.profile .profile-photo-thumbs a { float: left; margin: 0 6px 6px 0; }
+.profile .profile-photo-thumbs img,
+.profile .profile-photo-thumbs .album-cover-fallback {
+  width: 75px; height: 75px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
+}
+.profile .profile-photo-thumbs .album-cover-fallback {
+  background: #3B5998; color: #fff; font: bold 20px/75px var(--font); text-align: center;
+}
 
 .profile .profilelinks { margin: 0; padding: 0 0 0 10px; list-style: disc; color: #3B5998; }
 .profile .profilelinks li { padding: 0 0 5px; }
