@@ -51,7 +51,6 @@ def post_create(request):
     from apps.social.services import friend_ids
     from apps.social.throttle import throttle
     from apps.social.attach import attach_wall
-    from apps.social.wall_meta import MOOD_KEYS, TOPIC_KEYS
 
     @throttle("posts", 20, 60)
     def _go(req):
@@ -62,15 +61,10 @@ def post_create(request):
         post = form.save(commit=False)
         post.social_user = me
         post.body = (post.body or "").strip()
+        post.topic = "thought"
         labels = [x.strip() for x in (form.cleaned_data.get("poll_options") or "").splitlines() if x.strip()]
         files = list(req.FILES.getlist("photo"))
         albums = req.POST.getlist("album_photos")
-        topic = form.cleaned_data.get("topic") or "thought"
-        post.topic = topic if topic in TOPIC_KEYS else "thought"
-        mood = form.cleaned_data.get("mood") or ""
-        post.mood = mood if mood in MOOD_KEYS else None
-        post.emoji = (form.cleaned_data.get("emoji") or "").strip()[:16] or None
-        post.sticker = (form.cleaned_data.get("sticker") or "").strip() or None
         wall_to = req.POST.get("wall_to")
         if wall_to:
             target = get_object_or_404(SocialProfile, pk=wall_to)
@@ -81,8 +75,8 @@ def post_create(request):
             post.visibility = "friends"
         if len(labels) >= 2:
             post.kind = "poll"
-        elif files or albums or post.sticker:
-            post.kind = "photo" if (files or albums) else "text"
+        elif files or albums:
+            post.kind = "photo"
         else:
             post.kind = "text"
         post.created_at = post.updated_at = _now()

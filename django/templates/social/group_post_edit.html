@@ -21,7 +21,6 @@
                                 <label><input type="radio" name="board" value="discussion" {% if post.topic != 'wall' %}checked{% endif %}> Доска</label>
                             </td>
                         </tr>
-                        <tr><td class="label">Настроение:</td><td>{{ form.mood }} {{ form.emoji }}</td></tr>
                         {% if is_admin %}
                         <tr>
                             <td class="label">От имени:</td>

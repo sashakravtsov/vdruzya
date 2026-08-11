@@ -15,7 +15,6 @@ def _ta(rows=3, **attrs):
 
 
 def _file(**attrs):
-    """Classic FB-era file picker — no drag-and-drop chrome."""
     return forms.FileInput(attrs={
         "class": "inputfile",
         "accept": "image/jpeg,image/png,image/gif,image/webp",
@@ -33,6 +32,13 @@ def _files(**attrs):
         "accept": "image/jpeg,image/png,image/gif,image/webp",
         **attrs,
     })
+
+
+def _has_media(form):
+    raw, files = form.data, form.files
+    photos = files.getlist("photo") if files and hasattr(files, "getlist") else []
+    albums = raw.getlist("album_photos") if hasattr(raw, "getlist") else []
+    return bool(photos or albums or (form.cleaned_data.get("poll_options") or "").strip())
 
 
 class ProfileForm(forms.ModelForm):
@@ -64,9 +70,6 @@ class ProfileForm(forms.ModelForm):
             "headline": _in(style="width:100%"), "city": _in(),
             "birthday": forms.DateInput(attrs={"class": "inputtext", "type": "date"}),
             "hometown": _in(), "country": _in(),
-            "gender": forms.Select(attrs={"class": "inputtext"}, choices=[]),
-            "relationship_status": forms.Select(attrs={"class": "inputtext"}, choices=[]),
-            "political_views": forms.Select(attrs={"class": "inputtext"}, choices=[]),
             "workplace": _in(style="width:100%"), "website": _in(style="width:100%"),
             "bio": _ta(4), "interests": _ta(2), "hobbies": _ta(2),
             "favorite_music": _ta(2), "favorite_movies": _ta(2), "favorite_tv": _ta(2),
@@ -108,44 +111,28 @@ class ProfileForm(forms.ModelForm):
 
 
 class PostForm(forms.ModelForm):
+    """Classic FB wall: text + photo + optional poll."""
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
     poll_options = forms.CharField(
         required=False, label="Опрос",
         widget=_ta(2, placeholder="Варианты с новой строки (от 2) — необязательно"),
     )
-    topic = forms.ChoiceField(required=False, label="Тема")
-    mood = forms.ChoiceField(required=False, label="Настроение")
-    emoji = forms.CharField(required=False, max_length=16, label="Эмодзи", widget=_in(style="width:60px"))
-    sticker = forms.ChoiceField(required=False, label="Стикер")
 
     class Meta:
         model = Post
-        fields = ("body", "visibility", "topic", "mood", "emoji", "sticker")
+        fields = ("body", "visibility")
         widgets = {
             "body": _ta(3, placeholder="Написать на стену…"),
             "visibility": forms.Select(choices=[("public", "Всем"), ("friends", "Друзьям"), ("private", "Только мне")]),
         }
 
     def __init__(self, *args, **kwargs):
-        from apps.social.models import Sticker
-        from apps.social.wall_meta import MOODS, TOPICS
         super().__init__(*args, **kwargs)
         self.fields["body"].required = False
-        self.fields["topic"].choices = TOPICS
-        self.fields["mood"].choices = MOODS
-        sticks = [("", "—")] + list(
-            Sticker.objects.filter(is_active=True).order_by("sort_order").values_list("slug", "title")[:24]
-        )
-        self.fields["sticker"].choices = sticks
 
     def clean(self):
         data = super().clean()
-        raw = self.data
-        files = self.files.getlist("photo") if self.files and hasattr(self.files, "getlist") else []
-        albums = raw.getlist("album_photos") if hasattr(raw, "getlist") else []
-        if not (data.get("body") or "").strip() and not data.get("photo") and not files and not albums and not (
-            data.get("poll_options") or ""
-        ).strip() and not data.get("sticker"):
+        if not (data.get("body") or "").strip() and not _has_media(self):
             self.add_error("body", "Напишите текст или выберите фото.")
         return data
 
@@ -253,48 +240,31 @@ class CommunityPostForm(forms.ModelForm):
         initial="discussion",
         widget=forms.HiddenInput(),
     )
-    mood = forms.ChoiceField(required=False, label="Настроение")
-    emoji = forms.CharField(required=False, max_length=16, label="Эмодзи", widget=_in(style="width:60px"))
 
     class Meta:
         model = CommunityPost
-        fields = ("body", "mood", "emoji")
-        widgets = {"body": _ta(3, placeholder="Написать…", required=False)}
+        fields = ("body",)
+        widgets = {"body": _ta(3, placeholder="Написать…")}
 
     def __init__(self, *args, **kwargs):
-        from apps.social.wall_meta import MOODS
         super().__init__(*args, **kwargs)
         self.fields["body"].required = False
-        self.fields["mood"].choices = MOODS
 
     def clean(self):
         data = super().clean()
-        raw = self.data
-        files = self.files.getlist("photo") if self.files and hasattr(self.files, "getlist") else []
-        if hasattr(raw, "getlist"):
-            albums = raw.getlist("album_photos")
-        else:
-            albums = raw.get("album_photos") or []
-            albums = albums if isinstance(albums, (list, tuple)) else [albums]
-        if not (data.get("body") or "").strip() and not data.get("photo") and not files and not albums and not (
-            data.get("poll_options") or ""
-        ).strip():
+        if not (data.get("body") or "").strip() and not _has_media(self):
             self.add_error("body", "Напишите текст или выберите фото.")
         return data
+
+
+class StatusForm(forms.Form):
+    headline = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%", placeholder="Что у вас нового?"))
 
 
 class GroupEventForm(forms.Form):
     title = forms.CharField(max_length=160, widget=_in(placeholder="Название события"))
     place = forms.CharField(max_length=160, widget=_in(placeholder="Место"))
     starts_at = forms.DateTimeField(widget=forms.DateTimeInput(attrs={"type": "datetime-local", "class": "inputtext"}))
-
-
-class GroupInviteForm(forms.Form):
-    friend_id = forms.IntegerField(widget=forms.HiddenInput)
-
-
-class StatusForm(forms.Form):
-    headline = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%", placeholder="Что у вас нового?"))
 
 
 class PasswordForm(forms.Form):

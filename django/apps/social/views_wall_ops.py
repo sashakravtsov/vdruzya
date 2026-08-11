@@ -15,7 +15,6 @@ from apps.social.services import feed_queryset, now, profile_of
 @require_http_methods(["GET", "POST"])
 def post_edit(request, post_id):
     from apps.social.attach import attach_wall
-    from apps.social.wall_meta import MOOD_KEYS, TOPIC_KEYS
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
     if not me or post.social_user_id != me.id:
@@ -25,15 +24,8 @@ def post_edit(request, post_id):
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
         obj.body = (obj.body or "").strip()
-        if not str(obj.topic or "").startswith("wall:"):
-            topic = form.cleaned_data.get("topic") or "thought"
-            obj.topic = topic if topic in TOPIC_KEYS else "thought"
-        mood = form.cleaned_data.get("mood") or ""
-        obj.mood = mood if mood in MOOD_KEYS else None
-        obj.emoji = (form.cleaned_data.get("emoji") or "").strip()[:16] or None
-        obj.sticker = (form.cleaned_data.get("sticker") or "").strip() or None
         obj.updated_at = now()
-        obj.save(update_fields=["body", "visibility", "topic", "mood", "emoji", "sticker", "updated_at"])
+        obj.save(update_fields=["body", "visibility", "updated_at"])
         path = attach_wall(obj, list(request.FILES.getlist("photo")), me, request.POST.getlist("album_photos"))
         if path and not obj.media_path:
             obj.media_path = path

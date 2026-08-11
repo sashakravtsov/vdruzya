@@ -3,7 +3,6 @@ from . import views
 from . import views_actions as act
 from . import views_browse as browse
 from . import views_group_ops as gops
-from . import views_legal as legal
 from . import views_meta as meta
 from . import views_albums as albums
 from . import views_friends as friends
@@ -91,15 +90,15 @@ urlpatterns = [
     path("friends/<int:pk>/remove", friends.friend_remove, name="friends.remove"),
     path("friends/<int:pk>/block", friends.friend_block, name="friends.block"),
     path("friends/<int:pk>/block/remove", friends.friend_unblock, name="friends.unblock"),
-    path("about", legal.about, name="about"),
-    path("terms", legal.terms, name="terms"),
-    path("privacy", legal.privacy, name="privacy"),
-    path("contacts", legal.contacts, name="contacts"),
-    path("payment-info", legal.payment, name="payment-info"),
-    path("security", legal.security, name="security"),
-    path("advertisers", legal.advertisers, name="advertisers"),
-    path("promo", legal.promo, name="promo"),
-    path("landing", legal.landing, name="landing"),
+    path("about", meta.about, name="about"),
+    path("terms", meta.terms, name="terms"),
+    path("privacy", meta.privacy, name="privacy"),
+    path("contacts", meta.contacts, name="contacts"),
+    path("payment-info", meta.payment, name="payment-info"),
+    path("security", meta.security, name="security"),
+    path("advertisers", meta.advertisers, name="advertisers"),
+    path("promo", meta.promo, name="promo"),
+    path("landing", meta.landing, name="landing"),
     path("sitemap.xml", meta.sitemap, name="sitemap"),
     path("robots.txt", meta.robots, name="robots"),
 ]

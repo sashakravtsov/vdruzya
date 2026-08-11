@@ -153,7 +153,6 @@ def group_comment_delete(request, pk, comment_id):
 @require_http_methods(["GET", "POST"])
 def group_post_edit(request, pk, post_id):
     from apps.social.attach import attach_group
-    from apps.social.wall_meta import MOOD_KEYS
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
     if not me or (post.social_user_id != me.id and not _admin(me, group)):
@@ -166,13 +165,10 @@ def group_post_edit(request, pk, post_id):
         board = form.cleaned_data.get("board")
         if board in ("wall", "discussion"):
             obj.topic = board
-        mood = form.cleaned_data.get("mood") or ""
-        obj.mood = mood if mood in MOOD_KEYS else None
-        obj.emoji = (form.cleaned_data.get("emoji") or "").strip()[:16] or None
         if _admin(me, group):
             obj.posted_as_community = bool(request.POST.get("as_community"))
         obj.updated_at = now()
-        obj.save(update_fields=["body", "topic", "mood", "emoji", "posted_as_community", "updated_at"])
+        obj.save(update_fields=["body", "topic", "posted_as_community", "updated_at"])
         path = attach_group(obj, list(request.FILES.getlist("photo")), me, request.POST.getlist("album_photos"))
         if path and not obj.media_path:
             obj.media_path = path
@@ -287,7 +283,6 @@ def group_post(request, pk):
     from apps.social.attach import attach_group
     from apps.social.polls import attach_group_poll
     from apps.social.throttle import throttle
-    from apps.social.wall_meta import MOOD_KEYS
 
     @throttle("gposts", 20, 60)
     def _go(req):
@@ -307,9 +302,6 @@ def group_post(request, pk):
         p.community, p.social_user = group, me
         p.topic = form.cleaned_data.get("board") or "discussion"
         p.posted_as_community = bool(is_admin and req.POST.get("as_community"))
-        mood = form.cleaned_data.get("mood") or ""
-        p.mood = mood if mood in MOOD_KEYS else None
-        p.emoji = (form.cleaned_data.get("emoji") or "").strip()[:16] or None
         labels = [x.strip() for x in (form.cleaned_data.get("poll_options") or "").splitlines() if x.strip()]
         files = list(req.FILES.getlist("photo"))
         albums = req.POST.getlist("album_photos")

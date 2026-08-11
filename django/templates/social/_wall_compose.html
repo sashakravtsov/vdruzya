@@ -1,4 +1,4 @@
-{# Classic FB wall poster — textarea + post; extras folded. #}
+{# Classic FB wall: text + photo + optional poll. #}
 <form method="post" action="{{ action }}" enctype="multipart/form-data" class="wallposter">{% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     {% if wall_to %}<input type="hidden" name="wall_to" value="{{ wall_to }}">{% endif %}
@@ -8,7 +8,7 @@
         <span class="wallposter-go">
             <input type="submit" class="inputsubmit" value="{{ submit|default:'Опубликовать' }}">
         </span>
-        {% if form.visibility and not wall_to or form.photo or show_as_community or form.topic or form.mood or form.poll_options or album_photos %}
+        {% if form.visibility and not wall_to or form.photo or show_as_community or form.poll_options or album_photos %}
         <details class="compose-more">
             <summary class="linkish">ещё</summary>
             {% if form.visibility and not wall_to %}
@@ -20,10 +20,6 @@
             {% if show_as_community %}
             <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
             {% endif %}
-            {% if form.topic %}<p class="wallposter-vis">Тема: {{ form.topic }}</p>{% endif %}
-            {% if form.mood %}<p class="wallposter-vis">Настроение: {{ form.mood }}</p>{% endif %}
-            {% if form.emoji %}<p class="wallposter-vis">Эмодзи: {{ form.emoji }}</p>{% endif %}
-            {% if form.sticker %}<p class="wallposter-vis">Стикер: {{ form.sticker }}</p>{% endif %}
             {% if form.poll_options %}{{ form.poll_options }}{% endif %}
             {% if album_photos %}
             <div class="album-pick">
