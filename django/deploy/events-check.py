@@ -138,7 +138,6 @@ def main():
 
         if friend:
             # friend going → feed story for me
-            from apps.social.models import EventAttendee
             t = now()
             EventAttendee.objects.update_or_create(
                 event=event, social_user=friend,
