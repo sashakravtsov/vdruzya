@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Уведомления — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="notifications-page">
+    <div id="header"><h1>Уведомления</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Недавние{% if items %}<a class="edit" href="{% url 'pokes' %}">подмигивания</a>{% endif %}</h4>
+            <div class="profile-box-body">
+                {% for n in items %}
+                <div class="classic-person-row{% if not n.seen %} is-unread{% endif %}">
+                    {% if n.actor %}
+                    <a class="classic-person-name" href="{{ n.url|default:n.actor.get_absolute_url }}">
+                        {% avatar n.actor 50 %}
+                        <span>
+                            <b>{{ n.actor.name }}</b>
+                            <span class="classic-person-sub">{{ n.body|default:n.title }}{% if n.created_at %} · {{ n.created_at|fb_when }}{% endif %}</span>
+                        </span>
+                    </a>
+                    {% else %}
+                    <div class="notify-body">
+                        <span class="muted">{{ n.type_label }}</span>
+                        {% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>
+                        {% else %}<b>{{ n.body|default:n.title }}</b>{% endif %}
+                        {% if n.created_at %}<span class="muted"> · {{ n.created_at|fb_when }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if n.type == 'poke' and n.actor_id %}
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post" action="{% url 'profile.poke' n.actor_id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'notifications' %}">
+                            <button type="submit" class="linkish">подмигнуть в ответ</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                {% empty %}<p class="muted">Пока нет уведомлений.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

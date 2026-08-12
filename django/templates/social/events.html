@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}События — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="events-page">
+    <div id="header"><h1>События</h1></div>
+    <div id="content" class="events-content">
+        {% include "partials/flash.html" %}
+
+        <div id="tabs">
+            <div class="{% if tab == 'upcoming' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'events' %}">Ближайшие</a></div>
+            <div class="{% if tab == 'going' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=going">Я иду</a></div>
+            <div class="{% if tab == 'invited' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=invited">Приглашения</a></div>
+            <div class="{% if tab == 'hosting' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=hosting">Мои</a></div>
+            <div class="{% if tab == 'past' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=past">Прошедшие</a></div>
+        </div>
+
+        {% if tab == 'hosting' or tab == 'upcoming' %}
+        <div class="profile-box">
+            <h4>Создать событие</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Место:</td><td>{{ form.place }}</td></tr>
+                        <tr>
+                            <td class="label">Когда:</td>
+                            <td>{{ form.starts_at }}{% if form.starts_at.help_text %} <span class="muted">{{ form.starts_at.help_text }}</span>{% endif %}</td>
+                        </tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>{% if tab == 'past' %}Прошедшие{% elif tab == 'going' %}Я иду{% elif tab == 'invited' %}Приглашения{% elif tab == 'hosting' %}Мои события{% else %}Ближайшие{% endif %}</h4>
+            <div class="profile-box-body">
+                {% for e in events %}
+                <div class="event-list-row">
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'events.rsvp' e.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="status" value="going">
+                            <button class="linkish" type="submit">{% if e.my_status == 'going' %}<b>Иду</b>{% else %}Пойду{% endif %}</button>
+                        </form>
+                        ·
+                        <a href="{% url 'events.show' e.id %}">подробнее</a>
+                    </span>
+                    <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
+                    <div class="muted">
+                        {{ e.starts_at|date:"j E Y, H:i" }}
+                        {% if e.place %} · {{ e.place }}{% endif %}
+                        · {{ e.n_going }} идут{% if e.n_maybe %}, {{ e.n_maybe }} возможно{% endif %}
+                        {% if e.host %} · <a href="{% url 'profile' e.host.id %}">{{ e.host.name }}</a>{% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">{% if tab == 'invited' %}Нет приглашений.{% else %}Нет событий.{% endif %}</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

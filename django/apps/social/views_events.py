@@ -1,0 +1,258 @@
+"""Events FBVs — classic Facebook Events (+ wall / photos)."""
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Prefetch
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods, require_POST
+
+from apps.social import events as ev
+from apps.social.forms import CommentForm, EventForm, PostForm
+from apps.social.models import POST_DEFER, Comment, Post, profile_related
+from apps.social.services import bump_news, now, profile_of
+
+_TABS = ("upcoming", "past", "hosting", "going", "invited")
+_SHOW_TABS = ("wall", "photos", "guests")
+
+
+def _can_post(me, event, status) -> bool:
+    if not me:
+        return False
+    if event.host_id == me.id:
+        return True
+    return status in ("going", "maybe")
+
+
+def _event_posts(event, *, photos_only=False, limit=30, viewer=None):
+    qs = (
+        Post.objects.filter(topic=event.topic_key)
+        .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift"))
+        .select_related("social_user", "shared_post", "shared_post__social_user")
+        .defer(
+            *POST_DEFER,
+            *profile_related("social_user__"),
+            *profile_related("shared_post__social_user__"),
+        )
+        .prefetch_related(
+            "media",
+            Prefetch(
+                "comments",
+                queryset=Comment.objects.select_related("social_user")
+                .defer(*profile_related("social_user__")).order_by("id"),
+            ),
+        )
+        .annotate(n_comments=Count("comments", distinct=True))
+        .order_by("-id")
+    )
+    if photos_only:
+        qs = qs.filter(kind="photo").exclude(media_path__isnull=True).exclude(media_path="")
+    posts = list(qs[:limit])
+    from apps.social.likes import attach_likes
+    from apps.social.shares import attach_share_flags
+    from apps.social import post_tags as ptags
+    attach_likes(posts, viewer)
+    attach_share_flags(posts, viewer)
+    ptags.tags_for_posts(posts)
+    if viewer:
+        for p in posts:
+            p.tag_candidates = ptags.tag_candidates(viewer, p) if ptags.can_tag(viewer, p) else []
+    return posts
+
+
+@login_required
+def events_home(request):
+    me = profile_of(request.user)
+    form = EventForm(request.POST or None)
+    if request.method == "POST" and me:
+        if form.is_valid():
+            event = ev.create_event(
+                me,
+                title=form.cleaned_data["title"],
+                place=form.cleaned_data.get("place") or "—",
+                description=form.cleaned_data.get("description") or "",
+                starts_at=form.cleaned_data["starts_at"],
+            )
+            if event:
+                ev.set_rsvp(me, event, "going")
+                messages.success(request, "Событие создано.")
+                return redirect("events.show", event_id=event.id)
+        messages.error(request, "Укажите название и дату.")
+        return redirect("events")
+
+    tab = request.GET.get("tab") or "upcoming"
+    if tab not in _TABS:
+        tab = "upcoming"
+    items = list(ev.list_events(me, tab))
+    mine = ev.statuses_map(me, [e.id for e in items])
+    for e in items:
+        e.my_status = mine.get(e.id, "")
+    if tab == "invited" and me:
+        from apps.social.models import Notification
+        Notification.objects.filter(social_user=me, type="event_invite", seen=False).update(seen=True)
+    return render(
+        request, "social/events.html",
+        {"events": items, "me": me, "tab": tab, "form": form, "nav": "events"},
+    )
+
+
+@login_required
+def event_show(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    status = ev.my_status(me, event)
+    is_host = bool(me and event.host_id == me.id)
+    can_post = _can_post(me, event, status)
+    show_tab = (request.GET.get("tab") or "wall").lower()
+    if show_tab not in _SHOW_TABS:
+        show_tab = "wall"
+    going = ev.guests(event, "going")
+    maybe = ev.guests(event, "maybe")
+    posts = _event_posts(event, photos_only=(show_tab == "photos"), viewer=me)
+    if show_tab == "wall":
+        wall_posts = posts
+        photos = [p for p in _event_posts(event, photos_only=True, limit=12, viewer=me)]
+    else:
+        wall_posts = []
+        photos = posts if show_tab == "photos" else []
+    return render(
+        request, "social/event.html",
+        {
+            "event": event, "me": me, "status": status, "is_host": is_host,
+            "can_post": can_post, "show_tab": show_tab,
+            "going": going, "maybe": maybe,
+            "n_going": ev.guest_count(event, "going"),
+            "n_maybe": ev.guest_count(event, "maybe"),
+            "invite_friends": ev.invite_candidates(me, event) if is_host else [],
+            "wall_posts": wall_posts, "photos": photos,
+            "form": PostForm(simple=True) if can_post else None,
+            "comment_form": CommentForm() if me else None,
+            "nav": "events",
+        },
+    )
+
+
+@login_required
+@require_POST
+def event_post(request, event_id):
+    from apps.social.attach import apply_wall_uploads
+    from apps.social.throttle import throttle
+
+    @throttle("posts", 20, 60)
+    def _go(req):
+        me = profile_of(req.user)
+        event = ev.get_event(event_id)
+        status = ev.my_status(me, event)
+        if not _can_post(me, event, status):
+            messages.error(req, "Писать на стену события могут участники.")
+            return redirect(event)
+        form = PostForm(req.POST, req.FILES, simple=True)
+        go = req.POST.get("next") or (event.get_absolute_url() + "?tab=wall")
+        if not form.is_valid():
+            messages.error(req, "Напишите текст или выберите фото / видео.")
+            return redirect(go)
+        post = form.save(commit=False)
+        post.social_user = me
+        text = (post.body or "").strip()
+        post.body = text
+        post.topic = event.topic_key
+        post.visibility = "friends"
+        files = list(req.FILES.getlist("photo"))
+        post.kind = "text"
+        post.created_at = post.updated_at = now()
+        post.save()
+        kind = apply_wall_uploads(post, files, me, max_photos=5, blurb=text)
+        if kind == "photo":
+            go = event.get_absolute_url() + "?tab=photos"
+        bump_news()
+        messages.success(req, "Опубликовано.")
+        return redirect(go)
+
+    return _go(request)
+
+
+@login_required
+@require_POST
+def event_post_delete(request, event_id, post_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    post = get_object_or_404(Post, pk=post_id, topic=event.topic_key)
+    if not (me and (post.social_user_id == me.id or event.host_id == me.id)):
+        messages.error(request, "Нельзя удалить.")
+        return redirect(event)
+    post.delete()
+    bump_news()
+    messages.info(request, "Удалено.")
+    return redirect(request.POST.get("next") or event.get_absolute_url())
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def event_edit(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    if not me or event.host_id != me.id:
+        messages.error(request, "Редактировать может только организатор.")
+        return redirect(event)
+    initial = {
+        "title": event.title,
+        "place": event.place,
+        "description": event.description or "",
+        "starts_at": event.starts_at.strftime("%d.%m.%Y %H:%M") if event.starts_at else "",
+    }
+    form = EventForm(request.POST or None, initial=None if request.method == "POST" else initial)
+    if request.method == "POST":
+        if form.is_valid():
+            row = ev.update_event(
+                me, event,
+                title=form.cleaned_data["title"],
+                place=form.cleaned_data.get("place") or "—",
+                description=form.cleaned_data.get("description") or "",
+                starts_at=form.cleaned_data["starts_at"],
+            )
+            if row:
+                messages.success(request, "Событие сохранено.")
+                return redirect(row)
+        messages.error(request, "Укажите название и дату.")
+    return render(request, "social/event_edit.html", {
+        "event": event, "form": form, "me": me, "nav": "events",
+    })
+
+
+@login_required
+@require_POST
+def event_delete(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    if ev.delete_event(me, event):
+        messages.info(request, "Событие удалено.")
+        return redirect("events")
+    messages.error(request, "Удалить может только организатор.")
+    return redirect(event)
+
+
+@login_required
+@require_POST
+def event_rsvp(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    status = (request.POST.get("status") or "").strip()
+    if status not in ev.STATUSES:
+        status = "" if ev.my_status(me, event) == "going" else "going"
+    if status:
+        ev.set_rsvp(me, event, status)
+    elif me:
+        from apps.social.models import EventAttendee
+        EventAttendee.objects.filter(event=event, social_user=me).delete()
+    return redirect(request.POST.get("next") or event.get_absolute_url())
+
+
+@login_required
+@require_POST
+def event_invite(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    n = ev.invite_friends(me, event, request.POST.getlist("friends"))
+    if n:
+        messages.success(request, f"Приглашено: {n}.")
+    else:
+        messages.info(request, "Некого приглашать или нет прав.")
+    return redirect(request.POST.get("next") or event.get_absolute_url())

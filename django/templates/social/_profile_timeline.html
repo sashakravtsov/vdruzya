@@ -1,0 +1,86 @@
+{% load vd %}
+{# Classic Timeline tab — cover, milestones, year browse (2006 chrome, not blue redesign). #}
+{% if profile.cover_url %}
+<div class="profile-box profile-cover-box">
+    <h4>Обложка</h4>
+    <div class="profile-box-body">
+        <img src="{{ profile.cover_url }}" alt="" class="profile-cover-img">
+    </div>
+</div>
+{% endif %}
+
+<div class="profile-box">
+    <h4>Timeline{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}?section=picture">обложка</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        <div class="subtabs">
+            {% for y in timeline_years %}
+            <div class="{% if y == timeline_year %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?tab=timeline&amp;y={{ y }}">{{ y }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="muted">Год: {{ timeline_year }} · подписчиков: {{ stats.followers }}</p>
+    </div>
+</div>
+
+{% if is_own %}
+<div class="profile-box">
+    <h4>Добавить этап</h4>
+    <div class="profile-box-body">
+        <form method="post" action="{% url 'profile.milestones' profile.id %}" class="formtable">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr><td class="label">Заголовок:</td><td><input class="inputtext" type="text" name="title" size="40" maxlength="255"></td></tr>
+                <tr><td class="label">Дата:</td><td><input class="inputtext" type="text" name="occurred_on" size="12" maxlength="10"> <span class="muted">ГГГГ-ММ-ДД</span></td></tr>
+                <tr><td class="label">Тип:</td><td>
+                    <select name="kind" class="inputtext">
+                        {% for k, lab in milestone_kinds %}
+                        <option value="{{ k }}">{{ lab }}</option>
+                        {% endfor %}
+                    </select>
+                </td></tr>
+                <tr><td class="label">Описание:</td><td><input class="inputtext" type="text" name="body" size="40" maxlength="500"></td></tr>
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+            </table>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="profile-box">
+    <h4>Этапы {{ timeline_year }}</h4>
+    <div class="profile-box-body">
+        {% for m in milestones %}
+        <div class="minifeed-item">
+            <span class="ico ico-note news-ico"></span>
+            <b>{{ m.title }}</b>
+            <span class="muted"> · {{ m.occurred_on|date:"d.m.Y" }} · {{ m.kind }}</span>
+            {% if m.body %}<div class="wall-body">{{ m.body }}</div>{% endif %}
+            {% if is_own %}
+            <form method="post" action="{% url 'profile.milestones.delete' profile.id m.id %}" class="inline">{% csrf_token %}
+                <input type="hidden" name="next" value="?tab=timeline&amp;y={{ timeline_year }}">
+                <button type="submit" class="linkish muted">удалить</button>
+            </form>
+            {% endif %}
+        </div>
+        {% empty %}<p class="muted">Нет этапов за этот год.</p>{% endfor %}
+    </div>
+</div>
+
+<div class="profile-box">
+    <h4>Активность {{ timeline_year }}</h4>
+    <div class="profile-box-body">
+        {% for item in timeline_mini %}
+        <div class="minifeed-item">
+            <span class="ico ico-note news-ico"></span>
+            {% if item.kind == 'status' %}обновил(а) статус: {{ item.post.body|truncatewords:16 }}
+            {% elif item.kind == 'picture' %}обновил(а) фото профиля
+            {% elif item.kind == 'friend' and item.other %}теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
+            {% elif item.kind == 'joined' %}вступил(а) в <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+            {% elif item.kind == 'photo' %}добавил(а) фото
+            {% else %}написал(а){% if item.post %}: {{ item.post.body|truncatewords:12 }}{% endif %}
+            {% endif %}
+            {% if item.at %}<span class="muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+        {% empty %}<p class="muted">Нет активности за {{ timeline_year }}.</p>{% endfor %}
+    </div>
+</div>
