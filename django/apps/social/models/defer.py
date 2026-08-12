@@ -2,7 +2,7 @@
 
 PROFILE_DEFER = (
     "looking_for", "interested_in", "languages",
-    "cover_path", "pronouns", "life_goals", "family_status", "district", "verified",
+    "pronouns", "life_goals", "family_status", "district", "verified",
 )
 # mood/emoji/sticker/share = post-2006 leftovers still in live DB columns
 # mood / emoji / sticker — schema leftovers; shared_post used for classic Share (2009+)

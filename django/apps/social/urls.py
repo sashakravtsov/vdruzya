@@ -15,6 +15,7 @@ from . import views_gifts as gifts
 from . import views_birthdays as birthdays
 from . import views_classic as classic
 from . import views_era2010 as era
+from . import views_era2011 as era11
 from . import realtime as rt
 
 urlpatterns = [
@@ -48,6 +49,13 @@ urlpatterns = [
     path("videos", classic.videos_home, name="videos"),
     path("places", era.places_home, name="places"),
     path("places/<int:pk>", era.place_show, name="places.show"),
+    path("og", era11.og_home, name="og"),
+    path("og/publish", era11.og_publish, name="og.publish"),
+    path("profile/<int:pk>/follow", era11.follow_toggle, name="profile.follow"),
+    path("profile/<int:pk>/milestones", era11.milestone_create, name="profile.milestones"),
+    path("profile/<int:pk>/milestones/<int:mid>/delete", era11.milestone_delete, name="profile.milestones.delete"),
+    path("profile/cover", era11.cover_upload, name="profile.cover"),
+    path("profile/cover/clear", era11.cover_clear, name="profile.cover.clear"),
     path("questions", era.questions_home, name="questions"),
     path("questions/<int:pk>", era.question_show, name="questions.show"),
     path("questions/<int:pk>/answers/<int:answer_id>/vote", era.question_vote, name="questions.vote"),

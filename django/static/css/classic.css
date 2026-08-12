@@ -1246,3 +1246,20 @@ select.inputtext {
 .reg-wrap .formtable { margin: 10px auto; }
 #squicklogin .file-hint { margin: 6px 0 0; }
 
+
+/* FB 2011 classic — Timeline cover + Ticker (float chrome, no flex/grid) */
+.profile-cover-img { display: block; max-width: 100%; height: auto; margin: 4px 0; }
+#currentcover { margin-top: 16px; clear: both; }
+.ticker-row {
+  padding: 4px 0;
+  border-bottom: 1px solid #d8dfea;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.ticker-row:last-child { border-bottom: 0; }
+.msg-reply {
+  margin: 0 0 4px;
+  padding: 2px 6px;
+  border-left: 3px solid #d8dfea;
+  background: #f7f7f7;
+}

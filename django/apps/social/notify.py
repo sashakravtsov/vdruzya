@@ -11,6 +11,7 @@ TYPE_LABELS = {
     "photo_tag": "Отметка",
     "family": "Семья",
     "relationship": "Отношения",
+    "follow": "Подписка",
 }
 
 

@@ -18,3 +18,17 @@
 <form method="post" action="{% url 'friends.request' profile.id %}">{% csrf_token %}<button type="submit">Добавить в друзья</button></form>
 <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
 {% endif %}
+{% if is_following %}
+<form method="post" action="{% url 'profile.follow' profile.id %}">{% csrf_token %}
+    <input type="hidden" name="action" value="unfollow">
+    <input type="hidden" name="next" value="{% url 'profile' profile.id %}">
+    <button type="submit" class="muted">Отписаться</button>
+</form>
+{% else %}
+<form method="post" action="{% url 'profile.follow' profile.id %}">{% csrf_token %}
+    <input type="hidden" name="action" value="follow">
+    <input type="hidden" name="next" value="{% url 'profile' profile.id %}">
+    <button type="submit">Подписаться</button>
+</form>
+{% endif %}
+{% if stats.followers %}<span class="muted">Подписчики: {{ stats.followers }}</span>{% endif %}

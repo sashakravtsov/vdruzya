@@ -21,6 +21,7 @@ APPS = (
     {"slug": "networks", "name": "Сети", "blurb": "Города, школы и места работы.", "url_name": "networks"},
     {"slug": "lists", "name": "Списки друзей", "blurb": "Группируйте друзей по спискам.", "url_name": "friends.lists"},
     {"slug": "messages", "name": "Сообщения", "blurb": "Входящие письма друзьям.", "url_name": "inbox"},
+    {"slug": "og", "name": "Open Graph", "blurb": "Слушаете, читаете, смотрите — расскажите друзьям.", "url_name": "og"},
     {"slug": "pokes", "name": "Подмигивания", "blurb": "Лёгкий способ сказать «привет».", "url_name": "pokes"},
     {"slug": "gifts", "name": "Подарки", "blurb": "Отправьте другу виртуальный подарок.", "url_name": "gifts"},
     {"slug": "birthdays", "name": "Дни рождения", "blurb": "Не пропустите дни рождения друзей.", "url_name": "birthdays"},

@@ -370,6 +370,13 @@ def mini_feed(profile, limit=8, viewer=None):
         ):
             other = f.friend if f.user_id == profile.id else f.user
             items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
+        from apps.social.models import OgStory
+        from apps.social.era2011 import og_label
+        for og in OgStory.objects.filter(social_user=profile).order_by("-id")[:limit]:
+            items.append({
+                "kind": "og", "at": og.created_at, "og": og,
+                "verb_label": og_label(og.verb),
+            })
         # Gifts received on this profile
         from apps.social.gifts import attach_stickers, gifts_for
         for gp in attach_stickers(gifts_for(profile, limit=limit)):
@@ -991,6 +998,11 @@ def news_items(viewer=None, limit=40):
     _add_status_picture(items, viewer, blocked, fids, limit)
     _add_friends(items, blocked, fids, limit)
     _add_relationships(items, blocked, fids, limit)
+    from apps.social import era2011 as e11
+    e11._add_og(items, blocked, fids, limit)
+    e11._add_milestones(items, blocked, fids, limit)
+    follows = e11.followee_ids(viewer) - fids if viewer else set()
+    e11._add_follow_public(items, viewer, blocked, follows, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[: limit * 2]
     if viewer:
@@ -1044,6 +1056,7 @@ def feed_rail(viewer):
     from apps.social import events as ev
     from apps.social import friendship as fr
     from apps.social import feed_hide as fh
+    from apps.social import era2011 as e11
     from apps.social import photo_tags as ptags
     from apps.social.models import Community, Company, Notification
 
@@ -1082,6 +1095,7 @@ def feed_rail(viewer):
         "anniversaries": fr.upcoming_anniversaries(viewer, days=14, limit=6) if viewer else [],
         "pending_photo_tags": ptags.pending_for(viewer, 6) if viewer else [],
         "feed_hidden_people": fh.hidden_people(viewer, 8) if viewer else [],
+        "ticker": e11.ticker_items(viewer, 12) if viewer else [],
     }
 
 

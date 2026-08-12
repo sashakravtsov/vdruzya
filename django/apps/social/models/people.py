@@ -90,6 +90,11 @@ class SocialProfile(models.Model):
         from apps.social.media import media_url
         return media_url(self.avatar_path)
 
+    @cached_property
+    def cover_url(self) -> str | None:
+        from apps.social.media import media_url
+        return media_url(self.cover_path)
+
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse("profile", kwargs={"pk": self.pk})

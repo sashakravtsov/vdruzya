@@ -19,4 +19,21 @@
         </form>
     </div>
     <div class="clear"></div>
+    <div id="currentcover">
+        <h4>Обложка профиля (Timeline)</h4>
+        {% if me.cover_url %}
+        <img src="{{ me.cover_url }}" alt="" class="profile-cover-img">
+        <form method="post" action="{% url 'profile.cover.clear' %}" class="avatar-clear">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'profile.edit' %}?section=picture">
+            <button type="submit" class="linkish muted">Удалить обложку</button>
+        </form>
+        {% else %}
+        <p class="muted">нет обложки</p>
+        {% endif %}
+        <form method="post" action="{% url 'profile.cover' %}" enctype="multipart/form-data">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'profile.edit' %}?section=picture">
+            <input type="file" name="cover" accept="image/jpeg,image/png,image/gif" class="inputfile">
+            <p><input type="submit" class="inputsubmit" value="Загрузить обложку"></p>
+        </form>
+    </div>
 </div>

@@ -8,7 +8,7 @@ class SocialProfileAdmin(admin.ModelAdmin):
     search_fields = ("name", "slug", "city")
     list_select_related = ("user",)
     readonly_fields = ("id", "user", "created_at", "updated_at")
-    exclude = ("cover_path", "pronouns", "life_goals", "family_status", "district", "verified")
+    exclude = ("pronouns", "life_goals", "family_status", "district", "verified")
 
 
 @admin.register(Community)

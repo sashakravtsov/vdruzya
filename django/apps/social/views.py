@@ -60,6 +60,8 @@ def profile(request, pk):
         return render(request, "social/profile_blocked.html", {"who": user, "me": me}, status=403)
     tab = (request.GET.get("tab") or "wall").lower()
     wall_filter = (request.GET.get("filter") or "all").lower()
+    if request.GET.get("y") and str(request.GET.get("y")).isdigit():
+        user._timeline_year = int(request.GET.get("y"))
     return render(request, "social/profile.html", pp.build_context(
         user, me, tab=tab, photos_view=request.GET.get("view") or "albums",
         wall_filter=wall_filter,

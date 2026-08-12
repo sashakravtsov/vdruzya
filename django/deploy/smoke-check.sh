@@ -20,7 +20,7 @@ for path in \
   /notifications:302 /pokes:302 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
-  /places:302 /questions:302 /polls:302 /anniversaries:302 \
+  /places:302 /questions:302 /polls:302 /anniversaries:302 /og:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -631,5 +631,12 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2010-modules.py \
   echo "OK   2010 classic modules features"
 else
   echo "FAIL 2010 classic modules features"; FAIL=1
+fi
+echo "== FB 2011 classic modules probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2011-modules.py \
+  && .venv/bin/python deploy/era2011-check.py; then
+  echo "OK   2011 classic modules features"
+else
+  echo "FAIL 2011 classic modules features"; FAIL=1
 fi
 exit "$FAIL"

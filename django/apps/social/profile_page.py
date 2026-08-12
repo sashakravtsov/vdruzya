@@ -11,7 +11,7 @@ from apps.social.models import (
 from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_for
 from apps.social import gifts as gf
 
-TABS = frozenset({"wall", "info", "photos", "notes", "friends"})
+TABS = frozenset({"wall", "timeline", "info", "photos", "notes", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
 # Tab labels (short) + section page titles (archive editprofile)
 EDIT_NAV = (
@@ -428,7 +428,20 @@ def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="al
     if wall and show_wall:
         gifts = gf.attach_stickers(gf.gifts_for(profile, limit=12))
 
-    return {
+    from apps.social import era2011 as e11
+    following = e11.is_following(me, profile) if me and not is_own else False
+    n_followers = e11.follow_count(profile) if full else 0
+    n_following = e11.following_count(profile) if full and is_own else 0
+    timeline = {}
+    if full and tab == "timeline":
+        try:
+            y = int(getattr(profile, "_timeline_year", 0) or 0) or None
+        except (TypeError, ValueError):
+            y = None
+        timeline = e11.timeline_bundle(profile, me, year=y)
+        timeline["milestone_kinds"] = e11.MILESTONE_KINDS
+
+    ctx = {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
         "friends": friends_rail, "friends_tab": friends_tab,
         "friends_are_mutual": friends_are_mutual,
@@ -459,6 +472,8 @@ def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="al
                     Q(followers__social_user=profile) | Q(admins__social_user=profile)
                 ).distinct().count() if full else 0
             ),
+            "followers": n_followers,
+            "following": n_following,
         },
         "form": PostForm(simple=True) if wall and can_wall else None,
         "comment_form": CommentForm() if ((wall and me and show_wall) or (tab == "notes" and me)) else None,
@@ -472,4 +487,7 @@ def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="al
                 places=list(Place.objects.order_by("name")[:80]),
             ) if is_own else None
         ),
+        "is_following": following,
+        **timeline,
     }
+    return ctx

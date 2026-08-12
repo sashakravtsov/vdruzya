@@ -1,6 +1,6 @@
 {% load vd %}
 {# Classic FB Inbox line — avatar + head row; body not wrapped under float. #}
-<div class="msg-line{% if m.social_user_id == me.id %} is-mine{% endif %}">
+<div class="msg-line{% if m.social_user_id == me.id %} is-mine{% endif %}" id="m-{{ m.id }}">
     <div class="msg-head">
         <a class="msg-av" href="{% url 'profile' m.social_user.id %}">{% avatar m.social_user 32 %}</a>
         {% if m.social_user_id == me.id %}
@@ -9,11 +9,22 @@
             <button type="submit" class="linkish muted">удалить</button>
         </form>
         {% endif %}
+        <a class="linkish muted" href="{% url 'inbox' %}?c={{ active.id }}&amp;reply={{ m.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">ответ</a>
         <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
         {% if m.created_at %}<span class="muted msg-time"> · {{ m.created_at|fb_when }}</span>{% endif %}
     </div>
     <div class="msg-body">
-        {% if m.body and m.body != '[фото]' %}{{ m.body|linebreaksbr }}{% endif %}
+        {% if m.reply_to %}
+        <div class="msg-reply muted">в ответ на
+            <a href="#m-{{ m.reply_to.id }}">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatewords:12 }}</a>
+        </div>
+        {% endif %}
+        {% if m.sticker %}
+        <span class="gift-tile gift-tile-sm" style="background:{{ m.sticker.bg }};color:{{ m.sticker.fg }}">
+            <span class="gift-tile-title">{{ m.sticker.title }}</span>
+        </span>
+        {% endif %}
+        {% if m.body and m.body != '[фото]' and m.body != '[стикер]' %}{{ m.body|linebreaksbr }}{% endif %}
         {% if m.attachment_url %}<p><img src="{{ m.attachment_url }}" alt="" class="msg-photo"></p>{% endif %}
     </div>
 </div>

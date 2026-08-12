@@ -322,6 +322,23 @@
             {% else %}теперь в отношениях{% endif %}.
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'og' and item.og %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            {{ item.verb_label }}
+            {% if item.og.object_url %}<a href="{{ item.og.object_url }}" rel="nofollow noopener"><b>«{{ item.og.object_title }}»</b></a>
+            {% else %}<b>«{{ item.og.object_title }}»</b>{% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'milestone' and item.milestone %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            добавил(а) этап на Timeline:
+            <a href="{% url 'profile' item.actor.id %}?tab=timeline&amp;y={{ item.milestone.occurred_on.year }}"><b>{{ item.milestone.title }}</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
     {% if me and item.actor and item.actor.id != me.id %}
     <div class="news-hide muted">

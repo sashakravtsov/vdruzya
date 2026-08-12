@@ -44,6 +44,23 @@
 
         <div class="feed-rail">
             <div class="profile-box">
+                <h4>Ticker</h4>
+                <div class="profile-box-body">
+                    {% if ticker %}
+                        {% for t in ticker %}
+                        <div class="ticker-row">
+                            <a href="{% url 'profile' t.actor.id %}"><b>{{ t.actor.name }}</b></a>
+                            {% if t.url %}<a href="{{ t.url }}">{{ t.text }}</a>{% else %}{{ t.text }}{% endif %}
+                            {% if t.at %}<span class="muted"> · {{ t.at|fb_when }}</span>{% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока тихо.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
                 <h4>Заявки</h4>
                 <div class="profile-box-body">
                     {% if requests %}

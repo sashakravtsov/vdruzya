@@ -46,6 +46,12 @@ def story_key_for(item: dict) -> str | None:
     if kind in ("friend", "relationship") and actor and other:
         a, b = sorted((actor.id, other.id))
         return f"{kind}:{a}:{b}"
+    og = item.get("og")
+    if og is not None and getattr(og, "id", None):
+        return f"og:{og.id}"
+    milestone = item.get("milestone")
+    if milestone is not None and getattr(milestone, "id", None):
+        return f"milestone:{milestone.id}"
     return None
 
 

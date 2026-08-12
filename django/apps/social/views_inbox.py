@@ -83,6 +83,10 @@ def inbox_home(request):
 
     friends = list(friends_of(me, limit=200))
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
+    from apps.social.gifts import catalog
+    stickers = catalog()[:40]
+    reply_id = request.GET.get("reply")
+    form = MessageForm(stickers=stickers, initial={"reply_to": reply_id} if reply_id else None)
     return render(request, "social/inbox.html", {
         "conversations": conversations,
         "active": active,
@@ -91,7 +95,7 @@ def inbox_home(request):
         "has_older": has_older,
         "show_all": show_all,
         "me": me,
-        "form": MessageForm(),
+        "form": form,
         "compose_form": _compose_form(friends, to=preselect),
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
@@ -100,24 +104,28 @@ def inbox_home(request):
         "page": page,
         "has_more": has_more,
         "nav": "inbox",
+        "stickers": stickers,
     })
 
 
 @ch.member_post
 @throttle("msg", 40, 60)
 def message_send(request, me, conv):
-    form = MessageForm(request.POST, request.FILES)
+    from apps.social.gifts import catalog
+    form = MessageForm(request.POST, request.FILES, stickers=catalog()[:40])
     go = _go(conv.id)
     if not form.is_valid():
-        messages.error(request, "Напишите текст или приложите фото.")
+        messages.error(request, "Напишите текст, приложите фото или выберите стикер.")
         return redirect(go)
     try:
         ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
+            reply_to_id=form.cleaned_data.get("reply_to"),
+            sticker_id=form.cleaned_data.get("sticker") or None,
         )
     except ValueError:
-        messages.error(request, "Напишите текст или приложите фото.")
+        messages.error(request, "Напишите текст, приложите фото или выберите стикер.")
         return redirect(go)
     return redirect(go)
 

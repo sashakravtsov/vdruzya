@@ -341,16 +341,25 @@ class GroupDocForm(ClassicForm, forms.Form):
 
 class MessageForm(ClassicForm, forms.ModelForm):
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
 
     class Meta:
         model = Message
         fields = ("body",)
         widgets = {"body": _ta(2, style="width:80%")}
 
+    def __init__(self, *args, stickers=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = [("", "— без стикера —")]
+        for s in stickers or []:
+            choices.append((str(s.id), s.title))
+        self.fields["sticker"].choices = choices
+
     def clean(self):
         data = super().clean()
-        if not (data.get("body") or "").strip() and not self.files.get("photo"):
-            self.add_error("body", "Напишите текст или приложите фото.")
+        if not (data.get("body") or "").strip() and not self.files.get("photo") and not data.get("sticker"):
+            self.add_error("body", "Напишите текст, приложите фото или выберите стикер.")
         return data
 
 

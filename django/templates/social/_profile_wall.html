@@ -29,6 +29,8 @@
             теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
             {% elif item.kind == 'status' %}
             обновил(а) статус: {{ item.post.body|truncatewords:16 }}
+            {% elif item.kind == 'og' and item.og %}
+            {{ item.verb_label }} {% if item.og.object_url %}<a href="{{ item.og.object_url }}" rel="nofollow noopener">«{{ item.og.object_title }}»</a>{% else %}«{{ item.og.object_title }}»{% endif %}
             {% elif item.kind == 'note' %}
             написал(а) заметку <a href="{% url 'posts.show' item.post.id %}">«{{ item.post.media_label|default:"Заметка" }}»</a>
             {% elif item.kind == 'link' %}

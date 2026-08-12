@@ -10,7 +10,7 @@ FEED_TABS = (
     ("groups", "Группы"),
 )
 _FEED_KINDS = {
-    "photos": frozenset({"photo", "photos", "photo_tag", "photo_like", "tagged"}),
+    "photos": frozenset({"photo", "photos", "photo_tag", "photo_like", "tagged", "picture"}),
     "links": frozenset({"link"}),
     "videos": frozenset({"video"}),
     "shares": frozenset({"share"}),

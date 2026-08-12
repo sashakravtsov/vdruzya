@@ -232,11 +232,27 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
 
 
 def _msg_qs(conv, q=""):
-    qs = Message.objects.filter(conversation=conv).select_related("social_user")
+    qs = (
+        Message.objects.filter(conversation=conv)
+        .select_related("social_user", "reply_to", "reply_to__social_user")
+    )
     q = (q or "").strip()
     if q:
         qs = qs.filter(body__icontains=q)
     return qs
+
+
+def attach_message_stickers(rows):
+    ids = {m.sticker_id for m in rows if getattr(m, "sticker_id", None)}
+    if not ids:
+        for m in rows:
+            m.sticker = None
+        return rows
+    from apps.social.models import Sticker
+    by_id = Sticker.objects.in_bulk(ids)
+    for m in rows:
+        m.sticker = by_id.get(m.sticker_id) if m.sticker_id else None
+    return rows
 
 
 def thread(conv: Conversation, limit=50, q="", *, all_messages=False):
@@ -244,11 +260,14 @@ def thread(conv: Conversation, limit=50, q="", *, all_messages=False):
     if all_messages:
         rows = list(qs)
         rows.reverse()
-        return rows, False
-    rows = list(qs[:limit])
-    rows.reverse()
-    has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
-    return rows, has_older
+    else:
+        rows = list(qs[:limit])
+        rows.reverse()
+        has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
+        attach_message_stickers(rows)
+        return rows, has_older
+    attach_message_stickers(rows)
+    return rows, False
 
 
 def can_dm(me, other: SocialProfile) -> str | None:
@@ -346,18 +365,35 @@ def _save_attach(upload):
 
 def post_message(
     me, conv: Conversation, body: str = "", *,
-    message_type="text", upload=None,
+    message_type="text", upload=None, reply_to_id=None, sticker_id=None,
 ) -> Message:
     body = (body or "").strip()
     path, aname, amime = _save_attach(upload)
-    if not body and not path and message_type == "text":
+    reply = None
+    if reply_to_id:
+        reply = Message.objects.filter(pk=reply_to_id, conversation=conv).first()
+    sid = None
+    if sticker_id:
+        try:
+            sid = int(sticker_id)
+        except (TypeError, ValueError):
+            sid = None
+        if sid:
+            from apps.social.models import Sticker
+            if not Sticker.objects.filter(pk=sid, is_active=True).exists():
+                sid = None
+    if not body and not path and not sid and message_type == "text":
         raise ValueError("empty")
+    if sid and not body:
+        body = "[стикер]"
     t = now()
     m = Message.objects.create(
         conversation=conv,
         social_user=me,
         body=(body or ("[фото]" if path else ""))[:4000],
-        message_type="photo" if path and message_type == "text" else message_type,
+        message_type="photo" if path and message_type == "text" else ("sticker" if sid else message_type),
+        sticker_id=sid,
+        reply_to=reply,
         attachment_path=path,
         attachment_name=aname,
         attachment_mime=amime,
