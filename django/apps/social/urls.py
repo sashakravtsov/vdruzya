@@ -15,6 +15,7 @@ from . import views_gifts as gifts
 from . import views_birthdays as birthdays
 from . import views_classic as classic
 from . import views_era2010 as era
+from . import realtime as rt
 
 urlpatterns = [
     path("up", meta.up, name="up"),
@@ -90,6 +91,8 @@ urlpatterns = [
     path("inbox/start/<int:pk>", inbox.inbox_start, name="inbox.start"),
     path("inbox/<int:conversation_id>/message", inbox.message_send, name="inbox.message"),
     path("inbox/<int:conversation_id>/leave", inbox.inbox_leave, name="inbox.leave"),
+    path("inbox/<int:conversation_id>/since", rt.inbox_since, name="inbox.since"),
+    path("realtime/stream", rt.stream, name="realtime.stream"),
     path("messages/<int:message_id>/delete", inbox.message_delete, name="messages.delete"),
     # Legacy Messenger URLs → Inbox
     path("messenger", meta.redirect_permanent, {"to": "/inbox"}, name="messenger.legacy"),

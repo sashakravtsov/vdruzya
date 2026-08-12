@@ -42,5 +42,8 @@
 
     {% block footer %}{% include "partials/footer.html" %}{% endblock %}
 </div>
+{% if user.is_authenticated %}
+<script src="{% static 'js/realtime.js' %}" defer></script>
+{% endif %}
 </body>
 </html>

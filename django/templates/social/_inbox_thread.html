@@ -6,7 +6,7 @@
 {% if has_older and not show_all %}
 <p class="msg-older"><a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
 {% endif %}
-<div class="msg-log">
+<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}">
     {% for m in thread_messages %}
     {% include "social/_inbox_line.html" %}
     {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}

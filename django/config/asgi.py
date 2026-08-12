@@ -1,4 +1,4 @@
-"""HTTP-only ASGI — classic Inbox has no WebSocket layer (FB 2006)."""
+"""ASGI entry — Daphne serves HTTP + SSE realtime (classic Inbox stays HTTP)."""
 from django.core.asgi import get_asgi_application
 import os
 

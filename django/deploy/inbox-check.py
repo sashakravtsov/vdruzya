@@ -72,12 +72,28 @@ def main():
     assert 'class="msg-head"' in html
     assert 'class="msg-av"' in html
     assert 'class="msg-body"' in html
+    assert 'id="inbox-thread"' in html
+    assert 'data-rt="' in html or "realtime/stream" in html
     assert "<br" in html  # linebreaksbr for multiline
     css = (root / "static/css/classic.css").read_text()
     body_rule = re.search(r"\.inbox-pane \.msg-line \.msg-body\s*\{[^}]+\}", css)
     assert body_rule and "pre-wrap" not in body_rule.group(0)
     assert "overflow: hidden" in re.search(r"\.inbox-pane \.msg-line\s*\{[^}]+\}", css, re.S).group(0)
     ok("inbox thread layout chrome")
+
+    from apps.social import realtime as rt
+    snap = rt.snapshot(me, conv_id=conv.id)
+    assert "unread_messages" in snap and "last_message_id" in snap
+    r = c.get(f"/inbox/{conv.id}/since?after=0", secure=True)
+    assert r.status_code == 200
+    data = r.json()
+    assert "html" in data and "last_id" in data
+    r = c.get("/realtime/stream?once=1", secure=True)
+    assert r.status_code == 200
+    assert "text/event-stream" in (r.get("Content-Type") or "")
+    chunk = b"".join(r.streaming_content)
+    assert b"data:" in chunk and b"unread_messages" in chunk
+    ok("realtime SSE + inbox since")
 
     r = c.get("/birthdays", secure=True)
     assert r.status_code == 200 and "Дни рождения".encode() in r.content

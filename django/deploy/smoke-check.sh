@@ -193,6 +193,13 @@ if grep -q 'inbox-list { float: left' "${ROOT}/django/static/css/classic.css" 2>
 else
   echo "OK   inbox list/thread full width"
 fi
+if ! grep -q 'realtime.stream' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'EventSource' "${ROOT}/django/static/js/realtime.js" 2>/dev/null \
+  || ! grep -q 'data-rt' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null; then
+  echo "FAIL Django SSE realtime missing"; FAIL=1
+else
+  echo "OK   Django SSE realtime (badges + inbox bump)"
+fi
 if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
   echo "FAIL wall-to-wall route missing"; FAIL=1
 else

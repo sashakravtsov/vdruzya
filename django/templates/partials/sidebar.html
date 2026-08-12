@@ -8,11 +8,11 @@
         </form>
     </div>
     {% cache 30 snav me.id unread_messages nav %}
-    <div id="snav">
+    <div id="snav" data-rt="{% url 'realtime.stream' %}">
         <span class="snav-profile">
             <a class="hasedit" href="{% url 'profile' me.id %}">Мой профиль</a><a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>
         </span>
-        <a href="{% url 'friends' %}"{% if nav == 'friends' %} class="is-on"{% endif %}>Мои друзья</a>
+        <a id="nav-friends" href="{% url 'friends' %}"{% if nav == 'friends' %} class="is-on"{% endif %}>Мои друзья</a>
         <a href="{% url 'people' %}?tab=search"{% if nav == 'people' %} class="is-on"{% endif %}>Найти друзей</a>
         <a href="{% url 'albums' %}"{% if nav == 'albums' or nav == 'albums.show' %} class="is-on"{% endif %}>Мои фото</a>
         <a href="{% url 'groups' %}?mine=1"{% if nav == 'groups' or nav == 'groups.show' %} class="is-on"{% endif %}>Мои группы</a>
@@ -31,8 +31,8 @@
         <a href="{% url 'anniversaries' %}"{% if nav == 'anniversaries' %} class="is-on"{% endif %}>Годовщины</a>
         <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
         <a href="{% url 'apps' %}"{% if nav == 'apps' %} class="is-on"{% endif %}>Приложения</a>
-        <a href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
-        <a href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>
+        <a id="nav-inbox" href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
+        <a id="nav-pokes" href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>
         <a href="{% url 'account' %}"{% if nav == 'account' %} class="is-on"{% endif %}>Мой аккаунт</a>
     </div>
     {% endcache %}

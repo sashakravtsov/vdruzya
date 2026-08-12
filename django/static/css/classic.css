@@ -1067,6 +1067,9 @@ button.linkish .ico { margin-right: 2px; }
   border-bottom: solid 1px #D8DFEA;
   background: #fff;
 }
+.feed-filters { margin: 0 0 8px; text-align: left; }
+.feed-list-links { margin: 0 0 10px; }
+.feed-list-links a.is-on { font-weight: bold; }
 .feed-page .news-item .news-body { overflow: hidden; padding-right: 0; }
 .feed-page .news-item .news-time {
   position: static; display: inline; margin-left: 4px; font-size: 11px;
