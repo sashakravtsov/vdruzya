@@ -660,7 +660,7 @@ def feed_rail(viewer):
     }
 
 
-def upcoming_birthdays(viewer=None, days=14):
+def upcoming_birthdays(viewer=None, days=14, limit=12):
     today = timezone.localdate()
     end = today + timedelta(days=days)
     qs = SocialProfile.objects.exclude(birthday__isnull=True).only(
@@ -669,11 +669,11 @@ def upcoming_birthdays(viewer=None, days=14):
     if viewer:
         qs = qs.filter(id__in=friend_ids(viewer) | {viewer.id})
     out = []
-    for p in qs[:200]:
+    for p in qs[:400]:
         b = p.birthday.replace(year=today.year)
         if b < today:
             b = b.replace(year=today.year + 1)
         if today <= b <= end:
             out.append((b, p))
     out.sort(key=lambda x: x[0])
-    return out[:12]
+    return out[:limit]

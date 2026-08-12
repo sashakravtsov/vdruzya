@@ -1158,10 +1158,21 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-table tr.is-unread .col-subj a { font-weight: bold; }
 .inbox-pane .msg-subj-h { font-weight: bold; }
 .inbox-pane .msg-log { margin: 0 0 10px; padding: 0 0 8px; }
-.inbox-pane .msg-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
-.inbox-pane .msg-line .msg-body { margin: 2px 0 0; white-space: pre-wrap; }
+.inbox-pane .msg-line {
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA;
+  font-size: 11px; line-height: 14px; overflow: hidden;
+}
+.inbox-pane .msg-line:last-child { border-bottom: 0; }
+.inbox-pane .msg-head { overflow: hidden; margin: 0 0 4px; }
+.inbox-pane .msg-av { float: left; margin: 0 8px 0 0; }
+.inbox-pane .msg-av img,
+.inbox-pane .msg-av .avatar { display: block; }
+.inbox-pane .msg-line .msg-del { float: right; margin-left: 6px; }
+.inbox-pane .msg-line .msg-body {
+  margin: 0 0 0 40px; clear: none; white-space: normal; word-wrap: break-word;
+}
 .inbox-pane .msg-older { margin: 0 0 8px; font-size: 11px; }
-.inbox-pane .msg-compose { margin: 0 0 8px; }
+.inbox-pane .msg-compose { margin: 0 0 8px; clear: both; }
 .inbox-pane .msg-compose textarea,
 .inbox-pane .msg-compose .inputtext {
   width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -1170,7 +1181,6 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .compose-new textarea { width: 100%; max-width: 420px; }
 .inbox-pane > h4 .edit { float: right; font-weight: normal; }
 .inbox-pane .msg-actions form { display: inline; }
-.inbox-pane .msg-line .msg-del { float: right; margin-left: 6px; }
 .inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-members { margin: 0 0 8px; font-size: 11px; }

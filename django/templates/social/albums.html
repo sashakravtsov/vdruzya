@@ -12,7 +12,7 @@
     </div>
     {% endif %}
     <div id="content" class="albums-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
         <p class="classic-page-lead">
             {% if form %}
             <a href="{% url 'profile' me.id %}">Мой профиль</a>

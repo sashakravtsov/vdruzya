@@ -8,7 +8,7 @@
         {% if group.category %}<div class="subtitle">{{ group.category|ru_label }}</div>{% endif %}
     </div>
     <div id="content" class="group-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <div class="group-rail">
             <div class="group-picture">

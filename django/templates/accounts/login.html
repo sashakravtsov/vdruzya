@@ -14,6 +14,7 @@
 <div id="pagebody">
     <div id="header"><h1>Вход</h1></div>
     <div id="content">
+        {% include "partials/flash.html" %}
         {% if error %}<div id="error"><p>{{ error }}</p></div>{% endif %}
         <form method="post" action="{% url 'login' %}">{% csrf_token %}
             <div id="loginform">

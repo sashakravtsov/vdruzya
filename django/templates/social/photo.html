@@ -8,7 +8,7 @@
         <div class="subtitle">фото {{ pos }} из {{ n }}</div>
     </div>
     <div id="content" class="albums-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <div class="photo-nav">
             <span class="photo-nav-back"><a href="{% url 'albums.show' album.id %}">← {{ album.title }}</a></span>

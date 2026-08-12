@@ -8,6 +8,7 @@
         <div class="subtitle"><a href="{% url 'profile' owner.id %}">← профиль</a></div>
     </div>
     <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
         {% if private %}
         <div class="profile-box">
             <h4>Друзья</h4>

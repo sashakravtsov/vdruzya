@@ -12,6 +12,7 @@ from . import views_wall_ops as wall
 from . import views_pages as pages
 from . import views_apps as apps
 from . import views_gifts as gifts
+from . import views_birthdays as birthdays
 
 urlpatterns = [
     path("up", meta.up, name="up"),
@@ -34,6 +35,7 @@ urlpatterns = [
     path("gifts", gifts.gifts_home, name="gifts"),
     path("gifts/send", gifts.gift_send, name="gifts.send"),
     path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),
+    path("birthdays", birthdays.birthdays_home, name="birthdays"),
     path("groups", browse.groups, name="groups"),
     path("groups/<int:pk>/edit", gops.group_edit, name="groups.edit"),
     path("groups/<int:pk>/members", gops.group_members, name="groups.members"),

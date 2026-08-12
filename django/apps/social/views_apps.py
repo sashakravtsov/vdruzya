@@ -49,6 +49,11 @@ APPS = (
         "url_name": "gifts",
     },
     {
+        "slug": "birthdays", "name": "Дни рождения",
+        "blurb": "Не пропустите дни рождения друзей.",
+        "url_name": "birthdays",
+    },
+    {
         "slug": "search", "name": "Поиск",
         "blurb": "Найти людей и группы во ВДрузья.",
         "url_name": "search",

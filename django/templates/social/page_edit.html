@@ -8,6 +8,7 @@
         <div class="subtitle"><a href="{% url 'pages.show' page.id %}">← {{ page.name }}</a></div>
     </div>
     <div id="content">
+        {% include "partials/flash.html" %}
         <div class="profile-box">
             <h4>Страница</h4>
             <div class="profile-box-body">

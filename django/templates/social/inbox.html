@@ -15,7 +15,7 @@
         </div>
     </div>
     <div id="content" class="inbox-content{% if active or compose_mode %} is-thread{% else %} is-list{% endif %}">
-        {% if messages %}{% for flash in messages %}<div class="flash">{{ flash }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         {% if compose_mode %}
         <div class="profile-box inbox-pane">

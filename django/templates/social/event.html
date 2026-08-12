@@ -8,7 +8,7 @@
         <div class="subtitle"><a href="{% url 'events' %}">← события</a></div>
     </div>
     <div id="content" class="events-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <div class="event-main">
             <div class="profile-box">

@@ -71,6 +71,7 @@ def pages_home(request):
             CompanyFollower.objects.create(
                 company=page, social_user=me, created_at=t, updated_at=t,
             )
+            bump_news()
             messages.success(request, "Страница создана.")
             return redirect(page)
 

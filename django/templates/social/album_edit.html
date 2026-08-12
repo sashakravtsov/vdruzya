@@ -5,6 +5,7 @@
 <div id="pagebody" class="albums-page">
     <div id="header"><h1>Редактировать альбом</h1></div>
     <div id="content" class="albums-content">
+        {% include "partials/flash.html" %}
         <p class="classic-page-lead"><a href="{% url 'albums.show' album.id %}">← {{ album.title }}</a></p>
         <div class="profile-box">
             <h4>Настройки</h4>

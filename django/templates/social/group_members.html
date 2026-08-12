@@ -8,6 +8,7 @@
         <div class="subtitle"><a href="{% url 'groups.show' group.id %}">{{ group.name }}</a></div>
     </div>
     <div id="content">
+        {% include "partials/flash.html" %}
         <div class="profile-box">
             <h4>Участники ({{ n_members }})</h4>
             <div class="profile-box-body">

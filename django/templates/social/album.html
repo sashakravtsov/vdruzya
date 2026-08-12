@@ -8,7 +8,7 @@
         <div class="subtitle">{% if album.visibility == 'public' %}Всем{% elif album.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}</div>
     </div>
     <div id="content" class="albums-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <p class="classic-page-lead">
             Альбом · {% if album.visibility == 'public' %}Всем{% elif album.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}

@@ -8,7 +8,7 @@
         <div class="subtitle"><a href="{% url 'profile' other.id %}">← {{ other.name }}</a></div>
     </div>
     <div id="content" class="people-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
         <p class="people-lead">Записи между <a href="{% url 'profile' me.id %}">вами</a> и <a href="{% url 'profile' other.id %}">{{ other.name }}</a>.</p>
 
         {% if form %}

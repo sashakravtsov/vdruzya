@@ -5,6 +5,7 @@
 <div id="pagebody" class="search-page people-page">
     <div id="header"><h1>Поиск</h1></div>
     <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
         <form method="get" action="{% url 'search' %}" class="people-search-form">
             {% if tab and tab != 'people' %}<input type="hidden" name="tab" value="{{ tab }}">{% endif %}
             <table class="formtable" cellpadding="0" cellspacing="0">

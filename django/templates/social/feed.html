@@ -5,7 +5,7 @@
 <div id="pagebody" class="feed-page">
     <div id="header"><h1>Лента новостей</h1></div>
     <div id="content" class="feed-content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <div class="feed-main">
             {% for item in items %}
@@ -162,14 +162,14 @@
             </div>
 
             <div class="profile-box">
-                <h4>Дни рождения</h4>
+                <h4>Дни рождения{% if birthdays %}<a class="edit" href="{% url 'birthdays' %}">все</a>{% endif %}</h4>
                 <div class="profile-box-body">
                     {% if birthdays %}
                         {% for day, person in birthdays %}
                         <div><a href="{% url 'profile' person.id %}">{{ person.name }}</a> <span class="muted">· {{ day|date:"j E" }}</span></div>
                         {% endfor %}
                     {% else %}
-                        <p class="muted">Скоро ни у кого.</p>
+                        <p class="muted">Скоро ни у кого. <a href="{% url 'birthdays' %}">Смотреть</a></p>
                     {% endif %}
                 </div>
             </div>

@@ -5,7 +5,7 @@
 <div id="pagebody" class="groups-index pages-index">
     <div id="header"><h1>{% if mine %}Мои страницы{% else %}Страницы{% endif %}</h1></div>
     <div id="content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <div id="tabs">
             <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'pages' %}{% if q %}?q={{ q|urlencode }}{% endif %}">Обзор</a></div>

@@ -17,7 +17,7 @@ for path in \
   /password-reset:200 \
   /sitemap.xml:200 /robots.txt:200 \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
-  /app:410 /pages:200 /apps:200 /gifts:302 \
+  /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -483,5 +483,11 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/gifts-check.py; then
   echo "OK   gifts/page-events features"
 else
   echo "FAIL gifts/page-events features"; FAIL=1
+fi
+echo "== Inbox/Flash/Birthdays feature probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/inbox-check.py; then
+  echo "OK   inbox/flash/birthdays features"
+else
+  echo "FAIL inbox/flash/birthdays features"; FAIL=1
 fi
 exit "$FAIL"

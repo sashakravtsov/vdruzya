@@ -8,7 +8,7 @@
         <div class="subtitle"><a href="{% url 'profile' me.id %}">← к профилю</a></div>
     </div>
     <div id="content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         {# Archive FB 2005: section switch is horizontal #tabs, editor ~full width #}
         <div id="tabs">

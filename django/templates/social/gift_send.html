@@ -8,7 +8,7 @@
         <div class="subtitle"><a href="{% url 'gifts' %}">← витрина</a></div>
     </div>
     <div id="content">
-        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% include "partials/flash.html" %}
 
         <div class="profile-box">
             <h4>Подарок другу</h4>

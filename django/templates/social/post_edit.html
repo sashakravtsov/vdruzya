@@ -4,6 +4,7 @@
 <div id="pagebody" class="feed-page">
     <div id="header"><h1>{% if is_note %}Редактировать заметку{% else %}Редактировать запись{% endif %}</h1></div>
     <div id="content">
+        {% include "partials/flash.html" %}
         <div class="profile-box">
             <h4>{% if is_note %}Заметка{% else %}Запись{% endif %}</h4>
             <div class="profile-box-body">
