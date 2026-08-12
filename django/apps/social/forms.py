@@ -53,10 +53,9 @@ def _files(**attrs):
 
 
 def _has_media(form):
-    raw, files = form.data, form.files
+    files = form.files
     photos = files.getlist("photo") if files and hasattr(files, "getlist") else []
-    albums = raw.getlist("album_photos") if hasattr(raw, "getlist") else []
-    return bool(photos or albums)
+    return bool(photos)
 
 
 class ProfileForm(forms.ModelForm):
@@ -78,7 +77,7 @@ class ProfileForm(forms.ModelForm):
         ("day_month", "День и месяц"), ("full", "Полная дата"),
         ("age", "Только возраст"), ("hide", "Скрыть"),
     ]
-    PROFILE_VIS = [("public", "Всем"), ("friends", "Только друзьям (limited)")]
+    PROFILE_VIS = [("public", "Всем"), ("friends", "Только друзьям")]
     WALL_WRITE = [("friends", "Друзья"), ("self", "Только я")]
     WALL_VIEW = [("public", "Всем"), ("friends", "Друзья"), ("self", "Только я")]
     languages_text = forms.CharField(
@@ -213,7 +212,7 @@ class ProfileForm(forms.ModelForm):
         if "slug" in self.fields and self.instance and self.instance.slug:
             self.fields["slug"].help_text = f"vdruzya.ru/{self.instance.slug}"
         if "telegram_username" in self.fields:
-            self.fields["telegram_username"].help_text = "как AIM / ICQ screen name"
+            self.fields["telegram_username"].help_text = "как AIM / ICQ"
 
     def clean_telegram_username(self):
         """Screen name (AIM / ICQ / nick) — classic Contact Info."""

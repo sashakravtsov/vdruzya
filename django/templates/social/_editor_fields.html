@@ -4,7 +4,7 @@
 {% if field.name == 'birthday_visibility' or field.name == 'show_phone' %}
 {% elif field.name == 'show_email' %}
 <tr>
-    <td class="label">Email:</td>
+    <td class="label">E-mail:</td>
     <td><label class="inline">{{ field }} показывать{% if me %} ({{ me.user.email }}){% endif %}</label></td>
 </tr>
 {% else %}

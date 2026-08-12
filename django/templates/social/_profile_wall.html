@@ -19,6 +19,7 @@
             создал(а) группу <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
             {% elif item.kind == 'photo' %}
             добавил(а) фото в <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>
+            {% if item.photo %}<a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"> · смотреть</a>{% endif %}
             {% elif item.kind == 'picture' %}
             обновил(а) фото профиля
             {% elif item.kind == 'friend' and item.other %}

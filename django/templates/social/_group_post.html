@@ -21,8 +21,10 @@
                     {% if p.created_at %}<span class="muted"> · {{ p.created_at|fb_when }}</span>{% endif %}
                     {% if is_admin or me and me.id == p.social_user_id %}
                     <span class="wallpost-edit">
+                        {% if p.topic != 'wall' %}
                         <a href="{% url 'groups.posts.edit' group.id p.id %}">ред.</a>
                         ·
+                        {% endif %}
                         <form method="post" action="{% url 'groups.posts.delete' group.id p.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted">удалить</button>
                         </form>

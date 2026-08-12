@@ -415,12 +415,18 @@ button.linkish .ico { margin-right: 2px; }
 }
 .group-photo-grid,
 .wall-media { overflow: hidden; margin: 6px 0; }
-.group-photo-grid img,
-.wall-media img {
-  float: left; width: 72px; height: 72px; margin: 0 4px 4px 0;
-  object-fit: cover; border: 1px solid #B3B3B3; display: block;
+.group-photo-grid a,
+.wall-media a { float: left; margin: 0 6px 6px 0; }
+.group-photo-grid img {
+  width: 130px; height: 97px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
 }
-.wall-media a { float: left; }
+.wall-media img {
+  width: 100px; height: 75px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
+}
+.wall-media-single img, .wall-media-single .news-photo {
+  float: none; width: auto; height: auto; max-width: 100%; max-height: none;
+  border: 1px solid #B3B3B3; display: inline-block;
+}
 .discuss-table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; }
 .discuss-table th {
   text-align: left; color: #777; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -625,14 +631,6 @@ button.linkish .ico { margin-right: 2px; }
 .member-row{display:block;overflow:hidden}
 .member-row img,.member-row .avatar-fallback{float:left;margin-right:8px}
 .members-full .col-name{width:auto}
-.album-pick{overflow:hidden;margin:6px 0;max-width:280px}
-.album-pick-item{float:left;width:48px;height:48px;margin:0 4px 4px 0;padding:0;cursor:pointer;position:relative}
-.album-pick-item input{position:absolute;left:2px;top:2px;z-index:1}
-.album-pick-item img,.album-pick-item .album-photo-fallback{
-  width:48px;height:48px;object-fit:cover;border:1px solid #B3B3B3;display:block;
-}
-.album-pick-item input:checked + img,
-.album-pick-item input:checked + .album-photo-fallback{outline:2px solid var(--fb)}
 .albums-page .profile-box > h4,
 .group-page .profile-box > h4,
 .feed-page .profile-box > h4{
@@ -1065,7 +1063,6 @@ button.linkish .ico { margin-right: 2px; }
   background: #f7f7f7;
   overflow: hidden;
 }
-.wallposter-tools .compose-more { font-size: 11px; }
 .wallposter textarea {
   width: 100%;
   box-sizing: border-box;
@@ -1220,7 +1217,7 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-actions form { display: inline; }
 .inbox-pane .msg-line .msg-del { float: right; margin-left: 6px; }
 .inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
-.inbox-pane .msg-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
+.inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-members { margin: 0 0 8px; font-size: 11px; }
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"],

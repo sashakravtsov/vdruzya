@@ -199,7 +199,7 @@ def info_boxes(profile, education, experiences) -> list[dict]:
     contact = []
     email = getattr(getattr(profile, "user", None), "email", None)
     if profile.show_email and email:
-        contact.append(("Email", email, False))
+        contact.append(("E-mail", email, False))
     if profile.show_phone and profile.phone:
         contact.append(("Телефон", profile.phone, False))
     if profile.telegram_username:

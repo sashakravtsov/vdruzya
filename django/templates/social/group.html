@@ -242,7 +242,7 @@
                     {% if photos %}
                     <div class="group-photo-grid">
                         {% for p in photos %}
-                        <a href="{% if p.topic == 'wall' %}?tab=wall#topic-{{ p.id }}{% else %}?tab=discussion&amp;topic={{ p.id }}{% endif %}"><img src="{{ p.media_url }}" alt=""></a>
+                        <a href="{{ p.media_url }}" title="полный размер"><img src="{{ p.media_url }}" alt=""></a>
                         {% endfor %}
                     </div>
                     {% else %}

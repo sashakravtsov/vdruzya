@@ -134,6 +134,16 @@ class CommunityPostMedia(models.Model):
         from apps.social.media import media_url
         return media_url(self.path)
 
+    @property
+    def href(self):
+        if self.photo_id:
+            from django.urls import reverse
+            from apps.social.models import Photo
+            album_id = Photo.objects.filter(pk=self.photo_id).values_list("album_id", flat=True).first()
+            if album_id:
+                return reverse("albums.photos.show", args=[album_id, self.photo_id])
+        return self.url
+
 
 class CommunityPostComment(models.Model):
     id = models.BigAutoField(primary_key=True)

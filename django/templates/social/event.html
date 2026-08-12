@@ -17,7 +17,7 @@
                     <table class="infotable">
                         <tr><td class="label">Когда:</td><td>{{ event.starts_at|date:"l, j E Y, H:i" }}</td></tr>
                         <tr><td class="label">Где:</td><td>{{ event.place|default:"—" }}</td></tr>
-                        {% if event.host %}<tr><td class="label">Хост:</td><td><a href="{% url 'profile' event.host.id %}">{{ event.host.name }}</a></td></tr>{% endif %}
+                        {% if event.host %}<tr><td class="label">Организатор:</td><td><a href="{% url 'profile' event.host.id %}">{{ event.host.name }}</a></td></tr>{% endif %}
                         {% if event.community %}<tr><td class="label">Группа:</td><td><a href="{% url 'groups.show' event.community.id %}">{{ event.community.name }}</a></td></tr>{% endif %}
                     </table>
                     {% if event.description %}<p style="margin-top:8px">{{ event.description|linebreaksbr }}</p>{% endif %}

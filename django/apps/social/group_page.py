@@ -4,7 +4,7 @@ from django.db.models import Count, F, Prefetch
 from apps.social.forms import CommentForm, CommunityPostForm, EventForm
 from apps.social.models import (
     GROUP_POST_DEFER, PROFILE_DEFER, Community, CommunityJoinRequest, CommunityMember,
-    CommunityPost, CommunityPostComment, Event, Photo, SocialProfile, profile_related,
+    CommunityPost, CommunityPostComment, Event, SocialProfile, profile_related,
 )
 from apps.social.services import accepted_friends
 
@@ -65,7 +65,7 @@ def page_ctx(request, group, me):
         "can_view": can_view, "can_post": can_post, "join_pending": join_pending,
         "n_members": CommunityMember.objects.filter(community=group).count(),
         "members": [], "officers": [], "related": [], "posts": [], "wall_posts": [],
-        "photos": [], "pending": [], "events": [], "invite_friends": [], "album_photos": [],
+        "photos": [], "pending": [], "events": [], "invite_friends": [],
         "n_topics": 0, "open_topic": None,
         "form": None, "board_form": None, "photo_form": None,
         "comment_form": CommentForm(auto_id=False) if is_member else None,
@@ -97,10 +97,6 @@ def page_ctx(request, group, me):
     if tab == "wall":
         ctx["form"] = CommunityPostForm(auto_id="id_w_%s", initial={"board": "wall"})
         ctx["wall_posts"] = list(qs.filter(topic="wall")[:20])
-        if is_member and me:
-            ctx["album_photos"] = list(
-                Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]
-            )
     elif tab == "discussion":
         discuss = qs.exclude(topic="wall").order_by(F("updated_at").desc(nulls_last=True), "-id")
         ctx["n_topics"] = discuss.count()

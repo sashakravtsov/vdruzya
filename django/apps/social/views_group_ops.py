@@ -137,7 +137,7 @@ def group_post_edit(request, pk, post_id):
             obj.posted_as_community = bool(request.POST.get("as_community"))
         obj.updated_at = now()
         obj.save(update_fields=["body", "topic", "posted_as_community", "updated_at"])
-        path = attach_group(obj, list(request.FILES.getlist("photo")), me, request.POST.getlist("album_photos"))
+        path = attach_group(obj, list(request.FILES.getlist("photo")), me)
         if path and not obj.media_path:
             obj.media_path = path
             if obj.kind == "text":
@@ -247,16 +247,15 @@ def group_post(request, pk):
         p.topic = form.cleaned_data.get("board") or "discussion"
         p.posted_as_community = bool(is_admin and req.POST.get("as_community"))
         files = list(req.FILES.getlist("photo"))
-        albums = req.POST.getlist("album_photos")
         p.created_at = p.updated_at = now()
         body = (p.body or "").strip()
         if p.topic == "discussion":
             p.body = CommunityPost.pack_topic(form.cleaned_data.get("subject") or "", body)
         else:
             p.body = body
-        p.kind = "photo" if (files or albums) else "text"
+        p.kind = "photo" if files else "text"
         p.save()
-        path = attach_group(p, files, me, albums)
+        path = attach_group(p, files, me)
         if path:
             p.media_path = path
             if p.kind == "text":

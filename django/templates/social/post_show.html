@@ -12,6 +12,8 @@
                 <p class="muted">
                     {% if post.kind == 'note' %}
                     <a href="{% url 'profile' post.social_user_id %}?tab=notes">← к заметкам</a>
+                    {% elif post.wall_note_owner %}
+                    <a href="{% url 'profile' post.wall_note_owner.id %}">← к стене</a>
                     {% else %}
                     <a href="{% url 'feed' %}">← к ленте</a>
                     {% endif %}

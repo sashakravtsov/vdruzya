@@ -292,6 +292,28 @@ if ! grep -q 'полный размер' "${ROOT}/django/templates/social/photo.
 else
   echo "OK   photo full-size link"
 fi
+if cd "${ROOT}/django" && .venv/bin/python deploy/photos-check.py; then
+  echo "OK   photos features"
+else
+  echo "FAIL photos features"; FAIL=1
+fi
+
+if grep -RIl 'album_photos\|album-pick' "${ROOT}/django/apps/social" "${ROOT}/django/templates" "${ROOT}/django/static/css/classic.css" 2>/dev/null | grep -q .; then
+  echo "FAIL album-pick leftovers"; FAIL=1
+else
+  echo "OK   no album-pick leftovers"
+fi
+if grep -q 'Хост:' "${ROOT}/django/templates/social/event.html" 2>/dev/null \
+   || grep -q 'Email:' "${ROOT}/django/templates/social/_editor_fields.html" 2>/dev/null; then
+  echo "FAIL EN/calque labels left"; FAIL=1
+else
+  echo "OK   RU labels (E-mail / Организатор)"
+fi
+if ! grep -q 'wall-media-single' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL wall-media-single missing"; FAIL=1
+else
+  echo "OK   wall media enlarge chrome"
+fi
 echo "== Friends feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/friends-check.py; then
   echo "OK   friends features"
