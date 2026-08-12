@@ -630,3 +630,41 @@ class PagePostForm(ClassicForm, forms.Form):
             self.add_error("body", "Напишите текст или выберите фото.")
         return data
 
+
+class PostedItemForm(ClassicForm, forms.Form):
+    """Links / Videos — URL + title (classic Posted Items)."""
+    title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
+    url = forms.CharField(max_length=500, widget=_in(style="width:100%"), label="Адрес")
+    blurb = forms.CharField(required=False, widget=_ta(3, style="width:100%"), label="Описание")
+    visibility = forms.ChoiceField(
+        choices=(("friends", "Друзья"), ("public", "Все")),
+        widget=forms.Select(attrs={"class": "inputtext"}),
+    )
+
+    def clean_url(self):
+        from apps.social.classic_extra import normalize_url
+        url = normalize_url(self.cleaned_data.get("url"))
+        if not url:
+            raise forms.ValidationError("Укажите ссылку, например http://example.com")
+        return url
+
+    def clean_title(self):
+        return (self.cleaned_data.get("title") or "").strip()[:160]
+
+
+class MarketForm(ClassicForm, forms.Form):
+    title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
+    price = forms.CharField(max_length=40, required=False, widget=_in(style="width:120px"))
+    place = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
+    description = forms.CharField(required=False, widget=_ta(4, style="width:100%"))
+
+    def clean_title(self):
+        return (self.cleaned_data.get("title") or "").strip()[:160]
+
+
+class FriendListForm(ClassicForm, forms.Form):
+    name = forms.CharField(max_length=120, widget=_in(style="width:100%"))
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()[:120]
+

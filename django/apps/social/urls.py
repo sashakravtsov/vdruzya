@@ -13,6 +13,7 @@ from . import views_pages as pages
 from . import views_apps as apps
 from . import views_gifts as gifts
 from . import views_birthdays as birthdays
+from . import views_classic as classic
 
 urlpatterns = [
     path("up", meta.up, name="up"),
@@ -20,6 +21,9 @@ urlpatterns = [
     path("feed", views.feed, name="feed"),
     path("people", friends.people, name="people"),
     path("friends", friends.friends_home, name="friends"),
+    path("friends/lists", classic.lists_home, name="friends.lists"),
+    path("friends/lists/<int:pk>/delete", classic.list_delete, name="friends.lists.delete"),
+    path("friends/lists/<int:pk>", classic.list_show, name="friends.lists.show"),
     path("invite", friends.invite_mine, name="invite.mine"),
     path("i/<str:code>", friends.invite_show, name="invite.show"),
     path("pages", pages.pages_home, name="pages"),
@@ -36,6 +40,16 @@ urlpatterns = [
     path("gifts/send", gifts.gift_send, name="gifts.send"),
     path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),
     path("birthdays", birthdays.birthdays_home, name="birthdays"),
+    path("networks", classic.networks_home, name="networks"),
+    path("links", classic.links_home, name="links"),
+    path("videos", classic.videos_home, name="videos"),
+    path("marketplace", classic.marketplace_home, name="marketplace"),
+    path("marketplace/<int:pk>/delete", classic.marketplace_delete, name="marketplace.delete"),
+    path("marketplace/<int:pk>", classic.marketplace_show, name="marketplace.show"),
+    path("blocked", classic.blocked_home, name="blocked"),
+    path("mobile", classic.mobile_home, name="mobile"),
+    path("notes", classic.notes_home, name="notes"),
+    path("notes/store", act.note_create, name="notes.store"),
     path("groups", browse.groups, name="groups"),
     path("groups/<int:pk>/edit", gops.group_edit, name="groups.edit"),
     path("groups/<int:pk>/members", gops.group_members, name="groups.members"),
@@ -105,7 +119,6 @@ urlpatterns = [
     path("profile/<int:pk>", views.profile, name="profile"),
     path("profile/<slug:slug>", browse.profile_slug_redirect, name="profile.slug"),
     path("u/<slug:slug>", browse.profile_slug_redirect, name="profile.vanity"),
-    path("notes", act.note_create, name="notes.store"),
     path("posts", act.post_create, name="posts.store"),
     path("posts/<int:post_id>", wall.post_show, name="posts.show"),
     path("posts/<int:post_id>/edit", wall.post_edit, name="posts.edit"),

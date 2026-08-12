@@ -11,6 +11,7 @@ from .chat import Conversation, ConversationMember, Message, Notification
 from .more import Album, Event, EventAttendee, Photo, PhotoComment
 from .pages import Company, CompanyAdmin, CompanyFollower
 from .stickers import Sticker, StickerPack
+from .extra import FriendList, FriendListMember, MarketplaceListing
 
 __all__ = [
     "PgJSON", "PROFILE_DEFER", "POST_DEFER", "GROUP_POST_DEFER", "profile_related",
@@ -22,4 +23,5 @@ __all__ = [
     "Album", "Photo", "PhotoComment", "Event", "EventAttendee",
     "Company", "CompanyAdmin", "CompanyFollower",
     "Sticker", "StickerPack",
+    "FriendList", "FriendListMember", "MarketplaceListing",
 ]

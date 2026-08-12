@@ -33,6 +33,7 @@
         <div class="friends-main">
             <div class="profile-box">
                 <h4>Мои друзья{% if friends_total %} ({{ friends_total }}){% endif %}
+                    <a class="edit" href="{% url 'friends.lists' %}">списки</a>
                     <a class="edit" href="{% url 'people' %}?tab=search">поиск людей</a>
                 </h4>
                 <div class="profile-box-body">

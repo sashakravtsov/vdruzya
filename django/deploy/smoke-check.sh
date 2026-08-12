@@ -18,6 +18,7 @@ for path in \
   /sitemap.xml:200 /robots.txt:200 \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
+  /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -489,5 +490,12 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/inbox-check.py; then
   echo "OK   inbox/flash/birthdays features"
 else
   echo "FAIL inbox/flash/birthdays features"; FAIL=1
+fi
+echo "== Classic 2006-09 modules probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-classic-modules.py \
+  && .venv/bin/python deploy/classic-check.py; then
+  echo "OK   classic modules features"
+else
+  echo "FAIL classic modules features"; FAIL=1
 fi
 exit "$FAIL"

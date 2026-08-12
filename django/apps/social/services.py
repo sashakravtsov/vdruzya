@@ -564,8 +564,14 @@ def news_items(viewer=None, limit=40):
     ) if fids else []
     attach_wall_notes(posts)
     for p in posts:
-        if getattr(p, "kind", None) == "note":
+        kind = getattr(p, "kind", None) or ""
+        if kind == "note":
             items.append({"kind": "note", "at": p.created_at, "post": p, "actor": p.social_user})
+        elif kind in ("link", "video"):
+            from apps.social.classic_extra import unpack_link_body
+            url, blurb = unpack_link_body(p.body)
+            p.link_url, p.link_blurb = url, blurb
+            items.append({"kind": kind, "at": p.created_at, "post": p, "actor": p.social_user})
         else:
             items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})
     _add_group_posts(items, blocked, member_ids, limit)

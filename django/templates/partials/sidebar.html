@@ -18,8 +18,13 @@
         <a href="{% url 'groups' %}?mine=1"{% if nav == 'groups' or nav == 'groups.show' %} class="is-on"{% endif %}>Мои группы</a>
         <a href="{% url 'pages' %}?mine=1"{% if nav == 'pages' or nav == 'pages.show' or nav == 'pages.edit' %} class="is-on"{% endif %}>Мои страницы</a>
         <a href="{% url 'events' %}"{% if nav == 'events' %} class="is-on"{% endif %}>Мои события</a>
+        <a href="{% url 'notes' %}"{% if nav == 'notes' %} class="is-on"{% endif %}>Заметки</a>
+        <a href="{% url 'links' %}"{% if nav == 'links' %} class="is-on"{% endif %}>Ссылки</a>
+        <a href="{% url 'marketplace' %}"{% if nav == 'marketplace' %} class="is-on"{% endif %}>Барахолка</a>
+        <a href="{% url 'networks' %}"{% if nav == 'networks' %} class="is-on"{% endif %}>Сети</a>
         <a href="{% url 'gifts' %}"{% if nav == 'gifts' %} class="is-on"{% endif %}>Подарки</a>
         <a href="{% url 'birthdays' %}"{% if nav == 'birthdays' %} class="is-on"{% endif %}>Дни рождения</a>
+        <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
         <a href="{% url 'apps' %}"{% if nav == 'apps' %} class="is-on"{% endif %}>Приложения</a>
         <a href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
         <a href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>
