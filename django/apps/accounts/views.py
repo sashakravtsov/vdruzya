@@ -43,7 +43,7 @@ def login_view(request):
                 login(request, user)
                 return redirect(request.GET.get("next") or "feed")
             cache.set(key, fails + 1, 300)
-            error = "Неверный email или пароль."
+            error = "Неверный E-mail или пароль."
     return render(request, "accounts/login.html", {"error": error})
 
 
@@ -88,11 +88,11 @@ def register_view(request):
         if need_invite and not inviter:
             error = "Регистрация только по приглашению. Укажите действительный код или откройте ссылку друга."
         elif not name or not email:
-            error = "Укажите имя и email."
+            error = "Укажите имя и E-mail."
         elif not request.POST.get("terms"):
             error = "Нужно принять правила использования."
         elif User.objects.filter(email__iexact=email).exists():
-            error = "Этот email уже зарегистрирован."
+            error = "Этот E-mail уже зарегистрирован."
         else:
             try:
                 validate_password(password)

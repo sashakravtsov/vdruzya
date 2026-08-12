@@ -8,7 +8,7 @@
         <h1>{% if compose_mode %}Новое сообщение{% elif active %}Сообщение{% elif folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h1>
         <div class="subtitle">
             {% if active or compose_mode %}
-            <a href="{% url 'inbox' %}{% if folder != 'inbox' %}?folder={{ folder }}{% endif %}">← входящие</a>
+            <a href="{% url 'inbox' %}{% if folder != 'inbox' %}?folder={{ folder }}{% endif %}">← {% if folder == 'sent' %}отправленные{% else %}входящие{% endif %}</a>
             {% else %}
             <a href="{% url 'inbox' %}?compose=1">Написать сообщение</a>
             {% endif %}

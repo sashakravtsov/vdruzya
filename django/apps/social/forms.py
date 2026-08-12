@@ -20,7 +20,7 @@ def _ta(rows=3, **attrs):
 def _file(**attrs):
     return forms.FileInput(attrs={
         "class": "inputfile",
-        "accept": "image/jpeg,image/png,image/gif,image/webp",
+        "accept": "image/jpeg,image/png,image/gif",
         **attrs,
     })
 
@@ -47,7 +47,7 @@ class _MultiFile(forms.ClearableFileInput):
 def _files(**attrs):
     return _MultiFile(attrs={
         "class": "inputfile",
-        "accept": "image/jpeg,image/png,image/gif,image/webp",
+        "accept": "image/jpeg,image/png,image/gif",
         **attrs,
     })
 

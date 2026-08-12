@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load static vd %}
 {% block title %}{{ photo.title }} — {{ album.title }} — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="albums-page photo-page">
@@ -31,7 +31,7 @@
                 </div>
                 <p class="photo-view-full"><a href="{{ photo.url }}" target="_blank" rel="noopener">полный размер</a></p>
                 {% else %}
-                <div class="photo-view-fallback" style="background:{{ photo.color|default:'#3B5998' }}">{{ photo.title|slice:":1"|upper }}</div>
+                <p><img src="{% static 'img/nophoto.gif' %}" alt="" width="200" height="200"></p>
                 {% endif %}
                 {% if photo.title %}<p class="photo-caption">{{ photo.title }}</p>{% endif %}
                 {% if photo.created_at %}<p class="muted">Добавлено {{ photo.created_at|date:"j E Y" }}</p>{% endif %}
@@ -41,7 +41,7 @@
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr>
                             <td class="label">Название:</td>
-                            <td><input class="inputtext" name="title" value="{{ photo.title }}" maxlength="120" style="width:100%" required></td>
+                            <td><input class="inputtext" name="title" value="{{ photo.title }}" maxlength="120" style="width:100%"></td>
                         </tr>
                         <tr>
                             <td></td>

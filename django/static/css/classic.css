@@ -147,14 +147,13 @@ ul.bulletpoints li span { color: #000; }
 .legal-content .infocontent { margin: 0 0 10px; }
 #loginform input[type="password"],
 #loginform input[type="text"],
-#loginform input[type="email"],
-#loginform .inputtext,
+#loginform #loginform .inputtext,
 #loginform .inputpassword {
   border: 1px solid #bdc7d8; padding: 3px; font: 11px var(--font);
 }
 
 .inputtext, .inputpassword, select, textarea,
-input[type="text"], input[type="email"], input[type="password"] {
+input[type="text"], input[type="password"] {
   border: 1px solid #bdc7d8; padding: 3px; font: 11px var(--font);
 }
 textarea { font-family: var(--font); }
@@ -184,9 +183,6 @@ input[type="submit"], input[type="button"] {
 
 /* Shared boxes / profile chrome (page layouts refine below) */
 img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
-.avatar-fallback {
-  background: var(--line); display: block; text-align: center; font-size: 64px; color: #555;
-}
 .profile-box {
   margin: 0 0 10px; border: 0; background: transparent;
 }
@@ -359,9 +355,6 @@ button.linkish .ico { margin-right: 2px; }
 }
 .wall-comment .wc-ava { float: left; width: 32px; margin-right: 6px; }
 .wall-comment .wc-ava img,
-.wall-comment .wc-ava .avatar-fallback {
-  width: 32px; height: 32px; border: 1px solid #b3b3b3; object-fit: cover; display: block;
-}
 .wall-comment .wc-body { overflow: hidden; }
 .wall-comment .wc-time { margin-top: 2px; }
 .wall-comment .wc-del { float: right; margin-left: 6px; }
@@ -472,9 +465,6 @@ button.linkish .ico { margin-right: 2px; }
 .news-time { position: absolute; right: 0; top: 0; white-space: nowrap; font-size: 10px; }
 .news-snippet { margin: 4px 0 0; }
 .news-photo { max-width: 100%; border: 1px solid #B3B3B3; }
-.news-item .avatar-col img, .news-item .avatar-col .avatar-fallback {
-  width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
-}
 .req-row, .rail-row { margin: 0 0 6px; }
 .req-row .ico,
 .req-row .news-icon { vertical-align: middle; margin-right: 4px; }
@@ -562,9 +552,9 @@ button.linkish .ico { margin-right: 2px; }
   display: block; color: #3B5998; font: bold 11px/14px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
 .album-index .album-meta { display: block; color: gray; font-size: 11px; }
+.album-index .album-cover img.album-cover-fallback,
 .album-cover-fallback {
-  display: block; width: 80px; height: 80px; text-align: center;
-  background: #3B5998; color: #fff; font: bold 28px/80px var(--font);
+  display: block; width: 75px; height: 56px; border: 0; object-fit: cover; background: #D8DFEA;
 }
 /* FB 2005 album photo thumbs ~130×97 */
 .photo-gallery { overflow: hidden; margin: 0; }
@@ -578,12 +568,8 @@ button.linkish .ico { margin-right: 2px; }
 .photo-gallery-item img {
   width: 130px; height: 97px; object-fit: cover; display: block; border: 0;
 }
-.photo-gallery-item .album-photo-fallback {
-  width: 130px; height: 97px; display: block; text-align: center;
-  font: bold 28px/97px var(--font); color: #fff; background: #3B5998;
-}
-.photo-gallery-item figcaption { margin: 3px 0 0; line-height: 13px; }
-.photo-gallery-item figcaption a { color: var(--fb); font-weight: bold; font-size: 11px; }
+.photo-gallery-item .photo-cap { margin: 3px 0 0; line-height: 13px; }
+.photo-gallery-item .photo-cap a { color: var(--fb); font-weight: bold; font-size: 11px; }
 .photo-gallery-item form { margin: 2px 0 0; }
 .photo-nav {
   overflow: hidden; margin: 0 0 10px; padding: 6px 8px;
@@ -629,7 +615,6 @@ button.linkish .ico { margin-right: 2px; }
 .group-join-status .label{display:block;margin:2px 0 0;color:#777;font-weight:normal;font-size:10px}
 .profile-action-links .group-join-status{width:100%;border-bottom:1px solid var(--line)}
 .member-row{display:block;overflow:hidden}
-.member-row img,.member-row .avatar-fallback{float:left;margin-right:8px}
 .members-full .col-name{width:auto}
 .albums-page .profile-box > h4,
 .group-page .profile-box > h4,
@@ -728,7 +713,6 @@ button.linkish .ico { margin-right: 2px; }
   display:block;overflow:hidden;max-width:none;
 }
 .classic-person-row-side .classic-person-name{max-width:100%}
-.classic-person-row-side .classic-person-name .avatar-fallback,
 .classic-person-row-side .classic-person-name img{width:32px;height:32px}
 .classic-person-row-side .classic-inline-actions{float:none;display:block;margin:3px 0 0 40px;text-align:left}
 .classic-inline-actions-stack{float:none;display:block;margin:4px 0 0 40px;text-align:left}
@@ -897,15 +881,6 @@ button.linkish .ico { margin-right: 2px; }
   line-height: 1.2;
 }
 .profile-friend-tile img,
-.profile-friend-tile .avatar-fallback {
-  width: 50px;
-  height: 50px;
-  margin: 0 auto 4px;
-  border: 1px solid #B3B3B3;
-  object-fit: cover;
-  display: block;
-  font-size: 16px;
-}
 .profile-friend-tile span {
   display: block;
   overflow: hidden;
@@ -1003,10 +978,6 @@ button.linkish .ico { margin-right: 2px; }
 .wallpost .wp-table td { padding: 0; vertical-align: top; }
 .wallpost td.image { width: 55px; text-align: left; }
 .wallpost td.image img,
-.wallpost td.image .avatar-fallback {
-  width: 50px; height: 50px; margin-right: 5px; border: 1px solid #B3B3B3;
-  object-fit: cover; display: block;
-}
 .wallpost .info {
   width: 100%;
   border-top: solid 1px #3B5998;
@@ -1076,11 +1047,6 @@ button.linkish .ico { margin-right: 2px; }
 .wallpost-edit a { color: #3B5998; }
 .wallpost .info .actions .linkish,
 .wallpost .info .actions a { color: #3B5998; }
-.wallpost td.image .avatar-fallback.group-mark {
-  width: 50px; height: 50px; display: block; text-align: center;
-  color: #fff; font: bold 20px/50px "lucida grande", tahoma, verdana, arial, sans-serif;
-  border: 1px solid #B3B3B3;
-}
 .news-item {
   margin: 0 0 12px;
   padding: 0 0 8px;

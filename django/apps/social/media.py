@@ -35,6 +35,6 @@ def media_url(path: str | None) -> str | None:
 
 def save_image(upload, folder: str) -> str:
     ext = Path(upload.name).suffix.lower() or ".jpg"
-    if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+    if ext not in {".jpg", ".jpeg", ".png", ".gif"}:
         ext = ".jpg"
     return default_storage.save(f"{folder}/{uuid.uuid4().hex}{ext}", upload)

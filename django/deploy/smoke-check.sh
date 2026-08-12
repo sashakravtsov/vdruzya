@@ -314,6 +314,32 @@ if ! grep -q 'wall-media-single' "${ROOT}/django/static/css/classic.css" 2>/dev/
 else
   echo "OK   wall media enlarge chrome"
 fi
+
+if grep -RIl 'type="email"' "${ROOT}/django/templates" 2>/dev/null | grep -q .; then
+  echo "FAIL HTML5 type=email still in templates"; FAIL=1
+else
+  echo "OK   no type=email (classic text)"
+fi
+if grep -q 'loading="lazy"\|<figure' "${ROOT}/django/templates/social/album.html" 2>/dev/null; then
+  echo "FAIL album still uses figure/lazy"; FAIL=1
+else
+  echo "OK   album classic gallery markup"
+fi
+if ! grep -q 'Найти друзей' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null; then
+  echo "FAIL snav missing Найти друзей"; FAIL=1
+else
+  echo "OK   snav Find Friends"
+fi
+if grep -q 'avatar-fallback' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL avatar-fallback CSS leftovers"; FAIL=1
+else
+  echo "OK   no avatar-fallback CSS"
+fi
+if grep -q 'image/webp' "${ROOT}/django/apps/social/forms.py" "${ROOT}/django/templates/social/_profile_edit_avatar.html" 2>/dev/null; then
+  echo "FAIL webp still accepted"; FAIL=1
+else
+  echo "OK   JPEG/PNG/GIF only"
+fi
 echo "== Friends feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/friends-check.py; then
   echo "OK   friends features"

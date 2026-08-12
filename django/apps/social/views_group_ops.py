@@ -122,12 +122,14 @@ def group_post_edit(request, pk, post_id):
     if not me or (post.social_user_id != me.id and not is_group_admin(me, group)):
         messages.error(request, "Нельзя редактировать.")
         return redirect("groups.show", pk=pk)
+    if post.topic == "wall":
+        messages.error(request, "Запись на стене нельзя редактировать — только удалить.")
+        return redirect(f"/groups/{pk}?tab=wall#topic-{post.id}")
     form = CommunityPostForm(request.POST or None, request.FILES or None, instance=post)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
-        board = form.cleaned_data.get("board")
-        if board in ("wall", "discussion"):
-            obj.topic = board
+        # discussion topics stay on the board (no flip to wall via edit)
+        obj.topic = "discussion"
         body = (obj.body or "").strip()
         if obj.topic == "discussion":
             obj.body = CommunityPost.pack_topic(form.cleaned_data.get("subject") or "", body)

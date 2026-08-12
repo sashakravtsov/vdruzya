@@ -1,5 +1,5 @@
 {# Album listing — expects `albums`; optional empty_msg #}
-{% load vd %}
+{% load static vd %}
 {% if albums %}
 <div class="album-index">
     {% for a in albums %}
@@ -8,7 +8,7 @@
             {% if a.cover_url %}
             <img src="{{ a.cover_url }}" alt="">
             {% else %}
-            <span class="album-cover-fallback">{{ a.title|slice:":1"|upper }}</span>
+            <img class="album-cover-fallback" src="{% static 'img/nophoto.gif' %}" alt="" width="75" height="56">
             {% endif %}
         </span>
         <span class="album-title">{{ a.title }}</span>

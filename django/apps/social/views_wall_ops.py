@@ -21,6 +21,11 @@ def post_edit(request, post_id):
         messages.error(request, "Нельзя редактировать.")
         return redirect(request.GET.get("next") or "feed")
     on_wall = (post.topic or "").startswith("wall:")
+    # FB 2006 wall notes: delete-only (edit kept for Notes)
+    if on_wall and getattr(post, "kind", None) != "note":
+        messages.error(request, "Запись на стене нельзя редактировать — только удалить.")
+        oid = wall_owner_id(post)
+        return redirect(f"/profile/{oid}" if oid else (request.GET.get("next") or "feed"))
     nxt = request.POST.get("next") or request.GET.get("next") or "/feed"
     form = PostForm(request.POST or None, request.FILES or None, instance=post, simple=on_wall)
     if request.method == "POST" and form.is_valid():

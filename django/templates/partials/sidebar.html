@@ -12,7 +12,8 @@
         <span class="snav-profile">
             <a class="hasedit" href="{% url 'profile' me.id %}">Мой профиль</a><a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>
         </span>
-        <a href="{% url 'friends' %}"{% if nav == 'friends' or nav == 'people' %} class="is-on"{% endif %}>Мои друзья</a>
+        <a href="{% url 'friends' %}"{% if nav == 'friends' %} class="is-on"{% endif %}>Мои друзья</a>
+        <a href="{% url 'people' %}?tab=search"{% if nav == 'people' %} class="is-on"{% endif %}>Найти друзей</a>
         <a href="{% url 'albums' %}"{% if nav == 'albums' or nav == 'albums.show' %} class="is-on"{% endif %}>Мои фото</a>
         <a href="{% url 'groups' %}?mine=1"{% if nav == 'groups' or nav == 'groups.show' %} class="is-on"{% endif %}>Мои группы</a>
         <a href="{% url 'events' %}"{% if nav == 'events' %} class="is-on"{% endif %}>Мои события</a>
@@ -27,7 +28,7 @@
     <div id="squicklogin">
         <form method="post" name="loginform" action="{% url 'login' %}">{% csrf_token %}
             <label for="side_email">E-mail:</label>
-            <input class="inputtext" type="email" name="email" id="side_email" size="20" autocomplete="username">
+            <input class="inputtext" type="text" name="email" id="side_email" size="20" autocomplete="username">
             <label for="side_pass">Пароль:</label>
             <input class="inputtext" type="password" name="password" id="side_pass" size="20" autocomplete="current-password">
             <div class="buttons">

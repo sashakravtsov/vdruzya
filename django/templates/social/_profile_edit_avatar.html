@@ -13,7 +13,7 @@
     <div id="uploadpicture">
         <h4>Загрузить новое фото</h4>
         <form method="post" action="{% url 'profile.avatar' %}" enctype="multipart/form-data">{% csrf_token %}
-            <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp" class="inputfile" required>
+            <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif" class="inputfile">
             <small>JPEG, PNG или GIF · до 2 МБ. Квадратное фото смотрится лучше.</small>
             <p><input type="submit" class="inputsubmit" value="Загрузить"></p>
         </form>

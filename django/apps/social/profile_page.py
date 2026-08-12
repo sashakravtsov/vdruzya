@@ -140,6 +140,19 @@ def _relation(me, profile):
     return relation, blocked, mutual, (fr.mutual_label(mutual) if mutual else "")
 
 
+
+def _people_link(label, **params):
+    """Info-tab value → Find Friends filter (FB 2006 Networks / Basic Info)."""
+    from urllib.parse import urlencode
+    text = str(label or "").strip()
+    if not text:
+        return ""
+    q = {"tab": "search", **{k: v for k, v in params.items() if v}}
+    if not any(k in q for k in ("city", "school", "workplace", "gender")):
+        q["q"] = text
+    return format_html('<a href="/people?{}">{}</a>', urlencode(q), text)
+
+
 def _tag(text):
     from apps.social.templatetags.vd import tag
     return tag(text)
@@ -162,16 +175,16 @@ def info_boxes(profile, education, experiences) -> list[dict]:
     boxes = []
     basic = []
     if profile.gender:
-        basic.append(("Пол", _tag(_ru(profile.gender)), False))
+        basic.append(("Пол", _people_link(_ru(profile.gender), gender=profile.gender), False))
     if profile.birthday_display():
         basic.append(("День рождения", birthday_tags(profile), False))
     if profile.city:
-        city = _tag(profile.city)
+        city = _people_link(profile.city, city=profile.city)
         if profile.country:
-            city = format_html("{}, {}", city, _tag(profile.country))
+            city = format_html("{}, {}", city, profile.country)
         basic.append(("Город", city, False))
     if profile.hometown:
-        basic.append(("Родной город", _tag(profile.hometown), False))
+        basic.append(("Родной город", _people_link(profile.hometown, city=profile.hometown), False))
     if profile.relationship_status:
         rel = _tag(_ru(profile.relationship_status))
         partner = getattr(profile, "relationship_with", None)
@@ -237,7 +250,7 @@ def info_boxes(profile, education, experiences) -> list[dict]:
     if education or profile.education_note:
         items = []
         for e in education:
-            line = _tag(e.institution)
+            line = _people_link(e.institution, school=e.institution)
             if e.degree:
                 line = format_html("{} — {}", line, e.degree)
             if e.field:
@@ -250,13 +263,13 @@ def info_boxes(profile, education, experiences) -> list[dict]:
             items.append(line)
         subs.append({
             "h5": "Образование",
-            "note": _tag(profile.education_note) if profile.education_note else "",
+            "note": _people_link(profile.education_note, school=profile.education_note) if profile.education_note else "",
             "items": items,
         })
     if experiences or profile.workplace:
         items = []
         for e in experiences:
-            line = format_html("<b>{}</b> · {}", e.position, _tag(e.company_name))
+            line = format_html("<b>{}</b> · {}", e.position, _people_link(e.company_name, workplace=e.company_name))
             if e.period:
                 line = format_html('{} <span class="muted">{}</span>', line, e.period)
             if e.description:
@@ -264,7 +277,7 @@ def info_boxes(profile, education, experiences) -> list[dict]:
             items.append(line)
         subs.append({
             "h5": "Работа",
-            "note": _tag(profile.workplace) if profile.workplace else "",
+            "note": _people_link(profile.workplace, workplace=profile.workplace) if profile.workplace else "",
             "items": items,
         })
     if subs:

@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load static vd %}
 {% block title %}{{ album.title }} — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="albums-page">
@@ -58,23 +58,21 @@
                 {% if photos %}
                 <div class="photo-gallery">
                     {% for p in photos %}
-                    <figure class="photo-gallery-item">
+                    <div class="photo-gallery-item">
                         <a class="photo-thumb" href="{% url 'albums.photos.show' album.id p.id %}">
                             {% if p.url %}
-                            <img src="{{ p.url }}" alt="{{ p.title }}" loading="lazy">
+                            <img src="{{ p.url }}" alt="{{ p.title }}">
                             {% else %}
-                            <span class="album-photo-fallback" style="background:{{ p.color|default:'#3B5998' }}">{{ p.title|slice:":1"|upper }}</span>
+                            <img src="{% static 'img/nophoto.gif' %}" alt="" width="130" height="97">
                             {% endif %}
                         </a>
-                        <figcaption>
-                            <a href="{% url 'albums.photos.show' album.id p.id %}">{{ p.title|truncatechars:32 }}</a>
-                        </figcaption>
+                        <div class="photo-cap"><a href="{% url 'albums.photos.show' album.id p.id %}">{{ p.title|truncatechars:32 }}</a></div>
                         {% if is_owner %}
                         <form method="post" action="{% url 'albums.photos.delete' album.id p.id %}">{% csrf_token %}
                             <button type="submit" class="linkish" onclick="return confirm('Удалить это фото?');">Удалить</button>
                         </form>
                         {% endif %}
-                    </figure>
+                    </div>
                     {% endfor %}
                 </div>
                 {% else %}
