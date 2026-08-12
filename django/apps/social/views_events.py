@@ -27,7 +27,11 @@ def _event_posts(event, *, photos_only=False, limit=30, viewer=None):
         Post.objects.filter(topic=event.topic_key)
         .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift"))
         .select_related("social_user", "shared_post", "shared_post__social_user")
-        .defer(*POST_DEFER, *profile_related("social_user__"))
+        .defer(
+            *POST_DEFER,
+            *profile_related("social_user__"),
+            *profile_related("shared_post__social_user__"),
+        )
         .prefetch_related(
             "media",
             Prefetch(

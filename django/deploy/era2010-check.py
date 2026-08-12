@@ -227,6 +227,14 @@ def main():
             defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
         )
         old_status, old_partner = me.relationship_status, me.relationship_with_id
+        old_b_status, old_b_partner = buddy2.relationship_status, buddy2.relationship_with_id
+        # Clear any prior mutual/accepted state from earlier smokes
+        RelationshipRequest.objects.filter(
+            requester__in=(me, buddy2), partner__in=(me, buddy2),
+        ).delete()
+        buddy2.relationship_with = None
+        buddy2.relationship_status = ""
+        buddy2.save(update_fields=["relationship_with", "relationship_status"])
         me.relationship_status = "in_a_relationship"
         me.relationship_with = buddy2
         me.save(update_fields=["relationship_status", "relationship_with"])
@@ -256,12 +264,14 @@ def main():
         buddy2.refresh_from_db()
         assert buddy2.relationship_with_id == me.id
         ok("relationship confirm")
-        RelationshipRequest.objects.filter(requester=me, partner=buddy2).delete()
+        RelationshipRequest.objects.filter(
+            requester__in=(me, buddy2), partner__in=(me, buddy2),
+        ).delete()
         me.relationship_status = old_status or ""
         me.relationship_with_id = old_partner
         me.save(update_fields=["relationship_status", "relationship_with"])
-        buddy2.relationship_with = None
-        buddy2.relationship_status = ""
+        buddy2.relationship_status = old_b_status or ""
+        buddy2.relationship_with_id = old_b_partner
         buddy2.save(update_fields=["relationship_with", "relationship_status"])
     else:
         ok("relationship confirm skipped (no buddy)")
