@@ -60,6 +60,9 @@ def story_key_for(item: dict) -> str | None:
     post = item.get("post")
     if kind == "hashtag" and tag is not None and post is not None:
         return f"hashtag:{tag.id}:{post.id}"
+    checkin = item.get("checkin")
+    if kind == "safety" and checkin is not None and getattr(checkin, "id", None):
+        return f"safety:{checkin.id}"
     return None
 
 

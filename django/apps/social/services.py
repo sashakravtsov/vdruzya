@@ -1008,6 +1008,8 @@ def news_items(viewer=None, limit=40):
     e12._add_collections(items, blocked, fids, limit)
     from apps.social import era2013 as e13
     e13._add_hashtag_stories(items, blocked, fids, limit)
+    from apps.social import era2014 as e14
+    e14._add_safety_stories(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[: limit * 2]
     if viewer:
@@ -1063,6 +1065,7 @@ def feed_rail(viewer):
     from apps.social import feed_hide as fh
     from apps.social import era2011 as e11
     from apps.social import era2013 as e13
+    from apps.social import era2014 as e14
     from apps.social import photo_tags as ptags
     from apps.social.models import Community, Company, Notification
 
@@ -1104,6 +1107,8 @@ def feed_rail(viewer):
         "ticker": e11.ticker_items(viewer, 12) if viewer else [],
         "trending": e13.trending_topics(viewer, 8) if viewer else [],
         "nearby_rail": (e13.nearby_friends(viewer, limit=6)[0] if viewer else []),
+        "saved_rail": e14.list_saves(viewer, limit=5) if viewer else [],
+        "safety_rail": e14.active_safety_events(3) if viewer else [],
     }
 
 

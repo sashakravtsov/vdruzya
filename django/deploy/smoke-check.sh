@@ -22,6 +22,7 @@ for path in \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
   /places:302 /questions:302 /polls:302 /anniversaries:302 /og:302 /collections:302 \
   /graph:302 /trending:302 /nearby:302 /hashtag/test:302 \
+  /saves:302 /safety:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -651,6 +652,14 @@ if ! grep -q 'name="graph"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
 else
   echo "OK   2013 Graph Search + Hashtags + Nearby + Trending routes"
 fi
+if ! grep -q 'name="saves"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'name="safety"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'posts.save' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'safety.show' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL 2014 Save/Safety Check routes missing"; FAIL=1
+else
+  echo "OK   2014 Save + Safety Check routes"
+fi
 echo "== FB 2009-10 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2010-modules.py \
   && .venv/bin/python deploy/era2010-check.py; then
@@ -678,5 +687,12 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2013-modules.py \
   echo "OK   2013 classic modules features"
 else
   echo "FAIL 2013 classic modules features"; FAIL=1
+fi
+echo "== FB 2014 classic modules probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2014-modules.py \
+  && .venv/bin/python deploy/era2014-check.py; then
+  echo "OK   2014 classic modules features"
+else
+  echo "FAIL 2014 classic modules features"; FAIL=1
 fi
 exit "$FAIL"

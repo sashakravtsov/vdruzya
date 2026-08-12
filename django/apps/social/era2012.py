@@ -84,6 +84,10 @@ APP_CENTER = (
      "blurb": "Друзья в вашем городе.", "detail": "Nearby Friends без GPS: совпадение по городу в профиле.", "url_name": "nearby"},
     {"slug": "hashtags", "name": "Хэштеги", "category": "social", "featured": False,
      "blurb": "Посты по #тегам.", "detail": "Хэштеги из статусов и стены — лента, тренды и Graph Search.", "url_name": "trending"},
+    {"slug": "saves", "name": "Сохранённое", "category": "tools", "featured": True,
+     "blurb": "Отложите на потом.", "detail": "FB Save 2014: сохраняйте посты, ссылки, места и страницы — список только для вас.", "url_name": "saves"},
+    {"slug": "safety", "name": "Safety Check", "category": "tools", "featured": True,
+     "blurb": "Отметьтесь: я в безопасности.", "detail": "Safety Check: отметьте себя или друга во время ЧП — друзья увидят статус в ленте.", "url_name": "safety"},
 )
 
 

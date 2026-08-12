@@ -48,7 +48,15 @@ def _toggle(me, obj, model, fk: str) -> str:
 
 
 def attach_likes(posts, viewer=None):
-    return _attach(posts, Reaction, "post_id", viewer)
+    rows = _attach(posts, Reaction, "post_id", viewer)
+    try:
+        from apps.social import era2014 as e14
+        e14.attach_saves(rows, viewer)
+    except Exception:
+        for r in rows:
+            if not hasattr(r, "saved_by_me"):
+                r.saved_by_me = False
+    return rows
 
 
 def toggle_like(me, post) -> str:

@@ -95,6 +95,11 @@
                         <button type="submit" class="linkish wall-act">Поделиться</button>
                     </form>
                     {% endif %}
+                    ·
+                    <form method="post" action="{% url 'posts.save' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish wall-act">{% if post.saved_by_me %}Убрать из сохранённых{% else %}Сохранить{% endif %}</button>
+                    </form>
                     {% else %}
                     {% if post.n_likes %}<span class="muted">{{ post.n_likes }} нравится · </span>{% endif %}
                     <span class="ico ico-comment"></span> {{ post.n_comments|default:0 }}

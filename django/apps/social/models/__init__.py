@@ -25,6 +25,7 @@ from .legacy import (
 from .era2011 import OgStory, ProfileFollow, TimelineMilestone
 from .era2012 import Collection, CollectionItem, PageTimelineMilestone
 from .era2013 import Hashtag, PostHashtag
+from .era2014 import SafetyCheckin, SafetyEvent, SavedItem
 
 __all__ = [
     "PgJSON", "PROFILE_DEFER", "POST_DEFER", "GROUP_POST_DEFER", "profile_related",
@@ -47,4 +48,5 @@ __all__ = [
     "ProfileFollow", "TimelineMilestone", "OgStory",
     "PageTimelineMilestone", "Collection", "CollectionItem",
     "Hashtag", "PostHashtag",
+    "SavedItem", "SafetyEvent", "SafetyCheckin",
 ]

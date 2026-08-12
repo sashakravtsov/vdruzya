@@ -18,6 +18,7 @@ from . import views_era2010 as era
 from . import views_era2011 as era11
 from . import views_era2012 as era12
 from . import views_era2013 as era13
+from . import views_era2014 as era14
 from . import realtime as rt
 
 urlpatterns = [
@@ -55,6 +56,12 @@ urlpatterns = [
     path("hashtag/<str:name>", era13.hashtag_show, name="hashtag"),
     path("nearby", era13.nearby_friends, name="nearby"),
     path("trending", era13.trending_home, name="trending"),
+    path("saves", era14.saves_home, name="saves"),
+    path("saves/add", era14.save_add, name="saves.add"),
+    path("saves/<int:pk>/delete", era14.save_delete, name="saves.delete"),
+    path("posts/<int:post_id>/save", era14.save_post_toggle, name="posts.save"),
+    path("safety", era14.safety_home, name="safety"),
+    path("safety/<int:pk>", era14.safety_show, name="safety.show"),
     path("gifts", gifts.gifts_home, name="gifts"),
     path("gifts/send", gifts.gift_send, name="gifts.send"),
     path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),

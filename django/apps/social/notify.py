@@ -12,6 +12,7 @@ TYPE_LABELS = {
     "family": "Семья",
     "relationship": "Отношения",
     "follow": "Подписка",
+    "safety": "Безопасность",
 }
 
 

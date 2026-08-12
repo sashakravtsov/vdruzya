@@ -98,6 +98,36 @@
             </div>
 
             <div class="profile-box">
+                <h4>Сохранённое{% if saved_rail %}<a class="edit" href="{% url 'saves' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if saved_rail %}
+                        {% for s in saved_rail %}
+                        <div class="rail-row">
+                            <a href="{{ s.get_absolute_url }}">{{ s.title|default:"Сохранено" }}</a>
+                            <span class="muted"> · {{ s.kind }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted"><a href="{% url 'saves' %}">Сохранённое</a> — отложите посты на потом</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if safety_rail %}
+            <div class="profile-box">
+                <h4>Safety Check<a class="edit" href="{% url 'safety' %}">все</a></h4>
+                <div class="profile-box-body">
+                    {% for ev in safety_rail %}
+                    <div class="rail-row">
+                        <a href="{% url 'safety.show' ev.id %}">{{ ev.title }}</a>
+                        {% if ev.city %}<div class="muted">{{ ev.city }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
                 <h4>Заявки</h4>
                 <div class="profile-box-body">
                     {% if requests %}
