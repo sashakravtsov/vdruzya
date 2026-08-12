@@ -42,8 +42,12 @@ else
   echo "OK   no legacy realtime clients"
 fi
 H="$(curl -sL "${BASE_URL}/" | grep -oE 'static/css/classic\.[a-f0-9]+\.css' | head -1 || true)"
-if [[ -n "$H" ]] && curl -s "${BASE_URL}/${H}" | grep -Eq 'pageheaderbg\.[a-f0-9]+\.png'; then
+HN="$(basename "${H:-}")"
+if [[ -n "$H" ]] && curl -sL --compressed "${BASE_URL}/${H}" | grep -Eq 'pageheaderbg\.[a-f0-9]+\.png'; then
   echo "OK   Manifest header image"
+elif [[ -n "$HN" && -f "${ROOT}/django/staticfiles/css/${HN}" ]] \
+  && grep -Eq 'pageheaderbg\.[a-f0-9]+\.png' "${ROOT}/django/staticfiles/css/${HN}"; then
+  echo "OK   Manifest header image (staticfiles)"
 else
   echo "FAIL Manifest header image (${H:-none})"; FAIL=1
 fi
