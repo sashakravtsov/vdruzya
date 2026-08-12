@@ -311,7 +311,7 @@ def friendship_page(me, other):
 
 def upcoming_anniversaries(viewer=None, days=30, limit=20):
     """Friends whose friendship anniversary falls in the next `days`."""
-    from datetime import timedelta
+    from datetime import datetime, timedelta
     from django.utils import timezone
 
     if not viewer:
@@ -329,7 +329,13 @@ def upcoming_anniversaries(viewer=None, days=30, limit=20):
         since = friends_since(viewer, row.friend)
         if not since:
             continue
-        d = timezone.localtime(since).date() if hasattr(since, "tzinfo") else since.date()
+        if isinstance(since, datetime):
+            if timezone.is_aware(since):
+                d = timezone.localtime(since).date()
+            else:
+                d = since.date()
+        else:
+            d = since
         if d.year >= today.year:
             continue  # not yet a year
         try:

@@ -167,8 +167,8 @@ def main():
     )
     assert r.status_code in (301, 302)
     me.refresh_from_db()
-    assert me.headline and "QA Cafe" in (me.headline or "") or place.name in (me.headline or "")
-    assert PlaceCheckin.objects.filter(place=place, social_user=me).exists()
+    assert place.name in (me.headline or "")
+    assert PlaceCheckin.objects.filter(place=place, social_user=me, message="QA status place").exists()
     ok("status with place")
 
     # cleanup
