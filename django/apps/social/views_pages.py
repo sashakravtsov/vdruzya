@@ -228,7 +228,7 @@ def page_post(request, pk):
         created_at=t, updated_at=t,
     )
     post.save()
-    path = attach_wall(post, list(request.FILES.getlist("photo")), me, max_photos=1)
+    path = attach_wall(post, list(request.FILES.getlist("photo")), me, max_photos=5)
     if path:
         post.media_path = path
         post.kind = "photo"

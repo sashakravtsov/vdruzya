@@ -103,6 +103,10 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "/storage/"
 MEDIA_ROOT = Path("/var/www/projects/vdruzya.ru/storage/public")
 FILE_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
+# Multipart may include video files (streamed to temp disk above FILE_UPLOAD_MAX_MEMORY_SIZE).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 40 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
+FFMPEG_BIN = env("FFMPEG_BIN", default="ffmpeg")
 
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="")

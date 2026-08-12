@@ -627,6 +627,12 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-classic-modules.py \
 else
   echo "FAIL classic modules features"; FAIL=1
 fi
+echo "== Classic media pipeline probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/media-check.py; then
+  echo "OK   media pipeline features"
+else
+  echo "FAIL media pipeline features"; FAIL=1
+fi
 if ! grep -q 'name="og"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'profile.follow' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'profile.milestones' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then

@@ -41,7 +41,10 @@
             {% if item.kind == 'video' %}добавил(а) видео{% else %}поделился ссылкой{% endif %}
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
-                {% if item.post.link_url %}
+                {% if item.kind == 'video' %}
+                <a href="{% url 'posts.show' item.post.id %}"><b>{{ item.post.media_label|default:"Видео" }}</b></a>
+                {% include "social/_post_media.html" with post=item.post %}
+                {% elif item.post.link_url %}
                 <a href="{{ item.post.link_url }}" rel="nofollow noopener"><b>{{ item.post.media_label|default:item.post.link_url }}</b></a>
                 {% else %}
                 <a href="{% url 'posts.show' item.post.id %}"><b>{{ item.post.media_label|default:"Ссылка" }}</b></a>

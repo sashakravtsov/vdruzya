@@ -42,24 +42,59 @@ def unpack_link_body(body: str) -> tuple[str, str]:
     return url, blurb
 
 
-def create_posted_item(me, *, kind: str, title: str, url: str, blurb: str = "", visibility="friends"):
-    """kind: link | video — stored as Post."""
+def create_posted_item(me, *, kind: str, title: str, url: str = "", blurb: str = "",
+                       visibility="friends", upload=None):
+    """kind: link | video — URL and/or uploaded video file (same media disk as photos)."""
     kind = kind if kind in ("link", "video") else "link"
     title = (title or "").strip()[:160] or ("Видео" if kind == "video" else "Ссылка")
     url = normalize_url(url)
-    if not me or not url:
+    if not me:
         return None
     t = now()
+    media_path = None
+    body_url = url
+    if kind == "video" and upload is not None:
+        from apps.social.media import save_video
+        try:
+            video_path, poster = save_video(upload, "videos")
+        except ValueError:
+            return None
+        body_url = f"storage:{video_path}"
+        media_path = poster
+        if not title:
+            title = "Видео"
+    elif not body_url:
+        return None
     return Post.objects.create(
         social_user=me,
         kind=kind,
         topic=kind,
         media_label=title,
-        body=pack_link_body(url, blurb),
+        media_path=media_path,
+        body=pack_link_body(body_url, blurb),
         visibility=visibility or "friends",
         created_at=t,
         updated_at=t,
     )
+
+
+def hydrate_posted(post):
+    """Attach link_url / link_blurb / video_url / is_file_video for templates."""
+    from apps.social.media import media_url
+    url, blurb = unpack_link_body(post.body)
+    post.link_blurb = blurb
+    post.is_file_video = False
+    post.video_url = None
+    if url.startswith("storage:"):
+        path = url[len("storage:"):]
+        post.is_file_video = True
+        post.video_url = media_url(path)
+        post.link_url = post.get_absolute_url()
+    else:
+        post.link_url = url
+        if getattr(post, "kind", "") == "video":
+            post.video_url = url
+    return post
 
 
 def list_posted(viewer, kind: str, *, mine=False, limit=40):
@@ -77,7 +112,7 @@ def list_posted(viewer, kind: str, *, mine=False, limit=40):
         qs = qs.filter(social_user_id__in=fids)
     rows = list(qs[:limit])
     for p in rows:
-        p.link_url, p.link_blurb = unpack_link_body(p.body)
+        hydrate_posted(p)
     return rows
 
 

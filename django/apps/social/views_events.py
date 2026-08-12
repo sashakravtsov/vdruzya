@@ -158,7 +158,7 @@ def event_post(request, event_id):
         post.kind = "photo" if files else "text"
         post.created_at = post.updated_at = now()
         post.save()
-        path = attach_wall(post, files, me, max_photos=1)
+        path = attach_wall(post, files, me, max_photos=5)
         if path:
             post.media_path = path
             post.kind = "photo"

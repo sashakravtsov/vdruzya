@@ -17,25 +17,36 @@ _POSTED_TEMPLATE = "social/links.html"
 
 def _posted_home(request, *, kind: str, title: str, template: str, nav: str):
     me = profile_of(request.user)
-    form = PostedItemForm(request.POST or None)
+    allow_upload = kind == "video"
+    form = PostedItemForm(
+        request.POST or None, request.FILES or None, allow_upload=allow_upload,
+    )
     mine = request.GET.get("mine") == "1"
     if request.method == "POST":
         if form.is_valid():
             post = cx.create_posted_item(
                 me,
                 kind=kind,
-                title=form.cleaned_data["title"],
-                url=form.cleaned_data["url"],
+                title=form.cleaned_data.get("title") or "",
+                url=form.cleaned_data.get("url") or "",
                 blurb=form.cleaned_data.get("blurb") or "",
                 visibility=form.cleaned_data.get("visibility") or "friends",
+                upload=form.cleaned_data.get("video") if allow_upload else None,
             )
             if post:
                 bump_news()
                 messages.success(request, "Опубликовано." if kind == "link" else "Видео добавлено.")
                 return redirect(request.path + ("?mine=1" if mine else ""))
-            messages.error(request, "Проверьте ссылку.")
+            messages.error(
+                request,
+                "Не удалось сохранить. Проверьте ссылку или файл (MP4/WebM · до 32 МБ).",
+            )
         else:
-            messages.error(request, "Укажите название и адрес.")
+            messages.error(
+                request,
+                "Укажите название и адрес." if kind == "link"
+                else "Укажите ссылку или загрузите файл видео.",
+            )
     items = cx.list_posted(me, kind, mine=mine, limit=40) if me else []
     return render(request, template, {
         "me": me, "form": form, "items": items, "mine": mine,

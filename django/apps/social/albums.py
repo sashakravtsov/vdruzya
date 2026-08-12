@@ -58,11 +58,19 @@ def albums_for(profile, viewer, limit=40):
 
 
 def save_photos(album, files, title=""):
-    n, label0, first_path = 0, (title or "").strip(), None
+    """Save up to 10 photos; Pillow-process each. Returns (saved_count, skipped_count)."""
+    n, skipped, label0, first_path = 0, 0, (title or "").strip(), None
+    max_bytes = getattr(settings, "FILE_UPLOAD_MAX_MEMORY_SIZE", 3 * 1024 * 1024)
     for f in (files or [])[:10]:
-        if getattr(f, "size", 0) > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
+        size = getattr(f, "size", 0) or 0
+        if size > max_bytes * 4:  # allow TemporaryUploadedFile a bit over in-memory cap
+            skipped += 1
             continue
-        path = save_image(f, "photos")
+        try:
+            path = save_image(f, "photos")
+        except Exception:
+            skipped += 1
+            continue
         label = (label0 or Path(getattr(f, "name", "") or "photo").stem)[:120] or "Фото"
         Photo.objects.create(
             album=album, title=label, path=path, color="#A3D6F5",
@@ -78,7 +86,7 @@ def save_photos(album, files, title=""):
             album.cover_path = first_path
             fields.append("cover_path")
         album.save(update_fields=fields)
-    return n
+    return n, skipped
 
 
 def delete_photo_file(photo):

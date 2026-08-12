@@ -121,18 +121,23 @@ def photo_upload(request, album_id):
         messages.error(request, "Нельзя загружать.")
         return redirect("albums.show", album_id=album_id)
     form = PhotoUploadForm(request.POST, request.FILES)
-    if not form.is_valid():
-        messages.error(request, "Укажите название и файл изображения.")
-        return redirect("albums.show", album_id=album_id)
     files = list(request.FILES.getlist("photo") or [])
-    one = form.cleaned_data.get("photo")
-    if one and one not in files:
-        files = [one] + files
-    n = save_photos(album, files, form.cleaned_data.get("title") or "")
-    if n:
-        messages.success(request, "Фото добавлено." if n == 1 else f"Добавлено фото: {n}.")
+    if not files:
+        messages.error(request, "Выберите одно или несколько изображений (JPEG, PNG, GIF).")
+        return redirect("albums.show", album_id=album_id)
+    if not form.is_valid():
+        # title is optional — still accept files
+        title = (request.POST.get("title") or "").strip()
     else:
-        messages.error(request, "Файл слишком большой или неверный.")
+        title = form.cleaned_data.get("title") or ""
+    n, skipped = save_photos(album, files, title)
+    if n:
+        msg = "Фото добавлено." if n == 1 else f"Добавлено фото: {n}."
+        if skipped:
+            msg += f" Пропущено: {skipped}."
+        messages.success(request, msg)
+    else:
+        messages.error(request, "Не удалось загрузить (размер/формат). JPEG, PNG, GIF · до 3 МБ.")
     return redirect("albums.show", album_id=album_id)
 
 

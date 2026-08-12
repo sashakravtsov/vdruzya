@@ -13,10 +13,21 @@
         <div class="profile-box">
             <h4>{% if kind == 'video' %}Добавить видео{% else %}Поделиться ссылкой{% endif %}</h4>
             <div class="profile-box-body">
-                <form method="post">{% csrf_token %}
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        {% if kind == 'video' and form.video %}
+                        <tr>
+                            <td class="label">Файл:</td>
+                            <td>
+                                {{ form.video }}
+                                <div class="file-hint muted">MP4 / WebM / MOV · до 32 МБ · хранится вместе с фото</div>
+                            </td>
+                        </tr>
+                        <tr><td class="label">или ссылка:</td><td>{{ form.url }}</td></tr>
+                        {% else %}
                         <tr><td class="label">Адрес:</td><td>{{ form.url }}</td></tr>
+                        {% endif %}
                         <tr><td class="label">Описание:</td><td>{{ form.blurb }}</td></tr>
                         <tr><td class="label">Кому:</td><td>{{ form.visibility }}</td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Опубликовать"></td></tr>
@@ -29,14 +40,21 @@
             <div class="profile-box-body">
                 {% for p in items %}
                 <div class="event-list-row">
-                    <b><a href="{{ p.link_url }}" rel="nofollow noopener">{{ p.media_label|default:page_title }}</a></b>
+                    <b><a href="{% url 'posts.show' p.id %}">{{ p.media_label|default:page_title }}</a></b>
                     <div class="muted">
                         <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
                         {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
                         · <a href="{% url 'posts.show' p.id %}">открыть</a>
                     </div>
+                    {% if kind == 'video' %}
+                    {% include "social/_post_media.html" with post=p %}
+                    {% endif %}
                     {% if p.link_blurb %}<div>{{ p.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                    {% if kind != 'video' and p.link_url %}
                     <div class="muted"><a href="{{ p.link_url }}" rel="nofollow noopener">{{ p.link_url|truncatechars:60 }}</a></div>
+                    {% elif kind == 'video' and p.video_url and not p.is_file_video %}
+                    <div class="muted"><a href="{{ p.video_url }}" rel="nofollow noopener">{{ p.video_url|truncatechars:60 }}</a></div>
+                    {% endif %}
                 </div>
                 {% empty %}<p class="muted">Пока пусто.</p>{% endfor %}
             </div>

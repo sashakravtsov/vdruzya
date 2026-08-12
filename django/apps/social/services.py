@@ -347,9 +347,8 @@ def mini_feed(profile, limit=8, viewer=None):
         if kind == "wall":
             row["wall_id"] = oid
         if kind in ("link", "video"):
-            from apps.social.classic_extra import unpack_link_body
-            url, blurb = unpack_link_body(p.body)
-            p.link_url, p.link_blurb = url, blurb
+            from apps.social.classic_extra import hydrate_posted
+            hydrate_posted(p)
         items.append(row)
     if friends or own:
         from apps.social.models import CompanyFollower, PhotoTag
@@ -984,9 +983,8 @@ def news_items(viewer=None, limit=40):
                 "shared": getattr(p, "shared_post", None),
             })
         elif kind in ("link", "video"):
-            from apps.social.classic_extra import unpack_link_body
-            url, blurb = unpack_link_body(p.body)
-            p.link_url, p.link_blurb = url, blurb
+            from apps.social.classic_extra import hydrate_posted
+            hydrate_posted(p)
             items.append({"kind": kind, "at": p.created_at, "post": p, "actor": p.social_user})
         else:
             items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})

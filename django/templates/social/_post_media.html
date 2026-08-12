@@ -1,4 +1,14 @@
-{# Wall/group media — FB 2006 page links (no lightbox). #}
+{# Wall/group media — FB 2006 page links (no lightbox). Uploaded video uses HTML5 player. #}
+{% if post.kind == 'video' and post.video_url %}
+<div class="wall-media wall-media-video">
+    <video controls preload="metadata" {% if post.media_url %}poster="{{ post.media_url }}"{% endif %}>
+        <source src="{{ post.video_url }}" type="video/mp4">
+    </video>
+    {% if not post.is_file_video and post.video_url %}
+    <div class="muted"><a href="{{ post.video_url }}" rel="nofollow noopener">открыть ролик</a></div>
+    {% endif %}
+</div>
+{% else %}
 {% with extras=post.media.all %}
 {% if extras %}
 <div class="wall-media{% if extras|length == 1 %} wall-media-single{% endif %}">
@@ -8,3 +18,4 @@
 <p class="wall-media wall-media-single"><a href="{{ post.get_absolute_url }}"><img src="{{ post.media_url }}" alt="" class="news-photo"></a></p>
 {% endif %}
 {% endwith %}
+{% endif %}

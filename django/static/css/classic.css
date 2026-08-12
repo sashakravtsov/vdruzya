@@ -424,6 +424,12 @@ button.linkish .ico { margin-right: 2px; }
   float: none; width: auto; height: auto; max-width: 100%; max-height: none;
   border: 1px solid #B3B3B3; display: inline-block;
 }
+.wall-media-video { margin: 6px 0; }
+.wall-media-video video {
+  display: block; max-width: 100%; width: 400px; height: auto;
+  background: #000; border: 1px solid #B3B3B3;
+}
+.feed-main .wall-media-video video { width: 360px; }
 .discuss-table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; }
 .discuss-table th {
   text-align: left; color: #777; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif;
