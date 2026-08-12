@@ -1,0 +1,21 @@
+{# Album listing — expects `albums`; optional empty_msg #}
+{% load static vd %}
+{% if albums %}
+<div class="album-index">
+    {% for a in albums %}
+    <a class="album" href="{% url 'albums.show' a.id %}">
+        <span class="album-cover">
+            {% if a.cover_url %}
+            <img src="{{ a.cover_url }}" alt="">
+            {% else %}
+            <img class="album-cover-fallback" src="{% static 'img/nophoto.gif' %}" alt="" width="75" height="56">
+            {% endif %}
+        </span>
+        <span class="album-title">{{ a.title }}</span>
+        <span class="album-meta">{% if a.n %}{{ a.n }} фото · {% endif %}{{ a|album_vis }}</span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="muted">{{ empty_msg|default:"Альбомов пока нет." }}</p>
+{% endif %}
