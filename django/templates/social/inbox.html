@@ -14,7 +14,8 @@
             <h4>{% if folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h4>
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'inbox' %}">
-                    <input class="inputtext" type="text" name="q" value="{{ q }}" placeholder="Поиск…" aria-label="Поиск сообщений">
+                    <label class="muted">Поиск:</label>
+                    <input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off">
                     {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                     <input type="submit" class="inputbutton" value="Найти">
                 </form>

@@ -1,17 +1,6 @@
 <div class="profile-box">
     <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все альбомы</a>{% endif %}</h4>
     <div class="profile-box-body profile-albums" id="photos">
-        {% for a in albums %}
-        <div class="album">
-            <a href="{% url 'albums.show' a.id %}">
-                {% if a.cover_url %}<img src="{{ a.cover_url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
-                <span class="album-title">{{ a.title }}</span>
-                <span class="date">{% if a.n %}{{ a.n }} фото · {% endif %}{% if a.created_at %}{{ a.created_at|date:"j E Y" }}{% endif %}</span>
-            </a>
-        </div>
-        {% empty %}
-        <p class="muted">Альбомов пока нет.</p>
-        {% endfor %}
-        <div class="clear"></div>
+        {% include "social/_album_index.html" %}
     </div>
 </div>

@@ -34,23 +34,28 @@
             </div>
             {% else %}
 
+            <div id="tabs">
+                <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                <div class="{% if tab == 'discussion' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=discussion">Доска обсуждений</a></div>
+                <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                <div class="{% if tab == 'members' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=members">Участники</a></div>
+                <div class="{% if tab == 'events' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=events">События</a></div>
+            </div>
+
+            {% if tab == 'wall' %}
             <div class="profile-box">
                 <h4>Информация</h4>
                 <div class="profile-box-body">
-                    <div class="profile-subsection">
-                        <h5>О группе</h5>
-                        <table class="infotable">
-                            <tr><td class="label">Название:</td><td>{{ group.name }}</td></tr>
-                            {% if group.category %}<tr><td class="label">Тип:</td><td>{{ group.category|ru_label }}</td></tr>{% endif %}
-                            <tr><td class="label">Доступ:</td><td>{{ group.privacy|ru_label }}</td></tr>
-                            {% if group.description or group.short_description %}
-                            <tr><td class="label">Описание:</td><td>{{ group.short_description|default:group.description|linebreaksbr }}</td></tr>
-                            {% endif %}
-                        </table>
-                    </div>
+                    <table class="infotable">
+                        <tr><td class="label">Название:</td><td>{{ group.name }}</td></tr>
+                        {% if group.category %}<tr><td class="label">Тип:</td><td>{{ group.category|ru_label }}</td></tr>{% endif %}
+                        <tr><td class="label">Доступ:</td><td>{{ group.privacy|ru_label }}</td></tr>
+                        {% if group.description or group.short_description %}
+                        <tr><td class="label">Описание:</td><td>{{ group.short_description|default:group.description|linebreaksbr }}</td></tr>
+                        {% endif %}
+                    </table>
                 </div>
             </div>
-
             {% if group.short_description or is_admin %}
             <div class="profile-box">
                 <h4>Последние новости{% if is_admin %}<a class="edit" href="{% url 'groups.edit' group.id %}">ред.</a>{% endif %}</h4>
@@ -63,32 +68,6 @@
                 </div>
             </div>
             {% endif %}
-
-            <div class="profile-box">
-                <h4>Фото</h4>
-                <div class="profile-box-body">
-                    {% if can_post %}
-                    <form method="post" action="{% url 'groups.posts' group.id %}" enctype="multipart/form-data" class="photo-upload-form">{% csrf_token %}
-                        {{ photo_form.board }}
-                        <input type="hidden" name="body" value="">
-                        <table class="formtable" cellpadding="0" cellspacing="0">
-                            {% include "social/_file_row.html" with field=photo_form.photo label="Добавить фото" %}
-                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Загрузить"></td></tr>
-                        </table>
-                    </form>
-                    {% endif %}
-                    {% if photos %}
-                    <div class="group-photo-grid">
-                        {% for p in photos %}
-                        <a href="{% if p.topic == 'wall' %}#topic-{{ p.id }}{% else %}?topic={{ p.id }}#board{% endif %}"><img src="{{ p.media_url }}" alt=""></a>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="empty-panel"><p class="muted">Пока никто не загрузил фото.</p></div>
-                    {% endif %}
-                </div>
-            </div>
-
             <div class="profile-box group-wall-box wall-box" id="wall">
                 <h4>Стена</h4>
                 <div class="profile-box-body">
@@ -103,9 +82,11 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
 
+            {% if tab == 'discussion' %}
             <div class="profile-box" id="board">
-                <h4>Доска обсуждений{% if n_topics > posts|length %}<a class="edit" href="?all=1#board">все</a>{% endif %}</h4>
+                <h4>Доска обсуждений{% if n_topics > posts|length %}<a class="edit" href="?tab=discussion&amp;all=1">все</a>{% endif %}</h4>
                 <div class="profile-box-body">
                     {% if can_post and not open_topic %}
                     {% url 'groups.posts' group.id as gpost %}
@@ -124,7 +105,7 @@
                         <tbody>
                             {% for p in posts %}
                             <tr class="{% if open_topic and open_topic.id == p.id %}is-open{% endif %}">
-                                <td class="col-topic"><a href="?topic={{ p.id }}#board">{{ p.title_line }}</a></td>
+                                <td class="col-topic"><a href="?tab=discussion&amp;topic={{ p.id }}">{{ p.title_line }}</a></td>
                                 <td class="col-n">{{ p.n_comments }}</td>
                                 <td class="col-author"><a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a></td>
                                 <td class="col-when muted">{% if p.updated_at or p.created_at %}{{ p.updated_at|default:p.created_at|timesince }} назад{% else %}—{% endif %}</td>
@@ -133,10 +114,10 @@
                         </tbody>
                     </table>
                     {% if n_topics > posts|length %}
-                    <p class="muted">Показано {{ posts|length }} из {{ n_topics }} · <a href="?all=1#board">показать все</a></p>
+                    <p class="muted">Показано {{ posts|length }} из {{ n_topics }} · <a href="?tab=discussion&amp;all=1">показать все</a></p>
                     {% endif %}
                     {% if open_topic %}
-                    <p class="muted"><a href="{% url 'groups.show' group.id %}#board">← к списку тем</a></p>
+                    <p class="muted"><a href="?tab=discussion">← к списку тем</a></p>
                     {% include "social/_discuss_thread.html" with p=open_topic %}
                     {% endif %}
                     {% else %}
@@ -144,7 +125,48 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
 
+            {% if tab == 'photos' %}
+            <div class="profile-box">
+                <h4>Фото</h4>
+                <div class="profile-box-body">
+                    {% if can_post %}
+                    <form method="post" action="{% url 'groups.posts' group.id %}" enctype="multipart/form-data" class="photo-upload-form">{% csrf_token %}
+                        {{ photo_form.board }}
+                        <input type="hidden" name="body" value="">
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            {% include "social/_file_row.html" with field=photo_form.photo label="Добавить фото" %}
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Загрузить"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% if photos %}
+                    <div class="group-photo-grid">
+                        {% for p in photos %}
+                        <a href="{% if p.topic == 'wall' %}?tab=wall#topic-{{ p.id }}{% else %}?tab=discussion&amp;topic={{ p.id }}{% endif %}"><img src="{{ p.media_url }}" alt=""></a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="muted">Пока никто не загрузил фото.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'members' %}
+            <div class="profile-box" id="members">
+                <h4>Участники<a class="edit" href="{% url 'groups.members' group.id %}">все</a></h4>
+                <div class="profile-box-body">
+                    <p class="muted">В этой группе {{ n_members }} участник{% if n_members == 1 %}{% elif n_members > 1 and n_members < 5 %}а{% else %}ов{% endif %}{% if group.category %} · {{ group.category|ru_label }}{% endif %}.</p>
+                    {% if members %}
+                    {% include "social/_profile_friend_grid.html" with friends=members %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'events' %}
             <div class="profile-box" id="events">
                 <h4>События</h4>
                 <div class="profile-box-body">
@@ -164,7 +186,7 @@
                         {% if user.is_authenticated %}
                         <form method="post" action="{% url 'events.rsvp' e.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="going">
-                            <input type="hidden" name="next" value="{{ request.path }}#events">
+                            <input type="hidden" name="next" value="?tab=events">
                             <button type="submit" class="linkish">Пойду</button>
                         </form>
                         ·
@@ -176,23 +198,8 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
 
-            <div class="profile-box" id="members">
-                <h4>Участники<a class="edit" href="{% url 'groups.members' group.id %}">все</a></h4>
-                <div class="profile-box-body">
-                    <p class="muted">В этой группе {{ n_members }} участник{% if n_members == 1 %}{% elif n_members > 1 and n_members < 5 %}а{% else %}ов{% endif %}{% if group.category %} · {{ group.category|ru_label }}{% endif %}.</p>
-                    {% if members %}
-                    <div class="profile-friend-grid members-grid">
-                        {% for m in members %}
-                        <a class="profile-friend-tile" href="{% url 'profile' m.id %}">
-                            {% avatar m 50 %}
-                            <span>{{ m.name }}</span>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
             {% endif %}
         </div>
 
@@ -218,7 +225,11 @@
                 {% else %}
                     <p class="group-join-status"><b>Войдите</b><span class="label">Чтобы вступить или написать группе</span></p>
                 {% endif %}
-                {% if can_view %}<a href="#wall">Стена</a><a href="#board">Доска обсуждений</a>{% endif %}
+                {% if can_view %}
+                <a href="?tab=wall">Стена</a>
+                <a href="?tab=discussion">Доска обсуждений</a>
+                <a href="?tab=members">Участники ({{ n_members }})</a>
+                {% endif %}
                 {% if user.is_authenticated %}
                     {% if is_member %}
                         {% if is_admin %}<a href="{% url 'groups.edit' group.id %}">Редактировать группу{% if pending %} ({{ pending|length }}){% endif %}</a>{% endif %}
@@ -290,10 +301,11 @@
                 <div class="profile-box-body">
                     {% if related %}
                     <ul class="plain">{% for g in related %}<li><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a> <span class="muted">({{ g.n_members }})</span></li>{% endfor %}</ul>
-                    {% else %}<div class="empty-panel"><p class="muted">Нет похожих.</p></div>{% endif %}
+                    {% else %}<p class="muted">Нет похожих.</p>{% endif %}
                 </div>
             </div>
         </div>
+        <div class="clear"></div>
     </div>
 </div>
 {% endblock %}

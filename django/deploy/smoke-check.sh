@@ -160,6 +160,22 @@ if grep -q 'news-card' "${ROOT}/django/templates/social/_news_item.html" 2>/dev/
 else
   echo "OK   no news-card wrappers"
 fi
+if grep -q 'album-card\|empty-panel' "${ROOT}/django/templates/social/"*.html "${ROOT}/django/templates/social/"*.html 2>/dev/null \
+   || grep -rq 'album-card\|empty-panel' "${ROOT}/django/templates/social/" 2>/dev/null; then
+  echo "FAIL album-card/empty-panel still in templates"; FAIL=1
+else
+  echo "OK   no album-card/empty-panel"
+fi
+if grep -q '_ADMIN' "${ROOT}/django/apps/social/group_page.py" 2>/dev/null; then
+  echo "FAIL group_page still references _ADMIN"; FAIL=1
+else
+  echo "OK   group ADMIN_ROLES"
+fi
+if ! grep -q 'id="tabs"' "${ROOT}/django/templates/social/group.html" 2>/dev/null; then
+  echo "FAIL group page missing #tabs"; FAIL=1
+else
+  echo "OK   group page has #tabs"
+fi
 echo "== Wall/Groups feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/wall-groups-check.py; then
   echo "OK   wall/groups features"

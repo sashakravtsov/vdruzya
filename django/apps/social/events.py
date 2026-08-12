@@ -10,7 +10,6 @@ from apps.social.models import Event, EventAttendee, Notification, SocialProfile
 from apps.social.services import friend_ids, now
 
 STATUSES = ("going", "maybe", "declined")
-_LABEL = {"going": "Иду", "maybe": "Возможно", "declined": "Не иду"}
 _RU_DT = re.compile(
     r"^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$"
 )
@@ -176,6 +175,3 @@ def invite_candidates(me, event, limit=24):
         SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id__in=taken).order_by("name")[:limit]
     )
 
-
-def status_label(status):
-    return _LABEL.get(status, "")

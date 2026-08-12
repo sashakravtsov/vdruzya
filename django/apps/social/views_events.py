@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.social import events as ev
+from apps.social.forms import EventForm
 from apps.social.services import profile_of
 
 _TABS = ("upcoming", "past", "hosting", "going", "invited")
@@ -13,18 +14,20 @@ _TABS = ("upcoming", "past", "hosting", "going", "invited")
 @login_required
 def events_home(request):
     me = profile_of(request.user)
+    form = EventForm(request.POST or None)
     if request.method == "POST" and me:
-        event = ev.create_event(
-            me,
-            title=request.POST.get("title"),
-            place=request.POST.get("place"),
-            description=request.POST.get("description"),
-            starts_at=ev.parse_starts(request.POST.get("starts_at")),
-        )
-        if event:
-            ev.set_rsvp(me, event, "going")
-            messages.success(request, "Событие создано.")
-            return redirect("events.show", event_id=event.id)
+        if form.is_valid():
+            event = ev.create_event(
+                me,
+                title=form.cleaned_data["title"],
+                place=form.cleaned_data.get("place") or "—",
+                description=form.cleaned_data.get("description") or "",
+                starts_at=form.cleaned_data["starts_at"],
+            )
+            if event:
+                ev.set_rsvp(me, event, "going")
+                messages.success(request, "Событие создано.")
+                return redirect("events.show", event_id=event.id)
         messages.error(request, "Укажите название и дату.")
         return redirect("events")
 
@@ -40,7 +43,7 @@ def events_home(request):
         Notification.objects.filter(social_user=me, type="event_invite", seen=False).update(seen=True)
     return render(
         request, "social/events.html",
-        {"events": items, "me": me, "tab": tab, "nav": "events"},
+        {"events": items, "me": me, "tab": tab, "form": form, "nav": "events"},
     )
 
 
@@ -72,7 +75,6 @@ def event_rsvp(request, event_id):
     event = ev.get_event(event_id)
     status = (request.POST.get("status") or "").strip()
     if status not in ev.STATUSES:
-        # legacy toggle from group page
         status = "" if ev.my_status(me, event) == "going" else "going"
     if status:
         ev.set_rsvp(me, event, status)
@@ -87,8 +89,7 @@ def event_rsvp(request, event_id):
 def event_invite(request, event_id):
     me = profile_of(request.user)
     event = ev.get_event(event_id)
-    ids = request.POST.getlist("friends")
-    n = ev.invite_friends(me, event, ids)
+    n = ev.invite_friends(me, event, request.POST.getlist("friends"))
     if n:
         messages.success(request, f"Приглашено: {n}.")
     else:

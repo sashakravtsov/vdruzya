@@ -40,6 +40,7 @@ def main():
         assert b"datetime-local" not in r.content
         assert "ДД.ММ.ГГГГ".encode() in r.content
         assert b'id="tabs"' in r.content and b"page-tabs" not in r.content
+        assert b'name="title"' in r.content  # EventForm
         assert b"event-list-row" in r.content or "Нет событий".encode() in r.content
         ok("events home")
 

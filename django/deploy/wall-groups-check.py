@@ -116,9 +116,14 @@ def main():
         fail("no group")
     r = get(f"/groups/{g.id}")
     body = r.content.decode()
+    if 'id="tabs"' not in body or "empty-panel" in body:
+        fail("group missing classic #tabs")
     for needle in ("Информация", "Стена", "Доска обсуждений", "Участники", "Руководители"):
         if needle not in body:
             fail(f"group show missing {needle}")
+    r = get(f"/groups/{g.id}?tab=members")
+    if r.status_code != 200 or "Участники" not in r.content.decode():
+        fail("group members tab")
     ok(f"group show #{g.id}")
 
     r = post(f"/groups/{g.id}/posts", {"body": "probe wall django", "board": "wall"})
@@ -129,7 +134,7 @@ def main():
         fail("wall post not saved")
     ok("group wall post")
 
-    r = get(f"/groups/{g.id}")
+    r = get(f"/groups/{g.id}?tab=wall")
     body = r.content.decode()
     if f'id="c-{post_row.id}"' not in body or "wall-comment-compose" not in body:
         fail("group comment compose missing")
@@ -157,9 +162,9 @@ def main():
         fail(f"discussion subject missing ({topic.subject!r})")
     if topic.body_text != "probe topic django":
         fail(f"discussion body_text ({topic.body_text!r})")
-    if "topic=" not in topic.get_absolute_url():
+    if "tab=discussion" not in topic.get_absolute_url() or "topic=" not in topic.get_absolute_url():
         fail(f"bad url {topic.get_absolute_url()}")
-    r = get(f"/groups/{g.id}?topic={topic.id}")
+    r = get(f"/groups/{g.id}?tab=discussion&topic={topic.id}")
     body = r.content.decode()
     if "probe subject" not in body or "discuss-open" not in body:
         fail("discussion thread chrome missing")

@@ -15,20 +15,25 @@
             <div class="{% if tab == 'past' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=past">Прошедшие</a></div>
         </div>
 
+        {% if tab == 'hosting' or tab == 'upcoming' %}
         <div class="profile-box">
             <h4>Создать событие</h4>
             <div class="profile-box-body">
                 <form method="post">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
-                        <tr><td class="label">Название:</td><td><input class="inputtext" name="title" required maxlength="255"></td></tr>
-                        <tr><td class="label">Место:</td><td><input class="inputtext" name="place" maxlength="255"></td></tr>
-                        <tr><td class="label">Когда:</td><td><input class="inputtext" type="text" name="starts_at" required maxlength="32" placeholder="ДД.ММ.ГГГГ ЧЧ:ММ" style="width:160px"></td></tr>
-                        <tr><td class="label">Описание:</td><td><textarea class="inputtext" name="description" rows="3" style="width:100%"></textarea></td></tr>
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Место:</td><td>{{ form.place }}</td></tr>
+                        <tr>
+                            <td class="label">Когда:</td>
+                            <td>{{ form.starts_at }}{% if form.starts_at.help_text %} <span class="muted">{{ form.starts_at.help_text }}</span>{% endif %}</td>
+                        </tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
                     </table>
                 </form>
             </div>
         </div>
+        {% endif %}
 
         <div class="profile-box">
             <h4>{% if tab == 'past' %}Прошедшие{% elif tab == 'going' %}Я иду{% elif tab == 'invited' %}Приглашения{% elif tab == 'hosting' %}Мои события{% else %}Ближайшие{% endif %}</h4>

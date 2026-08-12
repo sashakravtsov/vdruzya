@@ -96,8 +96,8 @@ def group_post_delete(request, pk, post_id):
 
 def _post_redirect(pk, post):
     if getattr(post, "topic", None) == "wall":
-        return redirect(f"/groups/{pk}#topic-{post.id}")
-    return redirect(f"/groups/{pk}?topic={post.id}#topic-{post.id}")
+        return redirect(f"/groups/{pk}?tab=wall#topic-{post.id}")
+    return redirect(f"/groups/{pk}?tab=discussion&topic={post.id}")
 
 
 @login_required
@@ -176,12 +176,15 @@ def group_event_create(request, pk):
     if not is_group_admin(me, group):
         return redirect("groups.show", pk=pk)
     from apps.social import events as ev
-    title = (request.POST.get("title") or "").strip()[:160]
-    place = (request.POST.get("place") or "").strip()[:160] or "—"
-    starts = ev.parse_starts(request.POST.get("starts_at"))
-    if title and starts:
+    from apps.social.forms import EventForm
+    form = EventForm(request.POST)
+    if form.is_valid():
         event = ev.create_event(
-            me, title=title, place=place, starts_at=starts, community=group,
+            me,
+            title=form.cleaned_data["title"],
+            place=form.cleaned_data.get("place") or "—",
+            starts_at=form.cleaned_data["starts_at"],
+            community=group,
         )
         if event:
             ev.set_rsvp(me, event, "going")
@@ -190,7 +193,7 @@ def group_event_create(request, pk):
             messages.error(request, "Не удалось создать событие.")
     else:
         messages.error(request, "Укажите название и дату.")
-    return redirect("groups.show", pk=pk)
+    return redirect(f"/groups/{pk}?tab=events")
 
 
 @login_required
@@ -262,8 +265,8 @@ def group_post(request, pk):
         bump_news()
         messages.success(req, "Тема создана." if p.topic == "discussion" else "Запись на стене опубликована.")
         if p.topic == "wall":
-            return redirect(f"/groups/{pk}#topic-{p.id}")
-        return redirect(f"/groups/{pk}?topic={p.id}#board")
+            return redirect(f"/groups/{pk}?tab=wall#topic-{p.id}")
+        return redirect(f"/groups/{pk}?tab=discussion&topic={p.id}")
 
     return _go(request)
 
@@ -282,8 +285,8 @@ def group_comment(request, pk, post_id):
         CommunityPost.objects.filter(pk=post.pk).update(updated_at=t)
         bump_news()
     if post.topic == "wall":
-        return redirect(f"/groups/{pk}#c-{post.id}")
-    return redirect(f"/groups/{pk}?topic={post.id}#board")
+        return redirect(f"/groups/{pk}?tab=wall#c-{post.id}")
+    return redirect(f"/groups/{pk}?tab=discussion&topic={post.id}")
 
 
 @login_required

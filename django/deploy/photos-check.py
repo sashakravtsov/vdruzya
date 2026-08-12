@@ -38,6 +38,7 @@ def main():
     r = c.get("/albums", secure=True)
     assert r.status_code == 200 and "Мои альбомы".encode() in r.content
     assert b"album-index" in r.content
+    assert b"album-card" not in r.content
     assert b"album-fb" not in r.content
     assert b"albums_user" not in r.content  # single albums template
     ok("albums index")

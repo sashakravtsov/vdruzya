@@ -3,16 +3,16 @@
 {% if albums %}
 <div class="album-index">
     {% for a in albums %}
-    <a class="album-card" href="{% url 'albums.show' a.id %}">
-        <span class="album-card-cover">
+    <a class="album" href="{% url 'albums.show' a.id %}">
+        <span class="album-cover">
             {% if a.cover_url %}
             <img src="{{ a.cover_url }}" alt="">
             {% else %}
-            <span class="album-card-empty">{{ a.title|slice:":1"|upper }}</span>
+            <span class="album-cover-fallback">{{ a.title|slice:":1"|upper }}</span>
             {% endif %}
         </span>
-        <span class="album-card-name">{{ a.title }}</span>
-        <span class="album-card-meta">{{ a.n }} фото · {{ a|album_vis }}</span>
+        <span class="album-title">{{ a.title }}</span>
+        <span class="album-meta">{% if a.n %}{{ a.n }} фото · {% endif %}{{ a|album_vis }}</span>
     </a>
     {% endfor %}
 </div>

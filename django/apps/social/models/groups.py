@@ -111,8 +111,8 @@ class CommunityPost(models.Model):
     def get_absolute_url(self):
         base = f"/groups/{self.community_id}"
         if self.topic == "wall":
-            return f"{base}#topic-{self.id}"
-        return f"{base}?topic={self.id}#board"
+            return f"{base}?tab=wall#topic-{self.id}"
+        return f"{base}?tab=discussion&topic={self.id}"
 
 
 class CommunityPostMedia(models.Model):

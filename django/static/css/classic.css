@@ -334,7 +334,6 @@ button.linkish .ico { margin-right: 2px; }
   float: left; width: 72px; height: 72px; margin: 0 4px 4px 0;
   object-fit: cover; border: 1px solid #B3B3B3; display: block;
 }
-.empty-panel { background: #f5f5f5; border: 1px solid #E5E5E5; padding: 10px; }
 .discuss-table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; }
 .discuss-table th {
   text-align: left; color: #777; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -410,10 +409,6 @@ button.linkish .ico { margin-right: 2px; }
 
 /* Groups index — FB 2005 directory (aligned with #header, no inset) */
 .groups-index #content { padding: 10px 12px 14px; }
-.groups-index .groups-nav {
-  margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--line);
-}
-.groups-index .groups-nav a.is-active { font-weight: bold; color: #333; text-decoration: none; }
 .groups-index .groups-search { margin: 0 0 10px; }
 .groups-index .groups-search label { margin-right: 6px; }
 .groups-index .groups-search .inputtext { width: 220px; }
@@ -484,24 +479,25 @@ button.linkish .ico { margin-right: 2px; }
 .classic-page-lead { margin: 0 0 10px; font-size: 11px; color: #555; }
 /* FB 2005 My Photos album index */
 .album-index { overflow: hidden; margin: 2px 0 0; }
-.album-card {
+.album-index .album {
   width: 180px; float: left; margin: 0 10px 12px 0; text-decoration: none; color: inherit; font-size: 11px;
 }
-.album-card-cover {
+.album-index .album-cover {
   width: 75px; height: 56px; float: left; margin-right: 10px; border: 1px solid #B3B3B3; background: #D8DFEA;
   overflow: hidden; display: block;
 }
-.album-card-cover img {
+.album-index .album-cover img,
+.album-index .album-cover-fallback {
   width: 75px; height: 56px; object-fit: cover; display: block; border: 0;
 }
-.album-card-empty {
-  width: 75px; height: 56px; display: block; text-align: center;
+.album-index .album-cover-fallback {
   background: #3B5998; color: #fff; font: bold 20px/56px "lucida grande", tahoma, verdana, arial, sans-serif;
+  text-align: center; object-fit: unset;
 }
-.album-card-name {
+.album-index .album-title {
   display: block; color: #3B5998; font: bold 11px/14px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
-.album-card-meta { display: block; color: gray; font-size: 11px; }
+.album-index .album-meta { display: block; color: gray; font-size: 11px; }
 .album-cover-fallback {
   display: block; width: 80px; height: 80px; text-align: center;
   background: #3B5998; color: #fff; font: bold 28px/80px var(--font);
@@ -550,8 +546,10 @@ button.linkish .ico { margin-right: 2px; }
 .photo-caption-form { margin: 12px 0 0; text-align: left; }
 .photo-page .classic-page-lead a { color: var(--fb); }
 @media (max-width:780px){
-  .album-card, .album-card-cover, .album-card-cover img, .album-card-empty { width: 110px; }
-  .album-card-cover, .album-card-cover img, .album-card-empty { height: 82px; }
+  .album-index .album, .album-index .album-cover,
+  .album-index .album-cover img, .album-index .album-cover-fallback { width: 110px; }
+  .album-index .album-cover, .album-index .album-cover img,
+  .album-index .album-cover-fallback { height: 82px; line-height: 82px; }
   .photo-gallery-item, .photo-gallery-item .photo-thumb,
   .photo-gallery-item img, .photo-gallery-item .album-photo-fallback { width: 110px; height: 82px; }
   .photo-nav-back, .photo-nav-owner { float: none; display: block; }
@@ -605,16 +603,20 @@ button.linkish .ico { margin-right: 2px; }
 }
 .people-search-form{margin:0 0 10px}
 /* directory tabs — classic #tabs */
-.people-page #tabs, .events-page #tabs {
+.people-page #tabs, .events-page #tabs, .group-page #tabs, .groups-index #tabs {
   text-align:left;padding:4px 0;margin:0 0 12px;border-bottom:solid 1px var(--fb);
 }
 .people-page #tabs .activetab, .people-page #tabs .inactivetab,
-.events-page #tabs .activetab, .events-page #tabs .inactivetab { display:inline;padding:0;margin:0; }
-.people-page #tabs a, .events-page #tabs a { margin:0;padding:4px; }
-.people-page #tabs .activetab a, .events-page #tabs .activetab a {
+.events-page #tabs .activetab, .events-page #tabs .inactivetab,
+.group-page #tabs .activetab, .group-page #tabs .inactivetab,
+.groups-index #tabs .activetab, .groups-index #tabs .inactivetab { display:inline;padding:0;margin:0; }
+.people-page #tabs a, .events-page #tabs a, .group-page #tabs a, .groups-index #tabs a { margin:0;padding:4px; }
+.people-page #tabs .activetab a, .events-page #tabs .activetab a,
+.group-page #tabs .activetab a, .groups-index #tabs .activetab a {
   color:#fff;background:var(--fb);text-decoration:none;
 }
-.people-page #tabs .inactivetab a:hover, .events-page #tabs .inactivetab a:hover {
+.people-page #tabs .inactivetab a:hover, .events-page #tabs .inactivetab a:hover,
+.group-page #tabs .inactivetab a:hover, .groups-index #tabs .inactivetab a:hover {
   background:var(--line);text-decoration:none;
 }
 .classic-person-row{
@@ -869,22 +871,9 @@ button.linkish .ico { margin-right: 2px; }
 }
 .profile .profile-subsection:first-child h5 { margin-top: 0 !important; }
 
-/* Photos on profile — archive #photos .album */
+/* Photos on profile — shared .album-index */
 .profile #photos,
 .profile .profile-albums { overflow: hidden; }
-.profile .profile-albums .album {
-  width: 180px; float: left; margin: 0 10px 10px 0; font-size: 11px;
-}
-.profile .profile-albums .album img,
-.profile .profile-albums .album .album-cover-fallback {
-  width: 75px; height: 56px; float: left; margin-right: 10px;
-  border: 1px solid #B3B3B3; object-fit: cover; display: block;
-}
-.profile .profile-albums .album .album-cover-fallback {
-  background: #3B5998; color: #fff; font: bold 20px/56px var(--font); text-align: center;
-}
-.profile .profile-albums .album .date { color: gray; display: block; }
-.profile .profile-albums .album .album-title { color: #3B5998; font-weight: bold; }
 .profile .profile-photo-thumbs a { float: left; margin: 0 6px 6px 0; }
 .profile .profile-photo-thumbs img,
 .profile .profile-photo-thumbs .album-cover-fallback {

@@ -8,18 +8,17 @@
     <div id="content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
-        <div class="groups-nav">
-            <a href="{% url 'groups' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if not mine %} class="is-active"{% endif %}>Обзор</a>
-            ·
-            <a href="{% url 'groups' %}?mine=1"{% if mine %} class="is-active"{% endif %}>Мои группы</a>
-            {% if me and not mine %} · <a href="#create">Создать группу</a>{% endif %}
+        <div id="tabs">
+            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'groups' %}{% if q %}?q={{ q|urlencode }}{% endif %}">Обзор</a></div>
+            <div class="{% if mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'groups' %}?mine=1">Мои группы</a></div>
         </div>
+        {% if me and not mine %}<p class="people-top-links"><a href="#create">Создать группу</a></p>{% endif %}
 
         {% if not mine %}
         <form method="get" class="groups-search">
             {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
             <label>Поиск:</label>
-            <input class="inputtext" name="q" value="{{ q }}" placeholder="Название группы" autocomplete="off">
+            <input class="inputtext" name="q" value="{{ q }}" autocomplete="off">
             <input class="inputsubmit" type="submit" value="Найти">
         </form>
         {% if categories %}

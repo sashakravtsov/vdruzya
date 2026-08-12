@@ -21,7 +21,7 @@
                 <tr>
                     <td class="label">Найти:</td>
                     <td>
-                        <input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя" autocomplete="off">
+                        <input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off">
                         <input class="inputsubmit" type="submit" value="Найти">
                         {% if q %}<a href="{% url 'profile.friends' owner.id %}">сбросить</a>{% endif %}
                     </td>
