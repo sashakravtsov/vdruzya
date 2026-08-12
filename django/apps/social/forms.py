@@ -66,7 +66,7 @@ class ProfileForm(forms.ModelForm):
     WALL_VIEW = [("public", "Всем"), ("friends", "Друзья"), ("self", "Только я")]
     languages_text = forms.CharField(
         required=False, label="Языки",
-        widget=_in(placeholder="русский, английский", style="width:100%"),
+        widget=_in(style="width:100%"),
     )
     looking_for_choices = forms.MultipleChoiceField(
         required=False, label="Ищу", choices=LOOKING,
@@ -102,13 +102,13 @@ class ProfileForm(forms.ModelForm):
             "favorite_games": "Игры",
         }
         widgets = {
-            "name": _in(), "slug": _in(placeholder="латиница, 5–32", autocomplete="off"),
+            "name": _in(), "slug": _in(autocomplete="off"),
             "city": _in(),
             "birthday": forms.DateInput(attrs={"class": "inputtext", "type": "date"}),
             "hometown": _in(), "country": _in(),
             "workplace": _in(style="width:100%"), "education_note": _in(style="width:100%"),
             "website": _in(style="width:100%"), "phone": _in(),
-            "telegram_username": _in(placeholder="AIM / ICQ / ник", style="width:100%"),
+            "telegram_username": _in(style="width:100%"),
             "religious_views": _in(style="width:100%"),
             "bio": _ta(4), "interests": _ta(2), "hobbies": _ta(2),
             "favorite_music": _ta(2), "favorite_movies": _ta(2), "favorite_tv": _ta(2),
@@ -239,7 +239,7 @@ class PostForm(forms.ModelForm):
         model = Post
         fields = ("body", "visibility")
         widgets = {
-            "body": _ta(3, placeholder="Написать на стену…"),
+            "body": _ta(3),
             "visibility": forms.Select(choices=[("public", "Всем"), ("friends", "Друзьям"), ("private", "Только мне")]),
         }
 
@@ -262,7 +262,7 @@ class CommentForm(forms.Form):
     """Flat comment body for wall / group / photo (classic FB — one form)."""
     body = forms.CharField(
         max_length=2000,
-        widget=_in(style="width:80%", placeholder="Написать комментарий…", maxlength="2000", autocomplete="off"),
+        widget=_in(style="width:80%", maxlength="2000", autocomplete="off"),
     )
 
     def clean_body(self):
@@ -278,7 +278,7 @@ class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
         fields = ("body",)
-        widgets = {"body": _ta(2, placeholder="Написать сообщение…", style="width:80%")}
+        widgets = {"body": _ta(2, style="width:80%")}
 
     def clean(self):
         data = super().clean()
@@ -294,11 +294,11 @@ class ComposeMessageForm(forms.Form):
     )
     subject = forms.CharField(
         required=False, max_length=160, label="Тема",
-        widget=_in(placeholder="Тема (необязательно)", style="width:100%"),
+        widget=_in(style="width:100%"),
     )
     body = forms.CharField(
         required=False,
-        widget=_ta(4, placeholder="Сообщение…", style="width:100%"),
+        widget=_ta(4, style="width:100%"),
     )
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
@@ -322,8 +322,8 @@ class AlbumForm(forms.ModelForm):
         model = Album
         fields = ("title", "description", "visibility")
         widgets = {
-            "title": _in(style="width:100%", placeholder="Название альбома"),
-            "description": _ta(2, placeholder="Описание (необязательно)"),
+            "title": _in(style="width:100%"),
+            "description": _ta(2),
             "visibility": forms.Select(choices=[("friends", "Друзьям"), ("public", "Всем"), ("private", "Только мне")]),
         }
 
@@ -332,12 +332,12 @@ class PhotoUploadForm(forms.Form):
     photo = forms.ImageField(label="Файл", widget=_file())
     title = forms.CharField(
         max_length=120, label="Название",
-        widget=_in(style="width:100%", placeholder="Короткое название для подписи"),
+        widget=_in(style="width:100%"),
     )
 
 
 class CreateGroupForm(forms.Form):
-    name = forms.CharField(max_length=255, widget=_in(style="width:100%", placeholder="Название группы"))
+    name = forms.CharField(max_length=255, widget=_in(style="width:100%"))
     category = forms.ChoiceField(choices=GROUP_CATS, widget=forms.Select())
     privacy = forms.ChoiceField(
         choices=[("public", "Открытая"), ("closed", "Закрытая")],
@@ -346,7 +346,7 @@ class CreateGroupForm(forms.Form):
     )
     short_description = forms.CharField(
         required=False, max_length=200,
-        widget=_ta(2, placeholder="Коротко о группе (необязательно)"),
+        widget=_ta(2),
     )
 
 
@@ -366,7 +366,7 @@ class GroupForm(forms.ModelForm):
         }
         widgets = {
             "name": _in(style="width:100%"),
-            "slug": _in(placeholder="латиница, 5–32", autocomplete="off"),
+            "slug": _in(autocomplete="off"),
             "short_description": _ta(2, maxlength="200"),
             "description": _ta(4),
             "privacy": forms.Select(choices=[("public", "Открытая"), ("closed", "Закрытая")]),
@@ -394,7 +394,7 @@ class GroupForm(forms.ModelForm):
 class CommunityPostForm(forms.ModelForm):
     subject = forms.CharField(
         required=False, max_length=120, label="Тема",
-        widget=_in(placeholder="Тема обсуждения", style="width:100%"),
+        widget=_in(style="width:100%"),
     )
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
     board = forms.ChoiceField(
@@ -406,7 +406,7 @@ class CommunityPostForm(forms.ModelForm):
     class Meta:
         model = CommunityPost
         fields = ("body",)
-        widgets = {"body": _ta(3, placeholder="Написать…")}
+        widgets = {"body": _ta(3)}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -463,8 +463,6 @@ class EventForm(forms.Form):
     def clean_place(self):
         return (self.cleaned_data.get("place") or "").strip()[:160]
 
-
-GroupEventForm = EventForm  # legacy alias
 
 
 class PasswordForm(forms.Form):

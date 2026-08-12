@@ -115,19 +115,7 @@
             <h4>Результаты</h4>
             <div class="profile-box-body">
                 {% for p in results %}
-                <div class="classic-person-row">
-                    <a class="classic-person-name" href="{% url 'profile' p.id %}">
-                        {% avatar p 50 %}
-                        <span>
-                            <b>{{ p.name }}</b>
-                            {% if p.mutual %}<span class="classic-person-sub">{{ p.mutual }}</span>
-                            {% elif p.city or p.headline %}<span class="classic-person-sub">{{ p.city|default:p.headline }}</span>{% endif %}
-                        </span>
-                    </a>
-                    <span class="classic-inline-actions">
-                        {% include "partials/friend_actions.html" with p=p r=p.rel %}
-                    </span>
-                </div>
+                {% include "social/_person_row.html" with person=p with_friend_actions=1 %}
                 {% empty %}
                 <p class="muted">Никого не найдено.</p>
                 {% endfor %}

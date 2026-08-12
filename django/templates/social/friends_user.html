@@ -35,21 +35,11 @@
             </h4>
             <div class="profile-box-body">
                 {% for f in friends %}
-                <div class="classic-person-row classic-person-row-friend">
-                    <a class="classic-person-name" href="{% url 'profile' f.id %}">
-                        {% avatar f 50 %}
-                        <span>
-                            <b>{{ f.name }}</b>
-                            {% if f.mutual %}<span class="classic-person-sub">{{ f.mutual }}</span>
-                            {% elif f.city %}<span class="classic-person-sub">{{ f.city }}</span>{% endif %}
-                        </span>
-                    </a>
-                    {% if me and not is_own and f.id != me.id %}
-                    <span class="classic-inline-actions classic-inline-actions-friend">
-                        {% include "partials/friend_actions.html" with p=f r=f.rel %}
-                    </span>
-                    {% endif %}
-                </div>
+                {% if me and not is_own and f.id != me.id %}
+                {% include "social/_person_row.html" with person=f friend_row=1 with_friend_actions=1 %}
+                {% else %}
+                {% include "social/_person_row.html" with person=f friend_row=1 %}
+                {% endif %}
                 {% empty %}
                 <p class="muted">{% if q %}Никого не найдено.{% else %}Список друзей пуст.{% endif %}</p>
                 {% endfor %}

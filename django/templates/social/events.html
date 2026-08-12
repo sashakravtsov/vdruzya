@@ -44,7 +44,7 @@
                         <form method="post" action="{% url 'events.rsvp' e.id %}">{% csrf_token %}
                             <input type="hidden" name="next" value="{{ request.get_full_path }}">
                             <input type="hidden" name="status" value="going">
-                            <button class="linkish" type="submit">{% if e.my_status == 'going' %}✓ Иду{% else %}Пойду{% endif %}</button>
+                            <button class="linkish" type="submit">{% if e.my_status == 'going' %}<b>Иду</b>{% else %}Пойду{% endif %}</button>
                         </form>
                         ·
                         <a href="{% url 'events.show' e.id %}">подробнее</a>

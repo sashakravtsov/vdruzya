@@ -94,50 +94,62 @@
         {% endif %}
 
         {% else %}
-        <div class="obj_list">
-            {% for g in communities %}
-            <div class="classic-group-row">
-                <div class="classic-group-title">
-                    <a href="{% url 'groups.show' g.id %}"><b>{{ g.name }}</b></a>
-                    <span class="muted">
-                        {% if g.category %}{{ g.category|ru_label }} · {% endif %}{{ g.n_members }} участник{% if g.n_members == 1 %}{% elif g.n_members > 1 and g.n_members < 5 %}а{% else %}ов{% endif %}
-                        {% if g.privacy == 'closed' %} · закрытая{% endif %}
-                        {% if g.joined %} · <b>вы в группе</b>{% elif g.join_pending %} · заявка отправлена{% endif %}
-                    </span>
-                </div>
-                {% if g.short_description or g.description %}
-                <div class="classic-group-desc muted">{{ g.short_description|default:g.description|truncatewords:28 }}</div>
-                {% endif %}
-                <div class="classic-group-actions">
-                    <a href="{% url 'groups.show' g.id %}">Открыть</a>
-                    {% if me %}
-                    ·
-                    {% if g.joined %}
-                    <form method="post" action="{% url 'groups.leave' g.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish">Выйти</button>
-                    </form>
-                    {% elif g.join_pending %}
-                    <form method="post" action="{% url 'groups.join.cancel' g.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish">Отозвать заявку</button>
-                    </form>
-                    {% else %}
-                    <form method="post" action="{% url 'groups.join' g.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish">{% if g.join_mode == 'request' or g.privacy == 'closed' %}Подать заявку{% else %}Вступить{% endif %}</button>
-                    </form>
-                    {% endif %}
-                    {% else %}
-                    · <a href="{% url 'login' %}?next={% url 'groups.show' g.id %}">Войти, чтобы вступить</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% empty %}
-            {% if q or category %}
-            <p class="muted">Ничего не нашлось. <a href="{% url 'groups' %}">Сбросить</a></p>
-            {% else %}
-            <p class="muted">Групп пока нет.</p>
-            {% endif %}
-            {% endfor %}
-        </div>
+        {% if communities %}
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead>
+                <tr>
+                    <th class="col-name">Группа</th>
+                    <th class="col-type">Тип</th>
+                    <th class="col-n">Участники</th>
+                    <th class="col-act"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in communities %}
+                <tr>
+                    <td class="col-name">
+                        <a href="{% url 'groups.show' g.id %}"><b>{{ g.name }}</b></a>
+                        {% if g.privacy == 'closed' %}<span class="muted"> · закрытая</span>{% endif %}
+                        {% if g.joined %}<span class="muted"> · <b>вы в группе</b></span>
+                        {% elif g.join_pending %}<span class="muted"> · заявка отправлена</span>{% endif %}
+                        {% if g.short_description or g.description %}
+                        <div class="muted">{{ g.short_description|default:g.description|truncatewords:18 }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="col-type">{% if g.category %}{{ g.category|ru_label }}{% else %}—{% endif %}</td>
+                    <td class="col-n">{{ g.n_members }}</td>
+                    <td class="col-act">
+                        <a href="{% url 'groups.show' g.id %}">открыть</a>
+                        {% if me %}
+                        ·
+                        {% if g.joined %}
+                        <form method="post" action="{% url 'groups.leave' g.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">выйти</button>
+                        </form>
+                        {% elif g.join_pending %}
+                        <form method="post" action="{% url 'groups.join.cancel' g.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">отозвать</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'groups.join' g.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">{% if g.join_mode == 'request' or g.privacy == 'closed' %}заявка{% else %}вступить{% endif %}</button>
+                        </form>
+                        {% endif %}
+                        {% else %}
+                        · <a href="{% url 'login' %}?next={% url 'groups.show' g.id %}">войти</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        {% if q or category %}
+        <p class="muted">Ничего не нашлось. <a href="{% url 'groups' %}">Сбросить</a></p>
+        {% else %}
+        <p class="muted">Групп пока нет.</p>
+        {% endif %}
+        {% endif %}
 
         {% if page.paginator.num_pages > 1 %}
         <p class="pager">

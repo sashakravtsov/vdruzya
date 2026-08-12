@@ -60,6 +60,8 @@ def main():
         r = c.get(f"/events/{event.id}", secure=True)
         assert r.status_code == 200 and b"QA Event Night" in r.content
         assert "Иду".encode() in r.content and "Возможно".encode() in r.content
+        assert b"friends-main" not in r.content and b"event-main" in r.content
+        assert "✓".encode() not in r.content
         ok("event detail")
 
         r = c.post(f"/events/{event.id}/rsvp", {"status": "maybe"}, secure=True)

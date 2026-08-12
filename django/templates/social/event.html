@@ -7,10 +7,10 @@
         <h1>{{ event.title }}</h1>
         <div class="subtitle"><a href="{% url 'events' %}" style="color:#fff">← события</a></div>
     </div>
-    <div id="content" class="friends-content">
+    <div id="content" class="events-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
-        <div class="friends-main">
+        <div class="event-main">
             <div class="profile-box">
                 <h4>Событие</h4>
                 <div class="profile-box-body">
@@ -22,18 +22,18 @@
                     </table>
                     {% if event.description %}<p style="margin-top:8px">{{ event.description|linebreaksbr }}</p>{% endif %}
 
-                    <div style="margin-top:10px">
+                    <div class="event-rsvp">
                         <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="going">
-                            <button type="submit" class="inputsubmit">{% if status == 'going' %}✓ {% endif %}Иду</button>
+                            <button type="submit" class="inputsubmit">{% if status == 'going' %}<b>Иду</b>{% else %}Иду{% endif %}</button>
                         </form>
                         <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="maybe">
-                            <button type="submit" class="inputsubmit">{% if status == 'maybe' %}✓ {% endif %}Возможно</button>
+                            <button type="submit" class="inputsubmit">{% if status == 'maybe' %}<b>Возможно</b>{% else %}Возможно{% endif %}</button>
                         </form>
                         <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="declined">
-                            <button type="submit" class="linkish">{% if status == 'declined' %}✓ {% endif %}Не иду</button>
+                            <button type="submit" class="linkish">{% if status == 'declined' %}<b>Не иду</b>{% else %}Не иду{% endif %}</button>
                         </form>
                     </div>
                     <p class="muted">{{ n_going }} идут · {{ n_maybe }} возможно</p>
@@ -44,12 +44,7 @@
                 <h4>Идут ({{ n_going }})</h4>
                 <div class="profile-box-body">
                     {% for p in going %}
-                    <div class="classic-person-row">
-                        <a class="classic-person-name" href="{% url 'profile' p.id %}">
-                            {% avatar p 32 %}
-                            <span><b>{{ p.name }}</b></span>
-                        </a>
-                    </div>
+                    {% include "social/_person_row.html" with person=p size=32 side=1 %}
                     {% empty %}<p class="muted">Пока никто не подтвердил.</p>{% endfor %}
                 </div>
             </div>
@@ -59,19 +54,14 @@
                 <h4>Возможно ({{ n_maybe }})</h4>
                 <div class="profile-box-body">
                     {% for p in maybe %}
-                    <div class="classic-person-row">
-                        <a class="classic-person-name" href="{% url 'profile' p.id %}">
-                            {% avatar p 32 %}
-                            <span><b>{{ p.name }}</b></span>
-                        </a>
-                    </div>
+                    {% include "social/_person_row.html" with person=p size=32 side=1 %}
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
         </div>
 
-        <div class="friends-side">
+        <div class="event-side">
             {% if is_host and invite_friends %}
             <div class="profile-box">
                 <h4>Пригласить друзей</h4>

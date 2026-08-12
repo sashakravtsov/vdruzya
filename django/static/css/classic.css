@@ -412,12 +412,6 @@ button.linkish .ico { margin-right: 2px; }
 .groups-index .groups-search .inputtext { width: 220px; }
 .groups-index .groups-cats { margin: 0 0 12px; }
 .groups-index .groups-cats a.is-active { font-weight: bold; color: #333; text-decoration: none; }
-.groups-index .classic-group-row {
-  margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
-}
-.groups-index .classic-group-title { margin: 0 0 3px; }
-.groups-index .classic-group-desc { margin: 0 0 4px; }
-.groups-index .classic-group-actions { margin: 0; }
 .groups-index .formtable { width: 100%; max-width: 480px; }
 .groups-index .formtable .label {
   width: 90px; color: #555; vertical-align: top; padding: 4px 8px 4px 0; white-space: nowrap;
@@ -450,8 +444,8 @@ button.linkish .ico { margin-right: 2px; }
 
 /* Classic FB-2005 media upload (no drag-drop) + wallposter */
 .compose-table,.formtable{width:100%;max-width:520px}
-.compose-table .label,.formtable .label{width:100px;color:#555;vertical-align:top;padding:4px 8px 4px 0;white-space:nowrap}
-.compose-table td,.formtable td{padding:4px 0;vertical-align:top}
+.formtable .label{width:100px;color:#555;vertical-align:top;padding:4px 8px 4px 0;white-space:nowrap}
+.formtable td{padding:4px 0;vertical-align:top}
 .inputfile{font:11px var(--font);max-width:100%}
 .file-hint{margin:2px 0 0;font-size:10px}
 .compose-more{margin:0;display:inline}
@@ -468,9 +462,6 @@ button.linkish .ico { margin-right: 2px; }
 }
 .wallposter-vis,.wallposter-file{float:left;font-size:11px;color:#555;margin-right:10px;line-height:20px}
 .wallposter-go{float:right}
-.wall-more{margin-left:4px}
-.wall-more > summary{list-style:none;display:inline;cursor:pointer}
-.wall-more > summary::-webkit-details-marker{display:none}
 .avatar-edit-preview,.cover-edit-preview{width:80px;height:80px;object-fit:cover;border:1px solid #B3B3B3}
 .cover-edit-preview{width:120px;height:120px}
 .albums-page #content.albums-content { padding: 10px; }
@@ -553,7 +544,6 @@ button.linkish .ico { margin-right: 2px; }
   .photo-nav-back, .photo-nav-owner { float: none; display: block; }
 }
 .photo-upload-form{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #EEEFF3}
-.feed-wall-box > .profile-box-body{padding-top:10px}
 .group-page #content.group-content { padding: 10px; }
 .group-page #content:not(.group-content) { padding: 10px 12px 14px; }
 .group-join-panel{margin:6px 0 10px;padding:0 0 8px;border-bottom:1px solid var(--line)}
@@ -595,26 +585,24 @@ button.linkish .ico { margin-right: 2px; }
 .people-top-links{margin:0 0 10px;font:11px var(--font)}
 .people-top-links a{color:var(--fb)}
 .people-top-links span{margin:0 4px;color:#aaa}
-.people-subsection{
-  margin:14px 0 6px;padding:8px 0 0;border-top:1px solid #D8DFEA;
-  background:transparent;color:#3B5998;font:bold 11px var(--font);
-}
 .people-search-form{margin:0 0 10px}
 /* directory tabs — classic #tabs */
-.people-page #tabs, .events-page #tabs, .group-page #tabs, .groups-index #tabs {
+.people-page #tabs, .events-page #tabs, .group-page #tabs, .groups-index #tabs, .search-page #tabs {
   text-align:left;padding:4px 0;margin:0 0 12px;border-bottom:solid 1px var(--fb);
 }
 .people-page #tabs .activetab, .people-page #tabs .inactivetab,
 .events-page #tabs .activetab, .events-page #tabs .inactivetab,
 .group-page #tabs .activetab, .group-page #tabs .inactivetab,
-.groups-index #tabs .activetab, .groups-index #tabs .inactivetab { display:inline;padding:0;margin:0; }
-.people-page #tabs a, .events-page #tabs a, .group-page #tabs a, .groups-index #tabs a { margin:0;padding:4px; }
+.groups-index #tabs .activetab, .groups-index #tabs .inactivetab,
+.search-page #tabs .activetab, .search-page #tabs .inactivetab { display:inline;padding:0;margin:0; }
+.people-page #tabs a, .events-page #tabs a, .group-page #tabs a, .groups-index #tabs a, .search-page #tabs a { margin:0;padding:4px; }
 .people-page #tabs .activetab a, .events-page #tabs .activetab a,
-.group-page #tabs .activetab a, .groups-index #tabs .activetab a {
+.group-page #tabs .activetab a, .groups-index #tabs .activetab a, .search-page #tabs .activetab a {
   color:#fff;background:var(--fb);text-decoration:none;
 }
 .people-page #tabs .inactivetab a:hover, .events-page #tabs .inactivetab a:hover,
-.group-page #tabs .inactivetab a:hover, .groups-index #tabs .inactivetab a:hover {
+.group-page #tabs .inactivetab a:hover, .groups-index #tabs .inactivetab a:hover,
+.search-page #tabs .inactivetab a:hover {
   background:var(--line);text-decoration:none;
 }
 .classic-person-row{
@@ -927,8 +915,9 @@ button.linkish .ico { margin-right: 2px; }
 .wallpost .info .actions a:hover { text-decoration: underline; }
 .profile .minifeed-item {
   margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
-  font-size: 11px; line-height: 14px;
+  font-size: 11px; line-height: 14px; overflow: hidden;
 }
+.profile .minifeed-item .news-ico { float: left; margin: 2px 6px 0 0; }
 .profile .minifeed-item:last-child { border-bottom: 0; }
 
 /* wallposter on profile wall */
@@ -952,7 +941,6 @@ button.linkish .ico { margin-right: 2px; }
 
 /* ===== Wall chrome global FB2005 ===== */
 .wall-box > .profile-box-body,
-.feed-wall-box.wall-box > .profile-box-body,
 .group-wall-box > .profile-box-body {
   padding: 10px;
   background: #f7f7f7;
@@ -1062,10 +1050,14 @@ button.linkish .ico { margin-right: 2px; }
 }
 .events-page .event-list-row:last-child { border-bottom: 0; }
 .events-page .event-list-row .classic-inline-actions { float: right; }
-.events-page .event-row {
-  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+.events-page #content.events-content { padding: 10px; overflow: hidden; box-sizing: border-box; }
+.events-page .event-main { float: left; width: 400px; }
+.events-page .event-side { float: right; width: 180px; }
+.events-page .event-rsvp { margin-top: 10px; }
+.events-page .event-rsvp form.inline { margin-right: 4px; }
+@media (max-width: 560px) {
+  .events-page .event-main, .events-page .event-side { float: none; width: auto; }
 }
-.events-page .event-row:last-child { border-bottom: 0; }
 .pokes-page .notify-row {
   overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
@@ -1093,7 +1085,7 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-list .msg-thread.is-unread .msg-name { font-weight: bold; }
 .inbox-list .msg-pager { margin: 8px 0 0; font-size: 11px; }
 .inbox-thread .msg-subj-h { font-weight: bold; }
-.inbox-thread .msg-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
+.inbox-thread .msg-log { margin: 0 0 10px; padding: 0 0 8px; }
 .inbox-thread .msg-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
 .inbox-thread .msg-line .msg-body { margin: 2px 0 0; white-space: pre-wrap; }
 .inbox-thread .msg-older { margin: 0 0 8px; font-size: 11px; }
@@ -1106,19 +1098,10 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-thread .compose-new textarea { width: 100%; max-width: 420px; }
 .inbox-thread > h4 .edit { float: right; font-weight: normal; }
 .inbox-thread .msg-actions form { display: inline; }
-.inbox-thread .msg-line .msg-del,
-.inbox-thread .msg-line .msg-del-btn { float: right; margin-left: 6px; }
+.inbox-thread .msg-line .msg-del { float: right; margin-left: 6px; }
 .inbox-thread .msg-compose .file-hint { display: block; margin-top: 4px; }
-.inbox-thread .msg-quote {
-  margin: 4px 0; padding: 4px 6px; border-left: solid 3px #D8DFEA; background: #f7f7f7; font-size: 10px;
-}
 .inbox-thread .msg-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-thread .msg-members { margin: 0 0 8px; font-size: 11px; }
-.inbox-thread .msg-thread-filter { margin: 0 0 8px; }
-.inbox-thread .msg-thread-filter .inputtext {
-  width: 70%; max-width: 320px; box-sizing: border-box; border: 1px solid #BDC7D8;
-  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
-}
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"],
 .account-page .infotable .inputtext {

@@ -4,6 +4,15 @@
     <div class="profile-box-body">
         {% for item in mini %}
         <div class="minifeed-item">
+            {% if item.kind == 'joined' or item.kind == 'created' or item.kind == 'friend' %}
+            <span class="ico ico-group news-ico"></span>
+            {% elif item.kind == 'photo' or item.kind == 'picture' %}
+            <span class="ico ico-photo news-ico"></span>
+            {% elif item.kind == 'wall' %}
+            <span class="ico ico-wall news-ico"></span>
+            {% else %}
+            <span class="ico ico-note news-ico"></span>
+            {% endif %}
             {% if item.kind == 'joined' %}
             вступил(а) в <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
             {% elif item.kind == 'created' %}

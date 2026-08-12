@@ -103,6 +103,11 @@ def main():
     r = get("/groups")
     if r.status_code != 200:
         fail("groups index")
+    body = r.content.decode()
+    if "mygroups-table" not in body:
+        fail("groups browse table")
+    if "classic-group-row" in body:
+        fail("classic-group-row leftover")
     ok("groups index")
 
     r = get("/groups?mine=1")

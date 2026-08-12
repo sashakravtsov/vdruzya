@@ -48,7 +48,6 @@ def inbox_home(request):
         return redirect("home")
 
     q = (request.GET.get("q") or "").strip()
-    tq = (request.GET.get("tq") or "").strip()
     folder = request.GET.get("folder") or "inbox"
     if folder not in FOLDERS:
         folder = "inbox"
@@ -75,7 +74,7 @@ def inbox_home(request):
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
-        thread_messages, has_older = ch.thread(active, q=tq, all_messages=show_all)
+        thread_messages, has_older = ch.thread(active, all_messages=show_all)
         if not ch.is_archived(me, active):
             ch.mark_read(me, active)
         for c in conversations:
@@ -97,7 +96,6 @@ def inbox_home(request):
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
         "q": q,
-        "tq": tq,
         "folder": folder,
         "page": page,
         "has_more": has_more,

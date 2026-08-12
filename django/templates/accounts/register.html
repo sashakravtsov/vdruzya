@@ -34,7 +34,7 @@
                         <td>
                             <input type="text" id="invite" class="inputtext" name="invite" size="30"
                                    value="{{ invite }}" {% if need_invite %}required{% endif %}
-                                   autocomplete="off" placeholder="из ссылки друга">
+                                   autocomplete="off">
                             {% if inviter %}<div class="file-hint muted">приглашение от {{ inviter.name }}</div>{% endif %}
                         </td>
                     </tr>

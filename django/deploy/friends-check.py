@@ -93,6 +93,12 @@ def main():
         assert r.status_code == 200 and b"QA Friend" in r.content
         ok("search tab filters")
 
+        r = c.get("/search?q=QA", secure=True)
+        assert r.status_code == 200 and b'id="tabs"' in r.content
+        assert "Люди".encode() in r.content and "Группы".encode() in r.content
+        assert b"placeholder=" not in r.content
+        ok("global search tabs")
+
         r = c.get("/invite", secure=True)
         assert r.status_code == 200 and b"/i/" in r.content
         me.refresh_from_db()
