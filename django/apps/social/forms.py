@@ -52,6 +52,29 @@ def _files(**attrs):
     })
 
 
+class MultiFileField(forms.FileField):
+    """FileField that accepts the list returned by <input multiple> widgets."""
+
+    def clean(self, data, initial=None):
+        if data is False:
+            return False
+        if data in self.empty_values:
+            return []
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+        out = []
+        single = forms.FileField(
+            required=True,
+            allow_empty_file=self.allow_empty_file,
+            max_length=self.max_length,
+        )
+        for item in data:
+            cleaned = single.clean(item, initial)
+            if cleaned:
+                out.append(cleaned)
+        return out
+
+
 class ClassicForm:
     """FB 2006 chrome — no HTML5 required / minlength on widgets."""
     use_required_attribute = False
@@ -266,8 +289,8 @@ class ProfileForm(ClassicForm, forms.ModelForm):
 
 class PostForm(ClassicForm, forms.ModelForm):
     """Classic FB wall: text + photo/video. simple=True → profile wall (no visibility UI)."""
-    # FileField (not ImageField) so MP4/WebM pass validation; images still Pillow-processed.
-    photo = forms.FileField(required=False, label="Фото / видео", widget=_files())
+    # MultiFileField: <input multiple> returns a list; ImageField rejects video MIME.
+    photo = MultiFileField(required=False, label="Фото / видео", widget=_files())
 
     class Meta:
         model = Post
@@ -411,7 +434,9 @@ class AlbumForm(ClassicForm, forms.ModelForm):
 
 class PhotoUploadForm(ClassicForm, forms.Form):
     """Album upload — multi-select; files read via request.FILES.getlist('photo')."""
-    photo = forms.FileField(label="Файлы", required=False, widget=_files())
+    photo = MultiFileField(label="Файлы", required=False, widget=_files(
+        accept="image/jpeg,image/png,image/gif",
+    ))
     title = forms.CharField(
         max_length=120, required=False, label="Название",
         widget=_in(style="width:100%"),
@@ -671,10 +696,7 @@ class PageForm(ClassicForm, forms.Form):
 class PagePostForm(ClassicForm, forms.Form):
     """Admin update on a Page wall."""
     body = forms.CharField(required=False, widget=_ta(3, style="width:100%"))
-    photo = forms.FileField(
-        required=False, label="Фото / видео",
-        widget=_files(accept="image/jpeg,image/png,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"),
-    )
+    photo = MultiFileField(required=False, label="Фото / видео", widget=_files())
 
     def clean(self):
         data = super().clean()
