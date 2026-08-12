@@ -35,9 +35,9 @@
                 </div>
                 <div class="actions">
                     {% if me %}
-                    <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment" aria-hidden="true"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
+                    <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
                     {% else %}
-                    <span class="ico ico-comment" aria-hidden="true"></span> {{ post.n_comments|default:0 }}
+                    <span class="ico ico-comment"></span> {{ post.n_comments|default:0 }}
                     {% endif %}
                 </div>
                 {% comment_thread post.comments.all preview=comment_preview|default_if_none:2 kind="wall" expand=comment_expand %}

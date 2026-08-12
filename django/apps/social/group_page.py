@@ -18,12 +18,9 @@ def access(me, group):
         me and CommunityMember.objects.filter(community=group, social_user=me, role__in=ADMIN_ROLES).exists()
     )
     can_view = group.privacy != "closed" or is_member
+    # FB 2006 groups: members (or admins-only) — no open wall for non-members
     can_post = bool(
-        me and (
-            group.posting_policy == "everyone"
-            or (is_member and group.posting_policy != "admins")
-            or is_admin
-        )
+        me and is_member and (group.posting_policy != "admins" or is_admin)
     )
     join_pending = bool(
         me and not is_member

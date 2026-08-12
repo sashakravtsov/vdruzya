@@ -360,7 +360,7 @@ if ! grep -q 'NoteForm' "${ROOT}/django/apps/social/views_wall_ops.py" 2>/dev/nu
   echo "FAIL Notes edit not using NoteForm"; FAIL=1
 else
   echo "OK   Notes edit uses NoteForm"
-
+fi
 if ! grep -q 'profile-photo-thumbs img {' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
   echo "FAIL profile photo thumb CSS broken"; FAIL=1
 else
@@ -381,7 +381,58 @@ if grep -qE 'href="\{\{ post\.media_url \}\}"' "${ROOT}/django/templates/social/
 else
   echo "OK   wall media uses page href"
 fi
+if grep -q 'object-fit' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL classic.css still has object-fit"; FAIL=1
+else
+  echo "OK   no object-fit in classic.css"
 fi
+if grep -qE '"everyone"|'\''everyone'\''' "${ROOT}/django/apps/social/forms.py" 2>/dev/null; then
+  echo "FAIL posting_policy everyone still in GroupForm"; FAIL=1
+else
+  echo "OK   no everyone posting_policy"
+fi
+if ! grep -q 'use_required_attribute = False' "${ROOT}/django/apps/social/forms.py" 2>/dev/null; then
+  echo "FAIL ClassicForm missing use_required_attribute"; FAIL=1
+else
+  echo "OK   ClassicForm disables HTML5 required"
+fi
+if ! grep -q 'TextInput' "${ROOT}/django/apps/accounts/forms.py" 2>/dev/null; then
+  echo "FAIL PasswordResetForm not using TextInput"; FAIL=1
+else
+  echo "OK   password reset TextInput"
+fi
+if ! grep -q 'border-top: solid 1px #3B5998' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+  || ! grep -q 'wallpost td.image img {' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL wallpost avatar/info CSS not split"; FAIL=1
+else
+  echo "OK   wallpost avatar CSS split"
+fi
+cd "${ROOT}/django" && .venv/bin/python - <<'PY' || FAIL=1
+import os, django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+from apps.social.forms import CommentForm, NoteForm, EventForm, PasswordForm
+from apps.accounts.forms import PasswordResetForm
+for label, html in (
+    ("comment", CommentForm().as_p()),
+    ("note", NoteForm().as_p()),
+    ("event", EventForm().as_p()),
+    ("password", PasswordForm().as_p()),
+    ("reset", str(PasswordResetForm()["email"])),
+):
+    bad = [x for x in ("required", "minlength", 'type="email"') if x in html]
+    # "required=False" won't appear; bare required attr would
+    bad = []
+    if " required" in html or 'required="' in html or "required='" in html:
+        bad.append("required")
+    if "minlength" in html:
+        bad.append("minlength")
+    if 'type="email"' in html:
+        bad.append("type=email")
+    if bad:
+        raise SystemExit(f"FAIL rendered {label} has {', '.join(bad)}")
+print("OK   rendered forms have no HTML5 required/email/minlength")
+PY
 echo "== Friends feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/friends-check.py; then
   echo "OK   friends features"

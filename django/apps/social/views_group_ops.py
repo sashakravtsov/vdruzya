@@ -234,11 +234,11 @@ def group_post(request, pk):
         me, group = profile_of(req.user), get_object_or_404(Community, pk=pk)
         is_mem = _member(me, group)
         is_admin = is_group_admin(me, group)
+        if not is_mem:
+            messages.error(req, "Сначала вступите в группу.")
+            return redirect("groups.show", pk=pk)
         if group.posting_policy == "admins" and not is_admin:
             messages.error(req, "Писать могут только администраторы.")
-            return redirect("groups.show", pk=pk)
-        if group.posting_policy != "everyone" and not is_mem:
-            messages.error(req, "Сначала вступите в группу.")
             return redirect("groups.show", pk=pk)
         form = CommunityPostForm(req.POST, req.FILES)
         if not form.is_valid():

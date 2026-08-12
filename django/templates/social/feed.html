@@ -11,7 +11,7 @@
             {% for item in items %}
             {% include "social/_news_item.html" %}
             {% empty %}
-            <p class="muted">Пока тихо. <a href="{% url 'friends' %}">Найдите друзей</a> или напишите на чью-нибудь стену.</p>
+            <p class="muted">Пока тихо. <a href="{% url 'people' %}?tab=search">Найдите друзей</a> или напишите на чью-нибудь стену.</p>
             {% endfor %}
 
             {% if page and page.paginator.num_pages > 1 %}
@@ -29,16 +29,22 @@
                 <div class="profile-box-body">
                     {% if requests %}
                         {% for r in requests %}
-                        <div class="req-row">
-                            <span class="ico ico-group" aria-hidden="true"></span>
-                            <a href="{% url 'profile' r.user.id %}">{{ r.user.name }}</a>
-                            {% if r.mutual %}<span class="muted">({{ r.mutual }})</span>{% endif %}
-                            <form method="post" action="{% url 'friends.accept' r.user.id %}" class="inline">{% csrf_token %}
-                                <button type="submit" class="linkish">принять</button>
-                            </form>
-                            <form method="post" action="{% url 'friends.reject' r.user.id %}" class="inline">{% csrf_token %}
-                                <button type="submit" class="linkish muted">отклонить</button>
-                            </form>
+                        <div class="classic-person-row classic-person-row-side">
+                            <a class="classic-person-name" href="{% url 'profile' r.user.id %}">
+                                {% avatar r.user 32 %}
+                                <span>
+                                    <b>{{ r.user.name }}</b>
+                                    {% if r.mutual %}<span class="classic-person-sub">{{ r.mutual }}</span>{% endif %}
+                                </span>
+                            </a>
+                            <span class="classic-inline-actions classic-inline-actions-stack">
+                                <form method="post" action="{% url 'friends.accept' r.user.id %}" class="inline">{% csrf_token %}
+                                    <button type="submit" class="linkish">принять</button>
+                                </form>
+                                <form method="post" action="{% url 'friends.reject' r.user.id %}" class="inline">{% csrf_token %}
+                                    <button type="submit" class="linkish muted">отклонить</button>
+                                </form>
+                            </span>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -52,14 +58,22 @@
                 <div class="profile-box-body">
                     {% if pokes %}
                         {% for n in pokes %}
-                        <div class="req-row">
-                            {% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>
-                            {% else %}{{ n.body|default:n.title }}{% endif %}
+                        <div class="classic-person-row classic-person-row-side">
+                            {% if n.poker %}
+                            <a class="classic-person-name" href="{% url 'profile' n.poker.id %}">
+                                {% avatar n.poker 32 %}
+                                <span><b>{{ n.poker.name }}</b></span>
+                            </a>
+                            {% else %}
+                            <span class="classic-person-name">{% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>{% else %}{{ n.body|default:n.title }}{% endif %}</span>
+                            {% endif %}
                             {% if n.poker_id %}
-                            <form method="post" action="{% url 'profile.poke' n.poker_id %}" class="inline">{% csrf_token %}
-                                <input type="hidden" name="next" value="{% url 'feed' %}">
-                                <button type="submit" class="linkish">в ответ</button>
-                            </form>
+                            <span class="classic-inline-actions">
+                                <form method="post" action="{% url 'profile.poke' n.poker_id %}" class="inline">{% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'feed' %}">
+                                    <button type="submit" class="linkish">в ответ</button>
+                                </form>
+                            </span>
                             {% endif %}
                         </div>
                         {% endfor %}

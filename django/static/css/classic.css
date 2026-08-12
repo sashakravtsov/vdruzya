@@ -408,10 +408,10 @@ button.linkish .ico { margin-right: 2px; }
 .group-photo-grid a,
 .wall-media a { float: left; margin: 0 6px 6px 0; }
 .group-photo-grid img {
-  width: 130px; height: 97px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
+  width: 130px; height: 97px; border: 1px solid #B3B3B3; display: block;
 }
 .wall-media img {
-  width: 100px; height: 75px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
+  width: 100px; height: 75px; border: 1px solid #B3B3B3; display: block;
 }
 .wall-media-single img, .wall-media-single .news-photo {
   float: none; width: auto; height: auto; max-width: 100%; max-height: none;
@@ -455,7 +455,6 @@ button.linkish .ico { margin-right: 2px; }
   overflow: hidden; margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
 }
 .news-item .news-ico { float: left; margin: 2px 6px 0 0; }
-.news-item .avatar-col { float: left; width: 50px; margin-right: 10px; }
 .news-photo-row { margin: 4px 0; }
 .news-ico { margin-top: 2px; margin-right: 0; }
 .news-body { min-width: 0; position: relative; padding-right: 110px; }
@@ -463,8 +462,6 @@ button.linkish .ico { margin-right: 2px; }
 .news-snippet { margin: 4px 0 0; }
 .news-photo { max-width: 100%; border: 1px solid #B3B3B3; }
 .req-row, .rail-row { margin: 0 0 6px; }
-.req-row .ico,
-.req-row .news-icon { vertical-align: middle; margin-right: 4px; }
 
 
 .group-locked .profile-box-body{padding:12px}
@@ -524,7 +521,7 @@ button.linkish .ico { margin-right: 2px; }
 }
 .wallposter-vis,.wallposter-file{float:left;font-size:11px;color:#555;margin-right:10px;line-height:20px}
 .wallposter-go{float:right}
-.avatar-edit-preview,.cover-edit-preview{width:80px;height:80px;object-fit:cover;border:1px solid #B3B3B3}
+.avatar-edit-preview,.cover-edit-preview{width:80px;height:80px;border:1px solid #B3B3B3}
 .cover-edit-preview{width:120px;height:120px}
 .albums-page #content.albums-content { padding: 10px; }
 .classic-page-lead { margin: 0 0 10px; font-size: 11px; color: #555; }
@@ -538,7 +535,7 @@ button.linkish .ico { margin-right: 2px; }
   overflow: hidden; display: block;
 }
 .album-index .album-cover img {
-  width: 75px; height: 56px; object-fit: cover; display: block; border: 0;
+  width: 75px; height: 56px; display: block; border: 0;
 }
 .album-index .album-title {
   display: block; color: #3B5998; font: bold 11px/14px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -546,7 +543,7 @@ button.linkish .ico { margin-right: 2px; }
 .album-index .album-meta { display: block; color: gray; font-size: 11px; }
 .album-index .album-cover img.album-cover-fallback,
 .album-cover-fallback {
-  display: block; width: 75px; height: 56px; border: 0; object-fit: cover; background: #D8DFEA;
+  display: block; width: 75px; height: 56px; border: 0; background: #D8DFEA;
 }
 /* FB 2005 album photo thumbs ~130×97 */
 .photo-gallery { overflow: hidden; margin: 0; }
@@ -558,7 +555,7 @@ button.linkish .ico { margin-right: 2px; }
   overflow: hidden; background: #D8DFEA; text-decoration: none;
 }
 .photo-gallery-item img {
-  width: 130px; height: 97px; object-fit: cover; display: block; border: 0;
+  width: 130px; height: 97px; display: block; border: 0;
 }
 .photo-gallery-item .photo-cap { margin: 3px 0 0; line-height: 13px; }
 .photo-gallery-item .photo-cap a { color: var(--fb); font-weight: bold; font-size: 11px; }
@@ -856,26 +853,6 @@ button.linkish .ico { margin-right: 2px; }
   padding-right: 8px;
   white-space: nowrap;
 }
-.profile-friend-grid {
-  overflow: hidden;
-  margin: 6px 0;
-}
-.profile-friend-grid .profile-friend-tile { float: left; }
-.profile-friend-tile {
-  width: 62px;
-  margin: 0 3px 8px 0;
-  text-align: center;
-  font-size: 11px;
-  color: #3B5998;
-  line-height: 1.2;
-}
-.profile-friend-tile img,
-.profile-friend-tile span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 /* Archive profile.css friendTable */
 .profile .friendTable {
   margin: 0;
@@ -942,7 +919,7 @@ button.linkish .ico { margin-right: 2px; }
 .profile .profile-albums { overflow: hidden; }
 .profile .profile-photo-thumbs a { float: left; margin: 0 6px 6px 0; }
 .profile .profile-photo-thumbs img {
-  width: 75px; height: 75px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
+  width: 75px; height: 75px; border: 1px solid #B3B3B3; display: block;
 }
 
 .profile .profilelinks { margin: 0; padding: 0 0 0 10px; list-style: disc; color: #3B5998; }
@@ -962,7 +939,9 @@ button.linkish .ico { margin-right: 2px; }
 .wallpost .wp-table { width: 100%; border-collapse: collapse; }
 .wallpost .wp-table td { padding: 0; vertical-align: top; }
 .wallpost td.image { width: 55px; text-align: left; }
-.wallpost td.image img,
+.wallpost td.image img {
+  width: 50px; height: 50px; border: 1px solid #B3B3B3; display: block;
+}
 .wallpost .info {
   width: 100%;
   border-top: solid 1px #3B5998;

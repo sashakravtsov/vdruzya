@@ -59,12 +59,17 @@
                 <h4>Пригласить друзей</h4>
                 <div class="profile-box-body">
                     {% for f in invite_friends %}
-                    <div>
-                        <a href="{% url 'profile' f.id %}">{{ f.name }}</a>
-                        <form method="post" action="{% url 'groups.invite' group.id %}" class="inline">{% csrf_token %}
-                            <input type="hidden" name="friend_id" value="{{ f.id }}">
-                            <button type="submit" class="linkish">пригласить</button>
-                        </form>
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' f.id %}">
+                            {% avatar f 32 %}
+                            <span><b>{{ f.name }}</b></span>
+                        </a>
+                        <span class="classic-inline-actions">
+                            <form method="post" action="{% url 'groups.invite' group.id %}" class="inline">{% csrf_token %}
+                                <input type="hidden" name="friend_id" value="{{ f.id }}">
+                                <button type="submit" class="linkish">пригласить</button>
+                            </form>
+                        </span>
                     </div>
                     {% endfor %}
                 </div>
@@ -76,14 +81,19 @@
                 <h4>Заявки</h4>
                 <div class="profile-box-body">
                     {% for r in pending %}
-                    <div>
-                        <a href="{% url 'profile' r.social_user.id %}">{{ r.social_user.name }}</a>
-                        <form method="post" action="{% url 'groups.join.accept' group.id r.id %}" class="inline">{% csrf_token %}
-                            <button type="submit" class="linkish">принять</button>
-                        </form>
-                        <form method="post" action="{% url 'groups.join.reject' group.id r.id %}" class="inline">{% csrf_token %}
-                            <button type="submit" class="linkish muted">отклонить</button>
-                        </form>
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' r.social_user.id %}">
+                            {% avatar r.social_user 32 %}
+                            <span><b>{{ r.social_user.name }}</b></span>
+                        </a>
+                        <span class="classic-inline-actions classic-inline-actions-stack">
+                            <form method="post" action="{% url 'groups.join.accept' group.id r.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish">принять</button>
+                            </form>
+                            <form method="post" action="{% url 'groups.join.reject' group.id r.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish muted">отклонить</button>
+                            </form>
+                        </span>
                     </div>
                     {% endfor %}
                 </div>
@@ -94,7 +104,14 @@
                 <h4>Руководители</h4>
                 <div class="profile-box-body">
                     {% if officers %}
-                    <ul class="plain">{% for o in officers %}<li><a href="{% url 'profile' o.id %}">{{ o.name }}</a></li>{% endfor %}</ul>
+                    {% for o in officers %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' o.id %}">
+                            {% avatar o 32 %}
+                            <span><b>{{ o.name }}</b></span>
+                        </a>
+                    </div>
+                    {% endfor %}
                     {% else %}<p class="muted">—</p>{% endif %}
                 </div>
             </div>

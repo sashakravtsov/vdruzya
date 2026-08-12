@@ -18,12 +18,21 @@ def push(user_id, *, title, body, type, url):
 
 
 def attach_poker_ids(rows):
-    """Parse /profile/<id> poke URLs once for rail + Pokes inbox."""
+    """Parse /profile/<id> poke URLs once for rail + Pokes inbox; attach poker profile."""
+    ids = []
     for n in rows:
         try:
             n.poker_id = int((n.url or "").rstrip("/").rsplit("/", 1)[-1])
+            ids.append(n.poker_id)
         except (TypeError, ValueError):
             n.poker_id = None
+        n.poker = None
+    if ids:
+        from apps.social.models import SocialProfile
+        by_id = SocialProfile.objects.in_bulk(ids)
+        for n in rows:
+            if n.poker_id:
+                n.poker = by_id.get(n.poker_id)
     return rows
 
 

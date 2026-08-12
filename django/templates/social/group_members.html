@@ -34,6 +34,7 @@
                             <td class="col-act">
                                 <form method="post" action="{% url 'groups.members.manage' group.id row.social_user_id %}" class="inline">{% csrf_token %}
                                     <button type="submit" name="action" value="officer" class="linkish">офицер</button>
+                                    · <button type="submit" name="action" value="moderator" class="linkish">модератор</button>
                                     · <button type="submit" name="action" value="admin" class="linkish">админ</button>
                                     · <button type="submit" name="action" value="member" class="linkish">участник</button>
                                     · <button type="submit" name="action" value="remove" class="linkish muted">удалить</button>

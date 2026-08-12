@@ -54,7 +54,7 @@
                         {{ e.starts_at|date:"j E Y, H:i" }}
                         {% if e.place %} · {{ e.place }}{% endif %}
                         · {{ e.n_going }} идут{% if e.n_maybe %}, {{ e.n_maybe }} возможно{% endif %}
-                        {% if e.host %} · {{ e.host.name }}{% endif %}
+                        {% if e.host %} · <a href="{% url 'profile' e.host.id %}">{{ e.host.name }}</a>{% endif %}
                     </div>
                 </div>
                 {% empty %}<p class="muted">{% if tab == 'invited' %}Нет приглашений.{% else %}Нет событий.{% endif %}</p>{% endfor %}

@@ -52,13 +52,18 @@ def _files(**attrs):
     })
 
 
+class ClassicForm:
+    """FB 2006 chrome — no HTML5 required / minlength on widgets."""
+    use_required_attribute = False
+
+
 def _has_media(form):
     files = form.files
     photos = files.getlist("photo") if files and hasattr(files, "getlist") else []
     return bool(photos)
 
 
-class ProfileForm(forms.ModelForm):
+class ProfileForm(ClassicForm, forms.ModelForm):
     GENDER = [("", "—"), ("male", "Мужской"), ("female", "Женский")]
     RELATION = [
         ("", "—"), ("single", "Не женат(а)"), ("in_a_relationship", "В отношениях"),
@@ -259,7 +264,7 @@ class ProfileForm(forms.ModelForm):
         return obj
 
 
-class PostForm(forms.ModelForm):
+class PostForm(ClassicForm, forms.ModelForm):
     """Classic FB wall: text + photo. simple=True → profile wall (one photo, no visibility UI)."""
     photo = forms.ImageField(required=False, label="Фото", widget=_files())
 
@@ -286,7 +291,7 @@ class PostForm(forms.ModelForm):
         return data
 
 
-class NoteForm(forms.Form):
+class NoteForm(ClassicForm, forms.Form):
     """FB Notes (mid-2006) — title + body."""
     title = forms.CharField(max_length=120, label="Заголовок", widget=_in(style="width:100%"))
     body = forms.CharField(label="Текст", widget=_ta(8, style="width:100%"))
@@ -306,7 +311,7 @@ class NoteForm(forms.Form):
         return body
 
 
-class CommentForm(forms.Form):
+class CommentForm(ClassicForm, forms.Form):
     """Flat comment body for wall / group / photo (classic FB — one form)."""
     body = forms.CharField(
         max_length=2000,
@@ -320,7 +325,7 @@ class CommentForm(forms.Form):
         return body
 
 
-class MessageForm(forms.ModelForm):
+class MessageForm(ClassicForm, forms.ModelForm):
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
     class Meta:
@@ -335,7 +340,7 @@ class MessageForm(forms.ModelForm):
         return data
 
 
-class ComposeMessageForm(forms.Form):
+class ComposeMessageForm(ClassicForm, forms.Form):
     to = forms.ChoiceField(
         choices=(),
         widget=forms.Select(attrs={"class": "inputtext", "style": "width:100%;max-width:420px"}),
@@ -363,7 +368,7 @@ class ComposeMessageForm(forms.Form):
         return data
 
 
-class AlbumForm(forms.ModelForm):
+class AlbumForm(ClassicForm, forms.ModelForm):
     cover = forms.ImageField(required=False, label="Обложка", widget=_file())
 
     class Meta:
@@ -375,16 +380,20 @@ class AlbumForm(forms.ModelForm):
             "visibility": forms.Select(choices=[("friends", "Друзьям"), ("public", "Всем"), ("private", "Только мне")]),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["description"].required = False
 
-class PhotoUploadForm(forms.Form):
+
+class PhotoUploadForm(ClassicForm, forms.Form):
     photo = forms.ImageField(label="Файл", widget=_file())
     title = forms.CharField(
-        max_length=120, label="Название",
+        max_length=120, required=False, label="Название",
         widget=_in(style="width:100%"),
     )
 
 
-class CreateGroupForm(forms.Form):
+class CreateGroupForm(ClassicForm, forms.Form):
     name = forms.CharField(max_length=255, widget=_in(style="width:100%"))
     category = forms.ChoiceField(choices=GROUP_CATS, widget=forms.Select())
     privacy = forms.ChoiceField(
@@ -398,7 +407,7 @@ class CreateGroupForm(forms.Form):
     )
 
 
-class GroupForm(forms.ModelForm):
+class GroupForm(ClassicForm, forms.ModelForm):
     picture = forms.ImageField(required=False, label="Картинка", widget=_file())
 
     class Meta:
@@ -420,13 +429,21 @@ class GroupForm(forms.ModelForm):
             "privacy": forms.Select(choices=[("public", "Открытая"), ("closed", "Закрытая")]),
             "join_mode": forms.Select(choices=[("open", "Свободный вход"), ("request", "По заявке")]),
             "posting_policy": forms.Select(choices=[
-                ("members", "Только участники"), ("admins", "Только админы"), ("everyone", "Все (открытая стена)"),
+                ("members", "Только участники"), ("admins", "Только админы"),
             ]),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"] = forms.ChoiceField(choices=GROUP_CATS, widget=forms.Select())
+        for name in ("description", "short_description", "slug"):
+            if name in self.fields:
+                self.fields[name].required = False
+        # Legacy "everyone" → members (FB 2006: members-only walls)
+        inst = getattr(self, "instance", None)
+        if inst and getattr(inst, "posting_policy", None) == "everyone":
+            self.initial["posting_policy"] = "members"
+            inst.posting_policy = "members"
 
     def clean_slug(self):
         from apps.social.slugs import clean_short_slug
@@ -439,7 +456,7 @@ class GroupForm(forms.ModelForm):
         return s
 
 
-class CommunityPostForm(forms.ModelForm):
+class CommunityPostForm(ClassicForm, forms.ModelForm):
     subject = forms.CharField(
         required=False, max_length=120, label="Тема",
         widget=_in(style="width:100%"),
@@ -480,14 +497,14 @@ class CommunityPostForm(forms.ModelForm):
         return data
 
 
-class StatusForm(forms.Form):
+class StatusForm(ClassicForm, forms.Form):
     headline = forms.CharField(
         max_length=255, required=False,
         widget=_in(style="width:170px", autocomplete="off"),
     )
 
 
-class EventForm(forms.Form):
+class EventForm(ClassicForm, forms.Form):
     """Classic Events create — text date, no datetime-local."""
     title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
     place = forms.CharField(max_length=160, required=False, widget=_in(style="width:100%"))
@@ -513,10 +530,10 @@ class EventForm(forms.Form):
 
 
 
-class PasswordForm(forms.Form):
+class PasswordForm(ClassicForm, forms.Form):
     old = forms.CharField(label="Текущий пароль", widget=forms.PasswordInput(attrs={"class": "inputtext"}))
-    new1 = forms.CharField(label="Новый пароль", min_length=8, widget=forms.PasswordInput(attrs={"class": "inputtext"}))
-    new2 = forms.CharField(label="Ещё раз", min_length=8, widget=forms.PasswordInput(attrs={"class": "inputtext"}))
+    new1 = forms.CharField(label="Новый пароль", widget=forms.PasswordInput(attrs={"class": "inputtext"}))
+    new2 = forms.CharField(label="Ещё раз", widget=forms.PasswordInput(attrs={"class": "inputtext"}))
 
     def clean(self):
         from django.contrib.auth.password_validation import validate_password
@@ -532,15 +549,20 @@ class PasswordForm(forms.Form):
         return data
 
 
-class EducationForm(forms.ModelForm):
+class EducationForm(ClassicForm, forms.ModelForm):
     class Meta:
         model = Education
         fields = ("institution", "degree", "field", "start_year", "end_year")
         labels = {"institution": "Учебное заведение", "degree": "Степень", "field": "Специальность", "start_year": "С", "end_year": "По"}
         widgets = {f: _in() for f in ("institution", "degree", "field", "start_year", "end_year")}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("degree", "field", "start_year", "end_year"):
+            self.fields[name].required = False
 
-class ExperienceForm(forms.ModelForm):
+
+class ExperienceForm(ClassicForm, forms.ModelForm):
     class Meta:
         model = Experience
         fields = ("company_name", "position", "period", "description")
@@ -548,3 +570,8 @@ class ExperienceForm(forms.ModelForm):
         widgets = {
             "company_name": _in(), "position": _in(), "period": _in(), "description": _ta(2),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("period", "description", "position"):
+            self.fields[name].required = False

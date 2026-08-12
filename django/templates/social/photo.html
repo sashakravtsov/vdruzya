@@ -29,7 +29,7 @@
                     <img class="photo-view-img" src="{{ photo.url }}" alt="{{ photo.title }}">
                   {% if next_id %}</a>{% endif %}
                 </div>
-                <p class="photo-view-full"><a href="{{ photo.url }}" target="_blank" rel="noopener">полный размер</a></p>
+                <p class="photo-view-full"><a href="{{ photo.url }}">полный размер</a></p>
                 {% else %}
                 <p><img src="{% static 'img/nophoto.gif' %}" alt="" width="200" height="200"></p>
                 {% endif %}
