@@ -167,14 +167,20 @@ def can_manage_comment(me, comment):
     return can_manage_wall_comment(me, comment)
 
 
-def _comment_pack(c, *, can_delete, delete_url):
-    return {"c": c, "can_delete": can_delete, "delete_url": delete_url}
+def _comment_pack(c, *, can_delete, delete_url, like_url=None, me=None):
+    return {
+        "c": c, "can_delete": can_delete, "delete_url": delete_url,
+        "like_url": like_url, "me": me,
+        "n_likes": getattr(c, "n_likes", 0) or 0,
+        "liked_by_me": bool(getattr(c, "liked_by_me", False)),
+    }
 
 
 @register.inclusion_tag("social/_comment_thread.html", takes_context=True)
 def comment_thread(context, comments, preview=2, kind="wall", group=None, album=None, photo=None, expand=False):
     """FB-2006: show last `preview` comments; older behind a reveal link. preview=0 → all."""
     from django.urls import reverse
+    from apps.social.likes import attach_comment_likes
     from apps.social.services import (
         can_manage_group_comment, can_manage_photo_comment, can_manage_wall_comment,
     )
@@ -182,6 +188,8 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
     me = context.get("me")
     next_url = context.get("next") or ""
     rows = list(comments or [])
+    if kind == "wall":
+        attach_comment_likes(rows, me)
     if preview is None or preview == "":
         keep = 2
     else:
@@ -197,6 +205,7 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
                 c,
                 can_delete=can_manage_group_comment(me, c, group),
                 delete_url=reverse("groups.comments.delete", args=[group.id, c.id]),
+                me=me,
             )
         if kind == "photo":
             return _comment_pack(
@@ -205,11 +214,14 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
                 delete_url=reverse(
                     "albums.photos.comment.delete", args=[album.id, photo.id, c.id],
                 ),
+                me=me,
             )
         return _comment_pack(
             c,
             can_delete=can_manage_wall_comment(me, c),
             delete_url=reverse("comments.delete", args=[c.id]),
+            like_url=reverse("comments.like", args=[c.id]),
+            me=me,
         )
 
     uid = getattr(rows[0], "id", 0) if rows else 0

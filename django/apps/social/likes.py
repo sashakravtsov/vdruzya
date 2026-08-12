@@ -1,9 +1,9 @@
-"""FB 2009 Like — classic «Мне нравится» on wall notes and photos."""
+"""FB 2009 Like — wall posts, photos, and wall comments."""
 from __future__ import annotations
 
 from django.db.models import Count
 
-from apps.social.models.legacy import PhotoReaction, Reaction
+from apps.social.models.legacy import CommentReaction, PhotoReaction, Reaction
 from apps.social.services import bump_news, now
 
 
@@ -84,6 +84,44 @@ def toggle_photo_like(me, photo) -> str:
         return "unliked"
     PhotoReaction.objects.create(
         photo=photo, social_user=me, type="like", created_at=now(),
+    )
+    bump_news()
+    return "liked"
+
+
+def attach_comment_likes(comments, viewer=None):
+    comments = list(comments or [])
+    ids = [c.id for c in comments if getattr(c, "id", None)]
+    counts = {c.id: 0 for c in comments}
+    mine = set()
+    if ids:
+        for row in (
+            CommentReaction.objects.filter(comment_id__in=ids, type="like")
+            .values("comment_id")
+            .annotate(n=Count("id"))
+        ):
+            counts[row["comment_id"]] = row["n"]
+        if viewer:
+            mine = set(
+                CommentReaction.objects.filter(comment_id__in=ids, social_user=viewer, type="like")
+                .values_list("comment_id", flat=True)
+            )
+    for c in comments:
+        c.n_likes = counts.get(c.id, 0)
+        c.liked_by_me = c.id in mine
+    return comments
+
+
+def toggle_comment_like(me, comment) -> str:
+    if not me or not comment:
+        return ""
+    existing = CommentReaction.objects.filter(comment=comment, social_user=me, type="like").first()
+    if existing:
+        existing.delete()
+        bump_news()
+        return "unliked"
+    CommentReaction.objects.create(
+        comment=comment, social_user=me, type="like", created_at=now(),
     )
     bump_news()
     return "liked"

@@ -31,6 +31,7 @@
                 {% if can_view %}
                 <a href="?tab=wall">Стена</a>
                 <a href="?tab=discussion">Доска обсуждений</a>
+                <a href="?tab=docs">Документы</a>
                 <a href="?tab=members">Участники ({{ n_members }})</a>
                 {% endif %}
                 {% if user.is_authenticated %}
@@ -153,6 +154,7 @@
                 <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
                 <div class="{% if tab == 'discussion' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=discussion">Доска обсуждений</a></div>
                 <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                <div class="{% if tab == 'docs' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=docs">Документы</a></div>
                 <div class="{% if tab == 'members' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=members">Участники</a></div>
                 <div class="{% if tab == 'events' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=events">События</a></div>
             </div>
@@ -277,6 +279,34 @@
                     {% if members %}
                     {% include "social/_profile_friend_grid.html" with friends=members %}
                     {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'docs' %}
+            <div class="profile-box" id="docs">
+                <h4>Документы</h4>
+                <div class="profile-box-body">
+                    {% if can_post and doc_form %}
+                    <form method="post" action="{% url 'groups.docs' group.id %}">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr><td class="label">Название:</td><td>{{ doc_form.title }}</td></tr>
+                            <tr><td class="label">Текст:</td><td>{{ doc_form.body }}</td></tr>
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать документ"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% for d in docs %}
+                    <div class="event-list-row">
+                        <b><a href="{% url 'groups.docs.show' group.id d.id %}">{{ d.title }}</a></b>
+                        <div class="muted">
+                            <a href="{% url 'profile' d.social_user.id %}">{{ d.social_user.name }}</a>
+                            {% if d.updated_at %} · {{ d.updated_at|fb_when }}{% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="muted">Документов пока нет.</p>
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}

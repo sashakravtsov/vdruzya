@@ -125,6 +125,39 @@ CREATE TABLE IF NOT EXISTS photo_reactions (
 CREATE UNIQUE INDEX IF NOT EXISTS photo_reactions_uniq
   ON photo_reactions (photo_id, social_user_id, type);
 CREATE INDEX IF NOT EXISTS photo_reactions_photo_idx ON photo_reactions (photo_id);
+
+CREATE TABLE IF NOT EXISTS comment_reactions (
+  id bigserial PRIMARY KEY,
+  comment_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  type varchar(255) NOT NULL DEFAULT 'like',
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS comment_reactions_uniq
+  ON comment_reactions (comment_id, social_user_id, type);
+CREATE INDEX IF NOT EXISTS comment_reactions_comment_idx ON comment_reactions (comment_id);
+
+CREATE TABLE IF NOT EXISTS post_tags (
+  id bigserial PRIMARY KEY,
+  post_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  tagged_by_id bigint NOT NULL,
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS post_tags_uniq ON post_tags (post_id, social_user_id);
+CREATE INDEX IF NOT EXISTS post_tags_user_idx ON post_tags (social_user_id);
+
+CREATE TABLE IF NOT EXISTS classic_group_docs (
+  id bigserial PRIMARY KEY,
+  community_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  title varchar(200) NOT NULL,
+  body text NOT NULL DEFAULT '',
+  created_at timestamp without time zone,
+  updated_at timestamp without time zone
+);
+CREATE INDEX IF NOT EXISTS classic_group_docs_community_idx ON classic_group_docs (community_id);
+CREATE INDEX IF NOT EXISTS classic_group_docs_created_idx ON classic_group_docs (created_at DESC);
 """
 
 
@@ -135,13 +168,13 @@ def main():
             "reactions", "places", "place_checkins", "place_reviews",
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
-            "photo_reactions",
+            "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
-    print("OK   likes + places + questions + reviews + classic polls + photo likes schema")
+    print("OK   2010 classic schema (likes/places/polls/tags/docs)")
 
 
 if __name__ == "__main__":

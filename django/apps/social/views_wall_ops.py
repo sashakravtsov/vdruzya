@@ -71,8 +71,14 @@ def post_show(request, post_id):
     attach_wall_notes([post])
     from apps.social.likes import attach_likes
     from apps.social.shares import attach_share_flags
+    from apps.social import post_tags as ptags
     attach_likes([post], me)
     attach_share_flags([post], me)
+    ptags.tags_for_posts([post])
+    if me and ptags.can_tag(me, post):
+        post.tag_candidates = ptags.tag_candidates(me, post)
+    else:
+        post.tag_candidates = []
     return render(
         request, "social/post_show.html",
         {"post": post, "me": me, "form": None, "comment_form": CommentForm() if me else None},

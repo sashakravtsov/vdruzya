@@ -325,6 +325,20 @@ class CommentForm(ClassicForm, forms.Form):
         return body
 
 
+class GroupDocForm(ClassicForm, forms.Form):
+    title = forms.CharField(max_length=200, widget=_in(style="width:100%"))
+    body = forms.CharField(required=False, widget=_ta(10, style="width:100%"))
+
+    def clean_title(self):
+        title = (self.cleaned_data.get("title") or "").strip()
+        if not title:
+            raise forms.ValidationError("Укажите название документа.")
+        return title[:200]
+
+    def clean_body(self):
+        return (self.cleaned_data.get("body") or "").strip()
+
+
 class MessageForm(ClassicForm, forms.ModelForm):
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
 

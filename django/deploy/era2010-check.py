@@ -34,7 +34,7 @@ def main():
             "reactions", "places", "place_checkins", "place_reviews",
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
-            "photo_reactions",
+            "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
@@ -170,6 +170,41 @@ def main():
     assert place.name in (me.headline or "")
     assert PlaceCheckin.objects.filter(place=place, social_user=me, message="QA status place").exists()
     ok("status with place")
+
+    # Comment like + wall post tag
+    from apps.social.models.legacy import CommentReaction, PostTag
+    from apps.social.models import Comment, Friendship, SocialProfile
+    tpost2 = Post.objects.create(
+        social_user=me, body="__tag_probe__", topic=f"wall:{me.id}",
+        visibility="friends", kind="text", created_at=now(), updated_at=now(),
+    )
+    cmt = Comment.objects.create(post=tpost2, social_user=me, body="__cmt_like__", created_at=now())
+    r = c.post(f"/comments/{cmt.id}/like", {"next": f"/profile/{me.id}"}, secure=True)
+    assert r.status_code in (301, 302)
+    assert CommentReaction.objects.filter(comment=cmt, social_user=me, type="like").exists()
+    ok("comment like")
+
+    buddy = SocialProfile.objects.exclude(pk=me.id).order_by("id").first()
+    if buddy:
+        Friendship.objects.update_or_create(
+            user=me, friend=buddy,
+            defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
+        )
+        Friendship.objects.update_or_create(
+            user=buddy, friend=me,
+            defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
+        )
+        r = c.post(f"/posts/{tpost2.id}/tag", {"person": str(buddy.id), "next": f"/profile/{me.id}"}, secure=True)
+        assert r.status_code in (301, 302)
+        assert PostTag.objects.filter(post=tpost2, social_user=buddy).exists()
+        ok("wall post tag")
+        PostTag.objects.filter(post=tpost2).delete()
+    else:
+        ok("wall post tag skipped (no buddy)")
+
+    CommentReaction.objects.filter(comment=cmt).delete()
+    Comment.objects.filter(pk=cmt.id).delete()
+    Post.objects.filter(pk=tpost2.id).delete()
 
     # cleanup
     Reaction.objects.filter(post=tpost).delete()

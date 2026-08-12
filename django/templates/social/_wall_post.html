@@ -55,6 +55,29 @@
                         {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
                         {% include "social/_post_media.html" with post=post %}
                     {% endif %}
+                    {% if post.post_people %}
+                    <div class="post-people muted">
+                        с:
+                        {% for t in post.post_people %}
+                        <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if me and me.id == post.social_user_id or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
+                        <form method="post" action="{% url 'posts.tag.delete' post.id t.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                            <button type="submit" class="linkish muted" title="Убрать">×</button>
+                        </form>{% endif %}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if me and post.tag_candidates %}
+                    <form method="post" action="{% url 'posts.tag' post.id %}" class="post-tag-form" style="margin-top:4px">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <select name="person" class="inputtext">
+                            {% for p in post.tag_candidates %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="submit" class="inputsubmit" value="Отметить">
+                    </form>
+                    {% endif %}
                 </div>
                 <div class="actions">
                     {% if me %}

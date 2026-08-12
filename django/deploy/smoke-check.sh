@@ -204,10 +204,17 @@ if ! grep -q 'profile.friendship' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
 else
   echo "OK   See Friendship + anniversaries routes"
 fi
-if ! grep -q 'albums.photos.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
-  echo "FAIL photo like route missing"; FAIL=1
+if ! grep -q 'comments.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'posts.tag' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'groups.docs' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL comment-like / post-tag / group-docs routes missing"; FAIL=1
 else
-  echo "OK   photo Like route (FB 2009)"
+  echo "OK   comment Like + post tags + group Docs routes"
+fi
+if ! grep -q 'tab=docs' "${ROOT}/django/templates/social/group.html" 2>/dev/null; then
+  echo "FAIL group Docs tab missing"; FAIL=1
+else
+  echo "OK   group Docs tab (classic)"
 fi
 if grep -q 'Закрепить' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
    || grep -q 'Закрепить' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then

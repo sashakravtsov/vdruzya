@@ -9,7 +9,7 @@ from apps.social.models import (
 from apps.social.services import accepted_friends
 
 ADMIN_ROLES = ("admin", "moderator", "creator", "officer")
-TABS = ("wall", "discussion", "photos", "members", "events")
+TABS = ("wall", "discussion", "photos", "docs", "members", "events")
 
 
 def access(me, group):
@@ -64,7 +64,8 @@ def page_ctx(request, group, me):
         "members": [], "officers": [], "related": [], "posts": [], "wall_posts": [],
         "photos": [], "pending": [], "events": [], "invite_friends": [],
         "n_topics": 0, "open_topic": None,
-        "form": None, "board_form": None, "photo_form": None,
+        "form": None, "board_form": None, "photo_form": None, "doc_form": None,
+        "docs": [],
         "comment_form": CommentForm(auto_id=False) if is_member else None,
         "event_form": EventForm() if is_admin else None,
     }
@@ -108,6 +109,11 @@ def page_ctx(request, group, me):
     elif tab == "photos":
         ctx["photo_form"] = CommunityPostForm(auto_id="id_ph_%s", initial={"board": "wall"})
         ctx["photos"] = list(qs.exclude(media_path__isnull=True).exclude(media_path="")[:24])
+    elif tab == "docs":
+        from apps.social import group_docs as gdocs
+        from apps.social.forms import GroupDocForm
+        ctx["docs"] = gdocs.docs_for(group)
+        ctx["doc_form"] = GroupDocForm() if can_post else None
     elif tab == "members":
         ctx["members"] = list(
             SocialProfile.objects.filter(memberships__community=group)

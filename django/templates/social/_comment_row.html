@@ -1,11 +1,23 @@
-{# Flat classic comment. Expects: c, can_delete, delete_url; optional next #}
+{# Flat classic comment. Expects: c, can_delete, delete_url; optional next, like_url, me #}
 {% load vd %}
 <div class="wall-comment">
     <span class="wc-ava"><a href="{% url 'profile' c.social_user.id %}">{% avatar c.social_user 32 %}</a></span>
     <div class="wc-body">
         <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
         {{ c.body }}
-        {% if c.created_at %}<div class="muted wc-time">{{ c.created_at|fb_when }}</div>{% endif %}
+        <div class="muted wc-time">
+            {% if c.created_at %}{{ c.created_at|fb_when }}{% endif %}
+            {% if like_url and me %}
+            ·
+            <form method="post" action="{{ like_url }}" class="inline">{% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                <button type="submit" class="linkish">{% if liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
+            </form>
+            {% if n_likes %} ({{ n_likes }}){% endif %}
+            {% elif n_likes %}
+            · {{ n_likes }} нравится
+            {% endif %}
+        </div>
     </div>
     {% if can_delete and delete_url %}
     <form method="post" action="{{ delete_url }}" class="inline wc-del">{% csrf_token %}

@@ -342,3 +342,84 @@ def group_leave(request, pk):
     bump_news()
     messages.success(request, f"Вы вышли из «{group.name}».")
     return redirect("groups")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def group_docs(request, pk):
+    """Create doc (POST) or redirect to docs tab (GET)."""
+    from apps.social import group_docs as gdocs
+    from apps.social.forms import GroupDocForm
+    from apps.social.group_page import access
+
+    me = profile_of(request.user)
+    group = get_object_or_404(Community, pk=pk)
+    is_member, is_admin, can_view, can_post, _ = access(me, group)
+    if not can_view:
+        messages.error(request, "Группа закрыта.")
+        return redirect("groups")
+    if request.method == "GET":
+        return redirect(f"/groups/{pk}?tab=docs")
+    if not can_post:
+        messages.error(request, "Писать документы нельзя.")
+        return redirect(f"/groups/{pk}?tab=docs")
+    form = GroupDocForm(request.POST)
+    if form.is_valid():
+        doc = gdocs.doc_create(me, group, title=form.cleaned_data["title"], body=form.cleaned_data.get("body") or "")
+        if doc:
+            messages.success(request, "Документ создан.")
+            return redirect(doc)
+    messages.error(request, "Укажите название.")
+    return redirect(f"/groups/{pk}?tab=docs")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def group_doc_show(request, pk, doc_id):
+    from apps.social import group_docs as gdocs
+    from apps.social.forms import GroupDocForm
+    from apps.social.group_page import access
+    from apps.social.models import GroupDoc
+
+    me = profile_of(request.user)
+    group = get_object_or_404(Community, pk=pk)
+    is_member, is_admin, can_view, can_post, _ = access(me, group)
+    doc = get_object_or_404(GroupDoc.objects.select_related("social_user"), pk=doc_id, community=group)
+    if not can_view:
+        messages.error(request, "Группа закрыта.")
+        return redirect("groups")
+    form = None
+    if me and doc.social_user_id == me.id:
+        form = GroupDocForm(
+            request.POST or None,
+            initial=None if request.method == "POST" else {"title": doc.title, "body": doc.body},
+        )
+        if request.method == "POST" and form.is_valid():
+            if gdocs.doc_update(me, doc, title=form.cleaned_data["title"], body=form.cleaned_data.get("body") or ""):
+                messages.success(request, "Документ сохранён.")
+                return redirect(doc)
+            messages.error(request, "Не удалось сохранить.")
+    return render(request, "social/group_doc.html", {
+        "me": me, "group": group, "doc": doc, "form": form,
+        "is_admin": is_admin, "is_member": is_member, "nav": "groups",
+    })
+
+
+@login_required
+@require_POST
+def group_doc_delete(request, pk, doc_id):
+    from apps.social import group_docs as gdocs
+    from apps.social.group_page import access
+    from apps.social.models import GroupDoc
+
+    me = profile_of(request.user)
+    group = get_object_or_404(Community, pk=pk)
+    _, is_admin, can_view, _, _ = access(me, group)
+    doc = get_object_or_404(GroupDoc, pk=doc_id, community=group)
+    if not can_view:
+        return redirect("groups")
+    if gdocs.doc_delete(me, doc, is_admin=is_admin):
+        messages.success(request, "Документ удалён.")
+    else:
+        messages.error(request, "Нельзя удалить.")
+    return redirect(f"/groups/{pk}?tab=docs")

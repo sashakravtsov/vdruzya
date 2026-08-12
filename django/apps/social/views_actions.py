@@ -219,13 +219,18 @@ def post_share(request, post_id):
 @require_POST
 def post_delete(request, post_id):
     from apps.social.services import can_manage_wall_post
+    from apps.social.models.legacy import CommentReaction, PostTag
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
     if not can_manage_wall_post(me, post):
         messages.error(request, "Нельзя удалить.")
         return redirect(request.POST.get("next") or "feed")
+    cids = list(Comment.objects.filter(post=post).values_list("id", flat=True))
+    if cids:
+        CommentReaction.objects.filter(comment_id__in=cids).delete()
     Comment.objects.filter(post=post).delete()
     Reaction.objects.filter(post=post).delete()
+    PostTag.objects.filter(post=post).delete()
     post.delete()
     messages.success(request, "Запись удалена.")
     return redirect(request.POST.get("next") or "feed")
@@ -235,13 +240,69 @@ def post_delete(request, post_id):
 @require_POST
 def comment_delete(request, comment_id):
     from apps.social.services import can_manage_wall_comment
+    from apps.social.models.legacy import CommentReaction
     me = profile_of(request.user)
     c = get_object_or_404(Comment.objects.select_related("post"), pk=comment_id)
     if not can_manage_wall_comment(me, c):
         return redirect(request.POST.get("next") or "feed")
+    CommentReaction.objects.filter(comment=c).delete()
     c.delete()
     bump_news()
     return redirect(request.POST.get("next") or "feed")
+
+
+@login_required
+@require_POST
+def comment_like(request, comment_id):
+    from apps.social.likes import toggle_comment_like
+    from apps.social.services import post_visible_q
+
+    me = profile_of(request.user)
+    c = get_object_or_404(Comment.objects.select_related("post"), pk=comment_id)
+    if not Post.objects.filter(pk=c.post_id).filter(post_visible_q(me)).exists():
+        messages.error(request, "Комментарий недоступен.")
+        return redirect(request.POST.get("next") or "feed")
+    out = toggle_comment_like(me, c)
+    if out == "liked":
+        messages.success(request, "Вам это нравится.")
+    elif out == "unliked":
+        messages.info(request, "Отметка снята.")
+    return redirect(request.POST.get("next") or c.post.get_absolute_url())
+
+
+@login_required
+@require_POST
+def post_tag(request, post_id):
+    from apps.social import post_tags as ptags
+    from apps.social.services import post_visible_q
+
+    me = profile_of(request.user)
+    post = get_object_or_404(Post, pk=post_id)
+    if not Post.objects.filter(pk=post.id).filter(post_visible_q(me)).exists():
+        messages.error(request, "Запись недоступна.")
+        return redirect(request.POST.get("next") or "feed")
+    tag = ptags.add_tag(me, post, request.POST.get("person"))
+    if tag:
+        messages.success(request, "Отмечено.")
+    else:
+        messages.error(request, "Не удалось отметить.")
+    return redirect(request.POST.get("next") or post.get_absolute_url())
+
+
+@login_required
+@require_POST
+def post_tag_delete(request, post_id, tag_id):
+    from apps.social import post_tags as ptags
+    from apps.social.models import PostTag
+
+    me = profile_of(request.user)
+    post = get_object_or_404(Post, pk=post_id)
+    tag = get_object_or_404(PostTag, pk=tag_id, post=post)
+    if ptags.remove_tag(me, tag):
+        messages.info(request, "Отметка снята.")
+    else:
+        messages.error(request, "Нельзя удалить отметку.")
+    return redirect(request.POST.get("next") or post.get_absolute_url())
 
 
 @login_required

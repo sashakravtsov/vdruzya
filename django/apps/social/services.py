@@ -198,8 +198,17 @@ def wall_posts_for(profile, limit=20, viewer=None):
             qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
     from apps.social.likes import attach_likes
     from apps.social.shares import attach_share_flags
+    from apps.social import post_tags as ptags
     posts = attach_likes(list(qs.order_by("-id")[:limit]), viewer)
-    return attach_share_flags(posts, viewer)
+    attach_share_flags(posts, viewer)
+    ptags.tags_for_posts(posts)
+    if viewer:
+        for p in posts:
+            if ptags.can_tag(viewer, p):
+                p.tag_candidates = ptags.tag_candidates(viewer, p)
+            else:
+                p.tag_candidates = []
+    return posts
 
 
 def notes_for(profile, limit=20, viewer=None):
@@ -797,6 +806,25 @@ def _add_anniversaries(items, viewer, blocked, fids, limit):
         })
 
 
+def _add_group_docs(items, blocked, member_ids, limit):
+    if not member_ids:
+        return
+    from apps.social.models import GroupDoc
+    qs = (
+        GroupDoc.objects.filter(community_id__in=member_ids)
+        .select_related("social_user", "community")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "group_doc", "at": row.created_at or row.updated_at,
+            "actor": row.social_user, "doc": row, "group": row.community,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -873,6 +901,7 @@ def news_items(viewer=None, limit=40):
     _add_polls(items, blocked, fids, limit)
     _add_photo_likes(items, blocked, fids, limit)
     _add_anniversaries(items, viewer, blocked, fids, limit)
+    _add_group_docs(items, blocked, member_ids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)

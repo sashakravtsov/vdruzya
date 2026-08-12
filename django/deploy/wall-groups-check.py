@@ -205,6 +205,24 @@ def main():
         fail("compose should hide while topic open")
     ok("discussion subject + thread")
 
+    # Group Docs tab
+    r = get(f"/groups/{g.id}?tab=docs")
+    body = r.content.decode()
+    if r.status_code != 200 or "Документы" not in body:
+        fail("group docs tab")
+    r = post(f"/groups/{g.id}/docs", {"title": "probe doc", "body": "текст документа"})
+    if r.status_code not in (200, 301, 302):
+        fail("group doc create")
+    from apps.social.models import GroupDoc
+    doc = GroupDoc.objects.filter(community=g, title="probe doc").order_by("-id").first()
+    if not doc:
+        fail("group doc not saved")
+    r = get(f"/groups/{g.id}/docs/{doc.id}")
+    if r.status_code != 200 or "probe doc".encode() not in r.content:
+        fail("group doc show")
+    GroupDoc.objects.filter(pk=doc.id).delete()
+    ok("group docs")
+
     closed = Community.objects.filter(privacy="closed").exclude(memberships__social_user=me).first()
     if closed:
         ok("closed group probe")
