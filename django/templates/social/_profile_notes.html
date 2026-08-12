@@ -18,6 +18,16 @@
             <div class="note-head">
                 <a href="{% url 'posts.show' note.id %}"><b>{{ note.media_label|default:"Заметка" }}</b></a>
                 {% if note.created_at %}<span class="muted"> · {{ note.created_at|fb_when }}</span>{% endif %}
+                {% if is_own %}
+                <span class="muted">
+                    · <a href="{% url 'posts.edit' note.id %}?next={{ request.path }}%3Ftab%3Dnotes">ред.</a>
+                    ·
+                    <form method="post" action="{% url 'posts.delete' note.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}?tab=notes">
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                </span>
+                {% endif %}
             </div>
             <div class="note-body">{{ note.body|truncatewords:40|linebreaksbr }}</div>
             <div class="muted"><a href="{% url 'posts.show' note.id %}">Читать полностью</a>{% if note.n_comments %} · {{ note.n_comments }} коммент.{% endif %}</div>

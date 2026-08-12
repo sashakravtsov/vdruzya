@@ -340,6 +340,48 @@ if grep -q 'image/webp' "${ROOT}/django/apps/social/forms.py" "${ROOT}/django/te
 else
   echo "OK   JPEG/PNG/GIF only"
 fi
+
+if grep -RIlE '\srequired(=|[\s>])|minlength=' "${ROOT}/django/templates/accounts" "${ROOT}/django/templates/social/_comment_compose.html" 2>/dev/null | grep -q .; then
+  echo "FAIL HTML5 required/minlength on classic forms"; FAIL=1
+else
+  echo "OK   no HTML5 required on classic forms"
+fi
+if grep -q 'album-cover-fallback">·' "${ROOT}/django/templates/social/_profile_left.html" 2>/dev/null; then
+  echo "FAIL letter-tile dot fallback on profile rail"; FAIL=1
+else
+  echo "OK   profile rail uses nophoto"
+fi
+if ! grep -q 'company_name__icontains' "${ROOT}/django/apps/social/friendship.py" 2>/dev/null; then
+  echo "FAIL workplace search ignores Experience"; FAIL=1
+else
+  echo "OK   workplace Find Friends uses Experience"
+fi
+if ! grep -q 'NoteForm' "${ROOT}/django/apps/social/views_wall_ops.py" 2>/dev/null; then
+  echo "FAIL Notes edit not using NoteForm"; FAIL=1
+else
+  echo "OK   Notes edit uses NoteForm"
+
+if ! grep -q 'profile-photo-thumbs img {' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL profile photo thumb CSS broken"; FAIL=1
+else
+  echo "OK   profile photo thumb CSS"
+fi
+if ! grep -q 'album-index .album-cover img {' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL album cover CSS broken"; FAIL=1
+else
+  echo "OK   album cover CSS"
+fi
+if ! grep -q 'def get_absolute_url' "${ROOT}/django/apps/social/models/feed.py" 2>/dev/null; then
+  echo "FAIL Post.get_absolute_url missing"; FAIL=1
+else
+  echo "OK   Post.get_absolute_url"
+fi
+if grep -qE 'href="\{\{ post\.media_url \}\}"' "${ROOT}/django/templates/social/_post_media.html" 2>/dev/null; then
+  echo "FAIL wall media still links raw CDN"; FAIL=1
+else
+  echo "OK   wall media uses page href"
+fi
+fi
 echo "== Friends feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/friends-check.py; then
   echo "OK   friends features"

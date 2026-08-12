@@ -67,7 +67,7 @@
                 {% with text=item.post.body_text|default:item.post.body %}
                 {% if text %}<div class="wall-body">{{ text|truncatewords:40|linebreaksbr }}</div>{% endif %}
                 {% endwith %}
-                {% if item.post.media_url %}<p class="wall-media wall-media-single"><a href="{{ item.post.media_url }}"><img src="{{ item.post.media_url }}" alt="" class="news-photo"></a></p>{% endif %}
+                {% if item.post.media_url %}<p class="wall-media wall-media-single"><a href="{{ item.post.get_absolute_url }}"><img src="{{ item.post.media_url }}" alt="" class="news-photo"></a></p>{% endif %}
             </div>
             <div class="wall-actions muted">
                 <span class="ico ico-comment"></span> {{ item.post.n_comments|default:0 }}

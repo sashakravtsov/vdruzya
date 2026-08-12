@@ -5,6 +5,6 @@
     {% for m in extras %}{% if m.url %}<a href="{{ m.href }}"><img src="{{ m.url }}" alt=""></a>{% endif %}{% endfor %}
 </div>
 {% elif post.media_url %}
-<p class="wall-media wall-media-single"><a href="{{ post.media_url }}"><img src="{{ post.media_url }}" alt="" class="news-photo"></a></p>
+<p class="wall-media wall-media-single"><a href="{{ post.get_absolute_url }}"><img src="{{ post.media_url }}" alt="" class="news-photo"></a></p>
 {% endif %}
 {% endwith %}

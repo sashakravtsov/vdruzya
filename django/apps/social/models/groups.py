@@ -142,7 +142,10 @@ class CommunityPostMedia(models.Model):
             album_id = Photo.objects.filter(pk=self.photo_id).values_list("album_id", flat=True).first()
             if album_id:
                 return reverse("albums.photos.show", args=[album_id, self.photo_id])
-        return self.url
+        try:
+            return self.post.get_absolute_url()
+        except Exception:
+            return self.url
 
 
 class CommunityPostComment(models.Model):

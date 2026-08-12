@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
-from apps.social.models import Block, Education, Friendship, SocialProfile
+from apps.social.models import Block, Education, Experience, Friendship, SocialProfile
 from apps.social.services import friend_ids, now
 
 
@@ -285,5 +285,8 @@ def find_people(me, *, q="", city="", school="", gender="", workplace="", page=1
     if gender in ("male", "female"):
         qs = qs.filter(gender=gender)
     if workplace:
-        qs = qs.filter(workplace__icontains=workplace)
+        exp_ids = Experience.objects.filter(company_name__icontains=workplace).values_list(
+            "social_user_id", flat=True
+        )
+        qs = qs.filter(Q(workplace__icontains=workplace) | Q(id__in=exp_ids))
     return Paginator(qs.order_by("name"), per).get_page(page)

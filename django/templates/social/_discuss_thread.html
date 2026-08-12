@@ -6,9 +6,9 @@
         <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
             <td class="image">
                 {% if p.posted_as_community %}
-                <img class="avatar" src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" width="50" height="50" alt="">
+                <a href="{% url 'groups.show' group.id %}"><img class="avatar" src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" width="50" height="50" alt=""></a>
                 {% else %}
-                {% avatar p.social_user 50 %}
+                <a href="{% url 'profile' p.social_user.id %}">{% avatar p.social_user 50 %}</a>
                 {% endif %}
             </td>
             <td>

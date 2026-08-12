@@ -1,7 +1,7 @@
 {# Flat classic comment. Expects: c, can_delete, delete_url; optional next #}
 {% load vd %}
 <div class="wall-comment">
-    <span class="wc-ava">{% avatar c.social_user 32 %}</span>
+    <span class="wc-ava"><a href="{% url 'profile' c.social_user.id %}">{% avatar c.social_user 32 %}</a></span>
     <div class="wc-body">
         <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
         {{ c.body }}

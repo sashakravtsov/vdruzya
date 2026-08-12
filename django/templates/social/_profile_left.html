@@ -61,7 +61,7 @@
     <div class="profile-box-body profile-photo-thumbs">
         {% for ph in rail_photos %}
         <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
-            {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
+            {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<img src="{% static 'img/nophoto.gif' %}" alt="" width="50" height="50">{% endif %}
         </a>
         {% endfor %}
         <div class="clear"></div>

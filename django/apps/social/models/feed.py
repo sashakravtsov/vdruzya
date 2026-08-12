@@ -34,6 +34,10 @@ class Post(models.Model):
         from apps.social.media import media_url
         return media_url(self.media_path)
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse("posts.show", args=[self.id])
+
 
 class PostMedia(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -54,14 +58,17 @@ class PostMedia(models.Model):
 
     @property
     def href(self):
-        """Album photo page when linked; else raw media (FB 2006: no lightbox)."""
+        """Album photo page when linked; else parent post page (FB 2006: no lightbox)."""
         if self.photo_id:
             from django.urls import reverse
             from apps.social.models import Photo
             album_id = Photo.objects.filter(pk=self.photo_id).values_list("album_id", flat=True).first()
             if album_id:
                 return reverse("albums.photos.show", args=[album_id, self.photo_id])
-        return self.url
+        try:
+            return self.post.get_absolute_url()
+        except Exception:
+            return self.url
 
 
 class Comment(models.Model):

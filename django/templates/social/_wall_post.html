@@ -1,7 +1,7 @@
 {% load vd %}
 <div class="wallpost" id="post-{{ post.id }}">
     <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
-        <td class="image">{% avatar post.social_user 50 %}</td>
+        <td class="image"><a href="{% url 'profile' post.social_user.id %}">{% avatar post.social_user 50 %}</a></td>
         <td>
             <div class="info">
                 <div class="header">

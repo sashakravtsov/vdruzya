@@ -10,13 +10,13 @@
             <h4>Приглашение</h4>
             <div class="profile-box-body">
                 <div class="classic-person-row">
-                    <span class="classic-person-name">
+                    <a class="classic-person-name" href="{% url 'profile' inviter.id %}">
                         {% avatar inviter 50 %}
                         <span>
                             <b>{{ inviter.name }}</b>
                             <span class="classic-person-sub">{{ inviter.city|default:inviter.headline }}</span>
                         </span>
-                    </span>
+                    </a>
                 </div>
                 <p class="people-top-links">
                     <a href="{% url 'register' %}?invite={{ inviter.invite_code|urlencode }}"><b>Создать аккаунт</b></a>

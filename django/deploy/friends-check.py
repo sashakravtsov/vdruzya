@@ -93,6 +93,19 @@ def main():
         assert r.status_code == 200 and b"QA Friend" in r.content
         ok("search tab filters")
 
+        # Workplace finds Experience.company_name (not only profile.workplace)
+        from apps.social.models import Experience
+        Experience.objects.filter(social_user=other).delete()
+        Experience.objects.create(
+            social_user=other, company_name="QA CorpExperience", position="QA",
+            period="", description="",
+        )
+        r = c.get("/people?tab=search&workplace=CorpExperience", secure=True)
+        assert r.status_code == 200 and b"QA Friend" in r.content
+        Experience.objects.filter(social_user=other, company_name="QA CorpExperience").delete()
+        ok("workplace finds Experience")
+
+
         r = c.get("/search?q=QA", secure=True)
         assert r.status_code == 200 and b'id="tabs"' in r.content
         assert "Люди".encode() in r.content and "Группы".encode() in r.content

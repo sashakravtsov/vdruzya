@@ -402,10 +402,7 @@ button.linkish .ico { margin-right: 2px; }
 .group-picture img {
   width: 180px; height: 180px; border: 1px solid #B3B3B3; display: block;
 }
-.group-cover-fallback {
-  background: var(--fb); color: #fff; text-align: center;
-  font: bold 64px/180px var(--font);
-}
+.group-cover-fallback { display:block; width:100%; height:auto; border:0; }
 .group-photo-grid,
 .wall-media { overflow: hidden; margin: 6px 0; }
 .group-photo-grid a,
@@ -540,13 +537,8 @@ button.linkish .ico { margin-right: 2px; }
   width: 75px; height: 56px; float: left; margin-right: 10px; border: 1px solid #B3B3B3; background: #D8DFEA;
   overflow: hidden; display: block;
 }
-.album-index .album-cover img,
-.album-index .album-cover-fallback {
+.album-index .album-cover img {
   width: 75px; height: 56px; object-fit: cover; display: block; border: 0;
-}
-.album-index .album-cover-fallback {
-  background: #3B5998; color: #fff; font: bold 20px/56px "lucida grande", tahoma, verdana, arial, sans-serif;
-  text-align: center; object-fit: unset;
 }
 .album-index .album-title {
   display: block; color: #3B5998; font: bold 11px/14px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -593,10 +585,7 @@ button.linkish .ico { margin-right: 2px; }
 .photo-view-full {
   margin: 6px 0 0; font-size: 11px;
 }
-.photo-view-fallback {
-  width: 320px; height: 240px; margin: 0 auto; display: block; text-align: center;
-  font: bold 48px/240px var(--font); color: #fff; border: 1px solid #B3B3B3; background: #3B5998;
-}
+.photo-view-fallback { display:block; margin:0 auto; border:1px solid #B3B3B3; }
 .photo-caption {
   margin: 8px auto 0; max-width: 480px; padding: 6px 8px;
   background: #f7f7f7; border: 1px solid #ddd; font-size: 12px; color: #333; text-align: left;
@@ -952,12 +941,8 @@ button.linkish .ico { margin-right: 2px; }
 .profile #photos,
 .profile .profile-albums { overflow: hidden; }
 .profile .profile-photo-thumbs a { float: left; margin: 0 6px 6px 0; }
-.profile .profile-photo-thumbs img,
-.profile .profile-photo-thumbs .album-cover-fallback {
+.profile .profile-photo-thumbs img {
   width: 75px; height: 75px; object-fit: cover; border: 1px solid #B3B3B3; display: block;
-}
-.profile .profile-photo-thumbs .album-cover-fallback {
-  background: #3B5998; color: #fff; font: bold 20px/75px var(--font); text-align: center;
 }
 
 .profile .profilelinks { margin: 0; padding: 0 0 0 10px; list-style: disc; color: #3B5998; }
