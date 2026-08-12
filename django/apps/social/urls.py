@@ -9,6 +9,8 @@ from . import views_friends as friends
 from . import views_events as events
 from . import views_inbox as inbox
 from . import views_wall_ops as wall
+from . import views_pages as pages
+from . import views_apps as apps
 
 urlpatterns = [
     path("up", meta.up, name="up"),
@@ -18,6 +20,15 @@ urlpatterns = [
     path("friends", friends.friends_home, name="friends"),
     path("invite", friends.invite_mine, name="invite.mine"),
     path("i/<str:code>", friends.invite_show, name="invite.show"),
+    path("pages", pages.pages_home, name="pages"),
+    path("pages/<int:pk>/edit", pages.page_edit, name="pages.edit"),
+    path("pages/<int:pk>/fan", pages.page_fan, name="pages.fan"),
+    path("pages/<int:pk>/unfan", pages.page_unfan, name="pages.unfan"),
+    path("pages/<int:pk>/posts", pages.page_post, name="pages.posts"),
+    path("pages/<int:pk>", pages.page_show, name="pages.show"),
+    path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
+    path("apps", apps.apps_home, name="apps"),
+    path("applications", meta.redirect_permanent, {"to": "/apps"}, name="applications.legacy"),
     path("groups", browse.groups, name="groups"),
     path("groups/<int:pk>/edit", gops.group_edit, name="groups.edit"),
     path("groups/<int:pk>/members", gops.group_members, name="groups.members"),

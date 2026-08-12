@@ -111,6 +111,7 @@ def main():
         assert "Люди".encode() in r.content and "Группы".encode() in r.content
         assert "Записи".encode() not in r.content
         assert b"tab=posts" not in r.content
+        assert "Страницы".encode() in r.content and b"tab=pages" in r.content
         assert b"placeholder=" not in r.content
         ok("global search tabs")
 

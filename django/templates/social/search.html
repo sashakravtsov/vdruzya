@@ -30,6 +30,9 @@
             <div class="{% if tab == 'groups' %}activetab{% else %}inactivetab{% endif %}">
                 <a href="?q={{ q|urlencode }}&amp;tab=groups">Группы{% if groups %} ({{ groups|length }}){% endif %}</a>
             </div>
+            <div class="{% if tab == 'pages' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?q={{ q|urlencode }}&amp;tab=pages">Страницы{% if pages %} ({{ pages|length }}){% endif %}</a>
+            </div>
         </div>
 
         {% if tab == 'groups' %}
@@ -55,6 +58,30 @@
                 </tbody>
             </table>
             {% else %}<p class="muted">Групп не найдено.</p>{% endif %}
+        </div>
+        {% elif tab == 'pages' %}
+        <h4 class="dir-heading">Страницы</h4>
+        <div class="dir-list">
+            {% if pages %}
+            <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                <thead>
+                    <tr>
+                        <th class="col-name">Страница</th>
+                        <th class="col-type">Тип</th>
+                        <th class="col-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pages %}
+                    <tr>
+                        <td class="col-name"><a href="{% url 'pages.show' p.id %}"><b>{{ p.name }}</b></a></td>
+                        <td class="col-type">{{ p.industry|ru_label }}</td>
+                        <td class="col-act"><a href="{% url 'pages.show' p.id %}">открыть</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}<p class="muted">Страниц не найдено.</p>{% endif %}
         </div>
         {% else %}
         <h4 class="dir-heading">Люди</h4>

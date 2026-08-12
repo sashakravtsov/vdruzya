@@ -6,6 +6,7 @@ from django.utils.safestring import mark_safe
 register = template.Library()
 
 from apps.social.categories import LABELS as _GROUP_LABELS
+from apps.social.page_categories import LABELS as _PAGE_LABELS
 
 _LABELS = {
     "friendship": "Дружба",
@@ -40,6 +41,7 @@ _LABELS = {
     "creator": "создатель",
     "member": "участник",
     **_GROUP_LABELS,
+    **_PAGE_LABELS,
 }
 
 

@@ -97,13 +97,23 @@ def wall_owner_id(post) -> int | None:
 
 
 def can_manage_wall_post(me, post) -> bool:
-    """Author or wall owner may remove the post (classic FB)."""
+    """Author, wall owner, or page admin may remove the post (classic FB)."""
     if not me or not post:
         return False
     if post.social_user_id == me.id:
         return True
     oid = wall_owner_id(post)
-    return bool(oid and oid == me.id)
+    if oid and oid == me.id:
+        return True
+    topic = getattr(post, "topic", None) or ""
+    if topic.startswith("page:"):
+        try:
+            pid = int(topic.split(":", 1)[1])
+        except (TypeError, ValueError):
+            return False
+        from apps.social.models import CompanyAdmin
+        return CompanyAdmin.objects.filter(company_id=pid, social_user=me).exists()
+    return False
 
 
 def _comment_host(me, comment, *, host_id=None, admin=False) -> bool:
@@ -143,10 +153,11 @@ def wall_posts_for(profile, limit=20, viewer=None):
     qs = (
         Post.objects.filter(
             Q(topic=key)
-            | (Q(social_user=profile) & ~Q(topic__startswith="wall:"))
+            | (Q(social_user=profile) & ~Q(topic__startswith="wall:") & ~Q(topic__startswith="page:"))
         )
         .exclude(kind__in=("status", "picture", "poll", "share", "note"))
         .exclude(topic__in=("status", "picture", "note"))
+        .exclude(topic__startswith="page:")
         .select_related("social_user")
         .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
@@ -255,6 +266,8 @@ def mini_feed(profile, limit=8, viewer=None):
                 wall_ids.add(oid)
             else:
                 kind = "post"
+        elif topic.startswith("page:"):
+            continue
         else:
             kind = "post"
         if kind in ("wall", "post", "note") and not show_wall:
@@ -403,7 +416,8 @@ def news_items(viewer=None, limit=40):
     posts = list(
         feed_queryset(viewer)
         .filter(Q(social_user_id__in=fids) | Q(topic__in=wall_topics))
-        .exclude(topic__in=("status", "picture"))[:limit]
+        .exclude(topic__in=("status", "picture"))
+        .exclude(topic__startswith="page:")[:limit]
     ) if fids else []
     attach_wall_notes(posts)
     for p in posts:

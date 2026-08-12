@@ -17,7 +17,7 @@ for path in \
   /password-reset:200 \
   /sitemap.xml:200 /robots.txt:200 \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
-  /app:410 \
+  /app:410 /pages:200 /apps:200 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -219,8 +219,25 @@ else
 fi
 if grep -q 'tab=posts\|Записи' "${ROOT}/django/templates/social/search.html" 2>/dev/null; then
   echo "FAIL search still has posts tab"; FAIL=1
+elif ! grep -q 'tab=pages' "${ROOT}/django/templates/social/search.html" 2>/dev/null; then
+  echo "FAIL search missing pages tab"; FAIL=1
 else
-  echo "OK   search is people|groups only"
+  echo "OK   search is people|groups|pages"
+fi
+if ! grep -q 'name="pages"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL Pages routes missing"; FAIL=1
+else
+  echo "OK   Pages module routes"
+fi
+if ! grep -q 'name="apps"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL Apps catalog route missing"; FAIL=1
+else
+  echo "OK   Apps catalog route"
+fi
+if ! grep -q 'Мои страницы' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null; then
+  echo "FAIL snav missing Pages"; FAIL=1
+else
+  echo "OK   snav Pages + Apps"
 fi
 if ! grep -q 'def fb_when' "${ROOT}/django/apps/social/templatetags/vd.py" 2>/dev/null \
    || grep -RIl 'timesince' "${ROOT}/django/templates/social" 2>/dev/null | grep -q .; then
@@ -454,5 +471,11 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/events-check.py; then
   echo "OK   events features"
 else
   echo "FAIL events features"; FAIL=1
+fi
+echo "== Pages/Apps feature probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/pages-check.py; then
+  echo "OK   pages/apps features"
+else
+  echo "FAIL pages/apps features"; FAIL=1
 fi
 exit "$FAIL"
