@@ -1,7 +1,9 @@
 """Columns to defer on hot paths — JSON blobs + post-2006 leftovers still in the live schema."""
 
-# Info-tab fields (looking_for / interested_in / languages) stay undeferred — profile_page reads them.
+# JSON / rarely used columns — defer on feed joins (PG json has no equality op for DISTINCT).
+# Info-tab JSON (looking_for / interested_in / languages) is undeferred only in get_profile().
 PROFILE_DEFER = (
+    "looking_for", "interested_in", "languages",
     "pronouns", "life_goals", "family_status", "district", "verified",
 )
 # mood/emoji/sticker — schema leftovers (gifts undefer sticker on their query path);

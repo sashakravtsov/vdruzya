@@ -42,8 +42,11 @@ def accepted_friends(profile: SocialProfile, limit=None):
 
 
 def get_profile(pk: int) -> SocialProfile:
+    # Load Info-tab JSON fields; keep other PROFILE_DEFER leftovers off the row.
+    info_ok = ("looking_for", "interested_in", "languages")
+    defer = tuple(f for f in PROFILE_DEFER if f not in info_ok)
     return get_object_or_404(
-        SocialProfile.objects.select_related("user", "relationship_with").defer(*PROFILE_DEFER),
+        SocialProfile.objects.select_related("user", "relationship_with").defer(*defer),
         pk=pk,
     )
 

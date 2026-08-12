@@ -14,7 +14,7 @@ label { font-weight: bold; color: gray; }
 
 #book { width: 760px; margin: 0 auto; padding: 8px 0 0; text-align: left; }
 #pageheader {
-  position: relative; width: 760px; height: 33px;
+  position: relative; width: 760px; height: 33px; overflow: hidden;
   background: var(--fb) url("../img/pageheaderbg.png") no-repeat left top;
 }
 /* Brand lives in pageheaderbg.png once — clickable hit area only */
@@ -46,6 +46,7 @@ label { font-weight: bold; color: gray; }
   display: block; float: left; width: 114px; margin: 0; padding: 2px 3px;
   border-bottom: solid 1px var(--line); color: var(--fb);
   box-sizing: border-box; font: 11px/14px var(--font); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
 }
 #snav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
 #snav a.is-on { color: #fff; background: var(--fb); font-weight: bold; }
@@ -766,17 +767,19 @@ button.linkish .ico { margin-right: 2px; }
   padding: 4px 0;
   border-bottom: solid 1px var(--fb);
 }
-.profile .subtabs {
+/* Classic subtabs — feed / apps / friends / timeline / profile */
+.subtabs {
   text-align: left;
   margin: 0 0 10px;
   padding: 2px 0 6px;
   border-bottom: solid 1px #D8DFEA;
 }
-.profile .subtabs div { display: inline; padding: 0; margin: 0; }
-.profile .subtabs a { margin: 0; padding: 3px 5px; }
-.profile .subtabs .activetab a { color: #fff; background: var(--fb); }
-.profile .subtabs .activetab a:hover { text-decoration: none; }
-.profile .subtabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.subtabs > div { display: inline; padding: 0; margin: 0; }
+.subtabs a { margin: 0; padding: 3px 5px; }
+.subtabs .activetab a { color: #fff; background: var(--fb); }
+.subtabs .activetab a:hover { text-decoration: none; }
+.subtabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.profile .subtabs { margin: 0 0 10px; }
 .profile-tagged a { margin: 0 4px 4px 0; display: inline-block; vertical-align: top; }
 .profile-tagged img { width: 75px; height: 75px; border: 1px solid #B7B7B7; }
 .photo-tags { margin-top: 8px; }
@@ -1067,7 +1070,8 @@ button.linkish .ico { margin-right: 2px; }
   border-bottom: solid 1px #D8DFEA;
   background: #fff;
 }
-.feed-filters { margin: 0 0 8px; text-align: left; }
+.feed-filters.subtabs { margin: 0 0 8px; }
+.apps-index .subtabs { margin: 0 0 12px; }
 .feed-list-links { margin: 0 0 10px; }
 .feed-list-links a.is-on { font-weight: bold; }
 .feed-page .news-item .news-body { overflow: hidden; padding-right: 0; }

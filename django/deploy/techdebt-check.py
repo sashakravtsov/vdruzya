@@ -19,7 +19,7 @@ from apps.accounts.models import User
 from apps.social import era2010 as e10
 from apps.social import feed_hide as fh
 from apps.social.models import Place, PlaceCheckin, Post, PROFILE_DEFER
-from apps.social.services import _feed_at, bump_news, news_items, now, profile_of
+from apps.social.services import _feed_at, bump_news, get_profile, news_items, now, profile_of
 
 
 def ok(label):
@@ -69,10 +69,8 @@ def main():
     assert _feed_at(datetime(2012, 4, 5, 6, 7)) == datetime(2012, 4, 5, 6, 7)
     ok("feed at normalize")
 
-    assert "looking_for" not in PROFILE_DEFER
-    assert "interested_in" not in PROFILE_DEFER
-    assert "languages" not in PROFILE_DEFER
-    ok("profile Info fields undeferred")
+    assert "looking_for" in PROFILE_DEFER  # stay deferred on feed joins
+    ok("profile JSON still deferred on hot paths")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
     assert u
@@ -87,12 +85,12 @@ def main():
     assert b"placeholder=" not in r.content
     ok("graph no placeholder")
 
-    # Info tab can read looking_for without DeferredAttribute blow-ups
-    p = profile_of(u)
+    # Info tab via get_profile() loads JSON fields without DeferredAttribute
+    p = get_profile(me.id)
     _ = p.looking_for
     _ = p.interested_in
     _ = p.languages
-    ok("profile Info field access")
+    ok("profile Info field access via get_profile")
 
     # Place checkin must not also appear as generic wall story
     t = now()
