@@ -9,9 +9,8 @@ from django.views.decorators.http import require_POST
 
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
-from apps.social.friendship import friends_of
 from apps.social.models import SocialProfile
-from apps.social.services import profile_of
+from apps.social.services import accepted_friends as friends_of, profile_of
 from apps.social.throttle import throttle
 
 FOLDERS = frozenset({"inbox", "sent"})

@@ -8,13 +8,13 @@ from apps.social.models import (
 )
 from apps.social.services import accepted_friends
 
-_ADMIN = ("admin", "moderator", "creator", "officer")
+ADMIN_ROLES = ("admin", "moderator", "creator", "officer")
 
 
 def access(me, group):
     is_member = bool(me and CommunityMember.objects.filter(community=group, social_user=me).exists())
     is_admin = bool(
-        me and CommunityMember.objects.filter(community=group, social_user=me, role__in=_ADMIN).exists()
+        me and CommunityMember.objects.filter(community=group, social_user=me, role__in=ADMIN_ROLES).exists()
     )
     can_view = group.privacy != "closed" or is_member
     can_post = bool(

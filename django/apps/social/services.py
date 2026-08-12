@@ -120,13 +120,11 @@ def can_manage_wall_comment(me, comment) -> bool:
     )
 
 
-_GROUP_ADMIN = ("admin", "moderator", "creator", "officer")
-
-
 def is_group_admin(me, group) -> bool:
+    from apps.social.group_page import ADMIN_ROLES
     return bool(
         me and group
-        and CommunityMember.objects.filter(community=group, social_user=me, role__in=_GROUP_ADMIN).exists()
+        and CommunityMember.objects.filter(community=group, social_user=me, role__in=ADMIN_ROLES).exists()
     )
 
 

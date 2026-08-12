@@ -32,15 +32,7 @@
                     </div>
                     <div class="text">
                         {% if p.body_text %}{{ p.body_text|linebreaksbr }}{% elif p.body and not p.subject %}{{ p.body|linebreaksbr }}{% endif %}
-                        {% with extras=p.media.all %}
-                        {% if extras %}
-                        <div class="wall-media-grid">
-                            {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
-                        </div>
-                        {% elif p.media_url %}
-                        <p><img src="{{ p.media_url }}" alt="" class="news-photo"></p>
-                        {% endif %}
-                        {% endwith %}
+                        {% include "social/_post_media.html" with post=p %}
                     </div>
                 </div>
             </td>

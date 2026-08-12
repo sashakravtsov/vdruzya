@@ -44,8 +44,10 @@ def main():
     if r.status_code != 200 or "Новости" not in body:
         fail("feed")
     if "wall-comment-compose" not in body and "Пока тихо" not in body:
-        # empty feed is ok; otherwise compose markup must exist on wall cards
+        # empty feed is ok; otherwise compose markup must exist on wall posts
         pass
+    if "news-card" in body:
+        fail("news-card chrome still on feed")
     ok("feed news")
 
     r = post("/posts", {"body": "probe personal wall", "wall_to": me.id})

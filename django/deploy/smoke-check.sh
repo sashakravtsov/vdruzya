@@ -144,6 +144,22 @@ if grep -q 'compose_album_photos\|compose/album-photos' "${ROOT}/django/apps/soc
 else
   echo "OK   no compose album-photos route"
 fi
+if grep -EEq 'page-tabs|wall-media-grid|group-tile|display:\s*flex|display:\s*grid' \
+    "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL classic.css still has flex/grid/page-tabs chrome"; FAIL=1
+else
+  echo "OK   classic.css float chrome"
+fi
+if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
+  echo "FAIL albums_user.html still present"; FAIL=1
+else
+  echo "OK   albums templates merged"
+fi
+if grep -q 'news-card' "${ROOT}/django/templates/social/_news_item.html" 2>/dev/null; then
+  echo "FAIL news-card still in feed items"; FAIL=1
+else
+  echo "OK   no news-card wrappers"
+fi
 echo "== Wall/Groups feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/wall-groups-check.py; then
   echo "OK   wall/groups features"

@@ -1,9 +1,25 @@
 from __future__ import annotations
 
 from django.db import models
+from django.db.models import OuterRef, Subquery
 
 from .groups import Community
 from .people import SocialProfile
+
+
+class AlbumQuerySet(models.QuerySet):
+    def visible_to(self, viewer):
+        from apps.social.albums import visible_q
+        return self.filter(visible_q(viewer))
+
+    def with_covers(self):
+        first = (
+            Photo.objects.filter(album_id=OuterRef("pk"))
+            .exclude(path="")
+            .order_by("id")
+            .values("path")[:1]
+        )
+        return self.annotate(_first_photo_path=Subquery(first))
 
 
 class Album(models.Model):
@@ -15,6 +31,8 @@ class Album(models.Model):
     cover_path = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
+
+    objects = AlbumQuerySet.as_manager()
 
     class Meta:
         managed = False

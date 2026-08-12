@@ -42,7 +42,7 @@ def main():
     assert "Стена".encode() in r.content
     assert "Группы".encode() in r.content
     assert b'name="headline"' in r.content  # status in header
-    assert b" is" in r.content  # classic "Name is …"
+    assert "сейчас".encode() in r.content  # classic "Name сейчас …"
     assert "<h4>Статус</h4>".encode() not in r.content
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
@@ -97,7 +97,9 @@ def main():
     assert "Лента новостей".encode() in r.content
     assert b"wallposter" not in r.content
     assert "Что у вас нового".encode() not in r.content
-    assert b"<h4>Новости</h4>" not in r.content
+    assert "<h4>Новости</h4>".encode() not in r.content
+    assert b"news-card" not in r.content
+    assert b"page-tabs" not in r.content
     assert "Подмигивания".encode() in r.content
     assert "События".encode() in r.content
     assert "Дни рождения".encode() in r.content

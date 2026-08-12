@@ -12,14 +12,9 @@
         <span class="ico ico-group news-ico" aria-hidden="true"></span>
         <div class="news-body">
             <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
-            создал(а) группу.
-            <div class="news-card">
-                <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>
-                {% if item.group.category %}<div class="muted">{{ item.group.category|ru_label }}</div>{% endif %}
-                {% if item.group.short_description or item.group.description %}
-                <div class="muted">Инфо: {{ item.group.short_description|default:item.group.description|truncatewords:24 }}</div>
-                {% endif %}
-            </div>
+            создал(а) группу
+            <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>.
+            {% if item.group.category %}<span class="muted">({{ item.group.category|ru_label }})</span>{% endif %}
             {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
         </div>
     {% elif item.kind == 'group_post' %}
@@ -33,7 +28,7 @@
             <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
             {% endif %}
             {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
-            <div class="news-card">
+            <div class="news-snippet">
                 <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
                 {% with text=item.post.body_text|default:item.post.body %}
                 {% if text %}<div class="wall-body">{{ text|truncatewords:40|linebreaksbr }}</div>{% endif %}

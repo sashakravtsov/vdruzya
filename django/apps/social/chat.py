@@ -1,7 +1,6 @@
 """Classic Facebook Inbox — 1:1 HTTP messages (FB 2006)."""
 from __future__ import annotations
 
-from datetime import timedelta
 from functools import wraps
 from pathlib import Path
 
@@ -87,74 +86,20 @@ def mark_read(me, conv: Conversation):
     cache.delete(f"nav:{me.id}")
 
 
-def mark_unread(me, conv: Conversation):
-    last = (
-        Message.objects.filter(conversation=conv)
-        .exclude(social_user=me)
-        .order_by("-id")
-        .only("created_at")
-        .first()
-    )
-    t = (last.created_at - timedelta(seconds=1)) if last and last.created_at else None
-    ConversationMember.objects.filter(conversation=conv, social_user=me).update(last_read_at=t)
-    cache.delete(f"nav:{me.id}")
-
-
-def leave_many(me, conversation_ids: list[int]) -> int:
-    """Soft-archive (classic Remove from Inbox) — membership kept, recoverable."""
+def leave(me, conv: Conversation):
+    """Soft-archive (classic Remove from Inbox) — membership kept."""
     t = now()
     n = ConversationMember.objects.filter(
-        social_user=me, conversation_id__in=conversation_ids, archived_at__isnull=True,
+        social_user=me, conversation=conv, archived_at__isnull=True,
     ).update(archived_at=t, updated_at=t)
     if n:
         cache.delete(f"nav:{me.id}")
-    return n
-
-
-def leave(me, conv: Conversation):
-    leave_many(me, [conv.id])
-
-
-def restore_many(me, conversation_ids: list[int]) -> int:
-    n = ConversationMember.objects.filter(
-        social_user=me, conversation_id__in=conversation_ids, archived_at__isnull=False,
-    ).update(archived_at=None, updated_at=now())
-    if n:
-        cache.delete(f"nav:{me.id}")
-    return n
-
-
-def restore(me, conv: Conversation):
-    restore_many(me, [conv.id])
 
 
 def is_archived(me, conv: Conversation) -> bool:
     return ConversationMember.objects.filter(
         conversation=conv, social_user=me, archived_at__isnull=False,
     ).exists()
-
-
-def mark_unread_many(me, conversation_ids: list[int]) -> int:
-    n = 0
-    for cid in conversation_ids:
-        try:
-            mark_unread(me, require_member(me, cid))
-            n += 1
-        except Http404:
-            pass
-    return n
-
-
-def mark_all_read(me) -> int:
-    t = now()
-    qs = ConversationMember.objects.filter(social_user=me, archived_at__isnull=True)
-    ids = list(qs.values_list("conversation_id", flat=True))
-    n = qs.update(last_read_at=t)
-    if ids:
-        Message.objects.filter(conversation_id__in=ids, read_at__isnull=True).exclude(social_user=me).update(read_at=t)
-    Notification.objects.filter(social_user=me, type="message", seen=False).update(seen=True)
-    cache.delete(f"nav:{me.id}")
-    return n
 
 
 def unread_count(me) -> int:
@@ -223,19 +168,17 @@ def _snippet(c, me) -> str:
     return f"{who}: {text}" if who else text
 
 
-def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, archived_only=False):
+def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     mine = Message.objects.filter(conversation_id=OuterRef("pk"), social_user=me).order_by("-id")
     my_read_sq = ConversationMember.objects.filter(
         conversation_id=OuterRef("pk"), social_user=me,
     ).values("last_read_at")[:1]
-    member_q = Q(members__social_user=me)
-    if archived_only:
-        member_q &= Q(members__archived_at__isnull=False)
-    else:
-        member_q &= Q(members__archived_at__isnull=True)
     qs = (
-        Conversation.objects.filter(member_q, community_id__isnull=True)
+        Conversation.objects.filter(
+            community_id__isnull=True,
+            members__social_user=me, members__archived_at__isnull=True,
+        )
         .annotate(
             last_body=Subquery(last.values("body")[:1]),
             last_at=Subquery(last.values("created_at")[:1]),
@@ -438,5 +381,3 @@ def delete_message(me, message_id) -> int:
     last = Message.objects.filter(conversation_id=cid).order_by("-id").first()
     Conversation.objects.filter(pk=cid).update(updated_at=last.created_at if last else now())
     return cid
-
-

@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 
-from apps.social.albums import albums_for, visible_q
+from apps.social.albums import albums_for
 from apps.social.forms import CommentForm, PostForm, StatusForm
 from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
@@ -43,7 +43,7 @@ def networks_for(profile, education=None, experience=None) -> list[dict]:
 
 
 def recent_photos(profile, viewer, limit=8):
-    albums = Album.objects.filter(social_user=profile).filter(visible_q(viewer))
+    albums = Album.objects.filter(social_user=profile).visible_to(viewer)
     return list(
         Photo.objects.filter(album__in=albums).exclude(path="")
         .select_related("album").order_by("-id")[:limit]
@@ -321,7 +321,7 @@ def build_context(profile, me, tab="wall"):
     else:
         friends_tab = friends_rail
 
-    vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me)) if full else Album.objects.none()
+    vis_albums = Album.objects.filter(social_user=profile).visible_to(me) if full else Album.objects.none()
     rail_photos = recent_photos(profile, me, 4) if full else []
     albums = albums_for(profile, me, 12) if full and tab == "photos" else []
 

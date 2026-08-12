@@ -13,10 +13,6 @@ from apps.social.models import (
 from apps.social.services import bump_news, can_manage_group_comment, is_group_admin, now, profile_of
 
 
-def _admin(me, group):
-    return is_group_admin(me, group)
-
-
 def _member(me, group):
     return bool(me and CommunityMember.objects.filter(community=group, social_user=me).exists())
 
@@ -26,7 +22,7 @@ def group_edit(request, pk):
     from apps.social.media import save_image
 
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    if not _admin(me, group):
+    if not is_group_admin(me, group):
         messages.error(request, "Только администратор.")
         return redirect("groups.show", pk=pk)
     form = GroupForm(request.POST or None, request.FILES or None, instance=group)
@@ -57,7 +53,7 @@ def group_members(request, pk):
         request, "social/group_members.html",
         {
             "group": group, "rows": rows, "n_members": CommunityMember.objects.filter(community=group).count(),
-            "me": me, "is_admin": _admin(me, group),
+            "me": me, "is_admin": is_group_admin(me, group),
         },
     )
 
@@ -66,7 +62,7 @@ def group_members(request, pk):
 @require_POST
 def join_reject(request, pk, request_id):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    if not _admin(me, group):
+    if not is_group_admin(me, group):
         return redirect("groups.show", pk=pk)
     req = get_object_or_404(CommunityJoinRequest, pk=request_id, community=group, status="pending")
     CommunityJoinRequest.objects.filter(pk=req.pk).update(status="rejected")
@@ -88,7 +84,7 @@ def join_cancel(request, pk):
 def group_post_delete(request, pk, post_id):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
-    if not me or (post.social_user_id != me.id and not _admin(me, group)):
+    if not me or (post.social_user_id != me.id and not is_group_admin(me, group)):
         messages.error(request, "Нельзя удалить.")
         return redirect("groups.show", pk=pk)
     CommunityPostComment.objects.filter(post=post).delete()
@@ -123,7 +119,7 @@ def group_post_edit(request, pk, post_id):
     from apps.social.attach import attach_group
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
-    if not me or (post.social_user_id != me.id and not _admin(me, group)):
+    if not me or (post.social_user_id != me.id and not is_group_admin(me, group)):
         messages.error(request, "Нельзя редактировать.")
         return redirect("groups.show", pk=pk)
     form = CommunityPostForm(request.POST or None, request.FILES or None, instance=post)
@@ -137,7 +133,7 @@ def group_post_edit(request, pk, post_id):
             obj.body = CommunityPost.pack_topic(form.cleaned_data.get("subject") or "", body)
         else:
             obj.body = body
-        if _admin(me, group):
+        if is_group_admin(me, group):
             obj.posted_as_community = bool(request.POST.get("as_community"))
         obj.updated_at = now()
         obj.save(update_fields=["body", "topic", "posted_as_community", "updated_at"])
@@ -150,7 +146,7 @@ def group_post_edit(request, pk, post_id):
         messages.success(request, "Запись обновлена.")
         return redirect(obj)
     form.fields["board"].initial = post.topic if post.topic in ("wall", "discussion") else "discussion"
-    return render(request, "social/group_post_edit.html", {"group": group, "post": post, "form": form, "me": me, "is_admin": _admin(me, group)})
+    return render(request, "social/group_post_edit.html", {"group": group, "post": post, "form": form, "me": me, "is_admin": is_group_admin(me, group)})
 
 
 @login_required
@@ -177,7 +173,7 @@ def group_invite(request, pk):
 @require_POST
 def group_event_create(request, pk):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    if not _admin(me, group):
+    if not is_group_admin(me, group):
         return redirect("groups.show", pk=pk)
     from apps.social import events as ev
     title = (request.POST.get("title") or "").strip()[:160]
@@ -202,7 +198,7 @@ def group_event_create(request, pk):
 def member_manage(request, pk, user_id):
     """Admin: remove / promote / demote members."""
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    if not _admin(me, group):
+    if not is_group_admin(me, group):
         messages.error(request, "Только администратор.")
         return redirect("groups.members", pk=pk)
     row = get_object_or_404(CommunityMember, community=group, social_user_id=user_id)
@@ -232,7 +228,7 @@ def group_post(request, pk):
     def _go(req):
         me, group = profile_of(req.user), get_object_or_404(Community, pk=pk)
         is_mem = _member(me, group)
-        is_admin = _admin(me, group)
+        is_admin = is_group_admin(me, group)
         if group.posting_policy == "admins" and not is_admin:
             messages.error(req, "Писать могут только администраторы.")
             return redirect("groups.show", pk=pk)
@@ -295,7 +291,7 @@ def group_comment(request, pk, post_id):
 @transaction.atomic
 def join_accept(request, pk, request_id):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
-    if not _admin(me, group):
+    if not is_group_admin(me, group):
         messages.error(request, "Только админ группы.")
         return redirect("groups.show", pk=pk)
     req = get_object_or_404(CommunityJoinRequest, pk=request_id, community=group, status="pending")

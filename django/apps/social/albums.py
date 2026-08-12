@@ -43,24 +43,17 @@ def can_edit(album, viewer) -> bool:
 
 
 def albums_with_covers(qs):
-    """Annotate first photo path so cover_url works when cover_path is empty."""
-    from django.db.models import OuterRef, Subquery
-
-    first = (
-        Photo.objects.filter(album_id=OuterRef("pk"))
-        .exclude(path="")
-        .order_by("id")
-        .values("path")[:1]
-    )
-    return qs.annotate(_first_photo_path=Subquery(first))
+    return qs.with_covers()
 
 
 def albums_for(profile, viewer, limit=40):
     """Visible albums for a profile — covers + photo count (single listing helper)."""
     return list(
-        albums_with_covers(
-            Album.objects.filter(social_user=profile).filter(visible_q(viewer))
-        ).annotate(n=Count("photos")).order_by("-id")[:limit]
+        Album.objects.filter(social_user=profile)
+        .visible_to(viewer)
+        .with_covers()
+        .annotate(n=Count("photos"))
+        .order_by("-id")[:limit]
     )
 
 

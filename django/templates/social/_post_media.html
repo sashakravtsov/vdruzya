@@ -1,0 +1,10 @@
+{# Floated wall/group media thumbs. Expects `post` (or set media_owner). #}
+{% with extras=post.media.all %}
+{% if extras %}
+<div class="wall-media">
+    {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
+</div>
+{% elif post.media_url %}
+<p><img src="{{ post.media_url }}" alt="" class="news-photo"></p>
+{% endif %}
+{% endwith %}

@@ -42,7 +42,10 @@ def albums(request):
         .annotate(n=Count("photos"))
         .order_by("-id")
     ) if me else []
-    return render(request, "social/albums.html", {"albums": items, "form": form, "me": me})
+    return render(
+        request, "social/albums.html",
+        {"albums": items, "form": form, "me": me, "owner": me, "is_own": True},
+    )
 
 
 @login_not_required
@@ -50,10 +53,10 @@ def profile_albums(request, pk):
     owner = get_profile(pk)
     me = profile_of(request.user) if request.user.is_authenticated else None
     return render(
-        request, "social/albums_user.html",
+        request, "social/albums.html",
         {
             "owner": owner, "albums": albums_for(owner, me, 40), "me": me,
-            "is_own": bool(me and me.id == owner.id),
+            "is_own": bool(me and me.id == owner.id), "form": None,
         },
     )
 

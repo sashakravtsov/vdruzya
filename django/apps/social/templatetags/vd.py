@@ -79,7 +79,8 @@ def avatar(profile, size=50):
     color = escape(getattr(profile, "avatar_color", None) or "#D8DFEA")
     return mark_safe(
         f'<span class="avatar-fallback" style="width:{int(size)}px;height:{int(size)}px;'
-        f'font-size:{max(10, int(size)//2)}px;background:{color};display:grid;place-items:center">'
+        f'font-size:{max(10, int(size)//2)}px;line-height:{int(size)}px;text-align:center;'
+        f'background:{color};display:inline-block">'
         f"{initial}</span>"
     )
 

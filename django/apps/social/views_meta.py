@@ -129,5 +129,7 @@ def redirect_permanent(request, to):
 
 @login_not_required
 def redirect_messenger_legacy(request, rest=""):
-    """Old /messenger/* → /inbox/* (FB 2006 Message Center)."""
-    return redirect(_with_qs(request, f"/inbox/{rest}" if rest else "/inbox"), permanent=True)
+    """Old /messenger/* → Inbox (query-based: /inbox?c=)."""
+    head = (rest or "").strip("/").split("/", 1)[0]
+    target = f"/inbox?c={head}" if head.isdigit() else "/inbox"
+    return redirect(_with_qs(request, target), permanent=True)

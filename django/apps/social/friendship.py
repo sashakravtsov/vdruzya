@@ -7,12 +7,6 @@ from apps.social.models import Block, Education, Friendship, SocialProfile
 from apps.social.services import friend_ids, now
 
 
-def friends_of(me, limit=None):
-    """Alias of accepted_friends — one listing path for Inbox / compose."""
-    from apps.social.services import accepted_friends
-    return accepted_friends(me, limit)
-
-
 def friends_page(me, *, q="", city="", sort="name", page=1, per=40):
     """Paginated My Friends with name/city filter and sort."""
     ids = friend_ids(me)
