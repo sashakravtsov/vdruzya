@@ -682,14 +682,14 @@ button.linkish .ico { margin-right: 2px; }
 }
 .profile #profilewidecolumn {
   float: left;
-  width: 396px;
-  margin: 0 10px 0 0;
+  width: 394px;
+  margin: 0;
   padding: 0;
   min-width: 0;
 }
 /* legacy class aliases (partials / smoke) */
 .profile-left { float: left; width: 200px; margin: 0 10px 0 0; }
-.profile-right { float: left; width: 396px; margin: 0 10px 0 0; min-width: 0; }
+.profile-right { float: left; width: 394px; margin: 0; min-width: 0; }
 .profile #tabs {
   text-align: left;
   margin: 0 0 12px;
