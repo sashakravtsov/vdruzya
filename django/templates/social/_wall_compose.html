@@ -8,7 +8,7 @@
         <span class="wallposter-go">
             <input type="submit" class="inputsubmit" value="{{ submit|default:'Опубликовать' }}">
         </span>
-        {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }} <span class="muted">до 5</span></p>{% endif %}
+        {% if form.photo %}<p class="wallposter-file">Фото / видео: {{ form.photo }} <span class="muted">до 5 фото или 1 видео</span></p>{% endif %}
         {% if show_as_community %}
         <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
         {% endif %}

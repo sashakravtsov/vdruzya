@@ -133,7 +133,7 @@ def event_show(request, event_id):
 @login_required
 @require_POST
 def event_post(request, event_id):
-    from apps.social.attach import attach_wall
+    from apps.social.attach import apply_wall_uploads
     from apps.social.throttle import throttle
 
     @throttle("posts", 20, 60)
@@ -147,22 +147,20 @@ def event_post(request, event_id):
         form = PostForm(req.POST, req.FILES, simple=True)
         go = req.POST.get("next") or (event.get_absolute_url() + "?tab=wall")
         if not form.is_valid():
-            messages.error(req, "Напишите текст или выберите фото.")
+            messages.error(req, "Напишите текст или выберите фото / видео.")
             return redirect(go)
         post = form.save(commit=False)
         post.social_user = me
-        post.body = (post.body or "").strip()
+        text = (post.body or "").strip()
+        post.body = text
         post.topic = event.topic_key
         post.visibility = "friends"
         files = list(req.FILES.getlist("photo"))
-        post.kind = "photo" if files else "text"
+        post.kind = "text"
         post.created_at = post.updated_at = now()
         post.save()
-        path = attach_wall(post, files, me, max_photos=5)
-        if path:
-            post.media_path = path
-            post.kind = "photo"
-            post.save(update_fields=["media_path", "kind"])
+        kind = apply_wall_uploads(post, files, me, max_photos=5, blurb=text)
+        if kind == "photo":
             go = event.get_absolute_url() + "?tab=photos"
         bump_news()
         messages.success(req, "Опубликовано.")

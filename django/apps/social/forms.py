@@ -47,7 +47,7 @@ class _MultiFile(forms.ClearableFileInput):
 def _files(**attrs):
     return _MultiFile(attrs={
         "class": "inputfile",
-        "accept": "image/jpeg,image/png,image/gif",
+        "accept": "image/jpeg,image/png,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov",
         **attrs,
     })
 
@@ -265,8 +265,9 @@ class ProfileForm(ClassicForm, forms.ModelForm):
 
 
 class PostForm(ClassicForm, forms.ModelForm):
-    """Classic FB wall: text + photo. simple=True → profile wall (one photo, no visibility UI)."""
-    photo = forms.ImageField(required=False, label="Фото", widget=_files())
+    """Classic FB wall: text + photo/video. simple=True → profile wall (no visibility UI)."""
+    # FileField (not ImageField) so MP4/WebM pass validation; images still Pillow-processed.
+    photo = forms.FileField(required=False, label="Фото / видео", widget=_files())
 
     class Meta:
         model = Post
@@ -281,13 +282,13 @@ class PostForm(ClassicForm, forms.ModelForm):
         self.simple = simple
         self.fields["body"].required = False
         if simple:
-            # Keep multi-file widget; classic wall accepts several photos.
+            # Keep multi-file widget; classic wall accepts several photos or one video.
             self.fields.pop("visibility", None)
 
     def clean(self):
         data = super().clean()
         if not (data.get("body") or "").strip() and not _has_media(self):
-            self.add_error("body", "Напишите текст или выберите фото.")
+            self.add_error("body", "Напишите текст или выберите фото / видео.")
         return data
 
 
@@ -670,12 +671,15 @@ class PageForm(ClassicForm, forms.Form):
 class PagePostForm(ClassicForm, forms.Form):
     """Admin update on a Page wall."""
     body = forms.CharField(required=False, widget=_ta(3, style="width:100%"))
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    photo = forms.FileField(
+        required=False, label="Фото / видео",
+        widget=_files(accept="image/jpeg,image/png,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"),
+    )
 
     def clean(self):
         data = super().clean()
         if not (data.get("body") or "").strip() and not self.files.get("photo"):
-            self.add_error("body", "Напишите текст или выберите фото.")
+            self.add_error("body", "Напишите текст или выберите фото / видео.")
         return data
 
 

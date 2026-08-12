@@ -219,7 +219,7 @@ def page_post(request, pk):
     if not form.is_valid():
         messages.error(request, "Проверьте текст или фото.")
         return redirect(page)
-    from apps.social.attach import attach_wall
+    from apps.social.attach import apply_wall_uploads
     t = now()
     body = (form.cleaned_data.get("body") or "").strip()
     post = Post(
@@ -228,11 +228,9 @@ def page_post(request, pk):
         created_at=t, updated_at=t,
     )
     post.save()
-    path = attach_wall(post, list(request.FILES.getlist("photo")), me, max_photos=5)
-    if path:
-        post.media_path = path
-        post.kind = "photo"
-        post.save(update_fields=["media_path", "kind"])
+    apply_wall_uploads(
+        post, list(request.FILES.getlist("photo")), me, max_photos=5, blurb=body,
+    )
     bump_news()
     messages.success(request, "Запись опубликована.")
     return redirect(page)

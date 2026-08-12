@@ -168,7 +168,7 @@ def post_create(request):
     from apps.social.models import Friendship
     from apps.social.profile_page import can_write_wall
     from apps.social.throttle import throttle
-    from apps.social.attach import attach_wall
+    from apps.social.attach import apply_wall_uploads
 
     @throttle("posts", 20, 60)
     def _go(req):
@@ -189,18 +189,15 @@ def post_create(request):
             return redirect(target)
         post = form.save(commit=False)
         post.social_user = me
-        post.body = (post.body or "").strip()
+        text = (post.body or "").strip()
+        post.body = text
         post.topic = f"wall:{target.id}"
         post.visibility = wall_post_visibility(target)
         files = list(req.FILES.getlist("photo"))
-        post.kind = "photo" if files else "text"
+        post.kind = "text"
         post.created_at = post.updated_at = _now()
         post.save()
-        path = attach_wall(post, files, me, max_photos=5)
-        if path:
-            post.media_path = path
-            post.kind = "photo"
-            post.save(update_fields=["media_path", "kind"])
+        apply_wall_uploads(post, files, me, max_photos=5, blurb=text)
         bump_news()
         messages.success(req, "Запись опубликована.")
         return redirect(req.POST.get("next") or target)

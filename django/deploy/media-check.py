@@ -94,9 +94,30 @@ def main():
     assert b"<video" in r.content
     ok("video file upload + player")
 
+    # Wall compose: one video via the same photo field (FileField).
+    wall_title = f"wallvid-{uuid.uuid4().hex[:5]}"
+    vid2 = SimpleUploadedFile("wall.mp4", _tiny_mp4(), content_type="video/mp4")
+    r = c.post("/posts", {
+        "body": wall_title,
+        "wall_to": str(me.id),
+        "photo": vid2,
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    wpost = (
+        Post.objects.filter(social_user=me, kind="video", topic=f"wall:{me.id}")
+        .order_by("-id").first()
+    )
+    assert wpost and (wpost.body or "").startswith("storage:"), wpost
+    assert wall_title in (wpost.body or "")
+    r = c.get(f"/posts/{wpost.id}", secure=True)
+    assert r.status_code == 200
+    assert b"<video" in r.content
+    ok("wall compose video + player")
+
     Photo.objects.filter(album=album).delete()
     album.delete()
     post.delete()
+    wpost.delete()
     ok("cleanup")
     print("ALL media pipeline probes passed")
 

@@ -226,9 +226,13 @@ def wall_posts_for(profile, limit=20, viewer=None, wall_filter="all"):
     from apps.social.likes import attach_likes
     from apps.social.shares import attach_share_flags
     from apps.social import post_tags as ptags
+    from apps.social.classic_extra import hydrate_posted
     posts = attach_likes(list(qs.order_by("-id")[:limit]), viewer)
     attach_share_flags(posts, viewer)
     ptags.tags_for_posts(posts)
+    for p in posts:
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
     if viewer:
         for p in posts:
             if ptags.can_tag(viewer, p):
