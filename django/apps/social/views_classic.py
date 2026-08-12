@@ -58,24 +58,13 @@ def videos_home(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def notes_home(request):
-    """Notes directory + create (replaces POST-only /notes)."""
-    me = profile_of(request.user)
-    form = NoteForm(request.POST or None)
-    mine = request.GET.get("mine") == "1"
+    """Notes directory + create (POST shared with notes.store)."""
     if request.method == "POST":
-        if form.is_valid() and me:
-            from apps.social.models import Post
-            from apps.social.services import now
-            d = form.cleaned_data
-            Post.objects.create(
-                social_user=me, body=d["body"], kind="note", topic="note",
-                media_label=d["title"], visibility=d["visibility"],
-                created_at=now(), updated_at=now(),
-            )
-            bump_news()
-            messages.success(request, "Заметка опубликована.")
-            return redirect("/notes?mine=1")
-        messages.error(request, "Укажите заголовок и текст.")
+        from apps.social.views_actions import note_create
+        return note_create(request)
+    me = profile_of(request.user)
+    form = NoteForm()
+    mine = request.GET.get("mine") == "1"
     items = cx.notes_feed(me, mine=mine, limit=40) if me else []
     return render(request, "social/notes.html", {
         "me": me, "form": form, "items": items, "mine": mine, "nav": "notes",
