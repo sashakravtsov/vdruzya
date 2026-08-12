@@ -53,6 +53,7 @@ def main():
         assert r.status_code == 200, path
         assert needle.encode() in r.content, path
         assert b' required' not in r.content and b'required="' not in r.content
+        assert b"placeholder=" not in r.content, path
     ok("module pages render")
 
     # link post

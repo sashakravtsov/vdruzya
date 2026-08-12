@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from apps.social.albums import can_edit, can_view, visible_q
-from apps.social.models import Album, Notification, Photo, PhotoTag, SocialProfile
+from apps.social.models import Album, Notification, Photo, PhotoTag, SocialProfile, profile_related
 from apps.social.services import accepted_friends, bump_news, friend_ids, now
 
 
@@ -10,6 +10,7 @@ def tags_for(photo, limit=40):
     return list(
         PhotoTag.objects.filter(photo=photo)
         .select_related("social_user", "tagged_by")
+        .defer(*profile_related("social_user__"), *profile_related("tagged_by__"))
         .order_by("id")[:limit]
     )
 
@@ -88,8 +89,6 @@ def remove_tag(me, tag, album) -> bool:
 
 def photos_of(profile, viewer, limit=40):
     """Photos where profile is tagged and viewer may see the album."""
-    from apps.social.models import PROFILE_DEFER
-
     album_ids = list(
         PhotoTag.objects.filter(social_user=profile).values_list("photo__album_id", flat=True)[:300]
     )
@@ -105,26 +104,18 @@ def photos_of(profile, viewer, limit=40):
         PhotoTag.objects.filter(social_user=profile, photo__album_id__in=visible)
         .exclude(photo__path="")
         .order_by("-photo_id")
-        .values_list("photo_id", flat=True)[: limit * 2]
+        .values_list("photo_id", flat=True)[: limit * 3]
     )
-    # preserve newest order, unique
     seen, ordered = set(), []
     for pid in photo_ids:
-        if pid not in seen:
-            seen.add(pid)
-            ordered.append(pid)
+        if pid in seen:
+            continue
+        seen.add(pid)
+        ordered.append(pid)
         if len(ordered) >= limit:
             break
     if not ordered:
         return []
-    by_id = {
-        p.id: p
-        for p in Photo.objects.filter(id__in=ordered)
-        .select_related("album", "album__social_user")
-        .defer(*PROFILE_DEFER, *[f"album__social_user__{f}" for f in ()])  # noop guard
-    }
-    # Prefer defer via profile_related if available
-    from apps.social.models import profile_related
     by_id = {
         p.id: p
         for p in Photo.objects.filter(id__in=ordered)

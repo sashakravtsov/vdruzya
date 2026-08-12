@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.social import events as ev
-from apps.social.forms import EventForm, PostForm
+from apps.social.forms import CommentForm, EventForm, PostForm
 from apps.social.models import POST_DEFER, Comment, Post, profile_related
 from apps.social.services import bump_news, now, profile_of
 
@@ -110,6 +110,7 @@ def event_show(request, event_id):
             "invite_friends": ev.invite_candidates(me, event) if is_host else [],
             "wall_posts": wall_posts, "photos": photos,
             "form": PostForm(simple=True) if can_post else None,
+            "comment_form": CommentForm() if me else None,
             "nav": "events",
         },
     )

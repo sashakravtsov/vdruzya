@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Ensure classic 2006–09 module tables (friend lists + marketplace)."""
+"""Ensure classic 2006–09 module tables (friend lists + marketplace + photo tags)."""
 import os
 import sys
 
