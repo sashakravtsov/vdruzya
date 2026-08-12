@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}Редактировать — {{ group.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="group-page">
+    <div id="header" class="withsubtitle">
+        <h1>Редактировать тему</h1>
+        <div class="subtitle"><a href="{% url 'groups.show' group.id %}">{{ group.name }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Доска обсуждений</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <input type="hidden" name="board" value="discussion">
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Тема:</td><td>{{ form.subject }}</td></tr>
+                        <tr><td class="label">Текст:</td><td>{{ form.body }}</td></tr>
+                        {% if is_admin %}
+                        <tr>
+                            <td class="label">От имени:</td>
+                            <td><label><input type="checkbox" name="as_community" value="1" {% if post.posted_as_community %}checked{% endif %}> группы</label></td>
+                        </tr>
+                        {% endif %}
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{{ post.get_absolute_url }}">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

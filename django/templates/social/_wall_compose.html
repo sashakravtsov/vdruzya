@@ -1,0 +1,17 @@
+{# Classic FB wall poster — flat strip, no cards / details / album multi-pick. #}
+<form method="post" action="{{ action }}" enctype="multipart/form-data" class="wallposter">{% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% if wall_to %}<input type="hidden" name="wall_to" value="{{ wall_to }}">{% endif %}
+    {% if form.board %}{{ form.board }}{% elif board %}<input type="hidden" name="board" value="{{ board }}">{% endif %}
+    {{ form.body }}
+    <div class="wallposter-tools">
+        <span class="wallposter-go">
+            <input type="submit" class="inputsubmit" value="{{ submit|default:'Опубликовать' }}">
+        </span>
+        {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }} <span class="muted">до 5</span></p>{% endif %}
+        {% if show_as_community %}
+        <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
+        {% endif %}
+    </div>
+    {% if form.body.errors %}<div class="error">{{ form.body.errors }}</div>{% endif %}
+</form>
