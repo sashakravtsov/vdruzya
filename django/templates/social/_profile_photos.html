@@ -6,7 +6,7 @@
             <a href="{% url 'albums.show' a.id %}">
                 {% if a.cover_url %}<img src="{{ a.cover_url }}" alt="">{% else %}<span class="album-cover-fallback">·</span>{% endif %}
                 <span class="album-title">{{ a.title }}</span>
-                <span class="date">{% if a.n_photos %}{{ a.n_photos }} фото · {% endif %}{% if a.created_at %}{{ a.created_at|date:"j E Y" }}{% endif %}</span>
+                <span class="date">{% if a.n %}{{ a.n }} фото · {% endif %}{% if a.created_at %}{{ a.created_at|date:"j E Y" }}{% endif %}</span>
             </a>
         </div>
         {% empty %}

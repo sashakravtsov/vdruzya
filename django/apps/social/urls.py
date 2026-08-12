@@ -64,7 +64,6 @@ urlpatterns = [
     path("albums/<int:album_id>/photos/<int:photo_id>/cover", albums.photo_cover, name="albums.photos.cover"),
     path("albums/<int:album_id>/photos/<int:photo_id>/delete", albums.photo_delete, name="albums.photos.delete"),
     path("albums/<int:album_id>/delete", albums.album_delete, name="albums.delete"),
-    path("compose/album-photos", albums.compose_album_photos, name="compose.album-photos"),
     path("profile/<int:pk>/albums", albums.profile_albums, name="profile.albums"),
     path("events", events.events_home, name="events"),
     path("events/<int:event_id>", events.event_show, name="events.show"),

@@ -3,7 +3,7 @@
 Прод: https://vdruzya.ru → nginx → Daphne `127.0.0.1:18081` (`vdruzya-django.service`).
 
 ## Facebook 2006 core
-Профиль, Стена, Mini-Feed, Лента новостей (rail: заявки / подмигивания / события / группы / ДР), друзья, Find Friends, фото/альбомы, группы (стена + доска), Inbox (`/inbox`), подмигивания, поиск, события, Мой аккаунт.
+Профиль (Сети → Find Friends: город/школа/работа), Стена, Mini-Feed, Лента новостей (rail: заявки / подмигивания / события / группы / ДР), друзья, Find Friends, фото/альбомы (`albums_for`), группы (стена + доска), Inbox (`/inbox`), подмигивания, поиск, события, Мой аккаунт.
 
 Без лайков (2009), без Messenger/WebSocket/групповых чатов, без PYMK, без центра уведомлений (сигналы comment/wall/friend_request не пишут в inbox), без опросов/репостов/стикеров/PWA/manifest, без status-publisher на ленте (статус — в шапке профиля), без `datetime-local` (даты событий текстом). Legacy `Reaction` — только orphan cleanup.
 

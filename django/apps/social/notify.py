@@ -1,4 +1,4 @@
-"""Thin notification helpers — classic FB inbox events."""
+"""Thin notification helpers — classic FB inbox events (poke / DM / invites)."""
 from apps.social.models import Notification
 from apps.social.services import now
 
@@ -15,6 +15,16 @@ def push(user_id, *, title, body, type, url):
         url=(url or "")[:255],
         created_at=now(),
     )
+
+
+def attach_poker_ids(rows):
+    """Parse /profile/<id> poke URLs once for rail + Pokes inbox."""
+    for n in rows:
+        try:
+            n.poker_id = int((n.url or "").rstrip("/").rsplit("/", 1)[-1])
+        except (TypeError, ValueError):
+            n.poker_id = None
+    return rows
 
 
 def poke(me, other) -> str:

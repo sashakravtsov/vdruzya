@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smoke probe: albums / photos FB 2005 parity."""
+"""Smoke probe: albums / photos FB 2006 parity."""
 import os
 import sys
 
@@ -14,8 +14,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
 from apps.accounts.models import User
-from apps.social.models import Album, Photo
-from apps.social.services import now, profile_of
+from apps.social.albums import albums_for, can_view, visible_q
+from apps.social.models import Album, Photo, SocialProfile
+from apps.social.services import friend_ids, now, profile_of
 
 PNG = bytes.fromhex(
     "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
@@ -36,7 +37,13 @@ def main():
 
     r = c.get("/albums", secure=True)
     assert r.status_code == 200 and "Мои альбомы".encode() in r.content
+    assert b"album-index" in r.content
+    assert b"album-fb" not in r.content
     ok("albums index")
+
+    r = c.get("/compose/album-photos", secure=True)
+    assert r.status_code == 404
+    ok("compose album-photos gone")
 
     t = now()
     a = Album.objects.create(
@@ -57,6 +64,26 @@ def main():
     r = guest.get(f"/albums/{a.id}", secure=True)
     assert r.status_code == 403 and "Альбом недоступен".encode() in r.content
     ok("friends album guest 403 page")
+
+    # empty visibility ≡ friends (classic default)
+    a.visibility = ""
+    a.save(update_fields=["visibility"])
+    assert not can_view(a, None)
+    assert can_view(a, me)
+    assert not Album.objects.filter(pk=a.id).filter(visible_q(None)).exists()
+    ok("empty visibility ≡ friends")
+
+    friend = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
+    if friend:
+        assert can_view(a, friend)
+        listed = {x.id for x in albums_for(me, friend, 40)}
+        assert a.id in listed
+        ok("friends album visible to friend via albums_for")
+    else:
+        ok("friends album friend check skipped (no friend)")
+
+    a.visibility = "friends"
+    a.save(update_fields=["visibility"])
 
     f = SimpleUploadedFile("p.png", PNG, content_type="image/png")
     r = c.post(f"/albums/{a.id}/photos", {"title": "Красиво", "photo": f}, secure=True, follow=True)
@@ -97,12 +124,9 @@ def main():
     ok("album edit")
 
     r = c.get(f"/profile/{me.id}/albums", secure=True)
-    assert r.status_code == 200
+    assert r.status_code == 200 and b"QA Photos" in r.content
+    assert "Друзьям".encode() in r.content
     ok("profile albums")
-
-    r = c.get("/compose/album-photos", secure=True)
-    assert r.status_code == 200 and r.json().get("albums") is not None
-    ok("compose album-photos json")
 
     r = c.post(f"/albums/{a.id}/photos/{ph.id}/delete", {}, secure=True, follow=True)
     assert r.status_code == 200 and not Photo.objects.filter(pk=ph.id).exists()

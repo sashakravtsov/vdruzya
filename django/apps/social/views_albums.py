@@ -1,14 +1,13 @@
-"""Albums / photos FBVs — short only, FB 2005."""
+"""Albums / photos FBVs — classic FB Photos."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_not_required, login_required
-from django.db.models import Count, Prefetch
-from django.http import JsonResponse
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social.albums import (
-    add_comment, albums_with_covers, can_edit, can_view, comments_for, delete_comment,
-    delete_photo_file, neighbors, save_photos, visible_q,
+    add_comment, albums_for, albums_with_covers, can_edit, can_view, comments_for,
+    delete_comment, delete_photo_file, neighbors, save_photos,
 )
 from apps.social.forms import AlbumForm, CommentForm, PhotoUploadForm
 from apps.social.models import Album, Photo, PhotoComment
@@ -20,14 +19,6 @@ def _forbid(request, album=None):
         request, "social/album_locked.html",
         {"album": album, "me": profile_of(request.user) if request.user.is_authenticated else None},
         status=403,
-    )
-
-
-def albums_for_profile(profile, viewer, limit=4):
-    return list(
-        albums_with_covers(
-            Album.objects.filter(social_user=profile).filter(visible_q(viewer))
-        ).annotate(n=Count("photos")).order_by("-id")[:limit]
     )
 
 
@@ -49,9 +40,6 @@ def albums(request):
     items = (
         albums_with_covers(Album.objects.filter(social_user=me))
         .annotate(n=Count("photos"))
-        .prefetch_related(
-            Prefetch("photos", queryset=Photo.objects.exclude(path="").order_by("id"), to_attr="preview")
-        )
         .order_by("-id")
     ) if me else []
     return render(request, "social/albums.html", {"albums": items, "form": form, "me": me})
@@ -63,8 +51,10 @@ def profile_albums(request, pk):
     me = profile_of(request.user) if request.user.is_authenticated else None
     return render(
         request, "social/albums_user.html",
-        {"owner": owner, "albums": albums_for_profile(owner, me, 40), "me": me,
-         "is_own": bool(me and me.id == owner.id)},
+        {
+            "owner": owner, "albums": albums_for(owner, me, 40), "me": me,
+            "is_own": bool(me and me.id == owner.id),
+        },
     )
 
 
@@ -233,19 +223,3 @@ def photo_delete(request, album_id, photo_id):
     delete_photo_file(photo)
     messages.success(request, "Фото удалено.")
     return redirect("albums.show", album_id=album_id)
-
-
-@login_required
-def compose_album_photos(request):
-    """JSON for wall compose album picker."""
-    me = profile_of(request.user)
-    if not me:
-        return JsonResponse({"albums": []})
-    rows = []
-    for a in Album.objects.filter(social_user=me).order_by("-id")[:20]:
-        photos = list(Photo.objects.filter(album=a).exclude(path="").order_by("id")[:24])
-        rows.append({
-            "id": a.id, "title": a.title, "photos_count": len(photos),
-            "photos": [{"id": p.id, "title": p.title, "url": p.url} for p in photos],
-        })
-    return JsonResponse({"albums": rows})

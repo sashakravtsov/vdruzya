@@ -33,20 +33,18 @@
             <h4>Альбомы{% if albums %} ({{ albums|length }}){% endif %}</h4>
             <div class="profile-box-body">
                 {% if albums %}
-                <div class="album-fb-grid">
+                <div class="album-index">
                     {% for a in albums %}
-                    <a class="album-fb-card" href="{% url 'albums.show' a.id %}">
-                        <span class="album-fb-cover">
+                    <a class="album-card" href="{% url 'albums.show' a.id %}">
+                        <span class="album-card-cover">
                             {% if a.cover_url %}
                             <img src="{{ a.cover_url }}" alt="">
-                            {% elif a.preview %}
-                            <img src="{{ a.preview.0.url }}" alt="">
                             {% else %}
-                            <span class="album-fb-empty">{{ a.title|slice:":1"|upper }}</span>
+                            <span class="album-card-empty">{{ a.title|slice:":1"|upper }}</span>
                             {% endif %}
                         </span>
-                        <span class="album-fb-name">{{ a.title }}</span>
-                        <span class="album-fb-meta">{{ a.n }} фото · {% if a.visibility == 'public' %}Всем{% elif a.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}</span>
+                        <span class="album-card-name">{{ a.title }}</span>
+                        <span class="album-card-meta">{{ a.n }} фото · {{ a|album_vis }}</span>
                     </a>
                     {% endfor %}
                 </div>

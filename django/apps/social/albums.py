@@ -1,22 +1,28 @@
-"""Album visibility + photo media helpers."""
+"""Album visibility + photo media helpers — classic FB Photos."""
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Count, Q
 
 from apps.social.media import save_image
-from apps.social.models import Photo, PhotoComment, profile_related
+from apps.social.models import Album, Photo, PhotoComment, profile_related
 from apps.social.services import friend_ids, now
+
+_VIS = {"public": "Всем", "friends": "Друзьям", "private": "Только мне"}
+
+
+def visibility_label(album_or_vis) -> str:
+    raw = getattr(album_or_vis, "visibility", album_or_vis) or "friends"
+    return _VIS.get(str(raw).strip().lower(), _VIS["friends"])
 
 
 def visible_q(viewer):
+    """Match can_view: empty/None ≡ friends (Album default)."""
+    public = Q(visibility="public")
+    friends = Q(visibility="friends") | Q(visibility="") | Q(visibility__isnull=True)
     if not viewer:
-        return Q(visibility="public")
-    return (
-        Q(visibility="public")
-        | Q(social_user=viewer)
-        | Q(visibility="friends", social_user_id__in=friend_ids(viewer))
-    )
+        return public
+    return public | Q(social_user=viewer) | (friends & Q(social_user_id__in=friend_ids(viewer)))
 
 
 def can_view(album, viewer) -> bool:
@@ -34,6 +40,28 @@ def can_view(album, viewer) -> bool:
 
 def can_edit(album, viewer) -> bool:
     return bool(viewer and album.social_user_id == viewer.id)
+
+
+def albums_with_covers(qs):
+    """Annotate first photo path so cover_url works when cover_path is empty."""
+    from django.db.models import OuterRef, Subquery
+
+    first = (
+        Photo.objects.filter(album_id=OuterRef("pk"))
+        .exclude(path="")
+        .order_by("id")
+        .values("path")[:1]
+    )
+    return qs.annotate(_first_photo_path=Subquery(first))
+
+
+def albums_for(profile, viewer, limit=40):
+    """Visible albums for a profile — covers + photo count (single listing helper)."""
+    return list(
+        albums_with_covers(
+            Album.objects.filter(social_user=profile).filter(visible_q(viewer))
+        ).annotate(n=Count("photos")).order_by("-id")[:limit]
+    )
 
 
 def save_photos(album, files, title=""):
@@ -58,19 +86,6 @@ def save_photos(album, files, title=""):
             fields.append("cover_path")
         album.save(update_fields=fields)
     return n
-
-
-def albums_with_covers(qs):
-    """Annotate first photo path so cover_url works when cover_path is empty."""
-    from django.db.models import OuterRef, Subquery
-
-    first = (
-        Photo.objects.filter(album_id=OuterRef("pk"))
-        .exclude(path="")
-        .order_by("id")
-        .values("path")[:1]
-    )
-    return qs.annotate(_first_photo_path=Subquery(first))
 
 
 def delete_photo_file(photo):

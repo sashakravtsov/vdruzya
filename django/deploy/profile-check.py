@@ -73,6 +73,25 @@ def main():
     assert "Друзья".encode() in r.content
     ok("profile friends tab")
 
+    from apps.social.models import Education, Experience
+    from apps.social.profile_page import networks_for
+    nets = networks_for(me)
+    r = c.get(f"/profile/{me.id}", secure=True)
+    assert r.status_code == 200
+    html = r.content.decode()
+    if nets:
+        assert "Сети" in html
+        assert any("tab=search" in n["href"] for n in nets)
+        if any("city=" in n["href"] for n in nets):
+            assert "city=" in html
+        if any("school=" in n["href"] for n in nets):
+            assert "school=" in html
+        if any("workplace=" in n["href"] for n in nets):
+            assert "workplace=" in html
+        ok("networks rail → Find Friends")
+    else:
+        ok("networks rail empty (no city/school/work)")
+
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert "Лента новостей".encode() in r.content

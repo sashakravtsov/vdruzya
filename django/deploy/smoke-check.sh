@@ -129,6 +129,21 @@ if grep -q 'Что у вас нового' "${ROOT}/django/templates/social/feed
 else
   echo "OK   feed has no status publisher"
 fi
+code="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/compose/album-photos")"
+if [[ "$code" == "404" ]]; then echo "OK   compose/album-photos 404"
+else echo "FAIL compose/album-photos (${code})"; FAIL=1; fi
+if grep -q 'type="friend_accept"' "${ROOT}/django/apps/social/friendship.py" 2>/dev/null \
+   || grep -q "type='friend_accept'" "${ROOT}/django/apps/social/friendship.py" 2>/dev/null \
+   || grep -q 'type="friend_accept"' "${ROOT}/django/apps/social/"*.py 2>/dev/null; then
+  echo "FAIL friend_accept notifications still written"; FAIL=1
+else
+  echo "OK   no friend_accept notify writes"
+fi
+if grep -q 'compose_album_photos\|compose/album-photos' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL compose album-photos still routed"; FAIL=1
+else
+  echo "OK   no compose album-photos route"
+fi
 echo "== Wall/Groups feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/wall-groups-check.py; then
   echo "OK   wall/groups features"

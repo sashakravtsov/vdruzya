@@ -56,14 +56,11 @@ def profile(request, pk):
 def pokes(request):
     """Classic FB Pokes inbox."""
     me = profile_of(request.user)
+    from apps.social.notify import attach_poker_ids
     items = list(
         Notification.objects.filter(social_user=me, type="poke").order_by("-id")[:50]
     ) if me else []
-    for n in items:
-        try:
-            n.poker_id = int((n.url or "").rstrip("/").rsplit("/", 1)[-1])
-        except (TypeError, ValueError):
-            n.poker_id = None
+    attach_poker_ids(items)
     if me:
         Notification.objects.filter(social_user=me, type="poke", seen=False).update(seen=True)
         cache.delete(f"nav:{me.id}")

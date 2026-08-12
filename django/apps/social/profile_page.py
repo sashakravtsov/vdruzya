@@ -1,9 +1,9 @@
 """Classic FB Profile page assembly — short helpers, no view bloat."""
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 
-from apps.social.albums import albums_with_covers, visible_q
+from apps.social.albums import albums_for, visible_q
 from apps.social.forms import CommentForm, PostForm, StatusForm
 from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
@@ -14,12 +14,16 @@ TABS = frozenset({"wall", "info", "photos", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
 
 
-def networks_for(profile, education=None) -> list[dict]:
-    """Classic left-rail Networks: city / school / workplace → Find Friends filters."""
+def networks_for(profile, education=None, experience=None) -> list[dict]:
+    """Classic left-rail Networks: city / school / work → Find Friends filters."""
     from urllib.parse import urlencode
 
     if education is None:
         education = list(Education.objects.filter(social_user=profile)[:3])
+    if experience is None:
+        experience = list(
+            Experience.objects.filter(social_user=profile).exclude(company_name="").order_by("-id")[:5]
+        )
     out, seen = [], set()
 
     def add(label, **params):
@@ -33,6 +37,8 @@ def networks_for(profile, education=None) -> list[dict]:
     for e in education[:3]:
         add(e.institution, school=e.institution or "")
     add(profile.workplace, workplace=profile.workplace or "")
+    for x in experience[:5]:
+        add(x.company_name, workplace=x.company_name or "")
     return out
 
 
@@ -41,14 +47,6 @@ def recent_photos(profile, viewer, limit=8):
     return list(
         Photo.objects.filter(album__in=albums).exclude(path="")
         .select_related("album").order_by("-id")[:limit]
-    )
-
-
-def profile_albums(profile, viewer, limit=12):
-    return list(
-        albums_with_covers(
-            Album.objects.filter(social_user=profile).filter(visible_q(viewer))
-        ).annotate(n_photos=Count("photos")).order_by("-id")[:limit]
     )
 
 
@@ -301,10 +299,13 @@ def build_context(profile, me, tab="wall"):
     if full and tab == "info":
         education = list(Education.objects.filter(social_user=profile)[:10])
         experiences = list(Experience.objects.filter(social_user=profile)[:10])
-        edu_rail = education[:3]
         boxes = info_boxes(profile, education, experiences)
+        edu_rail, exp_rail = education[:3], experiences[:5]
     else:
         edu_rail = list(Education.objects.filter(social_user=profile)[:3])
+        exp_rail = list(
+            Experience.objects.filter(social_user=profile).exclude(company_name="").order_by("-id")[:5]
+        )
 
     communities = (
         list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
@@ -322,7 +323,7 @@ def build_context(profile, me, tab="wall"):
 
     vis_albums = Album.objects.filter(social_user=profile).filter(visible_q(me)) if full else Album.objects.none()
     rail_photos = recent_photos(profile, me, 4) if full else []
-    albums = profile_albums(profile, me, 12) if full and tab == "photos" else []
+    albums = albums_for(profile, me, 12) if full and tab == "photos" else []
 
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
@@ -335,7 +336,7 @@ def build_context(profile, me, tab="wall"):
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,
         "info_boxes": boxes,
-        "networks": networks_for(profile, edu_rail),
+        "networks": networks_for(profile, edu_rail, exp_rail),
         "stats": {
             "friends": friend_count(profile) if can_see else 0,
             "photos": Photo.objects.filter(album__in=vis_albums).count() if full else 0,

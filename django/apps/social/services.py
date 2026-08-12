@@ -398,15 +398,11 @@ def feed_rail(viewer):
     )
     pokes = []
     if viewer:
-        pokes = list(
+        from apps.social.notify import attach_poker_ids
+        pokes = attach_poker_ids(list(
             Notification.objects.filter(social_user=viewer, type="poke", seen=False)
             .order_by("-id")[:6]
-        )
-        for n in pokes:
-            try:
-                n.poker_id = int((n.url or "").rstrip("/").rsplit("/", 1)[-1])
-            except (TypeError, ValueError):
-                n.poker_id = None
+        ))
     rail_events = list(ev.list_events(viewer, "upcoming")[:5]) if viewer else []
     event_invites = (
         Notification.objects.filter(social_user=viewer, type="event_invite", seen=False).count()

@@ -8,11 +8,9 @@ from apps.social.services import friend_ids, now
 
 
 def friends_of(me, limit=None):
-    ids = friend_ids(me)
-    if not ids:
-        return SocialProfile.objects.none()
-    qs = SocialProfile.objects.filter(id__in=ids).order_by("name")
-    return qs[:limit] if limit else qs
+    """Alias of accepted_friends — one listing path for Inbox / compose."""
+    from apps.social.services import accepted_friends
+    return accepted_friends(me, limit)
 
 
 def friends_page(me, *, q="", city="", sort="name", page=1, per=40):
@@ -84,15 +82,6 @@ def is_blocked(a, b) -> bool:
     return Block.objects.filter(
         Q(blocker=a, blocked=b) | Q(blocker=b, blocked=a)
     ).exists()
-
-
-def _exclude_ids(me):
-    out = {me.id}
-    out |= set(Friendship.objects.filter(user=me).values_list("friend_id", flat=True))
-    out |= set(Friendship.objects.filter(friend=me, status="pending").values_list("user_id", flat=True))
-    out |= set(Block.objects.filter(blocker=me).values_list("blocked_id", flat=True))
-    out |= set(Block.objects.filter(blocked=me).values_list("blocker_id", flat=True))
-    return out
 
 
 def mutual_label(n):
@@ -171,7 +160,6 @@ def relations_for(me, ids):
 
 def accept_request(me, other) -> bool:
     from django.db import transaction
-    from apps.social.models import Notification
 
     pending = Friendship.objects.filter(user=other, friend=me, status="pending").first()
     if not pending:
@@ -182,11 +170,6 @@ def accept_request(me, other) -> bool:
         Friendship.objects.update_or_create(
             user=me, friend=other,
             defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
-        )
-        Notification.objects.create(
-            social_user=other, title="Заявка принята",
-            body=f"{me.name} принял(а) вашу заявку в друзья"[:255],
-            seen=False, type="friend_accept", url=f"/profile/{me.id}", created_at=now(),
         )
     return True
 

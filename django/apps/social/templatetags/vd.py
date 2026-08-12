@@ -57,6 +57,13 @@ def ru_label(value):
     return _LABELS.get(key, value)
 
 
+@register.filter
+def album_vis(value):
+    """Album visibility — public means «Всем» (not group «Открытая»)."""
+    from apps.social.albums import visibility_label
+    return visibility_label(value)
+
+
 @register.simple_tag
 def avatar(profile, size=50):
     if not profile:
