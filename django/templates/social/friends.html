@@ -111,6 +111,88 @@
             </div>
             {% endif %}
 
+            {% if family_incoming %}
+            <div class="profile-box">
+                <h4>Семья — подтверждение ({{ family_incoming|length }})</h4>
+                <div class="profile-box-body">
+                    {% for fl in family_incoming %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' fl.from_user.id %}">
+                            {% avatar fl.from_user 32 %}
+                            <span>
+                                <b>{{ fl.from_user.name }}</b>
+                                <span class="classic-person-sub">{{ fl.kind_label }}</span>
+                            </span>
+                        </a>
+                        <span class="classic-inline-actions classic-inline-actions-stack">
+                            <form method="post" action="{% url 'family.accept' fl.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'friends' %}">
+                                <button type="submit" class="inputsubmit">Подтвердить</button>
+                            </form>
+                            <form method="post" action="{% url 'family.decline' fl.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'friends' %}">
+                                <button type="submit" class="linkish">Отклонить</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Семья</h4>
+                <div class="profile-box-body">
+                    {% if family_candidates %}
+                    <form method="post" action="{% url 'family.request' %}" class="friends-find">{% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'friends' %}">
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="label">Кто:</td>
+                                <td>
+                                    <select name="person" class="inputtext">
+                                        {% for p in family_candidates %}
+                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="label">Кем:</td>
+                                <td>
+                                    <select name="kind" class="inputtext">
+                                        {% for k, lab in family_kinds.items %}
+                                        <option value="{{ k }}">{{ lab }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="submit" class="inputsubmit" value="Добавить">
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% for fl in my_family %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' fl.to_user.id %}">
+                            {% avatar fl.to_user 32 %}
+                            <span>
+                                <b>{{ fl.to_user.name }}</b>
+                                <span class="classic-person-sub">{{ fl.kind_label }}</span>
+                            </span>
+                        </a>
+                        <span class="classic-inline-actions">
+                            <form method="post" action="{% url 'family.remove' fl.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'friends' %}">
+                                <button type="submit" class="linkish">убрать</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% empty %}
+                    {% if not family_candidates %}<p class="muted">Сначала добавьте друзей.</p>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
             <div class="profile-box">
                 <h4>Заявки в друзья{% if pending %} ({{ pending|length }}){% endif %}</h4>
                 <div class="profile-box-body">

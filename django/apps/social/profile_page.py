@@ -203,6 +203,22 @@ def info_boxes(profile, education, experiences) -> list[dict]:
                     rel, reverse("profile", args=[partner.id]), partner.name,
                 )
         basic.append(("Отношения", rel, False))
+    from apps.social import family as fam
+    family_rows = fam.approved_for(profile)
+    if family_rows:
+        from django.utils.html import format_html_join
+        basic.append((
+            "Семья",
+            format_html_join(
+                ", ",
+                '{} — <a href="{}">{}</a>',
+                (
+                    (fam.label(link.kind), reverse("profile", args=[link.to_user_id]), link.to_user.name)
+                    for link in family_rows
+                ),
+            ),
+            False,
+        ))
     if profile.interested_in_label():
         basic.append(("Интересуюсь", _tags(profile.interested_in_label()), False))
     if profile.looking_for_label():

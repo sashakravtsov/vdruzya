@@ -220,6 +220,20 @@ CREATE TABLE IF NOT EXISTS feed_story_hides (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS feed_story_hides_uniq
   ON feed_story_hides (social_user_id, story_key);
+
+CREATE TABLE IF NOT EXISTS family_links (
+  id bigserial PRIMARY KEY,
+  from_user_id bigint NOT NULL,
+  to_user_id bigint NOT NULL,
+  kind varchar(20) NOT NULL DEFAULT 'sibling',
+  status varchar(20) NOT NULL DEFAULT 'pending',
+  created_at timestamp without time zone,
+  updated_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS family_links_uniq
+  ON family_links (from_user_id, to_user_id);
+CREATE INDEX IF NOT EXISTS family_links_to_idx
+  ON family_links (to_user_id, status);
 """
 
 
@@ -232,7 +246,7 @@ def main():
             "classic_polls", "classic_poll_options", "classic_poll_votes",
             "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
             "photo_comment_reactions", "group_comment_reactions", "group_post_reactions",
-            "relationship_requests", "feed_hides", "feed_story_hides",
+            "relationship_requests", "feed_hides", "feed_story_hides", "family_links",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]

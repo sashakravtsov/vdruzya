@@ -168,3 +168,28 @@ class FeedStoryHide(models.Model):
     class Meta:
         managed = False
         db_table = "feed_story_hides"
+
+
+class FamilyLink(models.Model):
+    """Classic FB Family member (pending until confirmed)."""
+    id = models.BigAutoField(primary_key=True)
+    from_user = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, related_name="+", db_column="from_user_id",
+    )
+    to_user = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, related_name="+", db_column="to_user_id",
+    )
+    kind = models.CharField(max_length=20, default="sibling")
+    status = models.CharField(max_length=20, default="pending")
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "family_links"
+        ordering = ["id"]
+
+    @property
+    def kind_label(self) -> str:
+        from apps.social.family import label
+        return label(self.kind)

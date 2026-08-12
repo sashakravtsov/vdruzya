@@ -111,6 +111,58 @@ def feed_hide_story(request):
 
 @login_required
 @require_POST
+def family_request(request):
+    from apps.social import family as fam
+
+    me = profile_of(request.user)
+    if fam.request(me, request.POST.get("person"), request.POST.get("kind") or ""):
+        messages.success(request, "Запрос отправлен — ждёт подтверждения.")
+    else:
+        messages.error(request, "Не удалось добавить.")
+    return redirect(request.POST.get("next") or "friends")
+
+
+@login_required
+@require_POST
+def family_accept(request, pk):
+    from apps.social import family as fam
+
+    me = profile_of(request.user)
+    if fam.accept(me, pk):
+        messages.success(request, "Семейная связь подтверждена.")
+    else:
+        messages.error(request, "Заявка не найдена.")
+    return redirect(request.POST.get("next") or "friends")
+
+
+@login_required
+@require_POST
+def family_decline(request, pk):
+    from apps.social import family as fam
+
+    me = profile_of(request.user)
+    if fam.decline(me, pk):
+        messages.info(request, "Заявка отклонена.")
+    else:
+        messages.error(request, "Заявка не найдена.")
+    return redirect(request.POST.get("next") or "friends")
+
+
+@login_required
+@require_POST
+def family_remove(request, pk):
+    from apps.social import family as fam
+
+    me = profile_of(request.user)
+    if fam.remove(me, pk):
+        messages.info(request, "Семейная связь удалена.")
+    else:
+        messages.error(request, "Нельзя удалить.")
+    return redirect(request.POST.get("next") or f"/profile/{me.id}?tab=info")
+
+
+@login_required
+@require_POST
 def post_create(request):
     from django.db.models import Q
     from apps.social.models import Friendship

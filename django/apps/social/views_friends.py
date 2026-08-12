@@ -90,6 +90,7 @@ def friends_home(request):
             me, q=q, city=city, sort=sort, page=_page_int(request.GET.get("p")),
         )
     from apps.social import relationship as relmod
+    from apps.social import family as fam
 
     return render(
         request, "social/friends.html",
@@ -100,6 +101,10 @@ def friends_home(request):
             "outgoing": list(fr.pending_from(me)[:40]) if me else [],
             "blocked": list(fr.blocked_by(me)[:40]) if me else [],
             "relationship_incoming": relmod.incoming_for(me) if me else [],
+            "family_incoming": fam.incoming_for(me) if me else [],
+            "family_candidates": fam.candidates(me) if me else [],
+            "family_kinds": fam.KINDS,
+            "my_family": fam.approved_for(me) if me else [],
         },
     )
 

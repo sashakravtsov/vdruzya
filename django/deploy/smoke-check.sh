@@ -242,6 +242,13 @@ if ! grep -q 'feed.hide.actor' "${ROOT}/django/apps/social/urls.py" 2>/dev/null 
 else
   echo "OK   hide from News Feed (FB 2009)"
 fi
+if ! grep -q 'family.request' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'family_links' "${ROOT}/django/deploy/ensure-2010-modules.py" 2>/dev/null \
+  || ! grep -q 'def _attach' "${ROOT}/django/apps/social/likes.py" 2>/dev/null; then
+  echo "FAIL family links or likes dedupe missing"; FAIL=1
+else
+  echo "OK   family links + likes helper dedupe"
+fi
 if ! grep -q 'wall-filters' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null \
   || ! grep -q 'filter=photos' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
   echo "FAIL wall filters missing"; FAIL=1

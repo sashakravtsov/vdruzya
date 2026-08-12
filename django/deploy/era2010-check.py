@@ -36,7 +36,7 @@ def main():
             "classic_polls", "classic_poll_options", "classic_poll_votes",
             "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
             "photo_comment_reactions", "group_comment_reactions", "group_post_reactions",
-            "relationship_requests", "feed_hides", "feed_story_hides",
+            "relationship_requests", "feed_hides", "feed_story_hides", "family_links",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
@@ -300,6 +300,36 @@ def main():
         bump_news()
     else:
         ok("feed hide skipped (no buddy)")
+
+    # Family link confirm
+    from apps.social import family as fam
+    from apps.social.models.legacy import FamilyLink
+    buddy4 = SocialProfile.objects.exclude(pk=me.id).order_by("id").first()
+    if buddy4:
+        Friendship.objects.update_or_create(
+            user=me, friend=buddy4,
+            defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
+        )
+        Friendship.objects.update_or_create(
+            user=buddy4, friend=me,
+            defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
+        )
+        FamilyLink.objects.filter(from_user__in=(me, buddy4), to_user__in=(me, buddy4)).delete()
+        link = fam.request(me, buddy4.id, "sibling")
+        assert link and link.status == "pending"
+        c4 = Client(HTTP_HOST="vdruzya.ru")
+        c4.force_login(buddy4.user)
+        r = c4.post(f"/family/{link.id}/accept", {"next": "/friends"}, secure=True)
+        assert r.status_code in (301, 302)
+        link.refresh_from_db()
+        assert link.status == "approved"
+        assert FamilyLink.objects.filter(from_user=buddy4, to_user=me, status="approved").exists()
+        r = c.get(f"/profile/{me.id}?tab=info", secure=True)
+        assert "Семья".encode() in r.content and buddy4.name.encode() in r.content
+        ok("family confirm")
+        FamilyLink.objects.filter(from_user__in=(me, buddy4), to_user__in=(me, buddy4)).delete()
+    else:
+        ok("family confirm skipped (no buddy)")
 
     # cleanup
     Reaction.objects.filter(post=tpost).delete()
