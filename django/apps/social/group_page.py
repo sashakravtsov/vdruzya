@@ -95,7 +95,12 @@ def page_ctx(request, group, me):
     if tab == "wall":
         ctx["form"] = CommunityPostForm(auto_id="id_w_%s", initial={"board": "wall"})
         from apps.social.likes import attach_group_post_likes
-        ctx["wall_posts"] = attach_group_post_likes(list(qs.filter(topic="wall")[:20]), me)
+        from apps.social.classic_extra import hydrate_posted
+        wall_posts = attach_group_post_likes(list(qs.filter(topic="wall")[:20]), me)
+        for p in wall_posts:
+            if getattr(p, "kind", None) == "video":
+                hydrate_posted(p)
+        ctx["wall_posts"] = wall_posts
     elif tab == "discussion":
         from apps.social.likes import attach_group_post_likes
         discuss = qs.exclude(topic="wall").order_by(F("updated_at").desc(nulls_last=True), "-id")

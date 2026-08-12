@@ -511,7 +511,7 @@ class CommunityPostForm(ClassicForm, forms.ModelForm):
         required=False, max_length=120, label="Тема",
         widget=_in(style="width:100%"),
     )
-    photo = forms.ImageField(required=False, label="Фото", widget=_files())
+    photo = MultiFileField(required=False, label="Фото / видео", widget=_files())
     board = forms.ChoiceField(
         choices=[("discussion", "Доска обсуждений"), ("wall", "Стена группы")],
         initial="discussion",
@@ -543,7 +543,7 @@ class CommunityPostForm(ClassicForm, forms.ModelForm):
             if not body and not has_media:
                 self.add_error("body", "Напишите сообщение.")
         elif not body and not has_media:
-            self.add_error("body", "Напишите текст или выберите фото.")
+            self.add_error("body", "Напишите текст или выберите фото / видео.")
         return data
 
 

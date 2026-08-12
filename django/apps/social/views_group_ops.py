@@ -159,7 +159,7 @@ def group_post_like(request, pk, post_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def group_post_edit(request, pk, post_id):
-    from apps.social.attach import attach_group
+    from apps.social.attach import apply_group_uploads
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
     if not me or (post.social_user_id != me.id and not is_group_admin(me, group)):
@@ -182,12 +182,8 @@ def group_post_edit(request, pk, post_id):
             obj.posted_as_community = bool(request.POST.get("as_community"))
         obj.updated_at = now()
         obj.save(update_fields=["body", "topic", "posted_as_community", "updated_at"])
-        path = attach_group(obj, list(request.FILES.getlist("photo")), me)
-        if path and not obj.media_path:
-            obj.media_path = path
-            if obj.kind == "text":
-                obj.kind = "photo"
-            obj.save(update_fields=["media_path", "kind"])
+        # Discussion: photos only (video stays on group wall).
+        apply_group_uploads(obj, list(request.FILES.getlist("photo")), me, blurb=body)
         messages.success(request, "Запись обновлена.")
         return redirect(obj)
     form.fields["board"].initial = post.topic if post.topic in ("wall", "discussion") else "discussion"
@@ -269,7 +265,7 @@ def member_manage(request, pk, user_id):
 @login_required
 @require_POST
 def group_post(request, pk):
-    from apps.social.attach import attach_group
+    from apps.social.attach import apply_group_uploads
     from apps.social.throttle import throttle
 
     @throttle("gposts", 20, 60)
@@ -298,14 +294,9 @@ def group_post(request, pk):
             p.body = CommunityPost.pack_topic(form.cleaned_data.get("subject") or "", body)
         else:
             p.body = body
-        p.kind = "photo" if files else "text"
+        p.kind = "text"
         p.save()
-        path = attach_group(p, files, me)
-        if path:
-            p.media_path = path
-            if p.kind == "text":
-                p.kind = "photo"
-            p.save(update_fields=["media_path", "kind"])
+        apply_group_uploads(p, files, me, blurb=body)
         bump_news()
         messages.success(req, "Тема создана." if p.topic == "discussion" else "Запись на стене опубликована.")
         if p.topic == "wall":

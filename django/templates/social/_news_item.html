@@ -85,10 +85,21 @@
             {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
                 <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
-                {% with text=item.post.body_text|default:item.post.body %}
-                {% if text %}<div class="wall-body">{{ text|truncatewords:40|linebreaksbr }}</div>{% endif %}
-                {% endwith %}
-                {% if item.post.media_url %}<p class="wall-media wall-media-single"><a href="{{ item.post.get_absolute_url }}"><img src="{{ item.post.media_url }}" alt="" class="news-photo"></a></p>{% endif %}
+                {% if item.post.kind == 'video' %}
+                    {% if item.post.link_blurb %}<div class="wall-body">{{ item.post.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                    {% if item.post.video_url %}
+                    <div class="wall-media wall-media-video">
+                        <video controls preload="metadata" {% if item.post.media_url %}poster="{{ item.post.media_url }}"{% endif %}>
+                            <source src="{{ item.post.video_url }}" type="video/mp4">
+                        </video>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    {% with text=item.post.body_text|default:item.post.body %}
+                    {% if text %}<div class="wall-body">{{ text|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                    {% endwith %}
+                    {% if item.post.media_url %}<p class="wall-media wall-media-single"><a href="{{ item.post.get_absolute_url }}"><img src="{{ item.post.media_url }}" alt="" class="news-photo"></a></p>{% endif %}
+                {% endif %}
             </div>
             <div class="wall-actions muted">
                 <span class="ico ico-comment"></span> {{ item.post.n_comments|default:0 }}

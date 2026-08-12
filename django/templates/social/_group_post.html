@@ -32,8 +32,13 @@
                     {% endif %}
                 </div>
                 <div class="text">
-                    {% if p.body %}{{ p.body|linebreaksbr }}{% endif %}
-                    {% include "social/_post_media.html" with post=p %}
+                    {% if p.kind == 'video' %}
+                        {% include "social/_post_media.html" with post=p %}
+                        {% if p.link_blurb %}<div class="wall-body">{{ p.link_blurb|linebreaksbr }}</div>{% endif %}
+                    {% else %}
+                        {% if p.body %}{{ p.body|linebreaksbr }}{% endif %}
+                        {% include "social/_post_media.html" with post=p %}
+                    {% endif %}
                 </div>
                 <div class="actions">
                     {% if is_member %}

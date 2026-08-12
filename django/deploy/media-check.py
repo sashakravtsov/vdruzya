@@ -15,7 +15,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from apps.accounts.models import User
 from apps.social.media import process_image_bytes
-from apps.social.models import Album, Photo, Post
+from apps.social.models import Album, Community, CommunityMember, CommunityPost, Photo, Post
 from apps.social.services import bump_news, news_items, now, profile_of
 
 PNG = bytes.fromhex(
@@ -114,10 +114,41 @@ def main():
     assert b"<video" in r.content
     ok("wall compose video + player")
 
+    # Group wall video (discussion topics stay photo-only).
+    gpost = None
+    membership = (
+        CommunityMember.objects.filter(social_user=me)
+        .select_related("community").order_by("-id").first()
+    )
+    if membership:
+        group = membership.community
+        gbody = f"gvid-{uuid.uuid4().hex[:5]}"
+        vid3 = SimpleUploadedFile("gwall.mp4", _tiny_mp4(), content_type="video/mp4")
+        r = c.post(f"/groups/{group.id}/posts", {
+            "body": gbody,
+            "board": "wall",
+            "photo": vid3,
+        }, secure=True)
+        assert r.status_code in (301, 302), r.status_code
+        gpost = (
+            CommunityPost.objects.filter(
+                community=group, social_user=me, kind="video", topic="wall",
+            ).order_by("-id").first()
+        )
+        assert gpost and (gpost.body or "").startswith("storage:"), gpost
+        r = c.get(f"/groups/{group.id}?tab=wall", secure=True)
+        assert r.status_code == 200
+        assert b"<video" in r.content
+        ok("group wall video + player")
+    else:
+        ok("group wall video skipped (no membership)")
+
     Photo.objects.filter(album=album).delete()
     album.delete()
     post.delete()
     wpost.delete()
+    if gpost:
+        gpost.delete()
     ok("cleanup")
     print("ALL media pipeline probes passed")
 

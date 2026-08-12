@@ -72,6 +72,39 @@ def attach_wall(post, files, me, *, max_photos=5):
     return rows[0].path
 
 
+def attach_group_video(post, upload, *, blurb: str = "") -> bool:
+    """Group wall video — same media disk as photos; body uses storage:<path>."""
+    from apps.social.classic_extra import pack_link_body
+
+    if not upload:
+        return False
+    try:
+        path, poster = save_video(upload, "videos")
+    except Exception:
+        return False
+    post.kind = "video"
+    post.body = pack_link_body(f"storage:{path}", blurb or "")
+    post.media_path = poster
+    post.save(update_fields=["kind", "body", "media_path"])
+    return True
+
+
+def apply_group_uploads(post, files, me, *, blurb: str = ""):
+    """Photos on wall/discussion; video only on group wall (not discussion topics)."""
+    images, videos = split_media_files(files)
+    if videos and (getattr(post, "topic", None) or "") == "wall":
+        if attach_group_video(post, videos[0], blurb=blurb):
+            return "video"
+    path = attach_group(post, images, me)
+    if path:
+        post.media_path = path
+        if (post.kind or "text") == "text":
+            post.kind = "photo"
+        post.save(update_fields=["media_path", "kind"])
+        return "photo"
+    return None
+
+
 def attach_group(post, files, me):
     t, rows = now(), []
     for f in (files or [])[:_MAX_GROUP]:

@@ -103,7 +103,11 @@ class CommunityPost(models.Model):
 
     @property
     def title_line(self) -> str:
+        if (self.kind or "") == "video":
+            return "Видео"
         line = self.subject or (self.body or "").strip().split("\n", 1)[0].strip()
+        if line.startswith("storage:"):
+            return "Видео"
         if not line:
             return "Фото" if self.kind == "photo" or self.media_path else "Тема"
         return line[:80] + ("…" if len(line) > 80 else "")

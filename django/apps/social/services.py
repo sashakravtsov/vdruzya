@@ -442,7 +442,10 @@ def _add_group_posts(items, blocked, member_ids, limit):
     )
     if blocked:
         qs = qs.exclude(social_user_id__in=blocked)
+    from apps.social.classic_extra import hydrate_posted
     for p in qs[:limit]:
+        if getattr(p, "kind", None) == "video":
+            hydrate_posted(p)
         items.append({"kind": "group_post", "at": p.created_at, "post": p, "actor": p.social_user, "group": p.community})
 
 
