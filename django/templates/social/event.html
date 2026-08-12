@@ -5,7 +5,7 @@
 <div id="pagebody" class="events-page">
     <div id="header" class="withsubtitle">
         <h1>{{ event.title }}</h1>
-        <div class="subtitle"><a href="{% url 'events' %}" style="color:#fff">← события</a></div>
+        <div class="subtitle"><a href="{% url 'events' %}">← события</a></div>
     </div>
     <div id="content" class="events-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}

@@ -168,6 +168,34 @@ def wall_posts_for(profile, limit=20, viewer=None):
     return qs.order_by("-id")[:limit]
 
 
+def wall_to_wall(a, b, limit=40, viewer=None):
+    """FB Wall-to-Wall: notes exchanged between two profiles."""
+    qs = (
+        Post.objects.filter(
+            Q(topic=f"wall:{a.id}", social_user=b) | Q(topic=f"wall:{b.id}", social_user=a)
+        )
+        .exclude(kind__in=("status", "picture", "poll", "share"))
+        .select_related("social_user")
+        .defer(*POST_DEFER, *profile_related("social_user__"))
+        .prefetch_related(
+            "media",
+            Prefetch(
+                "comments",
+                queryset=Comment.objects.select_related("social_user")
+                .defer(*profile_related("social_user__")).order_by("id"),
+            ),
+        )
+        .annotate(n_comments=Count("comments", distinct=True))
+        .filter(post_visible_q(viewer))
+        .order_by("-id")
+    )
+    if viewer:
+        qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
+    posts = list(qs[:limit])
+    attach_wall_notes(posts)
+    return posts
+
+
 def mini_feed(profile, limit=8, viewer=None):
     """FB Mini-Feed: recent activity of one person (respects viewer)."""
     from apps.social.models import Photo

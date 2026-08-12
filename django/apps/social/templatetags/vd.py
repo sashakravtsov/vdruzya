@@ -166,7 +166,7 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
         keep = 2
     else:
         keep = int(preview)
-    if keep <= 0 or len(rows) <= keep:
+    if expand or keep <= 0 or len(rows) <= keep:
         older, recent = [], rows
     else:
         older, recent = rows[:-keep], rows[-keep:]
@@ -192,11 +192,12 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
             delete_url=reverse("comments.delete", args=[c.id]),
         )
 
+    uid = getattr(rows[0], "id", 0) if rows else 0
     return {
         "older": [pack(c) for c in older],
         "recent": [pack(c) for c in recent],
         "older_n": len(older),
         "next": next_url,
-        "expand": bool(expand),
+        "uid": uid,
     }
 

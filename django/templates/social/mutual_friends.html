@@ -5,7 +5,7 @@
 <div id="pagebody" class="people-page">
     <div id="header" class="withsubtitle">
         <h1>Общие друзья</h1>
-        <div class="subtitle"><a href="{% url 'profile' other.id %}" style="color:#fff">← {{ other.name }}</a></div>
+        <div class="subtitle"><a href="{% url 'profile' other.id %}">← {{ other.name }}</a></div>
     </div>
     <div id="content" class="people-content">
         <p class="people-lead">{% if mutual_label %}{{ mutual_label }} с {{ other.name }}.{% else %}Нет общих друзей с {{ other.name }}.{% endif %}</p>

@@ -8,7 +8,7 @@
     {% else %}
     <div id="header" class="withsubtitle">
         <h1>Фото {{ owner.name }}</h1>
-        <div class="subtitle"><a href="{% url 'profile' owner.id %}" style="color:#fff">профиль</a></div>
+        <div class="subtitle"><a href="{% url 'profile' owner.id %}">профиль</a></div>
     </div>
     {% endif %}
     <div id="content" class="albums-content">

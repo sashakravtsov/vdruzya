@@ -171,10 +171,30 @@ if ! grep -q 'class="group-rail"' "${ROOT}/django/templates/social/group.html" 2
 else
   echo "OK   group left rail"
 fi
+if grep -q 'data:image/svg' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL classic.css still has SVG data icons"; FAIL=1
+else
+  echo "OK   GIF feed icons"
+fi
 if grep -q "_wall_post.html" "${ROOT}/django/templates/social/feed.html" 2>/dev/null; then
   echo "FAIL feed still embeds wallpost cards"; FAIL=1
 else
   echo "OK   feed news-story rows"
+fi
+if grep -q 'inbox-list { float: left' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL inbox still split-pane float"; FAIL=1
+else
+  echo "OK   inbox list/thread full width"
+fi
+if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL wall-to-wall route missing"; FAIL=1
+else
+  echo "OK   wall-to-wall route"
+fi
+if grep -q '<details' "${ROOT}/django/templates/social/_comment_thread.html" 2>/dev/null; then
+  echo "FAIL comment thread still uses details"; FAIL=1
+else
+  echo "OK   comment reveal is classic link"
 fi
 if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
   echo "FAIL albums_user.html still present"; FAIL=1

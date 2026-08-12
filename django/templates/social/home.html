@@ -1,21 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}ВДрузья | Добро пожаловать во ВДрузья!{% endblock %}
 {% block welcome %}
-<div id="sidebar">
-    <div id="squicklogin">
-        <form method="post" name="loginform" action="{% url 'login' %}">{% csrf_token %}
-            <label for="email">E-mail:</label>
-            <input class="inputtext" type="email" name="email" id="email" size="20" autofocus autocomplete="username">
-            <label for="pass">Пароль:</label>
-            <input class="inputtext" type="password" name="password" id="pass" size="20" autocomplete="current-password">
-            <div class="buttons">
-                <input type="submit" class="inputsubmit" value="Войти" id="doquicklogin">
-            </div>
-            <p class="file-hint muted">Регистрация — по приглашению</p>
-        </form>
-    </div>
-    <div id="ssponsor"></div>
-</div>
+{% include "partials/sidebar.html" %}
 <div id="pagebody" class="welcome">
     <div id="header"><h1>Добро пожаловать во ВДрузья!</h1></div>
     <div id="content">

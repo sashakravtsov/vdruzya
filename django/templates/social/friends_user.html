@@ -5,7 +5,7 @@
 <div id="pagebody" class="people-page">
     <div id="header" class="withsubtitle">
         <h1>Друзья {{ owner.name }}</h1>
-        <div class="subtitle"><a href="{% url 'profile' owner.id %}" style="color:#fff">← профиль</a></div>
+        <div class="subtitle"><a href="{% url 'profile' owner.id %}">← профиль</a></div>
     </div>
     <div id="content" class="people-content">
         {% if private %}

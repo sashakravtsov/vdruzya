@@ -61,6 +61,10 @@ def main():
     assert f"Друзья ({n_friends})".encode() in r.content
     ok("own profile wall tab")
 
+    # Wall-to-Wall only for friends (own profile has no link)
+    assert "Стена к стене".encode() not in r.content.split(b'class="profile-left"', 1)[-1].split(b'class="profile-right"', 1)[0]
+    ok("own profile has no wall-to-wall")
+
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
     assert r.status_code == 200
     assert "Основная информация".encode() in r.content

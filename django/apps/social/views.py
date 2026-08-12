@@ -52,6 +52,29 @@ def profile(request, pk):
 
 
 @login_required
+def wall_to_wall(request, pk):
+    """FB 2005 Wall-to-Wall between viewer and profile."""
+    from apps.social import friendship as fr
+    from apps.social.forms import CommentForm, PostForm
+    from apps.social.services import friend_ids, wall_to_wall as w2w
+
+    other = get_profile(pk)
+    me = profile_of(request.user)
+    if not me or me.id == other.id:
+        return redirect(other)
+    if fr.is_blocked(me, other):
+        return render(request, "social/profile_blocked.html", {"who": other, "me": me}, status=403)
+    posts = w2w(me, other, limit=40, viewer=me)
+    can_write = other.id in friend_ids(me)
+    return render(request, "social/wall_to_wall.html", {
+        "me": me, "other": other, "posts": posts,
+        "comment_form": CommentForm(),
+        "form": PostForm() if can_write else None,
+        "nav": "friends",
+    })
+
+
+@login_required
 @never_cache
 def pokes(request):
     """Classic FB Pokes inbox."""

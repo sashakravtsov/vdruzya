@@ -1,16 +1,49 @@
 {% extends "layout.html" %}
 {% load static vd %}
-{% block title %}Входящие — ВДрузья{% endblock %}
+{% block title %}{% if compose_mode %}Новое сообщение{% elif active %}{{ active.display_name|default:"Сообщение" }}{% elif folder == 'sent' %}Отправленные{% else %}Входящие{% endif %} — ВДрузья{% endblock %}
 {% block pagebody %}
+{# FB 2005–06 Message Center: list OR thread OR compose — not a split Gmail pane #}
 <div id="pagebody" class="inbox-page">
     <div id="header" class="withsubtitle">
-        <h1>Входящие</h1>
-        <div class="subtitle"><a href="{% url 'inbox' %}?compose=1" style="color:#fff">Написать сообщение</a></div>
+        <h1>{% if compose_mode %}Новое сообщение{% elif active %}Сообщение{% elif folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h1>
+        <div class="subtitle">
+            {% if active or compose_mode %}
+            <a href="{% url 'inbox' %}{% if folder != 'inbox' %}?folder={{ folder }}{% endif %}">← входящие</a>
+            {% else %}
+            <a href="{% url 'inbox' %}?compose=1">Написать сообщение</a>
+            {% endif %}
+        </div>
     </div>
-    <div id="content" class="inbox-content">
+    <div id="content" class="inbox-content{% if active or compose_mode %} is-thread{% else %} is-list{% endif %}">
         {% if messages %}{% for flash in messages %}<div class="flash">{{ flash }}</div>{% endfor %}{% endif %}
 
-        <div class="inbox-list profile-box">
+        {% if compose_mode %}
+        <div class="profile-box inbox-pane">
+            {% include "social/_inbox_compose.html" %}
+        </div>
+
+        {% elif active %}
+        <div class="profile-box inbox-pane">
+            <h4>
+                {% if active.title %}<span class="msg-subj-h">{{ active.title }}</span> · {% endif %}
+                {% if active.peer %}
+                <a href="{% url 'profile' active.peer.id %}">{{ active.display_name|default:active.peer.name }}</a>
+                {% else %}
+                {{ active.display_name|default:"Сообщение" }}
+                {% endif %}
+                <span class="edit msg-actions">
+                    <form method="post" action="{% url 'inbox.leave' active.id %}" class="inline" onsubmit="return confirm('Удалить из входящих?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                </span>
+            </h4>
+            <div class="profile-box-body">
+                {% include "social/_inbox_thread.html" %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="profile-box inbox-pane">
             <h4>{% if folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h4>
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'inbox' %}">
@@ -24,21 +57,35 @@
                     ·
                     <a href="{% url 'inbox' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
                 </p>
-                {% for c in conversations %}
-                <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
-                    <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
-                        <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<img class="avatar" src="{% static 'img/nophoto.gif' %}" width="32" height="32" alt="">{% endif %}</td>
-                        <td>
-                            <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
-                                <span class="msg-name">{{ c.display_name }}</span>
-                                {% if c.title %}<span class="msg-subj">{{ c.title|truncatechars:40 }}</span>{% endif %}
-                                {% if c.snippet %}<span class="msg-snip muted">{{ c.snippet|truncatechars:52 }}</span>{% endif %}
-                                {% if c.last_at %}<span class="msg-when muted">{{ c.last_at|date:"j E, H:i" }}</span>{% endif %}
-                            </a>
-                        </td>
-                    </tr></table>
-                </div>
-                {% empty %}<p class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</p>{% endfor %}
+                <table class="inbox-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-from">{% if folder == 'sent' %}Кому{% else %}От{% endif %}</th>
+                            <th class="col-subj">Тема</th>
+                            <th class="col-when">Когда</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in conversations %}
+                        <tr class="msg-thread{% if c.unread %} is-unread{% endif %}">
+                            <td class="col-from">
+                                <a href="?c={{ c.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
+                                    {% if c.peer %}{% avatar c.peer 32 %}{% else %}<img class="avatar" src="{% static 'img/nophoto.gif' %}" width="32" height="32" alt="">{% endif %}
+                                    <b>{{ c.display_name }}</b>
+                                </a>
+                            </td>
+                            <td class="col-subj">
+                                <a href="?c={{ c.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
+                                    {% if c.title %}{{ c.title|truncatechars:48 }}{% elif c.snippet %}{{ c.snippet|truncatechars:48 }}{% else %}(без темы){% endif %}
+                                </a>
+                            </td>
+                            <td class="col-when muted">{% if c.last_at %}{{ c.last_at|date:"j E, H:i" }}{% else %}—{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="muted">{% if q or folder != 'inbox' %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% if has_more or page > 1 %}
                 <p class="msg-pager muted">
                     {% if page > 1 %}<a href="?page={{ page|add:'-1' }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← новее</a>{% endif %}
@@ -47,35 +94,7 @@
                 {% endif %}
             </div>
         </div>
-
-        <div class="inbox-thread profile-box">
-            {% if compose_mode %}
-            {% include "social/_inbox_compose.html" %}
-            {% else %}
-            <h4>
-                {% if active %}
-                    {% if active.title %}<span class="msg-subj-h">{{ active.title }}</span> · {% endif %}
-                    {% if active.peer %}
-                    <a href="{% url 'profile' active.peer.id %}">{{ active.display_name|default:active.peer.name }}</a>
-                    {% else %}
-                    {{ active.display_name|default:"Сообщение" }}
-                    {% endif %}
-                    <span class="edit msg-actions">
-                        <form method="post" action="{% url 'inbox.leave' active.id %}" class="inline" onsubmit="return confirm('Удалить из входящих?');">{% csrf_token %}
-                            <button type="submit" class="linkish muted">удалить</button>
-                        </form>
-                    </span>
-                {% else %}Сообщение{% endif %}
-            </h4>
-            <div class="profile-box-body">
-                {% if active %}
-                {% include "social/_inbox_thread.html" %}
-                {% else %}
-                <p class="muted">Выберите сообщение слева или <a href="{% url 'inbox' %}?compose=1">напишите новое</a>.</p>
-                {% endif %}
-            </div>
-            {% endif %}
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

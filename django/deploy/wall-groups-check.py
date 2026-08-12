@@ -91,6 +91,8 @@ def main():
     body = r.content.decode()
     if "Показать предыдущие комментарии" not in body:
         fail("many-comments collapse missing")
+    if "<details" in body:
+        fail("HTML5 details still used for comments")
     if "probe c0" not in body:
         fail("older comment should be in collapsed block")
     if "probe c2" not in body:

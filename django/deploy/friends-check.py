@@ -119,6 +119,10 @@ def main():
         assert other.id in friend_ids(me)
         ok("friend accept reciprocal")
 
+        r = c.get(f"/profile/{other.id}/walltowall", secure=True)
+        assert r.status_code == 200 and "Стена к стене".encode() in r.content
+        ok("wall-to-wall")
+
         _link(me, mid)
         _link(other, mid)
         r = c.get(f"/profile/{other.id}/mutual", secure=True)

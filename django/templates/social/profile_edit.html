@@ -4,7 +4,7 @@
 <div id="pagebody" class="profile-edit-page">
     <div id="header" class="withsubtitle">
         <h1>Редактирование профиля</h1>
-        <div class="subtitle"><a href="{% url 'profile' me.id %}" style="color:#fff">← {{ me.name }}</a></div>
+        <div class="subtitle"><a href="{% url 'profile' me.id %}">← {{ me.name }}</a></div>
     </div>
     <div id="content" class="profile-edit-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}

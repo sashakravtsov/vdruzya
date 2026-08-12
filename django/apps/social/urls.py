@@ -81,6 +81,7 @@ urlpatterns = [
     path("profile/avatar/clear", act.avatar_clear, name="profile.avatar.clear"),
     path("profile/<int:pk>/block", act.block_toggle, name="profile.block"),
     path("profile/<int:pk>/poke", act.poke, name="profile.poke"),
+    path("profile/<int:pk>/walltowall", views.wall_to_wall, name="profile.walltowall"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),
     path("profile/<int:pk>/mutual", friends.mutual_friends_view, name="profile.mutual"),
     path("profile/<int:pk>", views.profile, name="profile"),
