@@ -186,10 +186,16 @@ if grep -q 'inbox-list { float: left' "${ROOT}/django/static/css/classic.css" 2>
 else
   echo "OK   inbox list/thread full width"
 fi
-if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
-  echo "FAIL wall-to-wall route missing"; FAIL=1
+if grep -q 'Поделиться\|Закрепить\|Мне нравится' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
+   || grep -q 'Поделиться\|Закрепить\|Мне нравится' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
+  echo "FAIL wall templates have share/pin/like"; FAIL=1
 else
-  echo "OK   wall-to-wall route"
+  echo "OK   wall has no share/pin/like (FB 2006)"
+fi
+if ! grep -q 'shared_post' "${ROOT}/django/apps/social/models/defer.py" 2>/dev/null; then
+  echo "FAIL shared_post not deferred"; FAIL=1
+else
+  echo "OK   shared_post deferred (not 2006)"
 fi
 if grep -q '<details' "${ROOT}/django/templates/social/_comment_thread.html" 2>/dev/null; then
   echo "FAIL comment thread still uses details"; FAIL=1

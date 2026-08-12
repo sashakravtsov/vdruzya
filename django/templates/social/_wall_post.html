@@ -16,7 +16,8 @@
                     {% endif %}
                     {% if me|can_manage_post:post %}
                     <span class="wallpost-edit">
-                        {% if me.id == post.social_user_id %}
+                        {# FB 2006 wall notes: remove only; edit kept for Notes (kind=note) #}
+                        {% if me.id == post.social_user_id and post.kind == 'note' %}
                         <a href="{% url 'posts.edit' post.id %}{% if next %}?next={{ next|urlencode }}{% endif %}">ред.</a>
                         ·
                         {% endif %}

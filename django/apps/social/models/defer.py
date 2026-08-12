@@ -4,7 +4,8 @@ PROFILE_DEFER = (
     "looking_for", "interested_in", "languages",
     "cover_path", "pronouns", "life_goals", "family_status", "district", "verified",
 )
-POST_DEFER = ("mood", "emoji", "sticker", "search_vector")
+# mood/emoji/sticker/share = post-2006 leftovers still in live DB columns
+POST_DEFER = ("mood", "emoji", "sticker", "search_vector", "shared_post")
 GROUP_POST_DEFER = ("mood", "emoji", "sticker")
 
 

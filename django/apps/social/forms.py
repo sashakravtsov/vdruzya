@@ -210,6 +210,8 @@ class ProfileForm(forms.ModelForm):
         for name in list(self.fields):
             if name not in keep:
                 del self.fields[name]
+        if "slug" in self.fields and self.instance and self.instance.slug:
+            self.fields["slug"].help_text = f"vdruzya.ru/{self.instance.slug}"
 
     def clean_telegram_username(self):
         """Screen name (AIM / ICQ / nick) — classic Contact Info."""

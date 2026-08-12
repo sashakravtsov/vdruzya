@@ -212,7 +212,6 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 .profile #status .profile-status-form .inputbutton {
   margin: 2px 0 0; font: 11px var(--font);
 }
-.profile-edit-content { overflow: hidden; padding: 10px !important; }
 /* Edit My Profile — archive editprofile.css (Dec 2005): #tabs + wide .editor */
 .editprofile #content { padding: 12px 0 10px !important; overflow: hidden; }
 .editprofile #tabs {
@@ -380,7 +379,7 @@ button.linkish .ico { margin-right: 2px; }
   margin: 0; padding: 4px 5px; background: #eceff5; border-top: solid 1px #d8dfea; font-size: 11px;
 }
 .wall-comments-older { display: none; }
-.wall-comments-older:target { display: block; }
+.wall-comments-older:target { display: block; outline: 0; background: transparent; }
 .pager { padding-left: 4px; text-align: right; }
 .pager a:hover { color: #fff; background: var(--fb); text-decoration: none; padding: 3px; }
 
@@ -524,7 +523,7 @@ button.linkish .ico { margin-right: 2px; }
 }
 .wallposter textarea{
   width:100%;min-height:48px;box-sizing:border-box;font:11px var(--font);
-  border:1px solid #bdc7d8;padding:4px;
+  border:1px solid #bdc7d8;padding:4px;resize:none;
 }
 .wallposter-tools{
   overflow:hidden;margin:6px 0 0;
@@ -1043,6 +1042,7 @@ button.linkish .ico { margin-right: 2px; }
   border: 1px solid #BDC7D8;
   padding: 3px;
   font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  resize: none;
 }
 .profile .wall-box .wallpost .info .header a { color: #3B5998; }
 .profile .wall-box .wallpost .info .actions .linkish,
@@ -1064,6 +1064,7 @@ button.linkish .ico { margin-right: 2px; }
   padding: 3px;
   font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
   min-height: 48px;
+  resize: none;
 }
 .wallpost-edit { float: right; font-weight: normal; }
 .wallpost-edit a { color: #3B5998; }

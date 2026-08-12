@@ -10,13 +10,15 @@ class Post(models.Model):
     kind = models.CharField(max_length=255, default="text")
     body = models.TextField()
     topic = models.CharField(max_length=255, blank=True, default="thought")
+    # mood / emoji / sticker / shared_post — schema leftovers (not FB 2006 UI)
     mood = models.CharField(max_length=255, null=True, blank=True)
     emoji = models.CharField(max_length=16, null=True, blank=True)
     sticker = models.CharField(max_length=255, null=True, blank=True)
     media_path = models.CharField(max_length=255, null=True, blank=True)
     media_label = models.CharField(max_length=255, null=True, blank=True)
     shared_post = models.ForeignKey(
-        "self", models.DO_NOTHING, null=True, blank=True, related_name="shares", db_column="shared_post_id"
+        "self", models.DO_NOTHING, null=True, blank=True, related_name="shares",
+        db_column="shared_post_id",
     )
     search_vector = SearchVectorField(null=True)
     created_at = models.DateTimeField(null=True, blank=True)

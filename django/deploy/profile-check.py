@@ -324,16 +324,17 @@ def main():
     else:
         ok("wall friend can view+comment note by non-mutual author (skipped, no buddy)")
 
-    # Author can edit their note from the host's wall
+    # FB 2006 wall: author/owner can delete; no edit chrome on wall text notes
     if other.user_id:
         c_auth = Client(HTTP_HOST="vdruzya.ru")
         c_auth.force_login(User.objects.get(pk=other.user_id))
         r = c_auth.get(f"/profile/{me.id}", secure=True)
         assert r.status_code == 200
-        assert f'/posts/{note.id}/edit'.encode() in r.content
-        ok("wall author edit on profile")
+        assert f'action="/posts/{note.id}/delete"'.encode() in r.content
+        assert f'/posts/{note.id}/edit'.encode() not in r.content
+        ok("wall author delete without edit (FB 2006)")
     else:
-        ok("wall author edit on profile (skipped)")
+        ok("wall author delete without edit (FB 2006) (skipped)")
 
     r = c.post(f"/posts/{note.id}/delete", {"next": f"/profile/{me.id}"}, secure=True)
     assert r.status_code in (301, 302)

@@ -80,6 +80,8 @@ def main():
         fail("feed news chrome")
     if "ico-thumb" in body or "Нравится" in body or "react-btn" in body:
         fail("likes are not Facebook 2006")
+    if "Поделиться" in body or "Закрепить" in body or "Мне нравится" in body:
+        fail("share/pin/like are not Facebook 2006 wall")
     if 'class="wallpost"' in body:
         fail("feed still embeds wallpost cards")
     ok("comment icons + feed news stories")
@@ -106,6 +108,9 @@ def main():
         fail("profile wall")
     if "ico-comment" not in body:
         fail("comment icon missing on profile wall")
+    for bad in ("Поделиться", "Закрепить", "Мне нравится", "ico-thumb", "react-btn"):
+        if bad in body:
+            fail(f"profile wall has non-2006 action: {bad}")
     ok("profile wall")
 
     r = get("/groups")
