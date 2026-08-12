@@ -391,6 +391,47 @@ def group_updates(viewer, limit=6):
 shared_with = group_updates
 
 
+def feed_rail(viewer):
+    """Home right column — requests, pokes, events, groups, birthdays (FB 2006)."""
+    from django.db.models import Count, Q
+
+    from apps.social import events as ev
+    from apps.social import friendship as fr
+    from apps.social.models import Community, Notification
+
+    pending = fr.annotate_mutuals(viewer, list(fr.pending_to(viewer)[:8])) if viewer else []
+    popular = list(
+        Community.objects.annotate(n=Count("memberships", distinct=True))
+        .filter(Q(privacy="public") | Q(privacy=""))
+        .order_by("-n", "name")[:6]
+    )
+    pokes = []
+    if viewer:
+        pokes = list(
+            Notification.objects.filter(social_user=viewer, type="poke", seen=False)
+            .order_by("-id")[:6]
+        )
+        for n in pokes:
+            try:
+                n.poker_id = int((n.url or "").rstrip("/").rsplit("/", 1)[-1])
+            except (TypeError, ValueError):
+                n.poker_id = None
+    rail_events = list(ev.list_events(viewer, "upcoming")[:5]) if viewer else []
+    event_invites = (
+        Notification.objects.filter(social_user=viewer, type="event_invite", seen=False).count()
+        if viewer else 0
+    )
+    return {
+        "requests": pending,
+        "pokes": pokes,
+        "rail_events": rail_events,
+        "event_invites": event_invites,
+        "popular_groups": popular,
+        "shared": group_updates(viewer),
+        "birthdays": upcoming_birthdays(viewer),
+    }
+
+
 def upcoming_birthdays(viewer=None, days=14):
     today = timezone.localdate()
     end = today + timedelta(days=days)

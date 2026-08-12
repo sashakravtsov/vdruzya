@@ -404,10 +404,6 @@ button.linkish .ico { margin-right: 2px; }
 .news-item .avatar-col img, .news-item .avatar-col .avatar-fallback {
   width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
 }
-.status-box { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; align-items: start; }
-.status-box img, .status-box .avatar-fallback {
-  width: 40px; height: 40px; border: 1px solid #B3B3B3; object-fit: cover;
-}
 .req-row, .shared-row { margin: 0 0 6px; }
 .req-row .ico,
 .req-row .news-icon { vertical-align: middle; margin-right: 4px; }
@@ -1107,12 +1103,6 @@ button.linkish .ico { margin-right: 2px; }
 }
 .feed-rail .req-row:last-child,
 .feed-rail .shared-row:last-child { border-bottom: 0; }
-.feed-rail .status-box textarea,
-.feed-rail .status-box .inputtext,
-.feed-rail .status-box input[type="text"] {
-  width: 100%; box-sizing: border-box; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
-  border: 1px solid #BDC7D8; padding: 2px;
-}
 
 
 /* ===== Utility pages FB2005 ===== */
@@ -1121,8 +1111,8 @@ button.linkish .ico { margin-right: 2px; }
 
 .search-page .profile-box > h4,
 .events-page .profile-box > h4,
-.notifications-page .profile-box > h4,
-.messages-page .profile-box > h4,
+.pokes-page .profile-box > h4,
+.inbox-page .profile-box > h4,
 .account-page .profile-box > h4,
 .profile-edit-page .profile-box > h4 {
   background: #D8DFEA; color: #3B5998;
@@ -1131,15 +1121,15 @@ button.linkish .ico { margin-right: 2px; }
 }
 .search-page .profile-box-body,
 .events-page .profile-box-body,
-.notifications-page .profile-box-body,
-.messages-page .profile-box-body,
+.pokes-page .profile-box-body,
+.inbox-page .profile-box-body,
 .account-page .profile-box-body,
 .profile-edit-page .profile-box-body {
   padding: 10px 8px 12px; line-height: 13px;
 }
 .search-page #content,
 .events-page #content,
-.notifications-page #content,
+.pokes-page #content,
 .account-page #content,
 .profile-edit-page #content { padding: 10px; }
 .search-page .profilelinks { margin: 0; padding: 0 0 0 16px; list-style: disc; color: #3B5998; }
@@ -1151,65 +1141,65 @@ button.linkish .ico { margin-right: 2px; }
   margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
 .events-page .event-row:last-child { border-bottom: 0; }
-.notifications-page .notify-row {
+.pokes-page .notify-row {
   display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;
   margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
-.notifications-page .notify-row.is-unread .notify-body { font-weight: bold; }
-.notifications-page .profile-box > h4 .edit,
-.notifications-page .profile-box > h4 form.edit { float: right; font-weight: normal; }
-.notifications-page .profile-box > h4 .linkish { color: gray; }
-.messages-content {
+.pokes-page .notify-row.is-unread .notify-body { font-weight: bold; }
+.pokes-page .profile-box > h4 .edit { float: right; font-weight: normal; }
+.inbox-content {
   display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; padding: 10px; align-items: start;
 }
-.messages-inbox .msg-filter { margin: 0 0 8px; }
-.messages-inbox .msg-filter .inputtext { width: 70%; }
-.messages-inbox .msg-tabs { margin: 0 0 8px; font-size: 11px; }
-.messages-inbox .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
-.messages-inbox .msg-thread { margin: 0 0 6px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
-.messages-inbox .msg-row { width: 100%; }
-.messages-inbox .msg-av { width: 36px; vertical-align: top; padding-right: 6px; }
-.messages-inbox .msg-thread a { display: block; text-decoration: none; color: #3B5998; }
-.messages-inbox .msg-thread .msg-name { display: block; }
-.messages-inbox .msg-thread .msg-subj { display: block; color: #333; font-weight: normal; margin-top: 1px; }
-.messages-inbox .msg-thread .msg-snip { display: block; color: gray; font-weight: normal; margin-top: 2px; }
-.messages-inbox .msg-thread .msg-when { display: block; color: gray; font-weight: normal; margin-top: 1px; font-size: 10px; }
-.messages-inbox .msg-thread.is-active a { font-weight: bold; }
-.messages-inbox .msg-thread.is-unread .msg-name { font-weight: bold; }
-.messages-inbox .msg-pager { margin: 8px 0 0; font-size: 11px; }
-.messages-thread .msg-subj-h { font-weight: bold; }
-.messages-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
-.messages-thread .chat-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
-.messages-thread .chat-line .chat-body { margin: 2px 0 0; white-space: pre-wrap; }
-.messages-thread .chat-older { margin: 0 0 8px; font-size: 11px; }
-.messages-thread .chat-compose { margin: 0 0 8px; }
-.messages-thread .chat-compose textarea,
-.messages-thread .chat-compose .inputtext {
+.inbox-list .msg-filter { margin: 0 0 8px; }
+.inbox-list .msg-filter .inputtext { width: 70%; }
+.inbox-list .msg-tabs { margin: 0 0 8px; font-size: 11px; }
+.inbox-list .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
+.inbox-list .msg-thread { margin: 0 0 6px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
+.inbox-list .msg-row { width: 100%; }
+.inbox-list .msg-av { width: 36px; vertical-align: top; padding-right: 6px; }
+.inbox-list .msg-thread a { display: block; text-decoration: none; color: #3B5998; }
+.inbox-list .msg-thread .msg-name { display: block; }
+.inbox-list .msg-thread .msg-subj { display: block; color: #333; font-weight: normal; margin-top: 1px; }
+.inbox-list .msg-thread .msg-snip { display: block; color: gray; font-weight: normal; margin-top: 2px; }
+.inbox-list .msg-thread .msg-when { display: block; color: gray; font-weight: normal; margin-top: 1px; font-size: 10px; }
+.inbox-list .msg-thread.is-active a { font-weight: bold; }
+.inbox-list .msg-thread.is-unread .msg-name { font-weight: bold; }
+.inbox-list .msg-pager { margin: 8px 0 0; font-size: 11px; }
+.inbox-thread .msg-subj-h { font-weight: bold; }
+.inbox-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
+.inbox-thread .chat-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
+.inbox-thread .chat-line .chat-body { margin: 2px 0 0; white-space: pre-wrap; }
+.inbox-thread .chat-older { margin: 0 0 8px; font-size: 11px; }
+.inbox-thread .chat-compose { margin: 0 0 8px; }
+.inbox-thread .chat-compose textarea,
+.inbox-thread .chat-compose .inputtext {
   width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
-.messages-thread .compose-new .inputtext,
-.messages-thread .compose-new textarea { width: 100%; max-width: 420px; }
-.messages-thread > h4 .edit { float: right; font-weight: normal; }
-.messages-thread .msg-actions form { display: inline; }
-.messages-thread .chat-line .msg-del,
-.messages-thread .chat-line .msg-del-btn { float: right; margin-left: 6px; }
-.messages-thread .chat-compose .file-hint { display: block; margin-top: 4px; }
-.messages-thread .chat-quote {
+.inbox-thread .compose-new .inputtext,
+.inbox-thread .compose-new textarea { width: 100%; max-width: 420px; }
+.inbox-thread > h4 .edit { float: right; font-weight: normal; }
+.inbox-thread .msg-actions form { display: inline; }
+.inbox-thread .chat-line .msg-del,
+.inbox-thread .chat-line .msg-del-btn { float: right; margin-left: 6px; }
+.inbox-thread .chat-compose .file-hint { display: block; margin-top: 4px; }
+.inbox-thread .chat-quote {
   margin: 4px 0; padding: 4px 6px; border-left: solid 3px #D8DFEA; background: #f7f7f7; font-size: 10px;
 }
-.messages-thread .chat-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
-.messages-thread .msg-members { margin: 0 0 8px; font-size: 11px; }
-.messages-thread .msg-thread-filter { margin: 0 0 8px; }
-.messages-thread .msg-thread-filter .inputtext {
+.inbox-thread .chat-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
+.inbox-thread .msg-members { margin: 0 0 8px; font-size: 11px; }
+.inbox-thread .msg-thread-filter { margin: 0 0 8px; }
+.inbox-thread .msg-thread-filter .inputtext {
   width: 70%; max-width: 320px; box-sizing: border-box; border: 1px solid #BDC7D8;
   font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
 .account-page .formtable .inputtext,
-.account-page .formtable input[type="password"] {
+.account-page .formtable input[type="password"],
+.account-page .infotable .inputtext {
   width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
+.account-page .infotable .inputtext { width: 100%; max-width: 360px; }
 @media (max-width: 780px) {
-  .messages-content { grid-template-columns: 1fr; }
+  .inbox-content { grid-template-columns: 1fr; }
 }
 
 .group-page #content:not(.group-content) {

@@ -16,7 +16,7 @@ for path in \
   /apple-touch-icon.png:200 /favicon-32x32.png:200 \
   /password-reset:200 \
   /sitemap.xml:200 /robots.txt:200 \
-  /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /messenger:301 /activity:301 \
+  /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
   /app:410 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
@@ -135,5 +135,17 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/friends-check.py; then
   echo "OK   friends features"
 else
   echo "FAIL friends features"; FAIL=1
+fi
+echo "== Profile feature probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/profile-check.py; then
+  echo "OK   profile features"
+else
+  echo "FAIL profile features"; FAIL=1
+fi
+echo "== Events feature probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/events-check.py; then
+  echo "OK   events features"
+else
+  echo "FAIL events features"; FAIL=1
 fi
 exit "$FAIL"

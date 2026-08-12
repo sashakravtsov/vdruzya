@@ -2,13 +2,12 @@
 from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page, never_cache
 
 from apps.social.forms import CommentForm
-from apps.social.models import Community, Notification
-from apps.social.services import get_profile, profile_of
+from apps.social.models import Notification
+from apps.social.services import feed_rail, get_profile, news_items, profile_of
 
 
 @login_not_required
@@ -26,24 +25,15 @@ def _home_anon(request):
 @login_required
 @never_cache
 def feed(request):
-    from apps.social.services import group_updates, news_items, upcoming_birthdays
     me = profile_of(request.user)
     page = Paginator(news_items(me, 60), 20).get_page(request.GET.get("p"))
-    from apps.social import friendship as fr
-    pending = fr.annotate_mutuals(me, list(fr.pending_to(me)[:8])) if me else []
-    popular = (
-        Community.objects.annotate(n=Count("memberships", distinct=True))
-        .filter(Q(privacy="public") | Q(privacy=""))
-        .order_by("-n", "name")[:6]
-    )
     return render(
         request, "social/feed.html",
         {
             "items": page, "page": page, "me": me,
             "comment_form": CommentForm(),
-            "requests": pending, "birthdays": upcoming_birthdays(me),
-            "shared": group_updates(me), "popular_groups": popular,
             "nav": "feed",
+            **feed_rail(me),
         },
     )
 

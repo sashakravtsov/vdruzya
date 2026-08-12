@@ -57,6 +57,47 @@
             </div>
 
             <div class="profile-box">
+                <h4>Подмигивания{% if pokes %}<a class="edit" href="{% url 'pokes' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if pokes %}
+                        {% for n in pokes %}
+                        <div class="req-row">
+                            {% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>
+                            {% else %}{{ n.body|default:n.title }}{% endif %}
+                            {% if n.poker_id %}
+                            <form method="post" action="{% url 'profile.poke' n.poker_id %}" class="inline">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="linkish">в ответ</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Никто не подмигивал. <a href="{% url 'pokes' %}">Подмигивания</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>События<a class="edit" href="{% url 'events' %}">все</a></h4>
+                <div class="profile-box-body">
+                    {% if event_invites %}
+                    <p class="req-row"><a href="{% url 'events' %}?tab=invited">Приглашения ({{ event_invites }})</a></p>
+                    {% endif %}
+                    {% if rail_events %}
+                        {% for e in rail_events %}
+                        <div class="shared-row">
+                            <a href="{% url 'events.show' e.id %}">{{ e.title }}</a>
+                            <div class="muted">{{ e.starts_at|date:"j E, H:i" }}{% if e.place %} · {{ e.place }}{% endif %}</div>
+                        </div>
+                        {% endfor %}
+                    {% elif not event_invites %}
+                        <p class="muted">Ближайших нет. <a href="{% url 'events' %}">Создать</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
                 <h4>Популярные группы{% if popular_groups %}<a class="edit" href="{% url 'groups' %}">все</a>{% endif %}</h4>
                 <div class="profile-box-body">
                     {% if popular_groups %}

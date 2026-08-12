@@ -78,12 +78,25 @@ def main():
     assert "Лента новостей".encode() in r.content
     assert b"wallposter" not in r.content
     assert "Что у вас нового".encode() not in r.content
+    assert "Подмигивания".encode() in r.content
+    assert "События".encode() in r.content
+    assert "Дни рождения".encode() in r.content
+    assert "Заявки".encode() in r.content
     ok("news feed")
 
     r = c.get("/pokes", secure=True)
     assert r.status_code == 200
     assert "Подмигивания".encode() in r.content
     ok("pokes inbox")
+
+    r = c.get("/account", secure=True)
+    assert r.status_code == 200
+    assert "Мой аккаунт".encode() in r.content
+    assert "Пригласить друга".encode() in r.content
+    assert "Приватность".encode() in r.content
+    assert b"section=privacy" in r.content
+    assert "Смена пароля".encode() in r.content
+    ok("account hub")
 
     r = c.get("/search?name=а&city=", secure=True)
     assert r.status_code == 200

@@ -37,9 +37,11 @@ def main():
         r = c.get("/events", secure=True)
         assert r.status_code == 200 and "События".encode() in r.content
         assert "Ближайшие".encode() in r.content
+        assert b"datetime-local" not in r.content
+        assert "ДД.ММ.ГГГГ".encode() in r.content
         ok("events home")
 
-        starts = (now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M")
+        starts = (now() + timedelta(days=2)).strftime("%d.%m.%Y %H:%M")
         r = c.post("/events", {
             "title": "QA Event Night",
             "place": "Москва",

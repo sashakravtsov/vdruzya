@@ -1,4 +1,7 @@
 """Classic Facebook Events helpers."""
+import re
+from datetime import datetime
+
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_datetime
@@ -8,13 +11,29 @@ from apps.social.services import friend_ids, now
 
 STATUSES = ("going", "maybe", "declined")
 _LABEL = {"going": "Иду", "maybe": "Возможно", "declined": "Не иду"}
+_RU_DT = re.compile(
+    r"^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$"
+)
 
 
 def parse_starts(raw):
+    """Accept classic text dates: ДД.ММ.ГГГГ ЧЧ:ММ or ISO YYYY-MM-DD[T ]HH:MM."""
     raw = (raw or "").strip()
     if not raw:
         return None
-    starts = parse_datetime(raw.replace("T", " ") + (":00" if len(raw) == 16 else ""))
+    m = _RU_DT.match(raw)
+    if m:
+        try:
+            return datetime(
+                int(m[3]), int(m[2]), int(m[1]),
+                int(m[4] or 0), int(m[5] or 0), int(m[6] or 0),
+            )
+        except ValueError:
+            return None
+    iso = raw.replace("T", " ")
+    if len(iso) == 16:
+        iso += ":00"
+    starts = parse_datetime(iso)
     if starts and getattr(starts, "tzinfo", None):
         starts = starts.replace(tzinfo=None)
     return starts

@@ -134,6 +134,7 @@ def register_view(request):
 @sensitive_post_parameters("old", "new1", "new2")
 @require_http_methods(["GET", "HEAD", "POST"])
 def account(request):
+    from apps.social import friendship as fr
     me = profile_of(request.user)
     form = PasswordForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -151,4 +152,11 @@ def account(request):
                 update_session_auth_hash(request, request.user)
                 messages.success(request, "Пароль обновлён.")
                 return redirect("account")
-    return render(request, "accounts/account.html", {"form": form, "me": me, "user_obj": request.user})
+    return render(
+        request, "accounts/account.html",
+        {
+            "form": form, "me": me, "user_obj": request.user, "nav": "account",
+            "invite_url": fr.invite_url(me, request) if me else "",
+            "invite_code": fr.ensure_invite_code(me) if me else "",
+        },
+    )

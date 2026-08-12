@@ -179,17 +179,11 @@ def group_event_create(request, pk):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     if not _admin(me, group):
         return redirect("groups.show", pk=pk)
+    from apps.social import events as ev
     title = (request.POST.get("title") or "").strip()[:160]
     place = (request.POST.get("place") or "").strip()[:160] or "—"
-    raw = (request.POST.get("starts_at") or "").strip()
-    starts = None
-    if raw:
-        from django.utils.dateparse import parse_datetime
-        starts = parse_datetime(raw.replace("T", " ") + (":00" if len(raw) == 16 else ""))
-        if starts and getattr(starts, "tzinfo", None):
-            starts = starts.replace(tzinfo=None)
+    starts = ev.parse_starts(request.POST.get("starts_at"))
     if title and starts:
-        from apps.social import events as ev
         event = ev.create_event(
             me, title=title, place=place, starts_at=starts, community=group,
         )

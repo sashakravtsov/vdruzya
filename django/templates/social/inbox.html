@@ -2,15 +2,15 @@
 {% load static vd %}
 {% block title %}Входящие — ВДрузья{% endblock %}
 {% block pagebody %}
-<div id="pagebody" class="messages-page">
+<div id="pagebody" class="inbox-page">
     <div id="header" class="withsubtitle">
         <h1>Входящие</h1>
         <div class="subtitle"><a href="{% url 'inbox' %}?compose=1" style="color:#fff">Написать сообщение</a></div>
     </div>
-    <div id="content" class="messages-content">
+    <div id="content" class="inbox-content">
         {% if messages %}{% for flash in messages %}<div class="flash">{{ flash }}</div>{% endfor %}{% endif %}
 
-        <div class="messages-inbox profile-box">
+        <div class="inbox-list profile-box">
             <h4>{% if folder == 'sent' %}Отправленные{% else %}Входящие{% endif %}</h4>
             <div class="profile-box-body">
                 <form method="get" class="msg-filter" action="{% url 'inbox' %}">
@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <div class="messages-thread profile-box">
+        <div class="inbox-thread profile-box">
             {% if compose_mode %}
             {% include "social/_inbox_compose.html" %}
             {% else %}

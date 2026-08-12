@@ -12,10 +12,22 @@
                     <tr><td class="label">Email:</td><td><b>{{ user_obj.email }}</b></td></tr>
                     {% if me %}
                     <tr><td class="label">Профиль:</td><td><a href="{% url 'profile' me.id %}">{{ me.name }}</a> · <a href="{% url 'profile.edit' %}">редактировать</a></td></tr>
+                    <tr><td class="label">Приватность:</td><td><a href="{% url 'profile.edit' %}?section=privacy">настройки профиля</a></td></tr>
                     {% endif %}
                 </table>
             </div>
         </div>
+        {% if me and invite_url %}
+        <div class="profile-box">
+            <h4>Пригласить друга</h4>
+            <div class="profile-box-body">
+                <table class="infotable">
+                    <tr><td class="label">Код:</td><td><b>{{ invite_code }}</b> · <a href="{% url 'invite.mine' %}">страница приглашения</a></td></tr>
+                    <tr><td class="label">Ссылка:</td><td><input class="inputtext" readonly value="{{ invite_url }}" onclick="this.select()" style="width:100%;max-width:360px"></td></tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
         <div class="profile-box">
             <h4>Смена пароля</h4>
             <div class="profile-box-body">

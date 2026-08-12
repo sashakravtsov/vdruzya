@@ -456,7 +456,17 @@ class StatusForm(forms.Form):
 class GroupEventForm(forms.Form):
     title = forms.CharField(max_length=160, widget=_in(placeholder="Название события"))
     place = forms.CharField(max_length=160, widget=_in(placeholder="Место"))
-    starts_at = forms.DateTimeField(widget=forms.DateTimeInput(attrs={"type": "datetime-local", "class": "inputtext"}))
+    starts_at = forms.CharField(
+        max_length=32,
+        widget=_in(placeholder="ДД.ММ.ГГГГ ЧЧ:ММ", style="width:160px"),
+    )
+
+    def clean_starts_at(self):
+        from apps.social.events import parse_starts
+        starts = parse_starts(self.cleaned_data.get("starts_at"))
+        if not starts:
+            raise forms.ValidationError("Укажите дату, например 15.09.2006 19:00")
+        return starts
 
 
 class PasswordForm(forms.Form):
