@@ -20,7 +20,7 @@
                 <li><a href="{% url 'invite.mine' %}">пригласить</a></li>
                 <li><a href="{% url 'security' %}">помощь</a></li>
                 <li>
-                    <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}
+                    <form method="post" action="{% url 'logout' %}" class="gnav-logout">{% csrf_token %}
                         <button type="submit" class="linkish">выход</button>
                     </form>
                 </li>

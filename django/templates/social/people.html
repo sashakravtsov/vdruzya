@@ -7,17 +7,18 @@
     <div id="content" class="people-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
-        <p class="people-lead">Найдите друзей по имени, городу, школе или работе.</p>
         <p class="people-top-links">
             <a href="{% url 'friends' %}">Мои друзья</a>
-            <span>·</span>
+            ·
             <a href="{% url 'invite.mine' %}">Пригласить друга</a>
         </p>
 
-        <nav class="page-tabs" aria-label="Разделы людей">
-            <a class="page-tab{% if tab == 'search' %} is-active{% endif %}" href="?tab=search{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Поиск</a>
-            <a class="page-tab{% if tab == 'requests' %} is-active{% endif %}" href="?tab=requests">Заявки{% if pending %}<span class="page-tab-badge">{{ pending|length }}</span>{% endif %}</a>
-        </nav>
+        <div id="tabs">
+            <div class="{% if tab == 'search' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=search{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Поиск</a></div>
+            <div class="{% if tab == 'requests' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?tab=requests">Заявки{% if pending %} ({{ pending|length }}){% endif %}</a>
+            </div>
+        </div>
 
         {% if tab == 'requests' %}
         <div class="profile-box">
@@ -79,19 +80,19 @@
             <table class="formtable" cellpadding="0" cellspacing="0">
                 <tr>
                     <td class="label">Имя:</td>
-                    <td><input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя или статус" autocomplete="off"></td>
+                    <td><input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off"></td>
                 </tr>
                 <tr>
                     <td class="label">Город:</td>
-                    <td><input class="inputtext" type="text" name="city" value="{{ city }}" placeholder="Город или родной город" autocomplete="off"></td>
+                    <td><input class="inputtext" type="text" name="city" value="{{ city }}" autocomplete="off"></td>
                 </tr>
                 <tr>
                     <td class="label">Школа:</td>
-                    <td><input class="inputtext" type="text" name="school" value="{{ school }}" placeholder="Школа / вуз" autocomplete="off"></td>
+                    <td><input class="inputtext" type="text" name="school" value="{{ school }}" autocomplete="off"></td>
                 </tr>
                 <tr>
                     <td class="label">Работа:</td>
-                    <td><input class="inputtext" type="text" name="workplace" value="{{ workplace }}" placeholder="Место работы" autocomplete="off"></td>
+                    <td><input class="inputtext" type="text" name="workplace" value="{{ workplace }}" autocomplete="off"></td>
                 </tr>
                 <tr>
                     <td class="label">Пол:</td>
@@ -108,7 +109,7 @@
             </table>
         </form>
         {% if not searching %}
-        <p class="muted">Укажите имя, город, школу или работу — как в классическом Find Friends.</p>
+        <p class="muted">Укажите имя, город, школу или работу.</p>
         {% elif results %}
         <div class="profile-box">
             <h4>Результаты</h4>

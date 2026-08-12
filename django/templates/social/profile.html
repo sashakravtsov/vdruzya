@@ -9,13 +9,13 @@
         <div class="subtitle profile-status-bar">
             <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <b>{{ profile.name }}</b> is
+                <b>{{ profile.name }}</b> сейчас
                 {{ status_form.headline }}
                 <input type="submit" class="inputbutton" value="Обновить">
             </form>
         </div>
         {% elif profile.headline %}
-        <div class="subtitle"><b>{{ profile.name }}</b> is {{ profile.headline }}</div>
+        <div class="subtitle"><b>{{ profile.name }}</b> сейчас {{ profile.headline }}</div>
         {% elif profile.city %}
         <div class="subtitle">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>
         {% endif %}

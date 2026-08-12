@@ -119,43 +119,36 @@ def group_show(request, pk):
 
 @login_required
 def search(request):
+    """Global Search (gnav) — people / groups / posts. Find Friends stays on /people."""
     from apps.social import friendship as fr
     from apps.social.models import Post
 
-    q = (request.GET.get("q") or "").strip()
-    name = (request.GET.get("name") or "").strip()
-    city = (request.GET.get("city") or "").strip()
-    school = (request.GET.get("school") or "").strip()
+    q = (request.GET.get("q") or request.GET.get("name") or "").strip()
     me = profile_of(request.user)
     people = groups_qs = posts = []
-    searched = bool(q or name or city or school)
+    searched = bool(q)
     if searched and me:
-        page = fr.find_people(me, q=name or q, city=city, school=school, page=1, per=20)
+        page = fr.find_people(me, q=q, page=1, per=20)
         people = list(page)
         rel = fr.relations_for(me, [p.id for p in people])
         for p in people:
             n = fr.mutual_count(me, p)
             p.rel = rel.get(p.id)
             p.mutual = fr.mutual_label(n) if n else ""
-        gq = q or name or school or city
-        groups_qs = Community.objects.filter(Q(name__icontains=gq) | Q(slug__icontains=gq))[:20]
-        if q or name:
-            query = SearchQuery(q or name, config="simple", search_type="websearch")
-            posts = (
-                Post.objects.annotate(
-                    rank=SearchRank("search_vector", query),
-                    headline=SearchHeadline("body", query, config="simple", start_sel="<b>", stop_sel="</b>", max_words=32),
-                )
-                .filter(search_vector=query)
-                .select_related("social_user")
-                .order_by("-rank")[:20]
+        groups_qs = Community.objects.filter(Q(name__icontains=q) | Q(slug__icontains=q))[:20]
+        query = SearchQuery(q, config="simple", search_type="websearch")
+        posts = (
+            Post.objects.annotate(
+                rank=SearchRank("search_vector", query),
+                headline=SearchHeadline("body", query, config="simple", start_sel="<b>", stop_sel="</b>", max_words=32),
             )
+            .filter(search_vector=query)
+            .select_related("social_user")
+            .order_by("-rank")[:20]
+        )
     return render(
         request, "social/search.html",
-        {
-            "q": q, "name": name, "city": city, "school": school,
-            "searched": searched, "people": people, "groups": groups_qs, "posts": posts, "me": me,
-        },
+        {"q": q, "searched": searched, "people": people, "groups": groups_qs, "posts": posts, "me": me},
     )
 
 

@@ -39,6 +39,8 @@ def main():
         assert "Ближайшие".encode() in r.content
         assert b"datetime-local" not in r.content
         assert "ДД.ММ.ГГГГ".encode() in r.content
+        assert b'id="tabs"' in r.content and b"page-tabs" not in r.content
+        assert b"event-list-row" in r.content or "Нет событий".encode() in r.content
         ok("events home")
 
         starts = (now() + timedelta(days=2)).strftime("%d.%m.%Y %H:%M")

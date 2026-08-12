@@ -65,6 +65,8 @@ def main():
         r = c.get("/people", secure=True)
         assert r.status_code == 200 and "Поиск людей".encode() in r.content
         assert "Люди, которых вы можете знать".encode() not in r.content
+        assert b'id="tabs"' in r.content and b"page-tabs" not in r.content
+        assert b'placeholder=' not in r.content
         ok("people find friends search")
 
         r = c.get("/friends", secure=True)

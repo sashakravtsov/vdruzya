@@ -12,8 +12,8 @@
                 <tr>
                     <td class="label">Найти друга:</td>
                     <td>
-                        <input class="inputtext" type="search" name="q" value="{{ q }}" placeholder="Имя" autocomplete="off">
-                        <input class="inputtext" type="text" name="city" value="{{ city }}" placeholder="Город" style="width:120px" autocomplete="off">
+                        <input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off">
+                        <input class="inputtext" type="text" name="city" value="{{ city }}" style="width:120px" autocomplete="off">
                         <select name="sort" class="inputtext" style="width:auto">
                             <option value="name"{% if sort == 'name' %} selected{% endif %}>по имени</option>
                             <option value="recent"{% if sort == 'recent' %} selected{% endif %}>недавние</option>

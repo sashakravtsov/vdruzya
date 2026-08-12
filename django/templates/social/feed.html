@@ -8,9 +8,6 @@
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
         <div class="feed-main">
-            <div class="profile-box feed-wall-box wall-box">
-                <h4>Новости</h4>
-                <div class="profile-box-body">
             {% for item in items %}
             {% if item.kind == 'wall' %}
             {% include "social/_wall_post.html" with post=item.post me=me comment_form=comment_form next=request.get_full_path %}
@@ -28,8 +25,6 @@
                 {% if page.has_next %}<a href="?p={{ page.next_page_number }}">вперёд →</a>{% endif %}
             </p>
             {% endif %}
-                </div>
-            </div>
         </div>
 
         <div class="feed-rail">
@@ -140,6 +135,7 @@
                 </div>
             </div>
         </div>
+        <div class="clear"></div>
     </div>
 </div>
 {% endblock %}

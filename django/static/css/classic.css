@@ -24,6 +24,7 @@ label { font-weight: bold; color: gray; }
 }
 #homelink a { display: block; width: 100%; height: 100%; }
 .hide { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+#gnav form.gnav-logout { display: inline; margin: 0; padding: 0; }
 #gnav {
   position: absolute; top: 1px; left: 250px; width: 500px;
   margin: 0; padding: 3px 0; list-style: none; text-align: right; line-height: 25px;
@@ -260,18 +261,17 @@ button.linkish .ico { margin-right: 2px; }
 
 /* Classic FB flat comments (wall / group / photo) */
 .wall-comment {
-  display: flex; align-items: flex-start; gap: 6px;
-  margin: 0; padding: 4px 5px; font-size: 11px; line-height: 14px;
+  overflow: hidden; margin: 0; padding: 4px 5px; font-size: 11px; line-height: 14px;
   background: #eceff5; border-top: solid 1px #d8dfea;
 }
-.wall-comment .wc-ava { flex: 0 0 32px; }
+.wall-comment .wc-ava { float: left; width: 32px; margin-right: 6px; }
 .wall-comment .wc-ava img,
 .wall-comment .wc-ava .avatar-fallback {
-  width: 32px; height: 32px; border: 1px solid #b3b3b3; object-fit: cover;
+  width: 32px; height: 32px; border: 1px solid #b3b3b3; object-fit: cover; display: block;
 }
-.wall-comment .wc-body { flex: 1 1 auto; min-width: 0; }
+.wall-comment .wc-body { overflow: hidden; }
 .wall-comment .wc-time { margin-top: 2px; }
-.wall-comment .wc-del { margin-left: auto; }
+.wall-comment .wc-del { float: right; margin-left: 6px; }
 .wall-comment-compose {
   display: none; margin: 0; padding: 4px 5px; font-size: 11px;
   background: #eceff5; border-top: solid 1px #d8dfea;
@@ -302,10 +302,13 @@ button.linkish .ico { margin-right: 2px; }
 
 /* Group page — FB 2005: main + right rail, white-on-blue section heads */
 .group-content, .feed-content {
-  display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px;
-  padding: 10px !important;
+  overflow: hidden; padding: 10px !important;
 }
-.group-main, .feed-main, .group-rail, .feed-rail { min-width: 0; }
+.group-main, .feed-main { float: left; width: 430px; }
+.group-rail, .feed-rail { float: right; width: 180px; }
+.feed-content::after, .group-content::after, .friends-content::after, .inbox-content::after {
+  content: ""; display: block; clear: both; height: 0; overflow: hidden;
+}
 .group-page .profile-box > h4,
 .feed-page .profile-box > h4 {
   background: #D8DFEA; color: #3B5998;
@@ -376,21 +379,13 @@ button.linkish .ico { margin-right: 2px; }
 }
 
 /* News Feed / Wall — FB 2006 */
-.news-title {
-  margin: 0 0 10px; padding: 0; color: var(--fb);
-  font: bold 13px var(--font); border: 0;
-}
 .news-item {
-  display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 8px 10px;
-  margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
+  overflow: hidden; margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
 }
-.news-item.news-joined,
-.news-item.news-created,
-.news-item.news-group_post,
-.news-item.news-photos { grid-template-columns: 18px minmax(0, 1fr); }
+.news-item .news-ico { float: left; margin: 2px 6px 0 0; }
+.news-item .avatar-col { float: left; width: 50px; margin-right: 10px; }
 .news-photo-row { margin: 4px 0; }
 .news-ico { margin-top: 2px; margin-right: 0; }
-.news-icon { /* legacy alias */ }
 .news-body { min-width: 0; position: relative; padding-right: 110px; }
 .news-time { position: absolute; right: 0; top: 0; white-space: nowrap; font-size: 10px; }
 .news-card {
@@ -418,7 +413,7 @@ button.linkish .ico { margin-right: 2px; }
   #squicklogin, #squicklogin .inputtext { width: 100%; max-width: 280px; }
   #gnav { position: static; left: auto; width: auto; max-width: none; text-align: right; padding: 4px 8px 0; }
   .about .leftcolumn, .about .rightcolumn { float: none; width: auto; padding: 0; }
-  .profile-content, .group-content, .feed-content { grid-template-columns: 1fr; }
+  .group-main, .feed-main, .group-rail, .feed-rail { float: none; width: auto; }
   .profile-picture img, .profile-picture .avatar-fallback { width: 100%; max-width: 200px; height: auto; aspect-ratio: 1; }
   .group-picture, .group-picture img, .group-cover-fallback { width: 100%; max-width: 180px; }
   .members-grid { grid-template-columns: repeat(4, 50px); }
@@ -489,10 +484,10 @@ button.linkish .ico { margin-right: 2px; }
   border:1px solid #bdc7d8;padding:4px;
 }
 .wallposter-tools{
-  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0 0;
+  overflow:hidden;margin:6px 0 0;
 }
-.wallposter-vis,.wallposter-file{font-size:11px;color:#555}
-.wallposter-go{margin-left:auto}
+.wallposter-vis,.wallposter-file{float:left;font-size:11px;color:#555;margin-right:10px;line-height:20px}
+.wallposter-go{float:right}
 .wall-more{margin-left:4px}
 .wall-more > summary{list-style:none;display:inline;cursor:pointer}
 .wall-more > summary::-webkit-details-marker{display:none}
@@ -624,35 +619,37 @@ button.linkish .ico { margin-right: 2px; }
   background:transparent;color:#3B5998;font:bold 11px var(--font);
 }
 .people-search-form{margin:0 0 10px}
-.page-tabs{
-  display:flex;flex-wrap:wrap;gap:0;margin:0 0 10px;padding:0;
-  border-bottom:1px solid #D8DFEA;
+/* directory tabs — same chrome as #tabs */
+.page-tabs, .people-page #tabs, .events-page #tabs {
+  text-align:left;padding:4px 0;margin:0 0 12px;border-bottom:solid 1px var(--fb);
 }
-.page-tab{
-  display:inline-block;margin:0 2px 0 0;padding:3px 8px;
-  color:var(--fb);font:bold 11px/16px var(--font);text-decoration:none;
+.page-tabs .activetab, .page-tabs .inactivetab,
+.people-page #tabs .activetab, .people-page #tabs .inactivetab,
+.events-page #tabs .activetab, .events-page #tabs .inactivetab { display:inline;padding:0;margin:0; }
+.page-tabs a, .people-page #tabs a, .events-page #tabs a { margin:0;padding:4px; }
+.page-tabs .activetab a, .people-page #tabs .activetab a, .events-page #tabs .activetab a {
+  color:#fff;background:var(--fb);text-decoration:none;
 }
-.page-tab:hover{background:#D8DFEA;color:var(--fb);text-decoration:none}
-.page-tab.is-active{background:#3B5998;color:#fff}
-.page-tab-badge{
-  margin-left:4px;padding:0 3px;background:#fff;color:#3B5998;font-size:10px;font-weight:bold;
+.page-tabs .inactivetab a:hover, .people-page #tabs .inactivetab a:hover, .events-page #tabs .inactivetab a:hover {
+  background:var(--line);text-decoration:none;
 }
-.page-tab.is-active .page-tab-badge{background:#D8DFEA;color:#3B5998}
+.page-tab-badge{margin-left:3px;font-weight:bold}
 .classic-person-row{
   margin:0 0 8px;padding:0 0 8px;border-bottom:1px solid #eee;
   font:11px/14px var(--font);overflow:hidden;
 }
 .classic-person-row:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
 .classic-person-name{
-  display:inline-flex;align-items:flex-start;gap:8px;
-  max-width:calc(100% - 12rem);color:var(--fb);text-decoration:none;vertical-align:top;
+  display:block;overflow:hidden;max-width:calc(100% - 12rem);
+  color:var(--fb);text-decoration:none;vertical-align:top;
 }
 .classic-person-name:hover b{text-decoration:underline}
 .classic-person-name b{display:block;font-size:11px;color:var(--fb)}
 .classic-person-name .avatar-fallback,
 .classic-person-name img{
-  width:50px;height:50px;flex:0 0 auto;border:1px solid #B3B3B3;object-fit:cover;
+  float:left;width:50px;height:50px;margin-right:8px;border:1px solid #B3B3B3;object-fit:cover;
 }
+.classic-person-name > span{display:block;overflow:hidden}
 .classic-person-sub{display:block;color:#777;font-size:10px;font-weight:normal;margin-top:1px}
 .classic-inline-actions{
   float:right;margin:0;padding:2px 0 0;font:11px/16px var(--font);color:#777;text-align:right;
@@ -666,18 +663,12 @@ button.linkish .ico { margin-right: 2px; }
 }
 /* Dedicated friends page — FB 2005 two columns */
 .friends-page #content.friends-content{
-  padding:10px;overflow:hidden;
-  display:grid;grid-template-columns:minmax(0,1fr) 196px;gap:10px;align-items:start;
-  box-sizing:border-box;
+  padding:10px;overflow:hidden;box-sizing:border-box;
 }
-.friends-page #content.friends-content > .flash,
-.friends-page #content.friends-content > .error,
-.friends-page #content.friends-content > .friends-find{
-  grid-column:1 / -1;margin:0 0 0;
-}
-.friends-page .friends-find{margin:0}
+.friends-page .friends-find{margin:0 0 10px}
 .friends-page .friends-find .inputtext{width:180px}
-.friends-main,.friends-side{float:none;width:auto;min-width:0;margin:0}
+.friends-main{float:left;width:430px}
+.friends-side{float:right;width:196px}
 .friends-page .profile-box{margin:0 0 10px}
 .friends-page .profile-box:last-child{margin-bottom:0}
 .friends-page .profile-box > h4{
@@ -692,13 +683,10 @@ button.linkish .ico { margin-right: 2px; }
   display:block;
   overflow:hidden;
 }
-.classic-person-row-friend{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
-  overflow:visible;
-}
-.classic-person-row-friend .classic-person-name{max-width:none;flex:1 1 auto;min-width:0}
+.classic-person-row-friend{overflow:hidden}
+.classic-person-row-friend .classic-person-name{max-width:none}
 .classic-inline-actions-friend{
-  float:none;flex:0 0 auto;white-space:nowrap;padding-top:2px;text-align:right;
+  float:right;white-space:nowrap;padding-top:2px;text-align:right;
 }
 .classic-person-row-side .classic-person-name{max-width:100%}
 .classic-person-row-side .classic-person-name .avatar-fallback,
@@ -708,7 +696,7 @@ button.linkish .ico { margin-right: 2px; }
 .classic-inline-actions-stack form{display:inline;margin:0 6px 0 0}
 .friends-side-foot{margin:6px 0 0;font:11px var(--font)}
 @media (max-width:560px){
-  .friends-page #content.friends-content{grid-template-columns:1fr}
+  .friends-main,.friends-side{float:none;width:auto}
   .classic-person-name{max-width:100%}
   .classic-inline-actions{float:none;display:block;margin:4px 0 0 58px;text-align:left}
 }
@@ -998,14 +986,6 @@ button.linkish .ico { margin-right: 2px; }
   background: #f7f7f7;
   overflow: hidden;
 }
-.wallposter-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-.wallposter-tools .wallposter-go { margin-left: 0; order: -1; }
 .wallposter-tools .compose-more { font-size: 11px; }
 .wallposter textarea {
   width: 100%;
@@ -1032,10 +1012,6 @@ button.linkish .ico { margin-right: 2px; }
 }
 
 /* ===== Feed/group polish FB2005 ===== */
-.feed-page .feed-content,
-.group-page .group-content {
-  padding: 10px !important;
-}
 .feed-page .profile-box,
 .group-page .profile-box {
   margin: 0 0 10px;
@@ -1053,18 +1029,16 @@ button.linkish .ico { margin-right: 2px; }
   background: #f7f7f7;
 }
 .feed-page .news-item {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  gap: 6px 8px;
   margin: 0 0 10px;
-  padding: 6px 8px 8px;
+  padding: 0 0 8px;
   border-bottom: solid 1px #D8DFEA;
   background: #fff;
 }
-.feed-page .news-item .news-body { padding-right: 0; }
+.feed-page .news-item .news-body { overflow: hidden; padding-right: 0; }
 .feed-page .news-item .news-time {
   position: static; display: inline; margin-left: 4px; font-size: 11px;
 }
+.feed-main .wallpost, .feed-main .news-item { background: #fff; }
 .feed-page .news-card {
   margin: 4px 0; padding: 5px; border: solid 1px #D8DFEA; background: #fff;
 }
@@ -1113,19 +1087,26 @@ button.linkish .ico { margin-right: 2px; }
 .search-page .minifeed-item {
   margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
+.events-page .event-list-row {
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px; overflow: hidden;
+}
+.events-page .event-list-row:last-child { border-bottom: 0; }
+.events-page .event-list-row .classic-inline-actions { float: right; }
 .events-page .event-row {
   margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
 .events-page .event-row:last-child { border-bottom: 0; }
 .pokes-page .notify-row {
-  display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;
-  margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+  overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
+.pokes-page .notify-row form.inline { float: right; }
 .pokes-page .notify-row.is-unread .notify-body { font-weight: bold; }
 .pokes-page .profile-box > h4 .edit { float: right; font-weight: normal; }
 .inbox-content {
-  display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; padding: 10px; align-items: start;
+  overflow: hidden; padding: 10px;
 }
+.inbox-list { float: left; width: 220px; }
+.inbox-thread { float: right; width: 400px; }
 .inbox-list .msg-filter { margin: 0 0 8px; }
 .inbox-list .msg-filter .inputtext { width: 70%; }
 .inbox-list .msg-tabs { margin: 0 0 8px; font-size: 11px; }
@@ -1175,7 +1156,7 @@ button.linkish .ico { margin-right: 2px; }
 }
 .account-page .infotable .inputtext { width: 100%; max-width: 360px; }
 @media (max-width: 780px) {
-  .inbox-content { grid-template-columns: 1fr; }
+  .inbox-list, .inbox-thread { float: none; width: auto; }
 }
 
 .group-page #content:not(.group-content) {

@@ -117,10 +117,16 @@ def main():
     assert "Смена пароля".encode() in r.content
     ok("account hub")
 
-    r = c.get("/search?name=а&city=", secure=True)
+    r = c.get("/search?q=а", secure=True)
     assert r.status_code == 200
-    assert "Найти людей".encode() in r.content
-    ok("advanced search")
+    assert "Поиск по сайту".encode() in r.content
+    assert "Расширенный поиск людей".encode() in r.content
+    assert b'name="city"' not in r.content
+    ok("global search")
+
+    r = c.get("/feed", secure=True)
+    assert b"<h4>Новости</h4>" not in r.content
+    ok("feed has no Новости wrapper")
 
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
