@@ -1,4 +1,4 @@
-"""Unmanaged tables for orphan cleanup only — not Facebook 2006 product surface."""
+"""Unmanaged tables — Reaction powers classic FB 2009 Likes."""
 from __future__ import annotations
 
 from django.db import models
@@ -8,7 +8,7 @@ from .people import SocialProfile
 
 
 class Reaction(models.Model):
-    """Legacy likes (FB 2009+) — delete with posts; never expose in UI."""
+    """FB 2009 Like — type=like on wall notes / posts."""
     id = models.BigAutoField(primary_key=True)
     post = models.ForeignKey(Post, models.DO_NOTHING, related_name="+")
     social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="+")

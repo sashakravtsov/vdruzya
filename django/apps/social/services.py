@@ -172,10 +172,12 @@ def wall_posts_for(profile, limit=20, viewer=None):
                 & ~Q(topic__startswith="gift:")
             )
         )
-        .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift"))
+        .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift", "checkin"))
         .exclude(topic__in=("status", "picture", "note"))
         .exclude(topic__startswith="page:")
         .exclude(topic__startswith="gift:")
+        .exclude(topic__startswith="place:")
+        .exclude(topic__startswith="event:")
         .select_related("social_user")
         .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
@@ -194,7 +196,8 @@ def wall_posts_for(profile, limit=20, viewer=None):
         qs = qs.filter(post_visible_q(viewer))
         if viewer:
             qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
-    return qs.order_by("-id")[:limit]
+    from apps.social.likes import attach_likes
+    return attach_likes(list(qs.order_by("-id")[:limit]), viewer)
 
 
 def notes_for(profile, limit=20, viewer=None):
@@ -660,6 +663,62 @@ def _add_market(items, blocked, fids, limit):
         })
 
 
+def _add_checkins(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import PlaceCheckin
+    qs = (
+        PlaceCheckin.objects.filter(social_user_id__in=fids)
+        .select_related("social_user", "place")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "checkin", "at": row.created_at,
+            "actor": row.social_user, "place": row.place, "checkin": row,
+        })
+
+
+def _add_questions(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import Question
+    qs = (
+        Question.objects.filter(social_user_id__in=fids)
+        .select_related("social_user")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "question", "at": row.created_at,
+            "actor": row.social_user, "question": row,
+        })
+
+
+def _add_likes(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models.legacy import Reaction
+    qs = (
+        Reaction.objects.filter(social_user_id__in=fids, type="like")
+        .select_related("social_user", "post", "post__social_user")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "like", "at": row.created_at,
+            "actor": row.social_user, "post": row.post,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -724,6 +783,9 @@ def news_items(viewer=None, limit=40):
     _add_event_created(items, blocked, fids, limit)
     _add_event_going(items, blocked, fids, limit)
     _add_market(items, blocked, fids, limit)
+    _add_checkins(items, blocked, fids, limit)
+    _add_questions(items, blocked, fids, limit)
+    _add_likes(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)

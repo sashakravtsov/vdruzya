@@ -19,6 +19,7 @@ for path in \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
+  /places:302 /questions:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -196,11 +197,19 @@ if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
 else
   echo "OK   wall-to-wall route"
 fi
-if grep -q 'Поделиться\|Закрепить\|Мне нравится' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
-   || grep -q 'Поделиться\|Закрепить\|Мне нравится' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
-  echo "FAIL wall templates have share/pin/like"; FAIL=1
+if grep -q 'Поделиться\|Закрепить' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
+   || grep -q 'Поделиться\|Закрепить' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
+  echo "FAIL wall templates have share/pin"; FAIL=1
+elif ! grep -q 'Мне нравится' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null; then
+  echo "FAIL wall missing classic Like (FB 2009)"; FAIL=1
 else
-  echo "OK   wall has no share/pin/like (FB 2006)"
+  echo "OK   wall has Like, no share/pin (FB 2009 classic)"
+fi
+if ! grep -q 'name="places"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'name="questions"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL Places/Questions routes missing"; FAIL=1
+else
+  echo "OK   Places + Questions routes (2010 classic)"
 fi
 if ! grep -q 'shared_post' "${ROOT}/django/apps/social/models/defer.py" 2>/dev/null; then
   echo "FAIL shared_post not deferred"; FAIL=1
@@ -530,5 +539,12 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-classic-modules.py \
   echo "OK   classic modules features"
 else
   echo "FAIL classic modules features"; FAIL=1
+fi
+echo "== FB 2009-10 classic modules probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2010-modules.py \
+  && .venv/bin/python deploy/era2010-check.py; then
+  echo "OK   2010 classic modules features"
+else
+  echo "FAIL 2010 classic modules features"; FAIL=1
 fi
 exit "$FAIL"

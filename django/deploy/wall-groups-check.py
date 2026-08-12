@@ -78,13 +78,26 @@ def main():
     body = r.content.decode()
     if "ico-comment" not in body and "news-item" not in body:
         fail("feed news chrome")
-    if "ico-thumb" in body or "Нравится" in body or "react-btn" in body:
-        fail("likes are not Facebook 2006")
-    if "Поделиться" in body or "Закрепить" in body or "Мне нравится" in body:
-        fail("share/pin/like are not Facebook 2006 wall")
+    if "ico-thumb" in body or "react-btn" in body:
+        fail("modern reaction chrome")
+    if "Поделиться" in body or "Закрепить" in body:
+        fail("share/pin are not classic wall")
     if 'class="wallpost"' in body:
         fail("feed still embeds wallpost cards")
     ok("comment icons + feed news stories")
+
+    # Like on profile wall (FB 2009 classic)
+    r = get(f"/profile/{me.id}")
+    body = r.content.decode()
+    if "Мне нравится" not in body:
+        fail("classic Like missing on profile wall")
+    r = post(f"/posts/{wall.id}/like", {"next": f"/profile/{me.id}"})
+    if r.status_code != 200:
+        fail("like toggle")
+    from apps.social.models.legacy import Reaction
+    if not Reaction.objects.filter(post=wall, social_user=me, type="like").exists():
+        fail("like not saved")
+    ok("classic Like")
 
     # FB-2006: last 2 comments shown on profile wall; older behind «Показать предыдущие»
     for i, text in enumerate(("probe c0", "probe c1", "probe c2"), start=1):
@@ -108,9 +121,11 @@ def main():
         fail("profile wall")
     if "ico-comment" not in body:
         fail("comment icon missing on profile wall")
-    for bad in ("Поделиться", "Закрепить", "Мне нравится", "ico-thumb", "react-btn"):
+    for bad in ("Поделиться", "Закрепить", "ico-thumb", "react-btn"):
         if bad in body:
-            fail(f"profile wall has non-2006 action: {bad}")
+            fail(f"profile wall has non-classic action: {bad}")
+    if "Мне нравится" not in body:
+        fail("classic Like missing on profile wall")
     ok("profile wall")
 
     r = get("/groups")

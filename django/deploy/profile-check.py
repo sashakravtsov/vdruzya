@@ -56,7 +56,9 @@ def main():
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
     assert b'name="visibility"' not in r.content  # server sets from wall_view
     assert f'name="wall_to" value="{me.id}"'.encode() in r.content
-    assert "Мне нравится".encode() not in r.content  # pre-2009 profile wall
+    assert "Мне нравится".encode() in r.content  # FB 2009 Like on wall
+    assert "Поделиться".encode() not in r.content
+    assert "Закрепить".encode() not in r.content
     assert "Друзья в ".encode() not in r.content
     n_friends = len(friend_ids(me))
     assert friend_count(me) == n_friends
@@ -303,7 +305,7 @@ def main():
     assert b"__profile_check_wall_note__" in r.content
     assert "написал(а) на стену".encode() in r.content
     assert f'action="/posts/{note.id}/delete"'.encode() in r.content
-    assert "Мне нравится".encode() not in r.content
+    assert "Мне нравится".encode() in r.content  # Like available on wall notes
     ok("wall note + owner delete UI")
 
     # Friend of wall owner (not necessarily of author) can open + comment friends-visibility notes

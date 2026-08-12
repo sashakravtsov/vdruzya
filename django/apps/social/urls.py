@@ -14,6 +14,7 @@ from . import views_apps as apps
 from . import views_gifts as gifts
 from . import views_birthdays as birthdays
 from . import views_classic as classic
+from . import views_era2010 as era
 
 urlpatterns = [
     path("up", meta.up, name="up"),
@@ -43,6 +44,11 @@ urlpatterns = [
     path("networks", classic.networks_home, name="networks"),
     path("links", classic.links_home, name="links"),
     path("videos", classic.videos_home, name="videos"),
+    path("places", era.places_home, name="places"),
+    path("places/<int:pk>", era.place_show, name="places.show"),
+    path("questions", era.questions_home, name="questions"),
+    path("questions/<int:pk>", era.question_show, name="questions.show"),
+    path("questions/<int:pk>/answers/<int:answer_id>/vote", era.question_vote, name="questions.vote"),
     path("marketplace", classic.marketplace_home, name="marketplace"),
     path("marketplace/<int:pk>/edit", classic.marketplace_edit, name="marketplace.edit"),
     path("marketplace/<int:pk>/delete", classic.marketplace_delete, name="marketplace.delete"),
@@ -132,6 +138,7 @@ urlpatterns = [
     path("posts", act.post_create, name="posts.store"),
     path("posts/<int:post_id>", wall.post_show, name="posts.show"),
     path("posts/<int:post_id>/edit", wall.post_edit, name="posts.edit"),
+    path("posts/<int:post_id>/like", act.post_like, name="posts.like"),
     path("posts/<int:post_id>/comment", act.comment_create, name="comments.store"),
     path("posts/<int:post_id>/delete", act.post_delete, name="posts.delete"),
     path("comments/<int:comment_id>/delete", act.comment_delete, name="comments.delete"),

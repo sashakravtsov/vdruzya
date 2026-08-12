@@ -199,5 +199,33 @@
             {% if item.listing.price %}<span class="muted"> · {{ item.listing.price }}</span>{% endif %}
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'checkin' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            сейчас в
+            <a href="{% url 'places.show' item.place.id %}"><b>{{ item.place.name }}</b></a>
+            {% if item.checkin.message %} — {{ item.checkin.message|truncatewords:12 }}{% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'question' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            спросил(а):
+            <a href="{% url 'questions.show' item.question.id %}"><b>{{ item.question.body|truncatewords:16 }}</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'like' and item.post %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            нравится
+            <a href="{% url 'posts.show' item.post.id %}">запись</a>
+            {% if item.post.social_user %}
+            <a href="{% url 'profile' item.post.social_user.id %}">{{ item.post.social_user.name }}</a>
+            {% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
 </div>

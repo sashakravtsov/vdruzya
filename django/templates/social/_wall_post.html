@@ -35,8 +35,15 @@
                 </div>
                 <div class="actions">
                     {% if me %}
+                    <form method="post" action="{% url 'posts.like' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish wall-act">{% if post.liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
+                    </form>
+                    {% if post.n_likes %} <span class="muted">({{ post.n_likes }})</span>{% endif %}
+                    ·
                     <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
                     {% else %}
+                    {% if post.n_likes %}<span class="muted">{{ post.n_likes }} нравится · </span>{% endif %}
                     <span class="ico ico-comment"></span> {{ post.n_comments|default:0 }}
                     {% endif %}
                 </div>

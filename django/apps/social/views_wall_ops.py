@@ -69,6 +69,8 @@ def post_show(request, post_id):
     me = profile_of(request.user) if request.user.is_authenticated else None
     post = get_object_or_404(feed_queryset(me), pk=post_id)
     attach_wall_notes([post])
+    from apps.social.likes import attach_likes
+    attach_likes([post], me)
     return render(
         request, "social/post_show.html",
         {"post": post, "me": me, "form": None, "comment_form": CommentForm() if me else None},

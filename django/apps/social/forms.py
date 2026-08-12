@@ -668,3 +668,36 @@ class FriendListForm(ClassicForm, forms.Form):
     def clean_name(self):
         return (self.cleaned_data.get("name") or "").strip()[:120]
 
+
+class PlaceForm(ClassicForm, forms.Form):
+    name = forms.CharField(max_length=160, widget=_in(style="width:100%"))
+    city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
+    address = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%"))
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()[:160]
+
+
+class CheckinForm(ClassicForm, forms.Form):
+    message = forms.CharField(max_length=500, required=False, widget=_ta(2, style="width:100%"))
+
+
+class QuestionForm(ClassicForm, forms.Form):
+    body = forms.CharField(max_length=500, widget=_ta(3, style="width:100%"))
+
+    def clean_body(self):
+        body = (self.cleaned_data.get("body") or "").strip()
+        if not body:
+            raise forms.ValidationError("Напишите вопрос.")
+        return body[:500]
+
+
+class QuestionAnswerForm(ClassicForm, forms.Form):
+    body = forms.CharField(max_length=500, widget=_ta(2, style="width:100%"))
+
+    def clean_body(self):
+        body = (self.cleaned_data.get("body") or "").strip()
+        if not body:
+            raise forms.ValidationError("Напишите ответ.")
+        return body[:500]
+

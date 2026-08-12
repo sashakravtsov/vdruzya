@@ -166,6 +166,25 @@ def poke(request, pk):
 
 @login_required
 @require_POST
+def post_like(request, post_id):
+    from apps.social.likes import toggle_like
+    from apps.social.services import post_visible_q
+
+    me = profile_of(request.user)
+    post = get_object_or_404(Post, pk=post_id)
+    if not Post.objects.filter(pk=post.id).filter(post_visible_q(me)).exists():
+        messages.error(request, "Запись недоступна.")
+        return redirect(request.POST.get("next") or "feed")
+    out = toggle_like(me, post)
+    if out == "liked":
+        messages.success(request, "Вам это нравится.")
+    elif out == "unliked":
+        messages.info(request, "Отметка снята.")
+    return redirect(request.POST.get("next") or post.get_absolute_url())
+
+
+@login_required
+@require_POST
 def post_delete(request, post_id):
     from apps.social.services import can_manage_wall_post
     me = profile_of(request.user)
