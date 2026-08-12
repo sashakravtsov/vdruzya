@@ -227,13 +227,14 @@ elif grep -q 'profile-content' "${ROOT}/django/templates/social/profile.html" 2>
 else
   echo "OK   profile #userprofile divider (archive)"
 fi
-if ! grep -q 'id="editnav"' "${ROOT}/django/templates/social/profile_edit.html" 2>/dev/null \
+if ! grep -q 'id="tabs"' "${ROOT}/django/templates/social/profile_edit.html" 2>/dev/null \
    || ! grep -q '_editor_fields.html' "${ROOT}/django/templates/social/profile_edit.html" 2>/dev/null \
+   || grep -q 'id="editnav"' "${ROOT}/django/templates/social/profile_edit.html" 2>/dev/null \
    || grep -q 'type="date"' "${ROOT}/django/apps/social/forms.py" 2>/dev/null \
    || [[ -f "${ROOT}/django/templates/social/_profile_edit_basic.html" ]]; then
-  echo "FAIL profile edit not classic / still split section partials"; FAIL=1
+  echo "FAIL profile edit not archive tabs/field-loop"; FAIL=1
 else
-  echo "OK   profile edit classic (editnav, field loop, no HTML5 date)"
+  echo "OK   profile edit classic (#tabs + field loop, no HTML5 date)"
 fi
 if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
   echo "FAIL albums_user.html still present"; FAIL=1

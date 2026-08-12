@@ -12,14 +12,23 @@ from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_
 
 TABS = frozenset({"wall", "info", "photos", "notes", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
+# Tab labels (short) + section page titles (archive editprofile)
 EDIT_NAV = (
     ("basic", "Основное"),
-    ("contact", "Контактная информация"),
-    ("personal", "Личная информация"),
-    ("eduwork", "Образование и работа"),
-    ("picture", "Фотография"),
+    ("contact", "Контакты"),
+    ("personal", "Личное"),
+    ("eduwork", "Учёба и работа"),
+    ("picture", "Фото"),
     ("privacy", "Приватность"),
 )
+EDIT_TITLES = {
+    "basic": "Основное",
+    "contact": "Контактная информация",
+    "personal": "Личная информация",
+    "eduwork": "Образование и работа",
+    "picture": "Фотография",
+    "privacy": "Приватность",
+}
 
 
 def networks_for(profile, education=None, experience=None) -> list[dict]:
@@ -284,7 +293,7 @@ def build_edit_context(me, request):
         "form": form,
         "me": me,
         "section": section,
-        "section_title": dict(EDIT_NAV).get(section, "Основное"),
+        "section_title": EDIT_TITLES.get(section, "Основное"),
         "edit_nav": EDIT_NAV,
         "edu_form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
         "exp_form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),

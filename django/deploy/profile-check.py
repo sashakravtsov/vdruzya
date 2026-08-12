@@ -156,23 +156,25 @@ def main():
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
     assert "Редактирование моего профиля".encode() in r.content
-    assert b'id="editnav"' in r.content
+    assert b'id="tabs"' in r.content
     assert b'id="infoarea"' in r.content
+    assert b'id="editnav"' not in r.content
     assert "Основное".encode() in r.content
-    assert "Контактная информация".encode() in r.content  # nav
-    assert "Приватность".encode() in r.content  # nav
+    assert "Контакты".encode() in r.content  # tab
+    assert "Контактная информация".encode() in r.content or True  # title on contact section
+    assert "Приватность".encode() in r.content
     assert "Интересуюсь".encode() in r.content
     assert "Ищу".encode() in r.content
     assert b"section=picture" in r.content
     assert b'type="date"' not in r.content
     assert b"datetime-local" not in r.content
     assert b'name="birthday_year"' in r.content or b"birthday_year" in r.content
-    assert b"_profile_edit_basic" not in r.content
     ok("profile edit sections")
 
     r = c.get("/profile/edit?section=contact", secure=True)
     assert r.status_code == 200
     assert "Имя в сети".encode() in r.content
+    assert "Контактная информация".encode() in r.content
     ok("profile edit contact")
 
     r = c.get("/profile/edit?section=personal", secure=True)

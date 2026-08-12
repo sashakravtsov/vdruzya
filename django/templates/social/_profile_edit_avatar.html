@@ -2,7 +2,7 @@
     <div id="currentpicture">
         <h4>Текущее фото</h4>
         {% if me.avatar_url %}
-        <img src="{{ me.avatar_url }}" alt="" width="200" height="200" class="avatar-edit-preview">
+        <img src="{{ me.avatar_url }}" alt="" width="200" height="200">
         <form method="post" action="{% url 'profile.avatar.clear' %}" class="avatar-clear">{% csrf_token %}
             <button type="submit" class="linkish muted">Удалить фото</button>
         </form>
