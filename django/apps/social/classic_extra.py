@@ -179,6 +179,24 @@ def lists_for(me):
     )
 
 
+def owned_list(me, list_id):
+    try:
+        lid = int(list_id)
+    except (TypeError, ValueError):
+        return None
+    if not me or not lid:
+        return None
+    return FriendList.objects.filter(pk=lid, social_user=me).first()
+
+
+def list_member_ids(flist) -> set:
+    if not flist:
+        return set()
+    return set(
+        FriendListMember.objects.filter(friend_list=flist).values_list("social_user_id", flat=True)
+    )
+
+
 def list_create(me, name: str):
     name = (name or "").strip()[:120]
     if not me or not name:

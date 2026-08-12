@@ -30,6 +30,19 @@
             </table>
         </form>
 
+        {% if friend_lists %}
+        <div class="subtabs friends-list-tabs">
+            <div class="{% if not active_list %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}">Все</a>
+            </div>
+            {% for l in friend_lists %}
+            <div class="{% if active_list and active_list.id == l.id %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?list={{ l.id }}&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}">{{ l.name }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="friends-main">
             <div class="profile-box">
                 <h4>Мои друзья{% if friends_total %} ({{ friends_total }}){% endif %}
@@ -72,9 +85,9 @@
                     {% endfor %}
                     {% if page_obj and page_obj.has_other_pages %}
                     <p class="people-top-links">
-                        {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}&amp;p={{ page_obj.previous_page_number }}">« назад</a>{% endif %}
+                        {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}&amp;p={{ page_obj.previous_page_number }}">« назад</a>{% endif %}
                         стр. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                        {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}&amp;p={{ page_obj.next_page_number }}">вперёд »</a>{% endif %}
+                        {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;sort={{ sort }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}&amp;p={{ page_obj.next_page_number }}">вперёд »</a>{% endif %}
                     </p>
                     {% endif %}
                 </div>

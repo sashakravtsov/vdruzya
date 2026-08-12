@@ -7,18 +7,37 @@
     <div id="content" class="feed-content">
         {% include "partials/flash.html" %}
 
+        <div class="subtabs feed-filters">
+            {% with f=feed_filter|default:'all' %}
+            {% for key, lab in feed_tabs %}
+            <div class="{% if f == key %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?filter={{ key }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}">{{ lab }}</a>
+            </div>
+            {% endfor %}
+            {% endwith %}
+        </div>
+        {% if friend_lists %}
+        <p class="feed-list-links muted">
+            список:
+            <a href="?filter={{ feed_filter|default:'all' }}"{% if not active_list %} class="is-on"{% endif %}>все друзья</a>
+            {% for l in friend_lists %}
+            · <a href="?filter={{ feed_filter|default:'all' }}&amp;list={{ l.id }}"{% if active_list and active_list.id == l.id %} class="is-on"{% endif %}>{{ l.name }}</a>
+            {% endfor %}
+        </p>
+        {% endif %}
+
         <div class="feed-main">
             {% for item in items %}
             {% include "social/_news_item.html" %}
             {% empty %}
-            <p class="muted">Пока тихо. <a href="{% url 'people' %}?tab=search">Найдите друзей</a> или напишите на чью-нибудь стену.</p>
+            <p class="muted">{% if feed_filter and feed_filter != 'all' or active_list %}Нет записей в этом фильтре.{% else %}Пока тихо. <a href="{% url 'people' %}?tab=search">Найдите друзей</a> или напишите на чью-нибудь стену.{% endif %}</p>
             {% endfor %}
 
             {% if page and page.paginator.num_pages > 1 %}
             <p class="pager">
-                {% if page.has_previous %}<a href="?p={{ page.previous_page_number }}">← назад</a>{% endif %}
+                {% if page.has_previous %}<a href="?filter={{ feed_filter|default:'all' }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}&amp;p={{ page.previous_page_number }}">← назад</a>{% endif %}
                 стр. {{ page.number }}/{{ page.paginator.num_pages }}
-                {% if page.has_next %}<a href="?p={{ page.next_page_number }}">вперёд →</a>{% endif %}
+                {% if page.has_next %}<a href="?filter={{ feed_filter|default:'all' }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}&amp;p={{ page.next_page_number }}">вперёд →</a>{% endif %}
             </p>
             {% endif %}
         </div>

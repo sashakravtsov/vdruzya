@@ -131,12 +131,22 @@ def main():
         r = c.post(f"/friends/lists/{fl.id}", {"action": "add", "friend_id": str(buddy.id)}, secure=True)
         assert r.status_code in (301, 302)
         assert FriendListMember.objects.filter(friend_list=fl, social_user=buddy).exists()
+        r = c.get(f"/friends?list={fl.id}", secure=True)
+        assert r.status_code == 200
+        assert buddy.name.encode() in r.content
+        assert b"friends-list-tabs" in r.content or fl.name.encode() in r.content
+        r = c.get(f"/feed?filter=photos&list={fl.id}", secure=True)
+        assert r.status_code == 200
+        assert b"feed-filters" in r.content
         r = c.post(f"/friends/lists/{fl.id}", {"action": "remove", "friend_id": str(buddy.id)}, secure=True)
         assert r.status_code in (301, 302)
         assert not FriendListMember.objects.filter(friend_list=fl, social_user=buddy).exists()
-        ok("friend list membership")
+        ok("friend list membership + feed/friends filters")
     else:
         ok("friend list membership skipped (no friend)")
+    r = c.get("/feed?filter=shares", secure=True)
+    assert r.status_code == 200 and b"feed-filters" in r.content
+    ok("feed kind filters")
 
     # cleanup
     Post.objects.filter(id__in=[x.id for x in (link, note, video) if x]).delete()

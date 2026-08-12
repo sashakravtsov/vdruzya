@@ -78,20 +78,24 @@ def people(request):
 @login_required
 def friends_home(request):
     """Dedicated Мои друзья — FB 2005 two-column."""
+    from apps.social import classic_extra as cx
+    from apps.social import relationship as relmod
+    from apps.social import family as fam
+
     me = profile_of(request.user)
     q = (request.GET.get("q") or "").strip()
     city = (request.GET.get("city") or "").strip()
     sort = request.GET.get("sort") or "name"
     if sort not in ("name", "recent"):
         sort = "name"
+    flist = cx.owned_list(me, request.GET.get("list")) if me else None
+    only = cx.list_member_ids(flist) if flist else None
     friends, total, page = ([], 0, None)
     if me:
         friends, total, page = fr.friends_page(
             me, q=q, city=city, sort=sort, page=_page_int(request.GET.get("p")),
+            only_ids=only,
         )
-    from apps.social import relationship as relmod
-    from apps.social import family as fam
-
     return render(
         request, "social/friends.html",
         {
@@ -105,6 +109,8 @@ def friends_home(request):
             "family_candidates": fam.candidates(me) if me else [],
             "family_kinds": fam.KINDS,
             "my_family": fam.approved_for(me) if me else [],
+            "friend_lists": cx.lists_for(me) if me else [],
+            "active_list": flist,
         },
     )
 

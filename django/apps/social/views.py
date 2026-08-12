@@ -25,14 +25,27 @@ def _home_anon(request):
 @login_required
 @never_cache
 def feed(request):
+    from apps.social import browse_filters as bf
+    from apps.social import classic_extra as cx
+
     me = profile_of(request.user)
-    page = Paginator(news_items(me, 60), 20).get_page(request.GET.get("p"))
+    filt = bf.feed_filter(request.GET.get("filter"))
+    flist = cx.owned_list(me, request.GET.get("list"))
+    actor_ids = cx.list_member_ids(flist) if flist else None
+    items = bf.apply_feed(
+        news_items(me, 120), filt, actor_ids=actor_ids, me=me,
+    )
+    page = Paginator(items, 20).get_page(request.GET.get("p"))
     return render(
         request, "social/feed.html",
         {
             "items": page, "page": page, "me": me,
             "comment_form": CommentForm(),
             "nav": "feed",
+            "feed_filter": filt,
+            "feed_tabs": bf.FEED_TABS,
+            "friend_lists": cx.lists_for(me),
+            "active_list": flist,
             **feed_rail(me),
         },
     )

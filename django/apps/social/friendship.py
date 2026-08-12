@@ -7,9 +7,11 @@ from apps.social.models import Block, Education, Experience, Friendship, SocialP
 from apps.social.services import friend_ids, now
 
 
-def friends_page(me, *, q="", city="", sort="name", page=1, per=40):
+def friends_page(me, *, q="", city="", sort="name", page=1, per=40, only_ids=None):
     """Paginated My Friends with name/city filter and sort."""
     ids = friend_ids(me)
+    if only_ids is not None:
+        ids = ids & set(only_ids)
     total = len(ids)
     empty = Paginator([], per).get_page(1)
     if not ids:

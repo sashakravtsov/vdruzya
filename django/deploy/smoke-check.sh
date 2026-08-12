@@ -249,6 +249,13 @@ if ! grep -q 'family.request' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
 else
   echo "OK   family links + likes helper dedupe"
 fi
+if ! grep -q 'feed-filters' "${ROOT}/django/templates/social/feed.html" 2>/dev/null \
+  || ! grep -q 'list_member_ids' "${ROOT}/django/apps/social/classic_extra.py" 2>/dev/null \
+  || ! grep -q 'browse_filters' "${ROOT}/django/apps/social/views.py" 2>/dev/null; then
+  echo "FAIL feed/friends list filters missing"; FAIL=1
+else
+  echo "OK   feed kind filters + friend list browse"
+fi
 if ! grep -q 'wall-filters' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null \
   || ! grep -q 'filter=photos' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
   echo "FAIL wall filters missing"; FAIL=1
