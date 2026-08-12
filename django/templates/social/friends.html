@@ -33,14 +33,7 @@
                 <div class="profile-box-body">
                     {% for f in friends %}
                     <div class="classic-person-row classic-person-row-friend">
-                        <a class="classic-person-name" href="{% url 'profile' f.id %}">
-                            {% avatar f 50 %}
-                            <span>
-                                <b>{{ f.name }}</b>
-                                {% if f.headline %}<span class="classic-person-sub">{{ f.headline }}</span>
-                                {% elif f.city %}<span class="classic-person-sub">{{ f.city }}</span>{% endif %}
-                            </span>
-                        </a>
+                        {# actions first so float:right sits beside the name #}
                         <span class="classic-inline-actions classic-inline-actions-friend">
                             <form method="post" action="{% url 'inbox.start' f.id %}">{% csrf_token %}
                                 <button type="submit" class="linkish">Написать</button>
@@ -56,6 +49,14 @@
                                 <button type="submit" class="linkish" onclick="return confirm('Заблокировать?');">Заблокировать</button>
                             </form>
                         </span>
+                        <a class="classic-person-name" href="{% url 'profile' f.id %}">
+                            {% avatar f 50 %}
+                            <span>
+                                <b>{{ f.name }}</b>
+                                {% if f.headline %}<span class="classic-person-sub">{{ f.headline }}</span>
+                                {% elif f.city %}<span class="classic-person-sub">{{ f.city }}</span>{% endif %}
+                            </span>
+                        </a>
                     </div>
                     {% empty %}
                     <p class="muted">{% if q or city %}Никого не найдено.{% else %}Пока нет друзей.{% endif %}</p>

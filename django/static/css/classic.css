@@ -644,14 +644,14 @@ button.linkish .ico { margin-right: 2px; }
   font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
   margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
 }
-/* Dedicated friends page — FB 2005 two columns */
+/* Dedicated friends page — FB 2005 two columns (#pagebody 628px − borders/pad ≈ 606) */
 .friends-page #content.friends-content{
   padding:10px;overflow:hidden;box-sizing:border-box;
 }
 .friends-page .friends-find{margin:0 0 10px}
 .friends-page .friends-find .inputtext{width:180px}
-.friends-main{float:left;width:430px}
-.friends-side{float:right;width:196px}
+.friends-main{float:left;width:400px}
+.friends-side{float:right;width:180px}
 .friends-page .profile-box{margin:0 0 10px}
 .friends-page .profile-box:last-child{margin-bottom:0}
 .friends-page .profile-box > h4{
@@ -666,10 +666,13 @@ button.linkish .ico { margin-right: 2px; }
   display:block;
   overflow:hidden;
 }
+/* actions float first (via right), name fills leftover — keep max-width room */
 .classic-person-row-friend{overflow:hidden}
-.classic-person-row-friend .classic-person-name{max-width:none}
-.classic-inline-actions-friend{
-  float:right;white-space:nowrap;padding-top:2px;text-align:right;
+.classic-person-row-friend .classic-inline-actions-friend{
+  float:right;white-space:nowrap;padding-top:2px;text-align:right;margin-left:8px;
+}
+.classic-person-row-friend .classic-person-name{
+  display:block;overflow:hidden;max-width:none;
 }
 .classic-person-row-side .classic-person-name{max-width:100%}
 .classic-person-row-side .classic-person-name .avatar-fallback,
