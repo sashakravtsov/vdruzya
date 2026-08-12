@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Общие друзья с {{ other.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header" class="withsubtitle">
+        <h1>Общие друзья</h1>
+        <div class="subtitle"><a href="{% url 'profile' other.id %}">← {{ other.name }}</a></div>
+    </div>
+    <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
+        <p class="people-lead">{% if mutual_label %}{{ mutual_label }} с {{ other.name }}.{% else %}Нет общих друзей с {{ other.name }}.{% endif %}</p>
+
+        <form class="people-search-form" method="get" action="{% url 'profile.mutual' other.id %}">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="label">Найти:</td>
+                    <td>
+                        <input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off">
+                        <input class="inputsubmit" type="submit" value="Найти">
+                        {% if q %}<a href="{% url 'profile.mutual' other.id %}">сбросить</a>{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+        <div class="profile-box">
+            <h4>Общие друзья{% if mutual_count %} ({{ mutual_count }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% for f in friends %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <a class="classic-person-name" href="{% url 'profile' f.id %}">
+                        {% avatar f 50 %}
+                        <span>
+                            <b>{{ f.name }}</b>
+                            {% if f.city %}<span class="classic-person-sub">{{ f.city }}</span>
+                            {% elif f.headline %}<span class="classic-person-sub">{{ f.headline }}</span>{% endif %}
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post" action="{% url 'inbox.start' f.id %}">{% csrf_token %}
+                            <button type="submit" class="linkish">Написать</button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">{% if q %}Никого не найдено.{% else %}Общих друзей нет.{% endif %}</p>
+                {% endfor %}
+                {% if page_obj and page_obj.has_other_pages %}
+                <p class="people-top-links">
+                    {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&amp;p={{ page_obj.previous_page_number }}">« назад</a>{% endif %}
+                    стр. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&amp;p={{ page_obj.next_page_number }}">вперёд »</a>{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
