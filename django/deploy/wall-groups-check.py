@@ -41,13 +41,13 @@ def main():
 
     r = get("/feed")
     body = r.content.decode()
-    if r.status_code != 200 or "Новости" not in body:
+    if r.status_code != 200 or "Лента новостей" not in body:
         fail("feed")
     if "wall-comment-compose" not in body and "Пока тихо" not in body:
         # empty feed is ok; otherwise compose markup must exist on wall posts
         pass
-    if "news-card" in body:
-        fail("news-card chrome still on feed")
+    if "news-card" in body or "<h4>Новости</h4>" in body:
+        fail("post-2006 news chrome still on feed")
     ok("feed news")
 
     r = post("/posts", {"body": "probe personal wall", "wall_to": me.id})
