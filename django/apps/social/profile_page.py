@@ -274,6 +274,7 @@ def info_boxes(profile, education, experiences) -> list[dict]:
 
 def build_edit_context(me, request):
     """Context for classic Profile edit (sectioned)."""
+    from django.urls import reverse
     from apps.social.forms import EducationForm, ExperienceForm, ProfileForm
 
     section = (request.GET.get("section") or request.POST.get("section") or "basic").lower()
@@ -285,22 +286,45 @@ def build_edit_context(me, request):
     elif section not in EDIT_SECTIONS:
         section = "basic"
     form = ProfileForm(request.POST or None, instance=me, section=section)
-    if "slug" in form.fields:
-        form.fields["slug"].help_text = f"страница: /u/{me.slug}"
-    if "telegram_username" in form.fields:
-        form.fields["telegram_username"].help_text = "как AIM / ICQ screen name"
+
+    education = list(Education.objects.filter(social_user=me)[:20])
+    experiences = list(Experience.objects.filter(social_user=me)[:20])
+    # Row editors: URLs resolved in Python — no fragile {% url name_var %} in templates
+    row_editors = [
+        {
+            "title": "Образование",
+            "kind": "edu",
+            "param": "edu",
+            "rows": education,
+            "edit_row": edu_row,
+            "form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
+            "action": (
+                reverse("profile.education.edit", args=[edu_row.pk])
+                if edu_row else reverse("profile.education")
+            ),
+            "delete_name": "profile.education.delete",
+        },
+        {
+            "title": "Работа",
+            "kind": "exp",
+            "param": "exp",
+            "rows": experiences,
+            "edit_row": exp_row,
+            "form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),
+            "action": (
+                reverse("profile.experience.edit", args=[exp_row.pk])
+                if exp_row else reverse("profile.experience")
+            ),
+            "delete_name": "profile.experience.delete",
+        },
+    ]
     return {
         "form": form,
         "me": me,
         "section": section,
         "section_title": EDIT_TITLES.get(section, "Основное"),
         "edit_nav": EDIT_NAV,
-        "edu_form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
-        "exp_form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),
-        "edu_edit": edu_row,
-        "exp_edit": exp_row,
-        "education": Education.objects.filter(social_user=me)[:20],
-        "experiences": Experience.objects.filter(social_user=me)[:20],
+        "row_editors": row_editors,
     }
 
 

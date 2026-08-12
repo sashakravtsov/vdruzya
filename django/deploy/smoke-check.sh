@@ -186,6 +186,11 @@ if grep -q 'inbox-list { float: left' "${ROOT}/django/static/css/classic.css" 2>
 else
   echo "OK   inbox list/thread full width"
 fi
+if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL wall-to-wall route missing"; FAIL=1
+else
+  echo "OK   wall-to-wall route"
+fi
 if grep -q 'Поделиться\|Закрепить\|Мне нравится' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
    || grep -q 'Поделиться\|Закрепить\|Мне нравится' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
   echo "FAIL wall templates have share/pin/like"; FAIL=1
