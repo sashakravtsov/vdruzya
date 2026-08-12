@@ -14,7 +14,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
-from apps.social.media import save_image
+from apps.social.media import VIDEO_MAX_BYTES, save_image, save_video
 from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile
 from apps.social.services import friend_ids, now, profile_of
 
@@ -332,7 +332,10 @@ def notify_peers(me, conv: Conversation, m: Message):
     if not peer_ids:
         return
     t = now()
-    snippet = (m.body or "").strip() or ("[фото]" if m.attachment_path else "")
+    snippet = (m.body or "").strip() or (
+        "[видео]" if (m.message_type or "") == "video" or (m.attachment_mime or "").startswith("video/")
+        else ("[фото]" if m.attachment_path else "")
+    )
     body = f"{me.name}: {snippet}"[:255]
     url = f"/inbox?c={conv.id}"
     for pid in peer_ids:
@@ -352,15 +355,39 @@ def notify_peers(me, conv: Conversation, m: Message):
         cache.delete(f"nav:{pid}")
 
 
+_VIDEO_EXT = {".mp4", ".webm", ".mov", ".m4v"}
+
+
+def _is_video_upload(upload) -> bool:
+    name = (getattr(upload, "name", "") or "").lower()
+    ctype = (getattr(upload, "content_type", "") or "").lower()
+    return Path(name).suffix in _VIDEO_EXT or ctype.startswith("video/")
+
+
 def _save_attach(upload):
+    """Save photo (Pillow) or video (same media disk). Returns (path, name, mime, kind)."""
     if not upload:
-        return None, None, None
-    if getattr(upload, "size", 0) > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
-        return None, None, None
-    path = save_image(upload, "messages")
+        return None, None, None, None
+    size = getattr(upload, "size", 0) or 0
+    if _is_video_upload(upload):
+        if size > VIDEO_MAX_BYTES:
+            return None, None, None, None
+        try:
+            path, _poster = save_video(upload, "messages")
+        except Exception:
+            return None, None, None, None
+        name = (Path(getattr(upload, "name", "") or "video.mp4").name)[:120]
+        mime = (getattr(upload, "content_type", None) or "video/mp4")[:80]
+        return path, name, mime, "video"
+    if size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
+        return None, None, None, None
+    try:
+        path = save_image(upload, "messages")
+    except Exception:
+        return None, None, None, None
     name = (Path(getattr(upload, "name", "") or "photo").name)[:120]
     mime = (getattr(upload, "content_type", None) or "image/jpeg")[:80]
-    return path, name, mime
+    return path, name, mime, "photo"
 
 
 def post_message(
@@ -368,7 +395,7 @@ def post_message(
     message_type="text", upload=None, reply_to_id=None, sticker_id=None,
 ) -> Message:
     body = (body or "").strip()
-    path, aname, amime = _save_attach(upload)
+    path, aname, amime, akind = _save_attach(upload)
     reply = None
     if reply_to_id:
         reply = Message.objects.filter(pk=reply_to_id, conversation=conv).first()
@@ -386,12 +413,18 @@ def post_message(
         raise ValueError("empty")
     if sid and not body:
         body = "[стикер]"
+    if path and message_type == "text":
+        message_type = akind or "photo"
+    elif sid:
+        message_type = "sticker"
+    if not body and path:
+        body = "[видео]" if message_type == "video" else "[фото]"
     t = now()
     m = Message.objects.create(
         conversation=conv,
         social_user=me,
-        body=(body or ("[фото]" if path else ""))[:4000],
-        message_type="photo" if path and message_type == "text" else ("sticker" if sid else message_type),
+        body=body[:4000],
+        message_type=message_type,
         sticker_id=sid,
         reply_to=reply,
         attachment_path=path,

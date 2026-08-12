@@ -115,7 +115,7 @@ def message_send(request, me, conv):
     form = MessageForm(request.POST, request.FILES, stickers=catalog()[:40])
     go = _go(conv.id)
     if not form.is_valid():
-        messages.error(request, "Напишите текст, приложите фото или выберите стикер.")
+        messages.error(request, "Напишите текст, приложите фото / видео или выберите стикер.")
         return redirect(go)
     try:
         ch.post_message(
@@ -125,7 +125,7 @@ def message_send(request, me, conv):
             sticker_id=form.cleaned_data.get("sticker") or None,
         )
     except ValueError:
-        messages.error(request, "Напишите текст, приложите фото или выберите стикер.")
+        messages.error(request, "Напишите текст, приложите фото / видео или выберите стикер.")
         return redirect(go)
     return redirect(go)
 

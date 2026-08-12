@@ -1224,6 +1224,8 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-actions form { display: inline; }
 .inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
+.inbox-pane .msg-video { margin-top: 4px; }
+.inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }
 .inbox-pane .msg-members { margin: 0 0 8px; font-size: 11px; }
 .account-page .formtable .inputtext,
 .account-page .formtable input[type="password"],

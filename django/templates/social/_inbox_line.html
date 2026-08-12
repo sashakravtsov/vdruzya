@@ -24,7 +24,13 @@
             <span class="gift-tile-title">{{ m.sticker.title }}</span>
         </span>
         {% endif %}
-        {% if m.body and m.body != '[фото]' and m.body != '[стикер]' %}{{ m.body|linebreaksbr }}{% endif %}
-        {% if m.attachment_url %}<p><img src="{{ m.attachment_url }}" alt="" class="msg-photo"></p>{% endif %}
+        {% if m.body and m.body != '[фото]' and m.body != '[видео]' and m.body != '[стикер]' %}{{ m.body|linebreaksbr }}{% endif %}
+        {% if m.attachment_url %}
+            {% if m.attachment_is_video %}
+            <div class="msg-video"><video controls preload="metadata" class="msg-photo"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'video/mp4' }}"></video></div>
+            {% else %}
+            <p><img src="{{ m.attachment_url }}" alt="" class="msg-photo"></p>
+            {% endif %}
+        {% endif %}
     </div>
 </div>

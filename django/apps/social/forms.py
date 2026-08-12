@@ -20,7 +20,19 @@ def _ta(rows=3, **attrs):
 def _file(**attrs):
     return forms.FileInput(attrs={
         "class": "inputfile",
-        "accept": "image/jpeg,image/png,image/gif",
+        "accept": "image/jpeg,image/png,image/gif,image/webp",
+        **attrs,
+    })
+
+
+def _media_file(**attrs):
+    """Single file: photos (incl. WebP) or one video — classic Inbox / compose."""
+    return forms.FileInput(attrs={
+        "class": "inputfile",
+        "accept": (
+            "image/jpeg,image/png,image/gif,image/webp,"
+            "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+        ),
         **attrs,
     })
 
@@ -47,7 +59,10 @@ class _MultiFile(forms.ClearableFileInput):
 def _files(**attrs):
     return _MultiFile(attrs={
         "class": "inputfile",
-        "accept": "image/jpeg,image/png,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov",
+        "accept": (
+            "image/jpeg,image/png,image/gif,image/webp,"
+            "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+        ),
         **attrs,
     })
 
@@ -364,7 +379,7 @@ class GroupDocForm(ClassicForm, forms.Form):
 
 
 class MessageForm(ClassicForm, forms.ModelForm):
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
     reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
     sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
 
@@ -383,7 +398,7 @@ class MessageForm(ClassicForm, forms.ModelForm):
     def clean(self):
         data = super().clean()
         if not (data.get("body") or "").strip() and not self.files.get("photo") and not data.get("sticker"):
-            self.add_error("body", "Напишите текст, приложите фото или выберите стикер.")
+            self.add_error("body", "Напишите текст, приложите фото / видео или выберите стикер.")
         return data
 
 
@@ -400,7 +415,7 @@ class ComposeMessageForm(ClassicForm, forms.Form):
         required=False,
         widget=_ta(4, style="width:100%"),
     )
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
 
     def __init__(self, friends, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -411,7 +426,7 @@ class ComposeMessageForm(ClassicForm, forms.Form):
         if not data.get("to"):
             self.add_error("to", "Выберите друга.")
         if not (data.get("body") or "").strip() and not self.files.get("photo"):
-            self.add_error("body", "Напишите текст или приложите фото.")
+            self.add_error("body", "Напишите текст или приложите фото / видео.")
         return data
 
 
@@ -435,7 +450,7 @@ class AlbumForm(ClassicForm, forms.ModelForm):
 class PhotoUploadForm(ClassicForm, forms.Form):
     """Album upload — multi-select; files read via request.FILES.getlist('photo')."""
     photo = MultiFileField(label="Файлы", required=False, widget=_files(
-        accept="image/jpeg,image/png,image/gif",
+        accept="image/jpeg,image/png,image/gif,image/webp",
     ))
     title = forms.CharField(
         max_length=120, required=False, label="Название",

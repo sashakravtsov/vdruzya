@@ -58,6 +58,12 @@ class Message(models.Model):
         from apps.social.media import media_url
         return media_url(self.attachment_path)
 
+    @property
+    def attachment_is_video(self) -> bool:
+        if (self.message_type or "") == "video":
+            return True
+        return (self.attachment_mime or "").startswith("video/")
+
 
 class Notification(models.Model):
     id = models.BigAutoField(primary_key=True)

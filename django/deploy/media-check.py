@@ -11,11 +11,22 @@ import django
 
 django.setup()
 
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models import Q
 from django.test import Client
+
 from apps.accounts.models import User
-from apps.social.media import process_image_bytes
-from apps.social.models import Album, Community, CommunityMember, CommunityPost, Photo, Post
+from apps.social import chat as ch
+from apps.social.media import process_image_bytes, save_video
+from apps.social.models import (
+    Album, Community, CommunityMember, CommunityPost, Friendship, Message, Photo, Post,
+)
 from apps.social.services import bump_news, news_items, now, profile_of
 
 PNG = bytes.fromhex(
@@ -143,12 +154,63 @@ def main():
     else:
         ok("group wall video skipped (no membership)")
 
+    # Classic Inbox — video attachment (not live Messenger).
+    inbox_msg = None
+    rel = (
+        Friendship.objects.filter(status="accepted")
+        .filter(Q(user=me) | Q(friend=me))
+        .select_related("user", "friend")
+        .first()
+    )
+    if rel:
+        other = rel.friend if rel.user_id == me.id else rel.user
+        conv = ch.dm_find_or_create(me, other)
+        vid4 = SimpleUploadedFile("inbox.mp4", _tiny_mp4(), content_type="video/mp4")
+        r = c.post(f"/inbox/{conv.id}/message", {
+            "body": f"QA inbox vid {uuid.uuid4().hex[:5]}",
+            "photo": vid4,
+        }, secure=True)
+        assert r.status_code in (301, 302), r.status_code
+        inbox_msg = (
+            Message.objects.filter(conversation=conv, social_user=me, message_type="video")
+            .order_by("-id").first()
+        )
+        assert inbox_msg and inbox_msg.attachment_path, inbox_msg
+        r = c.get(f"/inbox?c={conv.id}", secure=True)
+        assert r.status_code == 200
+        assert b"<video" in r.content
+        ok("inbox video attachment + player")
+    else:
+        ok("inbox video skipped (no friend)")
+
+    # Optional ffmpeg poster (same media disk — not a video CDN).
+    ffmpeg = getattr(settings, "FFMPEG_BIN", "ffmpeg") or "ffmpeg"
+    if shutil.which(ffmpeg):
+        with tempfile.TemporaryDirectory(prefix="vdposter_") as tmp:
+            src = Path(tmp) / "clip.mp4"
+            subprocess.run(
+                [
+                    ffmpeg, "-y", "-loglevel", "error",
+                    "-f", "lavfi", "-i", "color=c=blue:s=320x240:d=1",
+                    "-pix_fmt", "yuv420p", str(src),
+                ],
+                check=True, timeout=60, capture_output=True,
+            )
+            upload = SimpleUploadedFile("clip.mp4", src.read_bytes(), content_type="video/mp4")
+            _path, poster = save_video(upload, "videos")
+            assert poster, poster
+        ok("ffmpeg video poster")
+    else:
+        ok("ffmpeg video poster skipped (no ffmpeg)")
+
     Photo.objects.filter(album=album).delete()
     album.delete()
     post.delete()
     wpost.delete()
     if gpost:
         gpost.delete()
+    if inbox_msg:
+        inbox_msg.delete()
     ok("cleanup")
     print("ALL media pipeline probes passed")
 
