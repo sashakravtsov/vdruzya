@@ -2,7 +2,7 @@ from django import forms
 from django.db.models import Q
 from apps.social.categories import CHOICES as GROUP_CATS
 from apps.social.models import (
-    Album, Comment, Community, CommunityPost, Education, Experience,
+    Album, Community, CommunityPost, Education, Experience,
     Message, Post, SocialProfile,
 )
 
@@ -258,32 +258,18 @@ class PostForm(forms.ModelForm):
         return data
 
 
-_COMMENT_WIDGET = _in(style="width:80%", placeholder="Написать комментарий…", maxlength="2000", autocomplete="off")
-
-
-def _clean_comment_body(form):
-    body = (form.cleaned_data.get("body") or "").strip()
-    if not body:
-        raise forms.ValidationError("Напишите комментарий.")
-    return body
-
-
-class CommentBodyForm(forms.Form):
-    """Shared body field for wall / group / photo comments (classic FB: flat text)."""
-    body = forms.CharField(max_length=2000, widget=_COMMENT_WIDGET)
+class CommentForm(forms.Form):
+    """Flat comment body for wall / group / photo (classic FB — one form)."""
+    body = forms.CharField(
+        max_length=2000,
+        widget=_in(style="width:80%", placeholder="Написать комментарий…", maxlength="2000", autocomplete="off"),
+    )
 
     def clean_body(self):
-        return _clean_comment_body(self)
-
-
-class CommentForm(forms.ModelForm):
-    class Meta:
-        model = Comment
-        fields = ("body",)
-        widgets = {"body": _COMMENT_WIDGET}
-
-    def clean_body(self):
-        return _clean_comment_body(self)
+        body = (self.cleaned_data.get("body") or "").strip()
+        if not body:
+            raise forms.ValidationError("Напишите комментарий.")
+        return body
 
 
 class MessageForm(forms.ModelForm):

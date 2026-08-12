@@ -4,14 +4,14 @@
 <p class="msg-members muted">От: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a></p>
 {% endif %}
 {% if has_older and not show_all %}
-<p class="chat-older"><a href="?c={{ active.id }}&amp;all=1{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
+<p class="msg-older"><a href="?c={{ active.id }}&amp;all=1{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
 {% endif %}
-<div id="chat-log" class="chat-log">
-    {% for m in chat_messages %}
+<div id="msg-log" class="msg-log">
+    {% for m in thread_messages %}
     {% include "social/_inbox_line.html" %}
     {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}
 </div>
-<form method="post" action="{% url 'inbox.message' active.id %}" class="chat-compose" enctype="multipart/form-data">{% csrf_token %}
+<form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.body }}
     <p class="wallposter-file">Фото: {{ form.photo }}</p>
     <input type="submit" class="inputsubmit" value="Отправить">

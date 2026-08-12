@@ -5,10 +5,10 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 
-from apps.social.forms import CommentBodyForm, CommunityPostForm, GroupForm
+from apps.social.forms import CommentForm, CommunityPostForm, GroupForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPost,
-    CommunityPostComment, Notification, SocialProfile,
+    CommunityPostComment, Notification, SocialProfile, profile_related,
 )
 from apps.social.services import bump_news, can_manage_group_comment, is_group_admin, now, profile_of
 
@@ -50,7 +50,7 @@ def group_members(request, pk):
     rows = (
         CommunityMember.objects.filter(community=group)
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .defer(*profile_related("social_user__"))
         .order_by("social_user__name")[:200]
     )
     return render(
@@ -277,7 +277,7 @@ def group_post(request, pk):
 def group_comment(request, pk, post_id):
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     post = get_object_or_404(CommunityPost, pk=post_id, community=group)
-    form = CommentBodyForm(request.POST)
+    form = CommentForm(request.POST)
     if me and _member(me, group) and form.is_valid():
         t = now()
         CommunityPostComment.objects.create(

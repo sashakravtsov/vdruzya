@@ -1,10 +1,10 @@
 """Group page data builders — short helpers only."""
 from django.db.models import Count, F, Prefetch
 
-from apps.social.forms import CommentBodyForm, CommunityPostForm, GroupEventForm
+from apps.social.forms import CommentForm, CommunityPostForm, GroupEventForm
 from apps.social.models import (
-    Community, CommunityJoinRequest, CommunityMember, CommunityPost, CommunityPostComment,
-    Event, Photo, SocialProfile,
+    GROUP_POST_DEFER, PROFILE_DEFER, Community, CommunityJoinRequest, CommunityMember,
+    CommunityPost, CommunityPostComment, Event, Photo, SocialProfile, profile_related,
 )
 from apps.social.services import accepted_friends
 
@@ -35,12 +35,12 @@ def posts_qs(group):
     return (
         CommunityPost.objects.filter(community=group)
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .defer(*GROUP_POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
             Prefetch(
                 "comments",
                 queryset=CommunityPostComment.objects.select_related("social_user")
-                .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
+                .defer(*profile_related("social_user__")).order_by("id"),
             ),
             "media",
         )
@@ -60,7 +60,7 @@ def page_ctx(request, group, me):
         "form": CommunityPostForm(auto_id="id_w_%s", initial={"board": "wall"}),
         "board_form": CommunityPostForm(auto_id="id_b_%s", initial={"board": "discussion"}),
         "photo_form": CommunityPostForm(auto_id="id_ph_%s", initial={"board": "wall"}),
-        "comment_form": CommentBodyForm(auto_id=False) if is_member else None,
+        "comment_form": CommentForm(auto_id=False) if is_member else None,
         "event_form": GroupEventForm() if is_admin else None,
     }
     if not can_view:
@@ -70,11 +70,11 @@ def page_ctx(request, group, me):
     ctx.update(
         members=list(
             SocialProfile.objects.filter(memberships__community=group)
-            .defer("looking_for", "interested_in", "languages").order_by("name")[:6]
+            .defer(*PROFILE_DEFER).order_by("name")[:6]
         ),
         officers=list(
             SocialProfile.objects.filter(memberships__community=group, memberships__role__in=_ADMIN)
-            .defer("looking_for", "interested_in", "languages").distinct()[:12]
+            .defer(*PROFILE_DEFER).distinct()[:12]
         ),
         related=list(
             Community.objects.filter(category=group.category).exclude(pk=group.pk)
@@ -94,7 +94,7 @@ def page_ctx(request, group, me):
     if is_member and me:
         member_ids = CommunityMember.objects.filter(community=group).values("social_user_id")
         ctx["invite_friends"] = list(
-            accepted_friends(me).exclude(id__in=member_ids).defer("looking_for", "interested_in", "languages")[:12]
+            accepted_friends(me).exclude(id__in=member_ids).defer(*PROFILE_DEFER)[:12]
         )
         ctx["album_photos"] = list(
             Photo.objects.filter(album__social_user=me).exclude(path="").order_by("-id")[:12]

@@ -10,7 +10,7 @@ from apps.social.albums import (
     add_comment, albums_with_covers, can_edit, can_view, comments_for, delete_comment,
     delete_photo_file, neighbors, save_photos, visible_q,
 )
-from apps.social.forms import AlbumForm, CommentBodyForm, PhotoUploadForm
+from apps.social.forms import AlbumForm, CommentForm, PhotoUploadForm
 from apps.social.models import Album, Photo, PhotoComment
 from apps.social.services import can_manage_photo_comment, get_profile, now, profile_of
 
@@ -157,7 +157,7 @@ def photo_show(request, album_id, photo_id):
             "album": album, "photo": photo, "me": me, "is_owner": can_edit(album, me),
             "prev_id": prev_id, "next_id": next_id, "n": n, "pos": pos,
             "comments": comments_for(photo),
-            "comment_form": CommentBodyForm() if me else None,
+            "comment_form": CommentForm() if me else None,
         },
     )
 
@@ -168,7 +168,7 @@ def photo_comment(request, album_id, photo_id):
     me = profile_of(request.user)
     album = get_object_or_404(Album, pk=album_id)
     photo = get_object_or_404(Photo, pk=photo_id, album=album)
-    form = CommentBodyForm(request.POST)
+    form = CommentForm(request.POST)
     if not (form.is_valid() and add_comment(me, photo, album, form.cleaned_data["body"])):
         messages.error(request, "Не удалось добавить комментарий.")
     return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)

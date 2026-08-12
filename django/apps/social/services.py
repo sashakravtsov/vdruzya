@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from apps.social.models import (
-    Block, Comment, Community, CommunityMember, CommunityPost, Friendship, Post,
-    SocialProfile,
+    GROUP_POST_DEFER, POST_DEFER, PROFILE_DEFER, Block, Comment, Community,
+    CommunityMember, CommunityPost, Friendship, Post, SocialProfile, profile_related,
 )
 
 
@@ -32,8 +32,7 @@ def accepted_friends(profile: SocialProfile, limit=None):
 
 def get_profile(pk: int) -> SocialProfile:
     return get_object_or_404(
-        SocialProfile.objects.select_related("user", "relationship_with")
-        .defer("looking_for", "interested_in", "languages"),
+        SocialProfile.objects.select_related("user", "relationship_with").defer(*PROFILE_DEFER),
         pk=pk,
     )
 
@@ -66,21 +65,18 @@ def post_visible_q(viewer, *, author_field="social_user_id") -> Q:
 
 
 def feed_queryset(viewer=None):
-    """Posts the viewer may open (permalink / comment / react). Not the News Feed circle."""
+    """Posts the viewer may open (permalink / comment). Not the News Feed circle."""
     qs = Post.objects.filter(post_visible_q(viewer)).exclude(kind__in=("status", "picture", "poll", "share"))
     if viewer:
         qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
     return (
         qs.select_related("social_user")
-        .defer(
-            "search_vector",
-            "social_user__looking_for", "social_user__interested_in", "social_user__languages",
-        )
+        .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
             Prefetch(
                 "comments",
                 queryset=Comment.objects.select_related("social_user")
-                .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+                .defer(*profile_related("social_user__"))
                 .order_by("id"),
             ),
             "media",
@@ -110,13 +106,18 @@ def can_manage_wall_post(me, post) -> bool:
     return bool(oid and oid == me.id)
 
 
-def can_manage_wall_comment(me, comment) -> bool:
+def _comment_host(me, comment, *, host_id=None, admin=False) -> bool:
+    """Author, wall/album host, or group admin may remove a flat comment."""
     if not me or not comment:
         return False
-    if comment.social_user_id == me.id:
-        return True
-    post = comment.post
-    return can_manage_wall_post(me, post)
+    return comment.social_user_id == me.id or (host_id and host_id == me.id) or bool(admin)
+
+
+def can_manage_wall_comment(me, comment) -> bool:
+    post = getattr(comment, "post", None)
+    return _comment_host(me, comment, host_id=wall_owner_id(post) if post else None) or (
+        can_manage_wall_post(me, post) if post else False
+    )
 
 
 _GROUP_ADMIN = ("admin", "moderator", "creator", "officer")
@@ -130,18 +131,12 @@ def is_group_admin(me, group) -> bool:
 
 
 def can_manage_group_comment(me, comment, group=None) -> bool:
-    if not me or not comment:
-        return False
-    if comment.social_user_id == me.id:
-        return True
     g = group or getattr(getattr(comment, "post", None), "community", None)
-    return is_group_admin(me, g)
+    return _comment_host(me, comment, admin=is_group_admin(me, g))
 
 
 def can_manage_photo_comment(me, comment, album) -> bool:
-    if not me or not comment or not album:
-        return False
-    return comment.social_user_id == me.id or album.social_user_id == me.id
+    return _comment_host(me, comment, host_id=getattr(album, "social_user_id", None))
 
 
 def wall_posts_for(profile, limit=20, viewer=None):
@@ -155,13 +150,13 @@ def wall_posts_for(profile, limit=20, viewer=None):
         .exclude(kind__in=("status", "picture", "poll", "share"))
         .exclude(topic__in=("status", "picture"))
         .select_related("social_user")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages", "search_vector")
+        .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
             "media",
             Prefetch(
                 "comments",
                 queryset=Comment.objects.select_related("social_user")
-                .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages").order_by("id"),
+                .defer(*profile_related("social_user__")).order_by("id"),
             ),
         )
         .annotate(n_comments=Count("comments", distinct=True))
@@ -267,7 +262,7 @@ def _add_group_posts(items, blocked, member_ids, limit):
         return
     qs = (
         CommunityPost.objects.select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .defer(*GROUP_POST_DEFER, *profile_related("social_user__"))
         .prefetch_related("media")
         .annotate(n_comments=Count("comments", distinct=True))
         .filter(community_id__in=member_ids)
@@ -284,7 +279,7 @@ def _add_joins(items, blocked, fids, limit):
         return
     qs = (
         CommunityMember.objects.select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .defer(*profile_related("social_user__"))
         .filter(social_user_id__in=fids)
         .exclude(community__privacy="closed")
         .order_by("-id")
@@ -382,13 +377,9 @@ def group_updates(viewer, limit=6):
         CommunityPost.objects.filter(community_id__in=ids)
         .exclude(social_user=viewer)
         .select_related("social_user", "community")
-        .defer("social_user__looking_for", "social_user__interested_in", "social_user__languages")
+        .defer(*GROUP_POST_DEFER, *profile_related("social_user__"))
         .order_by("-id")[:limit]
     )
-
-
-# Back-compat alias
-shared_with = group_updates
 
 
 def feed_rail(viewer):
@@ -427,7 +418,7 @@ def feed_rail(viewer):
         "rail_events": rail_events,
         "event_invites": event_invites,
         "popular_groups": popular,
-        "shared": group_updates(viewer),
+        "group_posts": group_updates(viewer),
         "birthdays": upcoming_birthdays(viewer),
     }
 

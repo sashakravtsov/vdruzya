@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST
 
 from apps.social.forms import CommentForm, PostForm
 from apps.social.models import Comment, Post, SocialProfile
-from apps.social.models.feed import Reaction
+from apps.social.models.legacy import Reaction
 from apps.social.services import bump_news, now as _now, profile_of
 
 
@@ -104,9 +104,9 @@ def comment_create(request, post_id):
     post = get_object_or_404(feed_queryset(me), pk=post_id)
     form = CommentForm(request.POST)
     if form.is_valid() and me:
-        c = form.save(commit=False)
-        c.post, c.social_user, c.created_at = post, me, _now()
-        c.save()
+        Comment.objects.create(
+            post=post, social_user=me, body=form.cleaned_data["body"], created_at=_now(),
+        )
         bump_news()
     nxt = request.POST.get("next") or reverse("feed")
     if "#" not in nxt:

@@ -404,7 +404,7 @@ button.linkish .ico { margin-right: 2px; }
 .news-item .avatar-col img, .news-item .avatar-col .avatar-fallback {
   width: 50px; height: 50px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
 }
-.req-row, .shared-row { margin: 0 0 6px; }
+.req-row, .rail-row { margin: 0 0 6px; }
 .req-row .ico,
 .req-row .news-icon { vertical-align: middle; margin-right: 4px; }
 
@@ -1098,11 +1098,11 @@ button.linkish .ico { margin-right: 2px; }
   font-size: 11px;
 }
 .feed-rail .req-row,
-.feed-rail .shared-row {
+.feed-rail .rail-row {
   margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
 }
 .feed-rail .req-row:last-child,
-.feed-rail .shared-row:last-child { border-bottom: 0; }
+.feed-rail .rail-row:last-child { border-bottom: 0; }
 
 
 /* ===== Utility pages FB2005 ===== */
@@ -1166,26 +1166,26 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-list .msg-thread.is-unread .msg-name { font-weight: bold; }
 .inbox-list .msg-pager { margin: 8px 0 0; font-size: 11px; }
 .inbox-thread .msg-subj-h { font-weight: bold; }
-.inbox-thread .chat-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
-.inbox-thread .chat-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
-.inbox-thread .chat-line .chat-body { margin: 2px 0 0; white-space: pre-wrap; }
-.inbox-thread .chat-older { margin: 0 0 8px; font-size: 11px; }
-.inbox-thread .chat-compose { margin: 0 0 8px; }
-.inbox-thread .chat-compose textarea,
-.inbox-thread .chat-compose .inputtext {
+.inbox-thread .msg-log { max-height: 380px; overflow: auto; margin: 0 0 10px; padding: 0 0 8px; }
+.inbox-thread .msg-line { margin: 0 0 10px; font-size: 11px; line-height: 14px; }
+.inbox-thread .msg-line .msg-body { margin: 2px 0 0; white-space: pre-wrap; }
+.inbox-thread .msg-older { margin: 0 0 8px; font-size: 11px; }
+.inbox-thread .msg-compose { margin: 0 0 8px; }
+.inbox-thread .msg-compose textarea,
+.inbox-thread .msg-compose .inputtext {
   width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
 .inbox-thread .compose-new .inputtext,
 .inbox-thread .compose-new textarea { width: 100%; max-width: 420px; }
 .inbox-thread > h4 .edit { float: right; font-weight: normal; }
 .inbox-thread .msg-actions form { display: inline; }
-.inbox-thread .chat-line .msg-del,
-.inbox-thread .chat-line .msg-del-btn { float: right; margin-left: 6px; }
-.inbox-thread .chat-compose .file-hint { display: block; margin-top: 4px; }
-.inbox-thread .chat-quote {
+.inbox-thread .msg-line .msg-del,
+.inbox-thread .msg-line .msg-del-btn { float: right; margin-left: 6px; }
+.inbox-thread .msg-compose .file-hint { display: block; margin-top: 4px; }
+.inbox-thread .msg-quote {
   margin: 4px 0; padding: 4px 6px; border-left: solid 3px #D8DFEA; background: #f7f7f7; font-size: 10px;
 }
-.inbox-thread .chat-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
+.inbox-thread .msg-photo { max-width: 220px; max-height: 220px; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-thread .msg-members { margin: 0 0 8px; font-size: 11px; }
 .inbox-thread .msg-thread-filter { margin: 0 0 8px; }
 .inbox-thread .msg-thread-filter .inputtext {

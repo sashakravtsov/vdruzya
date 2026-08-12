@@ -55,10 +55,11 @@ def member_post(view):
 
 
 def peer(conv: Conversation, me) -> SocialProfile | None:
-    peeps = others(conv, me)
-    if conv.community_id or len(peeps) != 1:
+    """1:1 peer only — community/group threads are not classic Inbox."""
+    if getattr(conv, "community_id", None):
         return None
-    return peeps[0]
+    peeps = others(conv, me)
+    return peeps[0] if len(peeps) == 1 else None
 
 
 def others(conv: Conversation, me) -> list[SocialProfile]:
@@ -163,7 +164,10 @@ def unread_count(me) -> int:
         conversation_id=OuterRef("pk"), social_user=me,
     ).values("last_read_at")[:1]
     return (
-        Conversation.objects.filter(members__social_user=me, members__archived_at__isnull=True)
+        Conversation.objects.filter(
+            community_id__isnull=True,
+            members__social_user=me, members__archived_at__isnull=True,
+        )
         .annotate(
             last_from_id=Subquery(last.values("social_user_id")[:1]),
             last_at=Subquery(last.values("created_at")[:1]),
@@ -231,7 +235,7 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, arch
     else:
         member_q &= Q(members__archived_at__isnull=True)
     qs = (
-        Conversation.objects.filter(member_q)
+        Conversation.objects.filter(member_q, community_id__isnull=True)
         .annotate(
             last_body=Subquery(last.values("body")[:1]),
             last_at=Subquery(last.values("created_at")[:1]),

@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_datetime
 
-from apps.social.models import Event, EventAttendee, Notification, SocialProfile
+from apps.social.models import Event, EventAttendee, Notification, SocialProfile, profile_related
 from apps.social.services import friend_ids, now
 
 STATUSES = ("going", "maybe", "declined")
@@ -71,9 +71,7 @@ def annotate_counts(qs):
 def list_events(me, tab="upcoming"):
     """Tabs: upcoming | past | hosting | going | invited."""
     qs = annotate_counts(
-        Event.objects.select_related("host", "community").defer(
-            "host__looking_for", "host__interested_in", "host__languages",
-        )
+        Event.objects.select_related("host", "community").defer(*profile_related("host__"))
     )
     t = now()
     if tab == "past":

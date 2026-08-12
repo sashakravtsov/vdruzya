@@ -63,7 +63,7 @@ def inbox_home(request):
     )
 
     active = None
-    members, chat_messages, has_older = [], [], False
+    members, thread_messages, has_older = [], [], False
     active_id = request.GET.get("c")
     if active_id:
         try:
@@ -76,7 +76,7 @@ def inbox_home(request):
         active.display_name = ch.label(active, me)
         active.peer = ch.peer(active, me)
         members = ch.others(active, me)
-        chat_messages, has_older = ch.thread(active, q=tq, all_messages=show_all)
+        thread_messages, has_older = ch.thread(active, q=tq, all_messages=show_all)
         if not ch.is_archived(me, active):
             ch.mark_read(me, active)
         for c in conversations:
@@ -89,7 +89,7 @@ def inbox_home(request):
         "conversations": conversations,
         "active": active,
         "members": members,
-        "chat_messages": chat_messages,
+        "thread_messages": thread_messages,
         "has_older": has_older,
         "show_all": show_all,
         "me": me,

@@ -86,7 +86,7 @@
                     {% endif %}
                     {% if rail_events %}
                         {% for e in rail_events %}
-                        <div class="shared-row">
+                        <div class="rail-row">
                             <a href="{% url 'events.show' e.id %}">{{ e.title }}</a>
                             <div class="muted">{{ e.starts_at|date:"j E, H:i" }}{% if e.place %} · {{ e.place }}{% endif %}</div>
                         </div>
@@ -111,11 +111,11 @@
             </div>
 
             <div class="profile-box">
-                <h4>Из групп{% if shared %}<a class="edit" href="{% url 'groups' %}?mine=1">мои</a>{% endif %}</h4>
+                <h4>Из групп{% if group_posts %}<a class="edit" href="{% url 'groups' %}?mine=1">мои</a>{% endif %}</h4>
                 <div class="profile-box-body">
-                    {% if shared %}
-                        {% for s in shared %}
-                        <div class="shared-row">
+                    {% if group_posts %}
+                        {% for s in group_posts %}
+                        <div class="rail-row">
                             <a href="{% url 'profile' s.social_user.id %}">{{ s.social_user.name }}</a>
                             в <a href="{{ s.get_absolute_url }}">{{ s.community.name }}</a>
                             <div class="muted">{{ s.title_line }}</div>

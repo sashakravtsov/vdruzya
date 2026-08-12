@@ -36,8 +36,11 @@ def _pending(me, limit=40):
 @login_required
 def people(request):
     """Find Friends — search + requests (FB 2006; no PYMK)."""
-    if request.GET.get("tab") in ("friends", "suggested"):
-        return redirect("people") if request.GET.get("tab") == "suggested" else redirect("friends")
+    # Legacy tabs: friends list moved; PYMK/suggested never existed in FB 2006.
+    if request.GET.get("tab") == "friends":
+        return redirect("friends")
+    if request.GET.get("tab") == "suggested":
+        return redirect("people")
     me = profile_of(request.user)
     tab = request.GET.get("tab") or "search"
     if tab not in _TABS:

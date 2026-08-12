@@ -16,3 +16,4 @@ class CommunityAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "slug", "privacy", "join_mode")
     search_fields = ("name", "slug")
     list_select_related = ("creator",)
+    exclude = ("messaging_enabled",)

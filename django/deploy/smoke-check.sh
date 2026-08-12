@@ -98,10 +98,21 @@ if [[ -f "${ROOT}/django/static/js/messenger.js" ]] || [[ -f "${ROOT}/django/app
 else
   echo "OK   no WS messenger leftovers"
 fi
-if [[ -f "${ROOT}/django/public/sw.js" ]] || [[ -f "${ROOT}/django/public/offline.html" ]]; then
+if [[ -f "${ROOT}/django/public/sw.js" ]] || [[ -f "${ROOT}/django/public/offline.html" ]] || [[ -f "${ROOT}/django/public/site.webmanifest" ]]; then
   echo "FAIL PWA leftovers present"; FAIL=1
 else
   echo "OK   no PWA leftovers"
+fi
+if [[ -f "${ROOT}/django/static/js/app.js" ]]; then
+  echo "FAIL empty app.js still present"; FAIL=1
+else
+  echo "OK   no app.js"
+fi
+if grep -RIl 'from apps.social.models.feed import Reaction\|models\.feed import Reaction' \
+    "${ROOT}/django/apps/social" 2>/dev/null | grep -q .; then
+  echo "FAIL Reaction still imported from feed"; FAIL=1
+else
+  echo "OK   Reaction quarantined in legacy"
 fi
 if [[ -f "${ROOT}/django/apps/social/models/polls.py" ]]; then
   echo "FAIL polls module still present"; FAIL=1
