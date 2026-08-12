@@ -227,5 +227,33 @@
             {% endif %}
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'share' and item.post %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            поделился(ась)
+            <a href="{% url 'posts.show' item.post.id %}">записью</a>
+            {% if item.shared and item.shared.social_user %}
+            <a href="{% url 'profile' item.shared.social_user.id %}">{{ item.shared.social_user.name }}</a>
+            {% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'review' and item.place %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            оценил(а)
+            <a href="{% url 'places.show' item.place.id %}"><b>{{ item.place.name }}</b></a>
+            на {{ item.review.stars }}/5
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'poll' and item.poll %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            создал(а) опрос
+            <a href="{% url 'polls.show' item.poll.id %}"><b>{{ item.poll.question|truncatewords:16 }}</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
 </div>

@@ -70,7 +70,9 @@ def post_show(request, post_id):
     post = get_object_or_404(feed_queryset(me), pk=post_id)
     attach_wall_notes([post])
     from apps.social.likes import attach_likes
+    from apps.social.shares import attach_share_flags
     attach_likes([post], me)
+    attach_share_flags([post], me)
     return render(
         request, "social/post_show.html",
         {"post": post, "me": me, "form": None, "comment_form": CommentForm() if me else None},

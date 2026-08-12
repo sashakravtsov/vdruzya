@@ -185,6 +185,25 @@ def post_like(request, post_id):
 
 @login_required
 @require_POST
+def post_share(request, post_id):
+    from apps.social.shares import share_to_wall
+    from apps.social.services import post_visible_q
+
+    me = profile_of(request.user)
+    post = get_object_or_404(Post, pk=post_id)
+    if not Post.objects.filter(pk=post.id).filter(post_visible_q(me)).exists():
+        messages.error(request, "Запись недоступна.")
+        return redirect(request.POST.get("next") or "feed")
+    shared = share_to_wall(me, post, request.POST.get("body") or "")
+    if not shared:
+        messages.error(request, "Нельзя поделиться этой записью.")
+        return redirect(request.POST.get("next") or post.get_absolute_url())
+    messages.success(request, "Запись появилась на вашей стене.")
+    return redirect(request.POST.get("next") or f"/profile/{me.id}")
+
+
+@login_required
+@require_POST
 def post_delete(request, post_id):
     from apps.social.services import can_manage_wall_post
     me = profile_of(request.user)

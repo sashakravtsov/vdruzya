@@ -17,6 +17,7 @@ APPS = (
     {"slug": "marketplace", "name": "Барахолка", "blurb": "Купить и продать вещи рядом.", "url_name": "marketplace"},
     {"slug": "places", "name": "Места", "blurb": "Отмечайтесь в местах и смотрите, где бывают друзья.", "url_name": "places"},
     {"slug": "questions", "name": "Вопросы", "blurb": "Спросите друзей и голосуйте за ответы.", "url_name": "questions"},
+    {"slug": "polls", "name": "Опросы", "blurb": "Классические опросы для друзей.", "url_name": "polls"},
     {"slug": "networks", "name": "Сети", "blurb": "Города, школы и места работы.", "url_name": "networks"},
     {"slug": "lists", "name": "Списки друзей", "blurb": "Группируйте друзей по спискам.", "url_name": "friends.lists"},
     {"slug": "messages", "name": "Сообщения", "blurb": "Входящие письма друзьям.", "url_name": "inbox"},

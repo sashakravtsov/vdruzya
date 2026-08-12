@@ -1,9 +1,13 @@
-"""FB 2010 Places + Questions helpers."""
+"""FB 2010 Places + Questions + Reviews + classic Polls helpers."""
 from __future__ import annotations
 
 from django.db.models import Count
 
-from apps.social.models import Place, PlaceCheckin, Post, Question, QuestionAnswer, QuestionVote
+from apps.social.models import (
+    ClassicPoll, ClassicPollOption, ClassicPollVote,
+    Place, PlaceCheckin, PlaceReview,
+    Post, Question, QuestionAnswer, QuestionVote,
+)
 from apps.social.services import bump_news, friend_ids, now, profile_related
 
 
@@ -57,6 +61,47 @@ def place_checkins(place, limit=40):
         .defer(*profile_related("social_user__"))
         .order_by("-id")[:limit]
     )
+
+
+def place_reviews(place, limit=40):
+    return list(
+        PlaceReview.objects.filter(place=place)
+        .select_related("social_user")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")[:limit]
+    )
+
+
+def place_review_upsert(me, place, *, stars: int, body="") -> PlaceReview | None:
+    if not me or not place:
+        return None
+    try:
+        stars = int(stars)
+    except (TypeError, ValueError):
+        return None
+    if stars < 1 or stars > 5:
+        return None
+    body = (body or "").strip()[:500]
+    t = now()
+    existing = PlaceReview.objects.filter(place=place, social_user=me).first()
+    if existing:
+        existing.stars = stars
+        existing.body = body
+        existing.created_at = t
+        existing.save(update_fields=["stars", "body", "created_at"])
+        bump_news()
+        return existing
+    row = PlaceReview.objects.create(
+        place=place, social_user=me, stars=stars, body=body, created_at=t,
+    )
+    bump_news()
+    return row
+
+
+def my_place_review(me, place):
+    if not me or not place:
+        return None
+    return PlaceReview.objects.filter(place=place, social_user=me).first()
 
 
 def questions_feed(viewer, *, mine=False, limit=40):
@@ -126,5 +171,81 @@ def toggle_vote(me, answer) -> str:
         bump_news()
         return "unvoted"
     QuestionVote.objects.create(answer=answer, social_user=me, created_at=now())
+    bump_news()
+    return "voted"
+
+
+def polls_feed(viewer, *, mine=False, limit=40):
+    fids = friend_ids(viewer) | {viewer.id} if viewer else set()
+    qs = (
+        ClassicPoll.objects.select_related("social_user")
+        .defer(*profile_related("social_user__"))
+        .annotate(n_votes=Count("votes", distinct=True))
+        .order_by("-id")
+    )
+    if mine and viewer:
+        qs = qs.filter(social_user=viewer)
+    elif viewer:
+        qs = qs.filter(social_user_id__in=fids)
+    return list(qs[:limit])
+
+
+def poll_create(me, question: str, options: list[str]):
+    question = (question or "").strip()[:500]
+    opts = []
+    for raw in options or []:
+        body = (raw or "").strip()[:255]
+        if body and body not in opts:
+            opts.append(body)
+    if not me or not question or len(opts) < 2:
+        return None
+    t = now()
+    poll = ClassicPoll.objects.create(
+        social_user=me, question=question, created_at=t, updated_at=t,
+    )
+    for i, body in enumerate(opts[:8]):
+        ClassicPollOption.objects.create(poll=poll, body=body, sort_order=i)
+    bump_news()
+    return poll
+
+
+def poll_options(poll, viewer=None):
+    rows = list(
+        ClassicPollOption.objects.filter(poll=poll)
+        .annotate(n_votes=Count("votes", distinct=True))
+        .order_by("sort_order", "id")
+    )
+    my_option = None
+    if viewer:
+        vote = (
+            ClassicPollVote.objects.filter(poll=poll, social_user=viewer)
+            .values_list("option_id", flat=True)
+            .first()
+        )
+        my_option = vote
+    total = sum(getattr(o, "n_votes", 0) or 0 for o in rows) or 0
+    for o in rows:
+        o.voted_by_me = o.id == my_option
+        o.pct = int(round(100 * (o.n_votes or 0) / total)) if total else 0
+    return rows, my_option, total
+
+
+def poll_vote(me, poll, option) -> str:
+    if not me or not poll or not option or option.poll_id != poll.id:
+        return ""
+    existing = ClassicPollVote.objects.filter(poll=poll, social_user=me).first()
+    if existing and existing.option_id == option.id:
+        existing.delete()
+        bump_news()
+        return "unvoted"
+    if existing:
+        existing.option = option
+        existing.created_at = now()
+        existing.save(update_fields=["option", "created_at"])
+        bump_news()
+        return "changed"
+    ClassicPollVote.objects.create(
+        poll=poll, option=option, social_user=me, created_at=now(),
+    )
     bump_news()
     return "voted"

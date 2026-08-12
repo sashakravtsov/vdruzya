@@ -6,7 +6,9 @@
             <div class="info">
                 <div class="header">
                     <a href="{% url 'profile' post.social_user.id %}"><b>{{ post.social_user.name }}</b></a>
-                    {% if wall_owner and post.social_user_id != wall_owner.id %}
+                    {% if post.kind == 'share' %}
+                    поделился(ась) записью
+                    {% elif wall_owner and post.social_user_id != wall_owner.id %}
                     написал(а) на стену
                     {% elif post.wall_note_owner %}
                     написал(а) на стену <a href="{% url 'profile' post.wall_note_owner.id %}">{{ post.wall_note_owner.name }}</a>
@@ -29,9 +31,30 @@
                     {% endif %}
                 </div>
                 <div class="text">
-                    {% if post.kind == 'note' and post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
-                    {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
-                    {% include "social/_post_media.html" with post=post %}
+                    {% if post.kind == 'share' %}
+                        {% if post.body %}<div class="share-blurb">{{ post.body|linebreaksbr }}</div>{% endif %}
+                        {% if post.shared_post %}
+                        <div class="shared-note">
+                            <div class="shared-head">
+                                <a href="{% url 'profile' post.shared_post.social_user.id %}"><b>{{ post.shared_post.social_user.name }}</b></a>
+                                {% if post.shared_post.created_at %}
+                                <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.shared_post.id %}">{{ post.shared_post.created_at|fb_when }}</a></span>
+                                {% endif %}
+                            </div>
+                            {% if post.shared_post.kind == 'note' and post.shared_post.media_label %}
+                            <div class="note-head"><b>{{ post.shared_post.media_label }}</b></div>
+                            {% endif %}
+                            {% if post.shared_post.body %}{{ post.shared_post.body|linebreaksbr }}{% endif %}
+                            {% include "social/_post_media.html" with post=post.shared_post %}
+                        </div>
+                        {% else %}
+                        <p class="muted">Исходная запись недоступна.</p>
+                        {% endif %}
+                    {% else %}
+                        {% if post.kind == 'note' and post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
+                        {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
+                        {% include "social/_post_media.html" with post=post %}
+                    {% endif %}
                 </div>
                 <div class="actions">
                     {% if me %}
@@ -42,6 +65,13 @@
                     {% if post.n_likes %} <span class="muted">({{ post.n_likes }})</span>{% endif %}
                     ·
                     <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
+                    {% if post.can_share %}
+                    ·
+                    <form method="post" action="{% url 'posts.share' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish wall-act">Поделиться</button>
+                    </form>
+                    {% endif %}
                     {% else %}
                     {% if post.n_likes %}<span class="muted">{{ post.n_likes }} нравится · </span>{% endif %}
                     <span class="ico ico-comment"></span> {{ post.n_comments|default:0 }}

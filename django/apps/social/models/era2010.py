@@ -74,3 +74,59 @@ class QuestionVote(models.Model):
     class Meta:
         managed = False
         db_table = "question_votes"
+
+
+class PlaceReview(models.Model):
+    """FB Places reviews — stars + short text (2010)."""
+    id = models.BigAutoField(primary_key=True)
+    place = models.ForeignKey(Place, models.DO_NOTHING, related_name="reviews")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="place_reviews")
+    stars = models.SmallIntegerField(default=5)
+    body = models.CharField(max_length=500, blank=True, default="")
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "place_reviews"
+        ordering = ["-id"]
+
+
+class ClassicPoll(models.Model):
+    """Classic FB Polls — separate from banned models/polls.py path."""
+    id = models.BigAutoField(primary_key=True)
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="classic_polls")
+    question = models.CharField(max_length=500)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "classic_polls"
+        ordering = ["-id"]
+
+    def get_absolute_url(self):
+        return f"/polls/{self.pk}"
+
+
+class ClassicPollOption(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    poll = models.ForeignKey(ClassicPoll, models.DO_NOTHING, related_name="options")
+    body = models.CharField(max_length=255)
+    sort_order = models.SmallIntegerField(default=0)
+
+    class Meta:
+        managed = False
+        db_table = "classic_poll_options"
+        ordering = ["sort_order", "id"]
+
+
+class ClassicPollVote(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    poll = models.ForeignKey(ClassicPoll, models.DO_NOTHING, related_name="votes")
+    option = models.ForeignKey(ClassicPollOption, models.DO_NOTHING, related_name="votes")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="classic_poll_votes")
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "classic_poll_votes"

@@ -10,7 +10,7 @@ class Post(models.Model):
     kind = models.CharField(max_length=255, default="text")
     body = models.TextField()
     topic = models.CharField(max_length=255, blank=True, default="thought")
-    # mood / emoji / sticker / shared_post — schema leftovers (not FB 2006 UI)
+    # mood / emoji / sticker — schema leftovers; shared_post powers classic Share
     mood = models.CharField(max_length=255, null=True, blank=True)
     emoji = models.CharField(max_length=16, null=True, blank=True)
     sticker = models.CharField(max_length=255, null=True, blank=True)

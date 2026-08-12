@@ -970,6 +970,11 @@ button.linkish .ico { margin-right: 2px; }
 .wallpost .info .header a.muted { color: #777; font-weight: normal; }
 .wallpost .info .header a.muted:hover { text-decoration: underline; }
 .wallpost .info .text { padding: 5px; background: #fff; font-size: 11px; line-height: 14px; }
+.wallpost .shared-note {
+  margin-top: 6px; padding: 8px; border: 1px solid #d8dfea; background: #f7f7f7;
+}
+.wallpost .shared-note .shared-head { margin-bottom: 4px; }
+.wallpost .share-blurb { margin-bottom: 4px; }
 .wallpost .info .actions {
   padding: 3px 5px;
   border-bottom: solid 1px #D8DFEA;

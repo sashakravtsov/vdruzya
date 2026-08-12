@@ -66,12 +66,12 @@ def post_visible_q(viewer, *, author_field="social_user_id") -> Q:
 
 def feed_queryset(viewer=None):
     """Posts the viewer may open (permalink / comment). Not the News Feed circle."""
-    qs = Post.objects.filter(post_visible_q(viewer)).exclude(kind__in=("status", "picture", "poll", "share"))
+    qs = Post.objects.filter(post_visible_q(viewer)).exclude(kind__in=("status", "picture", "poll"))
     if viewer:
         qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
     return (
-        qs.select_related("social_user")
-        .defer(*POST_DEFER, *profile_related("social_user__"))
+        qs.select_related("social_user", "shared_post", "shared_post__social_user")
+        .defer(*POST_DEFER, *profile_related("social_user__"), *profile_related("shared_post__social_user__"))
         .prefetch_related(
             Prefetch(
                 "comments",
@@ -172,14 +172,14 @@ def wall_posts_for(profile, limit=20, viewer=None):
                 & ~Q(topic__startswith="gift:")
             )
         )
-        .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift", "checkin"))
+        .exclude(kind__in=("status", "picture", "poll", "note", "gift", "checkin"))
         .exclude(topic__in=("status", "picture", "note"))
         .exclude(topic__startswith="page:")
         .exclude(topic__startswith="gift:")
         .exclude(topic__startswith="place:")
         .exclude(topic__startswith="event:")
-        .select_related("social_user")
-        .defer(*POST_DEFER, *profile_related("social_user__"))
+        .select_related("social_user", "shared_post", "shared_post__social_user")
+        .defer(*POST_DEFER, *profile_related("social_user__"), *profile_related("shared_post__social_user__"))
         .prefetch_related(
             "media",
             Prefetch(
@@ -197,7 +197,9 @@ def wall_posts_for(profile, limit=20, viewer=None):
         if viewer:
             qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
     from apps.social.likes import attach_likes
-    return attach_likes(list(qs.order_by("-id")[:limit]), viewer)
+    from apps.social.shares import attach_share_flags
+    posts = attach_likes(list(qs.order_by("-id")[:limit]), viewer)
+    return attach_share_flags(posts, viewer)
 
 
 def notes_for(profile, limit=20, viewer=None):
@@ -719,6 +721,44 @@ def _add_likes(items, blocked, fids, limit):
         })
 
 
+def _add_reviews(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import PlaceReview
+    qs = (
+        PlaceReview.objects.filter(social_user_id__in=fids)
+        .select_related("social_user", "place")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "review", "at": row.created_at,
+            "actor": row.social_user, "place": row.place, "review": row,
+        })
+
+
+def _add_polls(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import ClassicPoll
+    qs = (
+        ClassicPoll.objects.filter(social_user_id__in=fids)
+        .select_related("social_user")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "poll", "at": row.created_at,
+            "actor": row.social_user, "poll": row,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -764,6 +804,11 @@ def news_items(viewer=None, limit=40):
         kind = getattr(p, "kind", None) or ""
         if kind == "note":
             items.append({"kind": "note", "at": p.created_at, "post": p, "actor": p.social_user})
+        elif kind == "share":
+            items.append({
+                "kind": "share", "at": p.created_at, "post": p, "actor": p.social_user,
+                "shared": getattr(p, "shared_post", None),
+            })
         elif kind in ("link", "video"):
             from apps.social.classic_extra import unpack_link_body
             url, blurb = unpack_link_body(p.body)
@@ -786,6 +831,8 @@ def news_items(viewer=None, limit=40):
     _add_checkins(items, blocked, fids, limit)
     _add_questions(items, blocked, fids, limit)
     _add_likes(items, blocked, fids, limit)
+    _add_reviews(items, blocked, fids, limit)
+    _add_polls(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)

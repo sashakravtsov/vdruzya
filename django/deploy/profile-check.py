@@ -57,8 +57,8 @@ def main():
     assert b'name="visibility"' not in r.content  # server sets from wall_view
     assert f'name="wall_to" value="{me.id}"'.encode() in r.content
     assert "Мне нравится".encode() in r.content  # FB 2009 Like on wall
-    assert "Поделиться".encode() not in r.content
-    assert "Закрепить".encode() not in r.content
+    assert "Закрепить".encode() not in r.content  # Pin never classic
+    assert b"react-btn" not in r.content and b"ico-thumb" not in r.content
     assert "Друзья в ".encode() not in r.content
     n_friends = len(friend_ids(me))
     assert friend_count(me) == n_friends

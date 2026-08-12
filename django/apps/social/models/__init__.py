@@ -12,7 +12,11 @@ from .more import Album, Event, EventAttendee, Photo, PhotoComment, PhotoTag
 from .pages import Company, CompanyAdmin, CompanyFollower
 from .stickers import Sticker, StickerPack
 from .extra import FriendList, FriendListMember, MarketplaceListing
-from .era2010 import Place, PlaceCheckin, Question, QuestionAnswer, QuestionVote
+from .era2010 import (
+    ClassicPoll, ClassicPollOption, ClassicPollVote,
+    Place, PlaceCheckin, PlaceReview,
+    Question, QuestionAnswer, QuestionVote,
+)
 from .legacy import Reaction
 
 __all__ = [
@@ -26,6 +30,8 @@ __all__ = [
     "Company", "CompanyAdmin", "CompanyFollower",
     "Sticker", "StickerPack",
     "FriendList", "FriendListMember", "MarketplaceListing",
-    "Place", "PlaceCheckin", "Question", "QuestionAnswer", "QuestionVote",
+    "Place", "PlaceCheckin", "PlaceReview",
+    "Question", "QuestionAnswer", "QuestionVote",
+    "ClassicPoll", "ClassicPollOption", "ClassicPollVote",
     "Reaction",
 ]

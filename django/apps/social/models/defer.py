@@ -5,7 +5,8 @@ PROFILE_DEFER = (
     "cover_path", "pronouns", "life_goals", "family_status", "district", "verified",
 )
 # mood/emoji/sticker/share = post-2006 leftovers still in live DB columns
-POST_DEFER = ("mood", "emoji", "sticker", "search_vector", "shared_post")
+# mood / emoji / sticker — schema leftovers; shared_post used for classic Share (2009+)
+POST_DEFER = ("mood", "emoji", "sticker", "search_vector")
 GROUP_POST_DEFER = ("mood", "emoji", "sticker")
 
 

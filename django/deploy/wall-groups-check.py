@@ -81,7 +81,7 @@ def main():
     if "ico-thumb" in body or "react-btn" in body:
         fail("modern reaction chrome")
     if "Поделиться" in body or "Закрепить" in body:
-        fail("share/pin are not classic wall")
+        fail("share/pin are not classic feed actions")
     if 'class="wallpost"' in body:
         fail("feed still embeds wallpost cards")
     ok("comment icons + feed news stories")
@@ -121,7 +121,7 @@ def main():
         fail("profile wall")
     if "ico-comment" not in body:
         fail("comment icon missing on profile wall")
-    for bad in ("Поделиться", "Закрепить", "ico-thumb", "react-btn"):
+    for bad in ("Закрепить", "ico-thumb", "react-btn"):
         if bad in body:
             fail(f"profile wall has non-classic action: {bad}")
     if "Мне нравится" not in body:

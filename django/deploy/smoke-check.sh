@@ -19,7 +19,7 @@ for path in \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
-  /places:302 /questions:302 \
+  /places:302 /questions:302 /polls:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -98,7 +98,8 @@ if curl -sL "${BASE_URL}/profile/aleksandr-kravtsov" | grep -Eq 'https://s3\.vdr
 else
   echo "FAIL profile HTML missing S3 avatar"; FAIL=1
 fi
-# FB-2006: no live Messenger / PWA / polls surface
+# FB-2006: no live Messenger / PWA / models.polls.py surface
+# (classic_polls tables + /polls UI are the allowed 2010 Polls)
 if [[ -f "${ROOT}/django/static/js/messenger.js" ]] || [[ -f "${ROOT}/django/apps/social/consumers.py" ]]; then
   echo "FAIL WS messenger leftovers present"; FAIL=1
 else
@@ -197,24 +198,26 @@ if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
 else
   echo "OK   wall-to-wall route"
 fi
-if grep -q 'Поделиться\|Закрепить' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
-   || grep -q 'Поделиться\|Закрепить' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
-  echo "FAIL wall templates have share/pin"; FAIL=1
-elif ! grep -q 'Мне нравится' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null; then
-  echo "FAIL wall missing classic Like (FB 2009)"; FAIL=1
+if grep -q 'Закрепить' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
+   || grep -q 'Закрепить' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
+  echo "FAIL wall templates have Pin"; FAIL=1
+elif ! grep -q 'Мне нравится' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
+   || ! grep -q 'Поделиться' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null; then
+  echo "FAIL wall missing classic Like/Share (FB 2009+)"; FAIL=1
 else
-  echo "OK   wall has Like, no share/pin (FB 2009 classic)"
+  echo "OK   wall has Like + Share, no Pin (FB 2009 classic)"
 fi
 if ! grep -q 'name="places"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
-  || ! grep -q 'name="questions"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
-  echo "FAIL Places/Questions routes missing"; FAIL=1
+  || ! grep -q 'name="questions"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'name="polls"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL Places/Questions/Polls routes missing"; FAIL=1
 else
-  echo "OK   Places + Questions routes (2010 classic)"
+  echo "OK   Places + Questions + Polls routes (2010 classic)"
 fi
-if ! grep -q 'shared_post' "${ROOT}/django/apps/social/models/defer.py" 2>/dev/null; then
-  echo "FAIL shared_post not deferred"; FAIL=1
+if grep -E 'POST_DEFER = \(.*"shared_post"' "${ROOT}/django/apps/social/models/defer.py" 2>/dev/null; then
+  echo "FAIL shared_post still deferred (needed for Share)"; FAIL=1
 else
-  echo "OK   shared_post deferred (not 2006)"
+  echo "OK   shared_post loaded for classic Share"
 fi
 if grep -q '<details' "${ROOT}/django/templates/social/_comment_thread.html" 2>/dev/null; then
   echo "FAIL comment thread still uses details"; FAIL=1

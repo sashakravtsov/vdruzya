@@ -701,3 +701,41 @@ class QuestionAnswerForm(ClassicForm, forms.Form):
             raise forms.ValidationError("Напишите ответ.")
         return body[:500]
 
+
+class PlaceReviewForm(ClassicForm, forms.Form):
+    stars = forms.TypedChoiceField(
+        coerce=int,
+        choices=[(i, f"{i}") for i in range(1, 6)],
+        initial=5,
+        widget=forms.Select(attrs={"class": "inputtext"}),
+    )
+    body = forms.CharField(max_length=500, required=False, widget=_ta(2, style="width:100%"))
+
+    def clean_body(self):
+        return (self.cleaned_data.get("body") or "").strip()[:500]
+
+
+class PollForm(ClassicForm, forms.Form):
+    question = forms.CharField(max_length=500, widget=_ta(2, style="width:100%"))
+    options = forms.CharField(
+        widget=_ta(4, style="width:100%"),
+        help_text="По одному варианту на строку (минимум 2).",
+    )
+
+    def clean_question(self):
+        q = (self.cleaned_data.get("question") or "").strip()
+        if not q:
+            raise forms.ValidationError("Напишите вопрос опроса.")
+        return q[:500]
+
+    def clean_options(self):
+        raw = self.cleaned_data.get("options") or ""
+        opts = []
+        for line in raw.splitlines():
+            body = line.strip()[:255]
+            if body and body not in opts:
+                opts.append(body)
+        if len(opts) < 2:
+            raise forms.ValidationError("Нужно минимум два варианта ответа.")
+        return opts[:8]
+
