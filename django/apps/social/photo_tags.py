@@ -88,6 +88,8 @@ def remove_tag(me, tag, album) -> bool:
 
 def photos_of(profile, viewer, limit=40):
     """Photos where profile is tagged and viewer may see the album."""
+    from apps.social.models import PROFILE_DEFER
+
     album_ids = list(
         PhotoTag.objects.filter(social_user=profile).values_list("photo__album_id", flat=True)[:300]
     )
@@ -98,10 +100,35 @@ def photos_of(profile, viewer, limit=40):
     )
     if not visible:
         return []
-    return list(
-        Photo.objects.filter(tags__social_user=profile, album_id__in=visible)
-        .exclude(path="")
-        .select_related("album", "album__social_user")
-        .distinct()
-        .order_by("-id")[:limit]
+    # Avoid DISTINCT over SocialProfile JSON columns (PG has no json equality).
+    photo_ids = list(
+        PhotoTag.objects.filter(social_user=profile, photo__album_id__in=visible)
+        .exclude(photo__path="")
+        .order_by("-photo_id")
+        .values_list("photo_id", flat=True)[: limit * 2]
     )
+    # preserve newest order, unique
+    seen, ordered = set(), []
+    for pid in photo_ids:
+        if pid not in seen:
+            seen.add(pid)
+            ordered.append(pid)
+        if len(ordered) >= limit:
+            break
+    if not ordered:
+        return []
+    by_id = {
+        p.id: p
+        for p in Photo.objects.filter(id__in=ordered)
+        .select_related("album", "album__social_user")
+        .defer(*PROFILE_DEFER, *[f"album__social_user__{f}" for f in ()])  # noop guard
+    }
+    # Prefer defer via profile_related if available
+    from apps.social.models import profile_related
+    by_id = {
+        p.id: p
+        for p in Photo.objects.filter(id__in=ordered)
+        .select_related("album", "album__social_user")
+        .defer(*profile_related("album__social_user__"))
+    }
+    return [by_id[i] for i in ordered if i in by_id]
