@@ -13,8 +13,6 @@ django.setup()
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
-from django.utils.datastructures import MultiValueDict
-
 from apps.accounts.models import User
 from apps.social.media import process_image_bytes
 from apps.social.models import Album, Photo, Post
@@ -50,14 +48,14 @@ def main():
         social_user=me, title=f"QA Media {uuid.uuid4().hex[:5]}",
         description="", visibility="public", created_at=t, updated_at=t,
     )
-    # Django test Client has no files= kwarg — put uploads in data (MultiValueDict).
-    data = MultiValueDict({
-        "title": ["Batch"],
+    # Django test Client: no files= kwarg; multi-file = list under one key in data.
+    data = {
+        "title": "Batch",
         "photo": [
             SimpleUploadedFile("a.png", PNG, content_type="image/png"),
             SimpleUploadedFile("b.png", PNG, content_type="image/png"),
         ],
-    })
+    }
     r = c.post(
         f"/albums/{album.id}/photos", data, secure=True, follow=True,
     )
