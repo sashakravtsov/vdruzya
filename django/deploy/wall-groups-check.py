@@ -182,6 +182,15 @@ def main():
         fail("group comment not saved")
     ok("group comment")
 
+    cm = post_row.comments.filter(body="probe c").first()
+    r = post(f"/groups/{g.id}/comments/{cm.id}/like", {})
+    if r.status_code != 200:
+        fail(f"group comment like {r.status_code}")
+    from apps.social.models.legacy import GroupCommentReaction
+    if not GroupCommentReaction.objects.filter(comment=cm, social_user=me, type="like").exists():
+        fail("group comment like not saved")
+    ok("group comment like")
+
     r = post(
         f"/groups/{g.id}/posts",
         {"subject": "probe subject", "body": "probe topic django", "board": "discussion"},

@@ -1,11 +1,11 @@
-"""Unmanaged tables — classic FB 2009 Likes + post tags + group docs."""
+"""Unmanaged tables — classic FB 2009 Likes + post tags + group docs + relationship."""
 from __future__ import annotations
 
 from django.db import models
 
 from .feed import Comment, Post
-from .groups import Community
-from .more import Photo
+from .groups import Community, CommunityPostComment
+from .more import Photo, PhotoComment
 from .people import SocialProfile
 
 
@@ -48,6 +48,32 @@ class CommentReaction(models.Model):
         db_table = "comment_reactions"
 
 
+class PhotoCommentReaction(models.Model):
+    """Like on photo comments."""
+    id = models.BigAutoField(primary_key=True)
+    comment = models.ForeignKey(PhotoComment, models.DO_NOTHING, related_name="+")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="+")
+    type = models.CharField(max_length=255, default="like")
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "photo_comment_reactions"
+
+
+class GroupCommentReaction(models.Model):
+    """Like on group wall/discussion comments."""
+    id = models.BigAutoField(primary_key=True)
+    comment = models.ForeignKey(CommunityPostComment, models.DO_NOTHING, related_name="+")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="+")
+    type = models.CharField(max_length=255, default="like")
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "group_comment_reactions"
+
+
 class PostTag(models.Model):
     """Tag a friend on a wall post (classic «с:»)."""
     id = models.BigAutoField(primary_key=True)
@@ -82,3 +108,24 @@ class GroupDoc(models.Model):
 
     def get_absolute_url(self):
         return f"/groups/{self.community_id}/docs/{self.pk}"
+
+
+class RelationshipRequest(models.Model):
+    """Pending confirmation when A lists B as partner."""
+    id = models.BigAutoField(primary_key=True)
+    requester = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, related_name="relationship_sent",
+        db_column="requester_id",
+    )
+    partner = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, related_name="relationship_received",
+        db_column="partner_id",
+    )
+    status = models.CharField(max_length=20, default="pending")
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "relationship_requests"
+        ordering = ["-id"]

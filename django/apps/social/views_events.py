@@ -22,11 +22,11 @@ def _can_post(me, event, status) -> bool:
     return status in ("going", "maybe")
 
 
-def _event_posts(event, *, photos_only=False, limit=30):
+def _event_posts(event, *, photos_only=False, limit=30, viewer=None):
     qs = (
         Post.objects.filter(topic=event.topic_key)
         .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift"))
-        .select_related("social_user")
+        .select_related("social_user", "shared_post", "shared_post__social_user")
         .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
             "media",
@@ -41,7 +41,17 @@ def _event_posts(event, *, photos_only=False, limit=30):
     )
     if photos_only:
         qs = qs.filter(kind="photo").exclude(media_path__isnull=True).exclude(media_path="")
-    return list(qs[:limit])
+    posts = list(qs[:limit])
+    from apps.social.likes import attach_likes
+    from apps.social.shares import attach_share_flags
+    from apps.social import post_tags as ptags
+    attach_likes(posts, viewer)
+    attach_share_flags(posts, viewer)
+    ptags.tags_for_posts(posts)
+    if viewer:
+        for p in posts:
+            p.tag_candidates = ptags.tag_candidates(viewer, p) if ptags.can_tag(viewer, p) else []
+    return posts
 
 
 @login_required
@@ -92,10 +102,10 @@ def event_show(request, event_id):
         show_tab = "wall"
     going = ev.guests(event, "going")
     maybe = ev.guests(event, "maybe")
-    posts = _event_posts(event, photos_only=(show_tab == "photos"))
+    posts = _event_posts(event, photos_only=(show_tab == "photos"), viewer=me)
     if show_tab == "wall":
         wall_posts = posts
-        photos = [p for p in _event_posts(event, photos_only=True, limit=12)]
+        photos = [p for p in _event_posts(event, photos_only=True, limit=12, viewer=me)]
     else:
         wall_posts = []
         photos = posts if show_tab == "photos" else []

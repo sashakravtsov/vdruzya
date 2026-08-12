@@ -89,6 +89,8 @@ def friends_home(request):
         friends, total, page = fr.friends_page(
             me, q=q, city=city, sort=sort, page=_page_int(request.GET.get("p")),
         )
+    from apps.social import relationship as relmod
+
     return render(
         request, "social/friends.html",
         {
@@ -97,6 +99,7 @@ def friends_home(request):
             "pending": _pending(me),
             "outgoing": list(fr.pending_from(me)[:40]) if me else [],
             "blocked": list(fr.blocked_by(me)[:40]) if me else [],
+            "relationship_incoming": relmod.incoming_for(me) if me else [],
         },
     )
 

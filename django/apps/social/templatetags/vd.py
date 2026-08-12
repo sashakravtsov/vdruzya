@@ -180,7 +180,6 @@ def _comment_pack(c, *, can_delete, delete_url, like_url=None, me=None):
 def comment_thread(context, comments, preview=2, kind="wall", group=None, album=None, photo=None, expand=False):
     """FB-2006: show last `preview` comments; older behind a reveal link. preview=0 → all."""
     from django.urls import reverse
-    from apps.social.likes import attach_comment_likes
     from apps.social.services import (
         can_manage_group_comment, can_manage_photo_comment, can_manage_wall_comment,
     )
@@ -189,7 +188,14 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
     next_url = context.get("next") or ""
     rows = list(comments or [])
     if kind == "wall":
+        from apps.social.likes import attach_comment_likes
         attach_comment_likes(rows, me)
+    elif kind == "photo":
+        from apps.social.likes import attach_photo_comment_likes
+        attach_photo_comment_likes(rows, me)
+    elif kind == "group":
+        from apps.social.likes import attach_group_comment_likes
+        attach_group_comment_likes(rows, me)
     if preview is None or preview == "":
         keep = 2
     else:
@@ -205,6 +211,7 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
                 c,
                 can_delete=can_manage_group_comment(me, c, group),
                 delete_url=reverse("groups.comments.delete", args=[group.id, c.id]),
+                like_url=reverse("groups.comments.like", args=[group.id, c.id]) if me else None,
                 me=me,
             )
         if kind == "photo":
@@ -214,6 +221,9 @@ def comment_thread(context, comments, preview=2, kind="wall", group=None, album=
                 delete_url=reverse(
                     "albums.photos.comment.delete", args=[album.id, photo.id, c.id],
                 ),
+                like_url=reverse(
+                    "albums.photos.comment.like", args=[album.id, photo.id, c.id],
+                ) if me else None,
                 me=me,
             )
         return _comment_pack(

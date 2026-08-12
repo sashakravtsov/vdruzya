@@ -158,6 +158,39 @@ CREATE TABLE IF NOT EXISTS classic_group_docs (
 );
 CREATE INDEX IF NOT EXISTS classic_group_docs_community_idx ON classic_group_docs (community_id);
 CREATE INDEX IF NOT EXISTS classic_group_docs_created_idx ON classic_group_docs (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS photo_comment_reactions (
+  id bigserial PRIMARY KEY,
+  comment_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  type varchar(255) NOT NULL DEFAULT 'like',
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS photo_comment_reactions_uniq
+  ON photo_comment_reactions (comment_id, social_user_id, type);
+
+CREATE TABLE IF NOT EXISTS group_comment_reactions (
+  id bigserial PRIMARY KEY,
+  comment_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  type varchar(255) NOT NULL DEFAULT 'like',
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS group_comment_reactions_uniq
+  ON group_comment_reactions (comment_id, social_user_id, type);
+
+CREATE TABLE IF NOT EXISTS relationship_requests (
+  id bigserial PRIMARY KEY,
+  requester_id bigint NOT NULL,
+  partner_id bigint NOT NULL,
+  status varchar(20) NOT NULL DEFAULT 'pending',
+  created_at timestamp without time zone,
+  updated_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS relationship_requests_uniq
+  ON relationship_requests (requester_id, partner_id);
+CREATE INDEX IF NOT EXISTS relationship_requests_partner_idx
+  ON relationship_requests (partner_id, status);
 """
 
 
@@ -169,12 +202,13 @@ def main():
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
             "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
+            "photo_comment_reactions", "group_comment_reactions", "relationship_requests",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
-    print("OK   2010 classic schema (likes/places/polls/tags/docs)")
+    print("OK   2010 classic schema (likes/places/polls/tags/docs/rel)")
 
 
 if __name__ == "__main__":

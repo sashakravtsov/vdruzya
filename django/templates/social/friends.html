@@ -82,6 +82,35 @@
         </div>
 
         <div class="friends-side">
+            {% if relationship_incoming %}
+            <div class="profile-box">
+                <h4>Подтверждение отношений ({{ relationship_incoming|length }})</h4>
+                <div class="profile-box-body">
+                    {% for rr in relationship_incoming %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' rr.requester.id %}">
+                            {% avatar rr.requester 32 %}
+                            <span>
+                                <b>{{ rr.requester.name }}</b>
+                                <span class="classic-person-sub">указал(а) вас в отношениях</span>
+                            </span>
+                        </a>
+                        <span class="classic-inline-actions classic-inline-actions-stack">
+                            <form method="post" action="{% url 'relationship.accept' me.id rr.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'friends' %}">
+                                <button type="submit" class="inputsubmit">Подтвердить</button>
+                            </form>
+                            <form method="post" action="{% url 'relationship.decline' me.id rr.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'friends' %}">
+                                <button type="submit" class="linkish">Отклонить</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="profile-box">
                 <h4>Заявки в друзья{% if pending %} ({{ pending|length }}){% endif %}</h4>
                 <div class="profile-box-body">

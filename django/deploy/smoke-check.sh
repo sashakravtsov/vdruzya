@@ -204,12 +204,35 @@ if ! grep -q 'profile.friendship' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
 else
   echo "OK   See Friendship + anniversaries routes"
 fi
+if ! grep -q 'albums.photos.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL photo like route missing"; FAIL=1
+else
+  echo "OK   photo Like route (FB 2009)"
+fi
 if ! grep -q 'comments.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'posts.tag' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'groups.docs' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
   echo "FAIL comment-like / post-tag / group-docs routes missing"; FAIL=1
 else
   echo "OK   comment Like + post tags + group Docs routes"
+fi
+if ! grep -q 'albums.photos.comment.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'groups.comments.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'relationship.accept' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL photo/group comment-like or relationship routes missing"; FAIL=1
+else
+  echo "OK   photo/group comment Like + relationship confirm routes"
+fi
+if ! grep -q 'wall-filters' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null \
+  || ! grep -q 'filter=photos' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
+  echo "FAIL wall filters missing"; FAIL=1
+else
+  echo "OK   wall filters (classic subtabs)"
+fi
+if ! grep -q 'relationship_incoming' "${ROOT}/django/templates/social/friends.html" 2>/dev/null; then
+  echo "FAIL friends relationship confirm UI missing"; FAIL=1
+else
+  echo "OK   friends relationship confirm UI"
 fi
 if ! grep -q 'tab=docs' "${ROOT}/django/templates/social/group.html" 2>/dev/null; then
   echo "FAIL group Docs tab missing"; FAIL=1

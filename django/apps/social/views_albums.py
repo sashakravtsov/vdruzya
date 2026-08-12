@@ -236,6 +236,27 @@ def photo_comment_delete(request, album_id, photo_id, comment_id):
     comment = get_object_or_404(PhotoComment, pk=comment_id, photo_id=photo_id, photo__album=album)
     if not can_manage_photo_comment(me, comment, album) or not delete_comment(me, comment, album):
         messages.error(request, "Нельзя удалить.")
+    else:
+        from apps.social.models.legacy import PhotoCommentReaction
+        PhotoCommentReaction.objects.filter(comment_id=comment_id).delete()
+    return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
+
+
+@login_required
+@require_POST
+def photo_comment_like(request, album_id, photo_id, comment_id):
+    from apps.social.likes import toggle_photo_comment_like
+
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    if not can_view(album, me):
+        return _forbid(request, album)
+    comment = get_object_or_404(PhotoComment, pk=comment_id, photo_id=photo_id, photo__album=album)
+    out = toggle_photo_comment_like(me, comment)
+    if out == "liked":
+        messages.success(request, "Вам это нравится.")
+    elif out == "unliked":
+        messages.info(request, "Отметка снята.")
     return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
 
 

@@ -255,6 +255,23 @@ def main():
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
     assert other.name.encode() in r.content
     assert b"aim_classic" in r.content
+    assert "ожидает подтверждения".encode() in r.content
+    from apps.social.models.legacy import RelationshipRequest
+    rr = RelationshipRequest.objects.filter(
+        requester=me, partner=other, status="pending",
+    ).first()
+    assert rr
+    # Confirm as partner so live profile is not stuck pending after smoke
+    c_other = Client(HTTP_HOST="vdruzya.ru")
+    c_other.force_login(other.user)
+    r = c_other.post(
+        f"/profile/{other.id}/relationship/{rr.id}/accept",
+        {"next": "/friends"},
+        secure=True,
+    )
+    assert r.status_code in (301, 302)
+    rr.refresh_from_db()
+    assert rr.status == "accepted"
     r = c.get(f"/profile/{me.id}", secure=True)
     assert b"__profile_status_check__" in r.content
     # status must not appear as a wall post body card from kind=status alone in wall box

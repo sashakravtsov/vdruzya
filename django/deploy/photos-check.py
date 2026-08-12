@@ -116,6 +116,14 @@ def main():
     ok("photo comment")
 
     r = c.post(
+        f"/albums/{a.id}/photos/{ph.id}/comments/{cm.id}/like", {}, secure=True, follow=True,
+    )
+    assert r.status_code == 200
+    from apps.social.models.legacy import PhotoCommentReaction
+    assert PhotoCommentReaction.objects.filter(comment=cm, social_user=me, type="like").exists()
+    ok("photo comment like")
+
+    r = c.post(
         f"/albums/{a.id}/photos/{ph.id}/comments/{cm.id}/delete", {}, secure=True, follow=True,
     )
     assert r.status_code == 200 and not PhotoComment.objects.filter(pk=cm.id).exists()

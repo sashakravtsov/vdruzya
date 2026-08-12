@@ -125,3 +125,89 @@ def toggle_comment_like(me, comment) -> str:
     )
     bump_news()
     return "liked"
+
+
+def attach_photo_comment_likes(comments, viewer=None):
+    from apps.social.models.legacy import PhotoCommentReaction
+    comments = list(comments or [])
+    ids = [c.id for c in comments if getattr(c, "id", None)]
+    counts = {c.id: 0 for c in comments}
+    mine = set()
+    if ids:
+        for row in (
+            PhotoCommentReaction.objects.filter(comment_id__in=ids, type="like")
+            .values("comment_id")
+            .annotate(n=Count("id"))
+        ):
+            counts[row["comment_id"]] = row["n"]
+        if viewer:
+            mine = set(
+                PhotoCommentReaction.objects.filter(
+                    comment_id__in=ids, social_user=viewer, type="like",
+                ).values_list("comment_id", flat=True)
+            )
+    for c in comments:
+        c.n_likes = counts.get(c.id, 0)
+        c.liked_by_me = c.id in mine
+    return comments
+
+
+def toggle_photo_comment_like(me, comment) -> str:
+    from apps.social.models.legacy import PhotoCommentReaction
+    if not me or not comment:
+        return ""
+    existing = PhotoCommentReaction.objects.filter(
+        comment=comment, social_user=me, type="like",
+    ).first()
+    if existing:
+        existing.delete()
+        bump_news()
+        return "unliked"
+    PhotoCommentReaction.objects.create(
+        comment=comment, social_user=me, type="like", created_at=now(),
+    )
+    bump_news()
+    return "liked"
+
+
+def attach_group_comment_likes(comments, viewer=None):
+    from apps.social.models.legacy import GroupCommentReaction
+    comments = list(comments or [])
+    ids = [c.id for c in comments if getattr(c, "id", None)]
+    counts = {c.id: 0 for c in comments}
+    mine = set()
+    if ids:
+        for row in (
+            GroupCommentReaction.objects.filter(comment_id__in=ids, type="like")
+            .values("comment_id")
+            .annotate(n=Count("id"))
+        ):
+            counts[row["comment_id"]] = row["n"]
+        if viewer:
+            mine = set(
+                GroupCommentReaction.objects.filter(
+                    comment_id__in=ids, social_user=viewer, type="like",
+                ).values_list("comment_id", flat=True)
+            )
+    for c in comments:
+        c.n_likes = counts.get(c.id, 0)
+        c.liked_by_me = c.id in mine
+    return comments
+
+
+def toggle_group_comment_like(me, comment) -> str:
+    from apps.social.models.legacy import GroupCommentReaction
+    if not me or not comment:
+        return ""
+    existing = GroupCommentReaction.objects.filter(
+        comment=comment, social_user=me, type="like",
+    ).first()
+    if existing:
+        existing.delete()
+        bump_news()
+        return "unliked"
+    GroupCommentReaction.objects.create(
+        comment=comment, social_user=me, type="like", created_at=now(),
+    )
+    bump_news()
+    return "liked"

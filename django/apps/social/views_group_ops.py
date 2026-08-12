@@ -108,9 +108,29 @@ def group_comment_delete(request, pk, comment_id):
     if not can_manage_group_comment(me, c, group):
         return redirect("groups.show", pk=pk)
     post = c.post
+    from apps.social.models.legacy import GroupCommentReaction
+    GroupCommentReaction.objects.filter(comment=c).delete()
     c.delete()
     messages.success(request, "Комментарий удалён.")
     return _post_redirect(pk, post)
+
+
+@login_required
+@require_POST
+def group_comment_like(request, pk, comment_id):
+    from apps.social.likes import toggle_group_comment_like
+
+    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
+    if not _member(me, group) and group.privacy == "closed":
+        messages.error(request, "Группа закрыта.")
+        return redirect("groups.show", pk=pk)
+    c = get_object_or_404(CommunityPostComment.objects.select_related("post"), pk=comment_id, post__community=group)
+    out = toggle_group_comment_like(me, c)
+    if out == "liked":
+        messages.success(request, "Вам это нравится.")
+    elif out == "unliked":
+        messages.info(request, "Отметка снята.")
+    return _post_redirect(pk, c.post)
 
 
 @login_required

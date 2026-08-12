@@ -35,6 +35,7 @@ def main():
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
             "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
+            "photo_comment_reactions", "group_comment_reactions", "relationship_requests",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
@@ -205,6 +206,65 @@ def main():
     CommentReaction.objects.filter(comment=cmt).delete()
     Comment.objects.filter(pk=cmt.id).delete()
     Post.objects.filter(pk=tpost2.id).delete()
+
+    # Wall filters
+    r = c.get(f"/profile/{me.id}?tab=wall&filter=photos", secure=True)
+    assert r.status_code == 200
+    assert b"wall-filters" in r.content or "Фото".encode() in r.content
+    assert b'filter=mine' in r.content
+    ok("wall filters")
+
+    # Relationship confirmation
+    from apps.social.models.legacy import RelationshipRequest
+    buddy2 = SocialProfile.objects.exclude(pk=me.id).order_by("id").first()
+    if buddy2:
+        Friendship.objects.update_or_create(
+            user=me, friend=buddy2,
+            defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
+        )
+        Friendship.objects.update_or_create(
+            user=buddy2, friend=me,
+            defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
+        )
+        old_status, old_partner = me.relationship_status, me.relationship_with_id
+        me.relationship_status = "in_a_relationship"
+        me.relationship_with = buddy2
+        me.save(update_fields=["relationship_status", "relationship_with"])
+        from apps.social import relationship as relmod
+        relmod.request_partner(me, buddy2, "in_a_relationship")
+        rr = RelationshipRequest.objects.filter(
+            requester=me, partner=buddy2, status="pending",
+        ).first()
+        assert rr, "relationship request missing"
+        r = c.get(f"/profile/{me.id}?tab=info", secure=True)
+        assert "ожидает подтверждения".encode() in r.content
+        # Accept as partner
+        u2 = buddy2.user
+        c2 = Client(HTTP_HOST="vdruzya.ru")
+        c2.force_login(u2)
+        r = c2.get("/friends", secure=True)
+        assert r.status_code == 200
+        assert "Подтверждение отношений".encode() in r.content
+        r = c2.post(
+            f"/profile/{buddy2.id}/relationship/{rr.id}/accept",
+            {"next": "/friends"},
+            secure=True,
+        )
+        assert r.status_code in (301, 302)
+        rr.refresh_from_db()
+        assert rr.status == "accepted"
+        buddy2.refresh_from_db()
+        assert buddy2.relationship_with_id == me.id
+        ok("relationship confirm")
+        RelationshipRequest.objects.filter(requester=me, partner=buddy2).delete()
+        me.relationship_status = old_status or ""
+        me.relationship_with_id = old_partner
+        me.save(update_fields=["relationship_status", "relationship_with"])
+        buddy2.relationship_with = None
+        buddy2.relationship_status = ""
+        buddy2.save(update_fields=["relationship_with", "relationship_status"])
+    else:
+        ok("relationship confirm skipped (no buddy)")
 
     # cleanup
     Reaction.objects.filter(post=tpost).delete()

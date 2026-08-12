@@ -48,8 +48,10 @@ def profile(request, pk):
     if me and me.id != user.id and fr.is_blocked(me, user):
         return render(request, "social/profile_blocked.html", {"who": user, "me": me}, status=403)
     tab = (request.GET.get("tab") or "wall").lower()
+    wall_filter = (request.GET.get("filter") or "all").lower()
     return render(request, "social/profile.html", pp.build_context(
         user, me, tab=tab, photos_view=request.GET.get("view") or "albums",
+        wall_filter=wall_filter,
     ))
 
 

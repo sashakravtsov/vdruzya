@@ -159,7 +159,7 @@ def can_manage_photo_comment(me, comment, album) -> bool:
     return _comment_host(me, comment, host_id=getattr(album, "social_user_id", None))
 
 
-def wall_posts_for(profile, limit=20, viewer=None):
+def wall_posts_for(profile, limit=20, viewer=None, wall_filter="all"):
     """Notes on this wall (`wall:{id}`). Legacy own posts without wall topic still listed."""
     key = f"wall:{profile.id}"
     qs = (
@@ -190,6 +190,19 @@ def wall_posts_for(profile, limit=20, viewer=None):
         )
         .annotate(n_comments=Count("comments", distinct=True))
     )
+    wf = (wall_filter or "all").lower()
+    if wf == "photos":
+        qs = qs.filter(kind="photo")
+    elif wf == "links":
+        qs = qs.filter(kind="link")
+    elif wf == "videos":
+        qs = qs.filter(kind="video")
+    elif wf == "shares":
+        qs = qs.filter(kind="share")
+    elif wf == "friends":
+        qs = qs.exclude(social_user=profile)
+    elif wf == "mine":
+        qs = qs.filter(social_user=profile)
     if viewer and viewer.id == profile.id:
         pass  # owner sees private notes too
     else:

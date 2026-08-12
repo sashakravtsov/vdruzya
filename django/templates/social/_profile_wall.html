@@ -81,6 +81,17 @@
 <div class="profile-box wall-box">
     <h4>Стена</h4>
     <div class="profile-box-body">
+        <div class="subtabs wall-filters">
+            {% with f=wall_filter|default:'all' %}
+            <div class="{% if f == 'all' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=all">Все</a></div>
+            <div class="{% if f == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=photos">Фото</a></div>
+            <div class="{% if f == 'links' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=links">Ссылки</a></div>
+            <div class="{% if f == 'videos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=videos">Видео</a></div>
+            <div class="{% if f == 'shares' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=shares">Репосты</a></div>
+            <div class="{% if f == 'friends' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=friends">От друзей</a></div>
+            <div class="{% if f == 'mine' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=mine">Мои</a></div>
+            {% endwith %}
+        </div>
         {% if form %}
         {% url 'posts.store' as compose_action %}
         {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit=is_own|yesno:"Опубликовать,Написать на стену" simple=1 %}
@@ -90,7 +101,7 @@
         {% for post in posts %}
         {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path wall_owner=profile %}
         {% empty %}
-        <p class="muted">На стене пока пусто.</p>
+        <p class="muted">{% if wall_filter and wall_filter != 'all' %}Нет записей в этом фильтре.{% else %}На стене пока пусто.{% endif %}</p>
         {% endfor %}
     </div>
 </div>

@@ -13,17 +13,60 @@ from apps.social.services import bump_news, now as _now, profile_of
 @login_required
 def profile_edit(request):
     from apps.social.profile_page import build_edit_context
+    from apps.social import relationship as relmod
 
     me = profile_of(request.user)
     ctx = build_edit_context(me, request)
     form = ctx["form"]
     if request.method == "POST" and form.is_valid():
+        old_partner_id = me.relationship_with_id
         obj = form.save(commit=False)
         obj.updated_at = _now()
         obj.save()
+        # Relationship confirmation (classic partner must accept)
+        partner = obj.relationship_with
+        status = obj.relationship_status or ""
+        if partner and status in relmod.PARTNER_STATUSES:
+            if partner.id != old_partner_id:
+                relmod.clear_partner_requests(obj)
+            relmod.request_partner(obj, partner, status)
+        else:
+            relmod.clear_partner_requests(obj)
         messages.success(request, "Профиль сохранён.")
         return redirect(f"{request.path}?section={ctx['section']}")
     return render(request, "social/profile_edit.html", ctx)
+
+
+@login_required
+@require_POST
+def relationship_accept(request, pk, req_id):
+    from apps.social import relationship as relmod
+
+    me = profile_of(request.user)
+    if not me or me.id != pk:
+        messages.error(request, "Нельзя подтвердить.")
+        return redirect(request.POST.get("next") or "friends")
+    if relmod.accept(me, req_id):
+        messages.success(request, "Отношения подтверждены.")
+    else:
+        messages.error(request, "Заявка не найдена.")
+    return redirect(request.POST.get("next") or "friends")
+
+
+@login_required
+@require_POST
+def relationship_decline(request, pk, req_id):
+    from apps.social import relationship as relmod
+
+    me = profile_of(request.user)
+    if not me or me.id != pk:
+        messages.error(request, "Нельзя отклонить.")
+        return redirect(request.POST.get("next") or "friends")
+    if relmod.decline(me, req_id):
+        messages.info(request, "Заявка отклонена.")
+    else:
+        messages.error(request, "Заявка не найдена.")
+    return redirect(request.POST.get("next") or "friends")
 
 
 @login_required

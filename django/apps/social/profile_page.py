@@ -190,10 +190,18 @@ def info_boxes(profile, education, experiences) -> list[dict]:
         rel = _tag(_ru(profile.relationship_status))
         partner = getattr(profile, "relationship_with", None)
         if partner:
-            rel = format_html(
-                '{} с <a href="{}">{}</a>',
-                rel, reverse("profile", args=[partner.id]), partner.name,
-            )
+            from apps.social import relationship as relmod
+            pending = relmod.pending_for(profile)
+            if pending:
+                rel = format_html(
+                    '{} с <a href="{}">{}</a> <span class="muted">(ожидает подтверждения)</span>',
+                    rel, reverse("profile", args=[partner.id]), partner.name,
+                )
+            else:
+                rel = format_html(
+                    '{} с <a href="{}">{}</a>',
+                    rel, reverse("profile", args=[partner.id]), partner.name,
+                )
         basic.append(("Отношения", rel, False))
     if profile.interested_in_label():
         basic.append(("Интересуюсь", _tags(profile.interested_in_label()), False))
@@ -342,7 +350,7 @@ def build_edit_context(me, request):
     }
 
 
-def build_context(profile, me, tab="wall", photos_view="albums"):
+def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="all"):
     """Full template context for classic Profile — load only what the tab needs."""
     from apps.social import friendship as fr
 
@@ -417,7 +425,8 @@ def build_context(profile, me, tab="wall", photos_view="albums"):
         "notes": notes,
         "gifts": gifts,
         "note_form": NoteForm() if is_own and tab == "notes" else None,
-        "posts": wall_posts_for(profile, 20, viewer=me) if wall and show_wall else [],
+        "posts": wall_posts_for(profile, 20, viewer=me, wall_filter=wall_filter) if wall and show_wall else [],
+        "wall_filter": wall_filter if wall_filter in ("all", "photos", "links", "videos", "shares", "friends", "mine") else "all",
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,
         "info_boxes": boxes,
