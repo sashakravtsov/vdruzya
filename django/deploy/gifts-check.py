@@ -96,6 +96,26 @@ def main():
     assert r.status_code == 200 and "Подарки".encode() in r.content
     ok("profile shows gifts box")
 
+    # flash after send must appear on profile (redirect target)
+    r = c.post("/gifts/send", {
+        "to": str(other.id),
+        "gift": sticker.slug,
+        "message": "QA gift flash",
+    }, secure=True, follow=False)
+    assert r.status_code in (301, 302)
+    r2 = c.get(r["Location"] if r.has_header("Location") else f"/profile/{other.id}", secure=True)
+    # Client follow preserves session messages; re-get profile with same client
+    r = c.post("/gifts/send", {
+        "to": str(other.id),
+        "gift": sticker.slug,
+        "message": "QA gift flash2",
+    }, secure=True, follow=True)
+    assert r.status_code == 200
+    assert "отправлен".encode() in r.content
+    assert b"flash" in r.content
+    ok("gift success flash on profile redirect")
+    Post.objects.filter(social_user=me, kind="gift", body__startswith="QA gift flash").delete()
+
     r = c.get("/apps", secure=True)
     assert "Подарки".encode() in r.content
     ok("apps lists gifts")

@@ -13,6 +13,7 @@
     </div>
     {# Archive Dec 2005: padding on #content, divider bg on #userprofile (not on #content) #}
     <div id="content">
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
         <div id="userprofile">
             <div id="profilenarrowcolumn">
                 {% include "social/_profile_left.html" %}
