@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}CSRF — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>Сессия формы устарела</h1></div>
+    <div id="content">
+        <div class="infocontent">
+            <div class="error">Запрос отклонён (CSRF). Обновите страницу и попробуйте снова.</div>
+            <p><a href="javascript:history.back()">Назад</a> · <a href="{% url 'home' %}">На главную</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

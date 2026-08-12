@@ -1,0 +1,10 @@
+{# Wall/group media — FB 2006 page links (no lightbox). #}
+{% with extras=post.media.all %}
+{% if extras %}
+<div class="wall-media{% if extras|length == 1 %} wall-media-single{% endif %}">
+    {% for m in extras %}{% if m.url %}<a href="{{ m.href }}"><img src="{{ m.url }}" alt=""></a>{% endif %}{% endfor %}
+</div>
+{% elif post.media_url %}
+<p class="wall-media wall-media-single"><a href="{{ post.get_absolute_url }}"><img src="{{ post.media_url }}" alt="" class="news-photo"></a></p>
+{% endif %}
+{% endwith %}

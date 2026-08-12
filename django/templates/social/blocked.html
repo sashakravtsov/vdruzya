@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Чёрный список — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="blocked-page">
+    <div id="header" class="withsubtitle">
+        <h1>Чёрный список</h1>
+        <div class="subtitle"><a href="{% url 'account' %}">← аккаунт</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Заблокированные</h4>
+            <div class="profile-box-body">
+                {% for p in blocked %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post" action="{% url 'friends.unblock' p.id %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'blocked' %}">
+                            <button type="submit" class="linkish">разблокировать</button>
+                        </form>
+                    </span>
+                    <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                        {% avatar p 50 %}
+                        <span><b>{{ p.name }}</b></span>
+                    </a>
+                </div>
+                {% empty %}<p class="muted">Никого нет в чёрном списке.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
