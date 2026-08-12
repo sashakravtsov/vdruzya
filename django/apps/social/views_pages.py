@@ -175,6 +175,7 @@ def page_fan(request, pk):
     if not CompanyFollower.objects.filter(company=page, social_user=me).exists():
         t = now()
         CompanyFollower.objects.create(company=page, social_user=me, created_at=t, updated_at=t)
+        bump_news()
         messages.success(request, "Вы стали поклонником страницы.")
     return redirect(page)
 
@@ -188,6 +189,7 @@ def page_unfan(request, pk):
         messages.error(request, "Администратор не может покинуть страницу.")
         return redirect(page)
     CompanyFollower.objects.filter(company=page, social_user=me).delete()
+    bump_news()
     messages.success(request, "Вы больше не поклонник.")
     return redirect(page)
 

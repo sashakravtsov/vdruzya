@@ -14,8 +14,8 @@ django.setup()
 from django.test import Client
 
 from apps.accounts.models import User
-from apps.social.models import Company, CompanyAdmin, CompanyFollower, Post, SocialProfile
-from apps.social.services import profile_of, wall_posts_for
+from apps.social.models import Company, CompanyAdmin, CompanyFollower, Post
+from apps.social.services import news_items, profile_of, wall_posts_for
 
 
 def ok(label):
@@ -67,6 +67,22 @@ def main():
     wall_ids = {p.id for p in wall_posts_for(me, limit=50, viewer=me)}
     assert post.id not in wall_ids
     ok("page wall post isolated from profile wall")
+
+    feed = news_items(me, limit=60)
+    page_stories = [
+        i for i in feed
+        if i.get("kind") == "page_post" and i.get("post") and i["post"].id == post.id
+    ]
+    assert page_stories, "fan should see page post in news feed"
+    assert page_stories[0]["page"].id == page.id
+    r = c.get("/feed", secure=True)
+    assert r.status_code == 200 and name.encode() in r.content
+    assert "Популярные страницы".encode() in r.content
+    ok("page post in news feed + rail")
+
+    r = c.get(f"/profile/{me.id}", secure=True)
+    assert r.status_code == 200 and "Страницы".encode() in r.content and name.encode() in r.content
+    ok("profile pages box")
 
     r = c.get(f"/pages/{page.id}/edit", secure=True)
     assert r.status_code == 200 and "Редактировать".encode() in r.content

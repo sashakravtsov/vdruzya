@@ -84,5 +84,49 @@
             <div class="news-photo-row"><a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"><img src="{{ item.photo.url }}" alt="" class="news-photo"></a></div>
             {% endif %}
         </div>
+    {% elif item.kind == 'page_post' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'pages.show' item.page.id %}"><b>{{ item.page.name }}</b></a>
+            опубликовал(а) новость
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            <div class="news-snippet">
+                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                {% include "social/_post_media.html" with post=item.post %}
+            </div>
+            <div class="wall-actions muted">
+                <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
+                {% if item.post.n_comments %} <span class="muted">({{ item.post.n_comments }})</span>{% endif %}
+                <span class="muted"> · </span>
+                <a href="{% url 'pages.show' item.page.id %}">страница</a>
+            </div>
+        </div>
+    {% elif item.kind == 'fan' %}
+        <span class="ico ico-group news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            стал(а) поклонником
+            <a href="{% url 'pages.show' item.page.id %}">{{ item.page.name }}</a>.
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'gift' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            отправил(а) подарок
+            {% if item.recipient %}
+            <a href="{% url 'profile' item.recipient.id %}">{{ item.recipient.name }}</a>
+            {% endif %}
+            {% if item.sticker %} «{{ item.sticker.title }}»{% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.sticker %}
+            <div class="news-snippet">
+                <span class="gift-tile gift-tile-sm" style="background:{{ item.sticker.bg }};color:{{ item.sticker.fg }}">
+                    <span class="gift-tile-title">{{ item.sticker.title }}</span>
+                </span>
+                {% if item.post.body %}<span class="muted">{{ item.post.body|truncatewords:16 }}</span>{% endif %}
+            </div>
+            {% endif %}
+        </div>
     {% endif %}
 </div>

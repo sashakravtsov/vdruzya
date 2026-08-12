@@ -20,7 +20,7 @@ from apps.social.models import (
     Company, CompanyAdmin, CompanyFollower, Event, EventAttendee,
     Friendship, Notification, Post, Sticker,
 )
-from apps.social.services import profile_of, wall_posts_for
+from apps.social.services import news_items, profile_of, wall_posts_for
 
 
 def ok(label):
@@ -81,6 +81,16 @@ def main():
     wall_other = {p.id for p in wall_posts_for(other, limit=50, viewer=other)}
     assert gift.id not in wall_other
     ok("send gift + isolated from walls")
+
+    feed = news_items(me, limit=60)
+    gift_stories = [
+        i for i in feed
+        if i.get("kind") == "gift" and i.get("post") and i["post"].id == gift.id
+    ]
+    assert gift_stories, "gift should appear in sender news feed"
+    r = c.get("/feed", secure=True)
+    assert r.status_code == 200 and sticker.title.encode() in r.content
+    ok("gift in news feed")
 
     r = c.get(f"/profile/{other.id}?tab=wall", secure=True)
     assert r.status_code == 200 and "Подарки".encode() in r.content

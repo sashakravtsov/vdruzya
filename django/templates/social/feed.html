@@ -116,6 +116,19 @@
             </div>
 
             <div class="profile-box">
+                <h4>Популярные страницы{% if popular_pages %}<a class="edit" href="{% url 'pages' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if popular_pages %}
+                        {% for p in popular_pages %}
+                        <div><a href="{% url 'pages.show' p.id %}">{{ p.name }}</a> <span class="muted">({{ p.n }})</span></div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока нет.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
                 <h4>Из групп{% if group_posts %}<a class="edit" href="{% url 'groups' %}?mine=1">мои</a>{% endif %}</h4>
                 <div class="profile-box-body">
                     {% if group_posts %}
@@ -128,6 +141,22 @@
                         {% endfor %}
                     {% else %}
                         <p class="muted">Пока ничего.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Из страниц{% if page_posts %}<a class="edit" href="{% url 'pages' %}?mine=1">мои</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if page_posts %}
+                        {% for s in page_posts %}
+                        <div class="rail-row">
+                            <a href="{% url 'pages.show' s.page.id %}">{{ s.page.name }}</a>
+                            <div class="muted">{{ s.body|truncatewords:12 }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Станьте поклонником страниц.</p>
                     {% endif %}
                 </div>
             </div>

@@ -280,6 +280,14 @@ def mini_feed(profile, limit=8, viewer=None):
         elif topic.startswith("page:"):
             continue
         elif topic.startswith("gift:") or p.kind == "gift":
+            if friends or own:
+                from apps.social.gifts import recipient_id_from_topic
+                rid = recipient_id_from_topic(topic)
+                row = {"kind": "gift_sent", "at": p.created_at, "post": p}
+                if rid:
+                    wall_ids.add(rid)  # reuse name lookup as gift_to
+                    row["gift_to_id"] = rid
+                items.append(row)
             continue
         else:
             kind = "post"
@@ -290,10 +298,16 @@ def mini_feed(profile, limit=8, viewer=None):
             row["wall_id"] = oid
         items.append(row)
     if friends or own:
+        from apps.social.models import CompanyFollower
         for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:
             items.append({"kind": "joined", "at": m.created_at, "group": m.community})
         for g in Community.objects.filter(creator=profile).order_by("-id")[:4]:
             items.append({"kind": "created", "at": g.created_at, "group": g})
+        for fan in (
+            CompanyFollower.objects.filter(social_user=profile)
+            .select_related("company").order_by("-id")[:limit]
+        ):
+            items.append({"kind": "fan", "at": fan.created_at, "page": fan.company})
         for ph in (
             Photo.objects.filter(album__social_user=profile).exclude(path="")
             .select_related("album").order_by("-id")[:limit]
@@ -307,11 +321,20 @@ def mini_feed(profile, limit=8, viewer=None):
         ):
             other = f.friend if f.user_id == profile.id else f.user
             items.append({"kind": "friend", "at": f.updated_at or f.created_at, "other": other})
+        # Gifts received on this profile
+        from apps.social.gifts import attach_stickers, gifts_for
+        for gp in attach_stickers(gifts_for(profile, limit=limit)):
+            items.append({
+                "kind": "gift_got", "at": gp.created_at, "post": gp,
+                "from": gp.social_user, "sticker": getattr(gp, "gift_sticker", None),
+            })
     if wall_ids:
         names = dict(SocialProfile.objects.filter(id__in=wall_ids).values_list("id", "name"))
         for it in items:
             if it.get("wall_id"):
                 it["wall_name"] = names.get(it["wall_id"])
+            if it.get("gift_to_id"):
+                it["gift_to_name"] = names.get(it["gift_to_id"])
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     return items[:limit]
 
@@ -400,6 +423,106 @@ def _add_photos(items, blocked, fids, limit):
         })
 
 
+def _page_id_from_topic(topic) -> int | None:
+    topic = topic or ""
+    if not topic.startswith("page:"):
+        return None
+    try:
+        return int(topic.split(":", 1)[1])
+    except (TypeError, ValueError):
+        return None
+
+
+def attach_pages(posts):
+    """Attach Company objects for page:{id} wall posts."""
+    from apps.social.models import Company
+    need = set()
+    for p in posts:
+        pid = _page_id_from_topic(getattr(p, "topic", None))
+        p._page_id = pid
+        if pid:
+            need.add(pid)
+    pages = Company.objects.in_bulk(need) if need else {}
+    for p in posts:
+        p.page = pages.get(getattr(p, "_page_id", None))
+
+
+def _add_page_posts(items, viewer, page_ids, blocked, limit):
+    """News from Pages the viewer fans — attributed to the Page, not only the admin."""
+    if not viewer or not page_ids:
+        return
+    topics = [f"page:{pid}" for pid in page_ids]
+    qs = (
+        feed_queryset(viewer)
+        .filter(topic__in=topics)
+        .exclude(kind__in=("note", "gift"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    posts = list(qs[:limit])
+    attach_pages(posts)
+    for p in posts:
+        if not getattr(p, "page", None):
+            continue
+        items.append({
+            "kind": "page_post", "at": p.created_at, "post": p,
+            "actor": p.social_user, "page": p.page,
+        })
+
+
+def _add_page_fans(items, blocked, fids, limit):
+    """Friends became fans of a Page."""
+    if not fids:
+        return
+    from apps.social.models import CompanyFollower
+    qs = (
+        CompanyFollower.objects.select_related("social_user", "company")
+        .defer(*profile_related("social_user__"))
+        .filter(social_user_id__in=fids)
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "fan", "at": row.created_at,
+            "actor": row.social_user, "page": row.company,
+        })
+
+
+def _add_gifts(items, viewer, fids, blocked, limit):
+    """Friends sent/received gifts — still never on personal walls."""
+    if not viewer or not fids:
+        return
+    from apps.social.gifts import attach_stickers, recipient_id_from_topic
+    gift_topics = [f"gift:{i}" for i in fids]
+    # Do not defer sticker — gift tiles need the slug.
+    qs = (
+        Post.objects.filter(kind="gift")
+        .filter(Q(social_user_id__in=fids) | Q(topic__in=gift_topics))
+        .filter(post_visible_q(viewer))
+        .select_related("social_user")
+        .defer("mood", "emoji", "search_vector", "shared_post", *profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    posts = list(qs[:limit])
+    attach_stickers(posts)
+    recip_ids = {recipient_id_from_topic(p.topic) for p in posts}
+    recip_ids.discard(None)
+    recipients = SocialProfile.objects.in_bulk(recip_ids) if recip_ids else {}
+    for p in posts:
+        rid = recipient_id_from_topic(p.topic)
+        items.append({
+            "kind": "gift", "at": p.created_at, "post": p,
+            "actor": p.social_user,
+            "recipient": recipients.get(rid),
+            "sticker": getattr(p, "gift_sticker", None),
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -410,8 +533,10 @@ def bump_news():
 
 
 def news_items(viewer=None, limit=40):
-    """FB-2006 News Feed: friends' circle + own groups. Status/picture → Mini-Feed."""
+    """FB-2006 News Feed: friends' circle + groups + fanned pages + gifts."""
     from django.core.cache import cache
+    from apps.social.models import CompanyFollower
+
     ver = cache.get("news:ver") or 0
     key = f"news:{getattr(viewer, 'id', 0)}:{limit}:v{ver}"
     cached = cache.get(key)
@@ -424,6 +549,9 @@ def news_items(viewer=None, limit=40):
     )
     member_ids = set(
         CommunityMember.objects.filter(social_user=viewer).values_list("community_id", flat=True)
+    ) if viewer else set()
+    page_ids = set(
+        CompanyFollower.objects.filter(social_user=viewer).values_list("company_id", flat=True)
     ) if viewer else set()
     wall_topics = [f"wall:{i}" for i in fids]
     posts = list(
@@ -444,6 +572,9 @@ def news_items(viewer=None, limit=40):
     _add_joins(items, blocked, fids, limit)
     _add_created(items, blocked, fids)
     _add_photos(items, blocked, fids, limit)
+    _add_page_posts(items, viewer, page_ids, blocked, limit)
+    _add_page_fans(items, blocked, fids, limit)
+    _add_gifts(items, viewer, fids, blocked, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)
@@ -464,18 +595,44 @@ def group_updates(viewer, limit=6):
     )
 
 
+def page_updates(viewer, limit=6):
+    """Right-rail: recent posts from fanned Pages."""
+    if not viewer:
+        return []
+    from apps.social.models import CompanyFollower
+    page_ids = list(
+        CompanyFollower.objects.filter(social_user=viewer).values_list("company_id", flat=True)
+    )
+    if not page_ids:
+        return []
+    topics = [f"page:{pid}" for pid in page_ids]
+    posts = list(
+        Post.objects.filter(topic__in=topics)
+        .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift"))
+        .select_related("social_user")
+        .defer(*POST_DEFER, *profile_related("social_user__"))
+        .order_by("-id")[:limit]
+    )
+    attach_pages(posts)
+    return [p for p in posts if getattr(p, "page", None)]
+
+
 def feed_rail(viewer):
-    """Home right column — requests, pokes, events, groups, birthdays (FB 2006)."""
+    """Home right column — requests, pokes, events, groups, pages, birthdays (FB 2006)."""
     from django.db.models import Count, Q
 
     from apps.social import events as ev
     from apps.social import friendship as fr
-    from apps.social.models import Community, Notification
+    from apps.social.models import Community, Company, Notification
 
     pending = fr.annotate_mutuals(viewer, list(fr.pending_to(viewer)[:8])) if viewer else []
     popular = list(
         Community.objects.annotate(n=Count("memberships", distinct=True))
         .filter(Q(privacy="public") | Q(privacy=""))
+        .order_by("-n", "name")[:6]
+    )
+    popular_pages = list(
+        Company.objects.annotate(n=Count("followers", distinct=True))
         .order_by("-n", "name")[:6]
     )
     pokes = []
@@ -496,7 +653,9 @@ def feed_rail(viewer):
         "rail_events": rail_events,
         "event_invites": event_invites,
         "popular_groups": popular,
+        "popular_pages": popular_pages,
         "group_posts": group_updates(viewer),
+        "page_posts": page_updates(viewer),
         "birthdays": upcoming_birthdays(viewer),
     }
 

@@ -78,4 +78,12 @@
         {% else %}<p class="muted">Пока ни в одной группе.</p>{% endif %}
     </div>
 </div>
+<div class="profile-box">
+    <h4>Страницы ({{ stats.pages }}){% if is_own %} <a class="edit" href="{% url 'pages' %}?mine=1">[ред.]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        {% if pages %}
+        <ul class="profilelinks">{% for p in pages %}<li><a href="{% url 'pages.show' p.id %}">{{ p.name }}</a></li>{% endfor %}</ul>
+        {% else %}<p class="muted">Пока нет страниц.</p>{% endif %}
+    </div>
+</div>
 {% endif %}

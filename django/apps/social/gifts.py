@@ -97,6 +97,8 @@ def send_gift(me, other, sticker, message="") -> Post | None:
         type="gift",
         url=f"/profile/{other.id}?tab=wall",
     )
+    from apps.social.services import bump_news
+    bump_news()
     return post
 
 

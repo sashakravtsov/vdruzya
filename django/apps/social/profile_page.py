@@ -6,7 +6,7 @@ from django.utils.html import format_html
 from apps.social.albums import albums_for
 from apps.social.forms import CommentForm, NoteForm, PostForm, StatusForm
 from apps.social.models import (
-    Album, Block, Community, Education, Experience, Friendship, Photo,
+    Album, Block, Community, Company, Education, Experience, Friendship, Photo,
 )
 from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_for
 from apps.social import gifts as gf
@@ -372,6 +372,13 @@ def build_context(profile, me, tab="wall"):
         list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
         if full else []
     )
+    pages = (
+        list(
+            Company.objects.filter(
+                Q(followers__social_user=profile) | Q(admins__social_user=profile)
+            ).distinct().order_by("name")[:12]
+        ) if full else []
+    )
     friends_rail, friends_are_mutual = friend_tiles(
         me, profile, can_see=can_see, relation=relation, limit=6, prefer_mutual=True,
     )
@@ -395,6 +402,7 @@ def build_context(profile, me, tab="wall"):
         "friends": friends_rail, "friends_tab": friends_tab,
         "friends_are_mutual": friends_are_mutual,
         "communities": communities,
+        "pages": pages,
         "rail_photos": rail_photos,
         "albums": albums,
         "notes": notes,
@@ -411,6 +419,11 @@ def build_context(profile, me, tab="wall"):
             "groups": (
                 Community.objects.filter(memberships__social_user=profile).distinct().count()
                 if full else 0
+            ),
+            "pages": (
+                Company.objects.filter(
+                    Q(followers__social_user=profile) | Q(admins__social_user=profile)
+                ).distinct().count() if full else 0
             ),
         },
         "form": PostForm(simple=True) if wall and can_wall else None,
