@@ -18,8 +18,9 @@ from .era2010 import (
     Question, QuestionAnswer, QuestionVote,
 )
 from .legacy import (
-    CommentReaction, GroupCommentReaction, GroupDoc, GroupPostReaction,
-    PhotoCommentReaction, PhotoReaction, PostTag, Reaction, RelationshipRequest,
+    CommentReaction, FeedHide, FeedStoryHide, GroupCommentReaction, GroupDoc,
+    GroupPostReaction, PhotoCommentReaction, PhotoReaction, PostTag, Reaction,
+    RelationshipRequest,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "Reaction", "PhotoReaction", "CommentReaction",
     "PhotoCommentReaction", "GroupCommentReaction", "GroupPostReaction",
     "PostTag", "GroupDoc", "RelationshipRequest",
+    "FeedHide", "FeedStoryHide",
 ]

@@ -1071,6 +1071,8 @@ button.linkish .ico { margin-right: 2px; }
 .feed-page .news-item .news-time {
   position: static; display: inline; margin-left: 4px; font-size: 11px;
 }
+.news-hide { margin: 2px 0 0 22px; font-size: 10px; }
+.news-hide form { display: inline; }
 .feed-main .wallpost, .feed-main .news-item { background: #fff; }
 .feed-page .news-snippet { margin: 4px 0 0; }
 .feed-page .news-ico { margin-top: 3px; }

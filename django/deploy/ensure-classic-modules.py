@@ -59,14 +59,27 @@ CREATE INDEX IF NOT EXISTS photo_tags_photo_idx ON photo_tags (photo_id);
 """
 
 
+ALTER = """
+ALTER TABLE photo_tags ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'approved';
+UPDATE photo_tags SET status = 'approved' WHERE status IS NULL OR status = '';
+CREATE INDEX IF NOT EXISTS photo_tags_pending_idx ON photo_tags (social_user_id, status);
+"""
+
+
 def main():
     with connection.cursor() as cur:
         cur.execute(SQL)
+        cur.execute(ALTER)
         for t in ("friend_lists", "friend_list_members", "marketplace_listings", "photo_tags"):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='photo_tags' AND column_name='status'"
+        )
+        assert cur.fetchone(), "photo_tags.status"
     print("OK   friend_lists + marketplace + photo_tags")
 
 

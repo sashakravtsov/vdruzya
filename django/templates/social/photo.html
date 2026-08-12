@@ -50,9 +50,15 @@
                 <div class="photo-tags">
                     <p><b>На фото:</b>
                         {% for t in tags %}
-                        <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if is_owner or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
+                        <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if t.is_pending %} <span class="muted">(ожидает)</span>{% endif %}{% if is_owner or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
                         <form method="post" action="{% url 'albums.photos.tag.delete' album.id photo.id t.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted" title="Убрать отметку">×</button>
+                        </form>{% endif %}{% if me and me.id == t.social_user_id and t.is_pending %}
+                        <form method="post" action="{% url 'albums.photos.tag.approve' album.id photo.id t.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">подтвердить</button>
+                        </form>
+                        <form method="post" action="{% url 'albums.photos.tag.decline' album.id photo.id t.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted">отклонить</button>
                         </form>{% endif %}{% if not forloop.last %}, {% endif %}
                         {% empty %}<span class="muted">никого не отметили</span>
                         {% endfor %}

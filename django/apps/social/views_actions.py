@@ -71,6 +71,46 @@ def relationship_decline(request, pk, req_id):
 
 @login_required
 @require_POST
+def feed_hide_actor(request, pk):
+    from apps.social import feed_hide as fh
+
+    me = profile_of(request.user)
+    if fh.hide_actor(me, pk):
+        messages.info(request, "Истории этого человека скрыты из ленты.")
+    else:
+        messages.error(request, "Нельзя скрыть.")
+    return redirect(request.POST.get("next") or "feed")
+
+
+@login_required
+@require_POST
+def feed_unhide_actor(request, pk):
+    from apps.social import feed_hide as fh
+
+    me = profile_of(request.user)
+    if fh.unhide_actor(me, pk):
+        messages.success(request, "Человек снова виден в ленте.")
+    else:
+        messages.error(request, "Не найдено.")
+    return redirect(request.POST.get("next") or "feed")
+
+
+@login_required
+@require_POST
+def feed_hide_story(request):
+    from apps.social import feed_hide as fh
+
+    me = profile_of(request.user)
+    key = request.POST.get("story_key") or ""
+    if fh.hide_story(me, key):
+        messages.info(request, "Запись скрыта из ленты.")
+    else:
+        messages.error(request, "Нельзя скрыть запись.")
+    return redirect(request.POST.get("next") or "feed")
+
+
+@login_required
+@require_POST
 def post_create(request):
     from django.db.models import Q
     from apps.social.models import Friendship

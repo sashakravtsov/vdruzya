@@ -142,3 +142,29 @@ class RelationshipRequest(models.Model):
         managed = False
         db_table = "relationship_requests"
         ordering = ["-id"]
+
+
+class FeedHide(models.Model):
+    """Hide all News Feed stories from an actor."""
+    id = models.BigAutoField(primary_key=True)
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="+")
+    actor = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, related_name="+", db_column="actor_id",
+    )
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "feed_hides"
+
+
+class FeedStoryHide(models.Model):
+    """Hide one News Feed story key (kind:id)."""
+    id = models.BigAutoField(primary_key=True)
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="+")
+    story_key = models.CharField(max_length=80)
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "feed_story_hides"

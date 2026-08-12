@@ -281,8 +281,8 @@ def shared_photos(a, b, limit=12):
         return []
     from apps.social.models import Photo, PhotoTag
     ids = (
-        PhotoTag.objects.filter(social_user=a)
-        .filter(photo_id__in=PhotoTag.objects.filter(social_user=b).values("photo_id"))
+        PhotoTag.objects.filter(social_user=a, status="approved")
+        .filter(photo_id__in=PhotoTag.objects.filter(social_user=b, status="approved").values("photo_id"))
         .values_list("photo_id", flat=True)
         .distinct()[:limit]
     )

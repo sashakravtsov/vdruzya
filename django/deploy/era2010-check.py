@@ -20,7 +20,7 @@ from apps.social.models import (
     Post, Question, QuestionAnswer, QuestionVote,
 )
 from apps.social.models.legacy import Reaction
-from apps.social.services import news_items, now, profile_of, wall_posts_for
+from apps.social.services import bump_news, news_items, now, profile_of, wall_posts_for
 
 
 def ok(label):
@@ -36,7 +36,7 @@ def main():
             "classic_polls", "classic_poll_options", "classic_poll_votes",
             "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
             "photo_comment_reactions", "group_comment_reactions", "group_post_reactions",
-            "relationship_requests",
+            "relationship_requests", "feed_hides", "feed_story_hides",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
@@ -276,6 +276,30 @@ def main():
         buddy2.save(update_fields=["relationship_with", "relationship_status"])
     else:
         ok("relationship confirm skipped (no buddy)")
+
+    # Hide from News Feed
+    from apps.social import feed_hide as fh
+    from apps.social.models.legacy import FeedHide, FeedStoryHide
+    buddy3 = SocialProfile.objects.exclude(pk=me.id).order_by("id").first()
+    if buddy3:
+        assert fh.hide_actor(me, buddy3.id)
+        assert FeedHide.objects.filter(social_user=me, actor=buddy3).exists()
+        r = c.post(f"/feed/hide/{buddy3.id}", {"next": "/feed"}, secure=True)
+        assert r.status_code in (301, 302)
+        r = c.get("/feed", secure=True)
+        assert r.status_code == 200
+        assert "Скрыты из ленты".encode() in r.content or buddy3.name.encode() in r.content
+        sk = f"wall:{tpost.id}"
+        assert fh.hide_story(me, sk)
+        assert FeedStoryHide.objects.filter(social_user=me, story_key=sk).exists()
+        feed = news_items(me, limit=80)
+        assert all(getattr(i.get("actor"), "id", None) != buddy3.id for i in feed)
+        ok("feed hide actor + story")
+        FeedHide.objects.filter(social_user=me, actor=buddy3).delete()
+        FeedStoryHide.objects.filter(social_user=me, story_key=sk).delete()
+        bump_news()
+    else:
+        ok("feed hide skipped (no buddy)")
 
     # cleanup
     Reaction.objects.filter(post=tpost).delete()

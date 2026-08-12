@@ -1,8 +1,9 @@
-"""Classic FB photo tags — Photos of Me (mid-2006)."""
+"""Classic FB photo tags — Photos of Me + tag approval (mid-2006 / ~2009)."""
 from __future__ import annotations
 
 from apps.social.albums import can_edit, can_view, visible_q
-from apps.social.models import Album, Notification, Photo, PhotoTag, SocialProfile, profile_related
+from apps.social.models import Album, Photo, PhotoTag, SocialProfile, profile_related
+from apps.social.notify import push
 from apps.social.services import accepted_friends, bump_news, friend_ids, now
 
 
@@ -56,24 +57,24 @@ def add_tag(me, photo, album, person_id: int):
     existing = PhotoTag.objects.filter(photo=photo, social_user_id=person_id).first()
     if existing:
         return existing
-    if person_id not in friend_ids(me):
+    if person_id not in friend_ids(me) and person_id != me.id:
         return None
     person = SocialProfile.objects.filter(pk=person_id).first()
     if not person:
         return None
     t = now()
+    # Self-tag is approved; tagging someone else needs their confirmation.
+    status = "approved" if person_id == me.id else "pending"
     tag = PhotoTag.objects.create(
-        photo=photo, social_user=person, tagged_by=me, created_at=t,
+        photo=photo, social_user=person, tagged_by=me, status=status, created_at=t,
     )
     if person_id != me.id:
-        Notification.objects.create(
-            social_user_id=person_id,
-            title="Фото",
-            body=f"{me.name} отметил(а) вас на фото"[:255],
-            seen=False,
+        push(
+            person_id,
+            title="Отметка на фото",
+            body=f"{me.name} отметил(а) вас на фото — подтвердите",
             type="photo_tag",
             url=f"/albums/{album.id}/photos/{photo.id}",
-            created_at=t,
         )
     bump_news()
     return tag
@@ -87,10 +88,53 @@ def remove_tag(me, tag, album) -> bool:
     return True
 
 
+def pending_for(me, limit=20):
+    if not me:
+        return []
+    return list(
+        PhotoTag.objects.filter(social_user=me, status="pending")
+        .select_related("photo", "photo__album", "tagged_by")
+        .defer(*profile_related("tagged_by__"), *profile_related("photo__album__social_user__"))
+        .order_by("-id")[:limit]
+    )
+
+
+def approve(me, tag_id) -> bool:
+    tag = (
+        PhotoTag.objects.filter(pk=tag_id, social_user=me, status="pending")
+        .select_related("photo", "photo__album", "tagged_by")
+        .first()
+    )
+    if not tag:
+        return False
+    tag.status = "approved"
+    tag.save(update_fields=["status"])
+    if tag.tagged_by_id and tag.tagged_by_id != me.id:
+        push(
+            tag.tagged_by_id,
+            title="Отметка на фото",
+            body=f"{me.name} подтвердил(а) отметку на фото",
+            type="photo_tag",
+            url=f"/albums/{tag.photo.album_id}/photos/{tag.photo_id}",
+        )
+    bump_news()
+    return True
+
+
+def decline(me, tag_id) -> bool:
+    tag = PhotoTag.objects.filter(pk=tag_id, social_user=me, status="pending").first()
+    if not tag:
+        return False
+    tag.delete()
+    bump_news()
+    return True
+
+
 def photos_of(profile, viewer, limit=40):
-    """Photos where profile is tagged and viewer may see the album."""
+    """Photos where profile is tagged (approved) and viewer may see the album."""
     album_ids = list(
-        PhotoTag.objects.filter(social_user=profile).values_list("photo__album_id", flat=True)[:300]
+        PhotoTag.objects.filter(social_user=profile, status="approved")
+        .values_list("photo__album_id", flat=True)[:300]
     )
     if not album_ids:
         return []
@@ -101,7 +145,9 @@ def photos_of(profile, viewer, limit=40):
         return []
     # Avoid DISTINCT over SocialProfile JSON columns (PG has no json equality).
     photo_ids = list(
-        PhotoTag.objects.filter(social_user=profile, photo__album_id__in=visible)
+        PhotoTag.objects.filter(
+            social_user=profile, status="approved", photo__album_id__in=visible,
+        )
         .exclude(photo__path="")
         .order_by("-photo_id")
         .values_list("photo_id", flat=True)[: limit * 3]

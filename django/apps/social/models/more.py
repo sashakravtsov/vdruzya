@@ -90,12 +90,17 @@ class PhotoTag(models.Model):
     tagged_by = models.ForeignKey(
         SocialProfile, models.DO_NOTHING, null=True, blank=True, related_name="tags_made",
     )
+    status = models.CharField(max_length=20, default="approved")
     created_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = "photo_tags"
         ordering = ["id"]
+
+    @property
+    def is_pending(self) -> bool:
+        return (self.status or "approved") == "pending"
 
 
 class Event(models.Model):

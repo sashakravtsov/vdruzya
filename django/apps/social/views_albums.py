@@ -193,10 +193,45 @@ def photo_tag(request, album_id, photo_id):
         return _forbid(request, album)
     tag = pt.add_tag(me, photo, album, request.POST.get("person"))
     if tag:
-        messages.success(request, "Отмечено на фото.")
+        if getattr(tag, "status", "") == "pending":
+            messages.success(request, "Отметка отправлена — ждёт подтверждения.")
+        else:
+            messages.success(request, "Отмечено на фото.")
     else:
         messages.error(request, "Не удалось отметить.")
     return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
+
+
+@login_required
+@require_POST
+def photo_tag_approve(request, album_id, photo_id, tag_id):
+    from apps.social import photo_tags as pt
+
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    get_object_or_404(Photo, pk=photo_id, album=album)
+    if pt.approve(me, tag_id):
+        messages.success(request, "Отметка подтверждена.")
+    else:
+        messages.error(request, "Нельзя подтвердить.")
+    nxt = request.POST.get("next") or f"/albums/{album_id}/photos/{photo_id}"
+    return redirect(nxt)
+
+
+@login_required
+@require_POST
+def photo_tag_decline(request, album_id, photo_id, tag_id):
+    from apps.social import photo_tags as pt
+
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    get_object_or_404(Photo, pk=photo_id, album=album)
+    if pt.decline(me, tag_id):
+        messages.info(request, "Отметка отклонена.")
+    else:
+        messages.error(request, "Нельзя отклонить.")
+    nxt = request.POST.get("next") or f"/albums/{album_id}/photos/{photo_id}"
+    return redirect(nxt)
 
 
 @login_required

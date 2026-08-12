@@ -354,7 +354,7 @@ def mini_feed(profile, limit=8, viewer=None):
         ):
             items.append({"kind": "photo", "at": ph.created_at, "photo": ph, "album": ph.album})
         for tag in (
-            PhotoTag.objects.filter(social_user=profile)
+            PhotoTag.objects.filter(social_user=profile, status="approved")
             .select_related("photo", "photo__album", "tagged_by")
             .order_by("-id")[:limit]
         ):
@@ -613,7 +613,7 @@ def _add_photo_tags(items, blocked, fids, limit):
         return
     from apps.social.models import PhotoTag
     qs = (
-        PhotoTag.objects.filter(social_user_id__in=fids)
+        PhotoTag.objects.filter(social_user_id__in=fids, status="approved")
         .select_related("social_user", "tagged_by", "photo", "photo__album")
         .order_by("-id")
     )
@@ -916,6 +916,10 @@ def news_items(viewer=None, limit=40):
     _add_anniversaries(items, viewer, blocked, fids, limit)
     _add_group_docs(items, blocked, member_ids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
+    items = items[: limit * 2]
+    if viewer:
+        from apps.social import feed_hide as fh
+        items = fh.filter_items(viewer, items)
     items = items[:limit]
     cache.set(key, items, 20)
     return items
@@ -963,6 +967,8 @@ def feed_rail(viewer):
 
     from apps.social import events as ev
     from apps.social import friendship as fr
+    from apps.social import feed_hide as fh
+    from apps.social import photo_tags as ptags
     from apps.social.models import Community, Company, Notification
 
     pending = fr.annotate_mutuals(viewer, list(fr.pending_to(viewer)[:8])) if viewer else []
@@ -998,6 +1004,8 @@ def feed_rail(viewer):
         "page_posts": page_updates(viewer),
         "birthdays": upcoming_birthdays(viewer),
         "anniversaries": fr.upcoming_anniversaries(viewer, days=14, limit=6) if viewer else [],
+        "pending_photo_tags": ptags.pending_for(viewer, 6) if viewer else [],
+        "feed_hidden_people": fh.hidden_people(viewer, 8) if viewer else [],
     }
 
 

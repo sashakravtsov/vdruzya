@@ -229,6 +229,19 @@ if ! grep -q 'groups.posts.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/nul
 else
   echo "OK   group wall Like (FB 2009)"
 fi
+if ! grep -q 'albums.photos.tag.approve' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'photo_tags.status' "${ROOT}/django/deploy/ensure-classic-modules.py" 2>/dev/null; then
+  echo "FAIL photo tag approval missing"; FAIL=1
+else
+  echo "OK   photo tag approval (FB 2009)"
+fi
+if ! grep -q 'feed.hide.actor' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'feed_hides' "${ROOT}/django/deploy/ensure-2010-modules.py" 2>/dev/null \
+  || ! grep -q 'скрыть' "${ROOT}/django/templates/social/_news_item.html" 2>/dev/null; then
+  echo "FAIL feed hide missing"; FAIL=1
+else
+  echo "OK   hide from News Feed (FB 2009)"
+fi
 if ! grep -q 'wall-filters' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null \
   || ! grep -q 'filter=photos' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
   echo "FAIL wall filters missing"; FAIL=1

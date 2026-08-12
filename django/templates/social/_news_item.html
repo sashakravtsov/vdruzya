@@ -282,4 +282,20 @@
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
     {% endif %}
+    {% if me and item.actor and item.actor.id != me.id %}
+    <div class="news-hide muted">
+        {% if item.story_key %}
+        <form method="post" action="{% url 'feed.hide.story' %}" class="inline">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'feed' %}">
+            <input type="hidden" name="story_key" value="{{ item.story_key }}">
+            <button type="submit" class="linkish muted">скрыть</button>
+        </form>
+        ·
+        {% endif %}
+        <form method="post" action="{% url 'feed.hide.actor' item.actor.id %}" class="inline">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'feed' %}">
+            <button type="submit" class="linkish muted">скрыть {{ item.actor.name }}</button>
+        </form>
+    </div>
+    {% endif %}
 </div>

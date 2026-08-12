@@ -83,6 +83,57 @@
                 </div>
             </div>
 
+            {% if pending_photo_tags %}
+            <div class="profile-box">
+                <h4>Отметки на фото ({{ pending_photo_tags|length }})</h4>
+                <div class="profile-box-body">
+                    {% for t in pending_photo_tags %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'albums.photos.show' t.photo.album_id t.photo.id %}">
+                            {% if t.tagged_by %}{% avatar t.tagged_by 32 %}{% endif %}
+                            <span>
+                                <b>{% if t.tagged_by %}{{ t.tagged_by.name }}{% else %}Кто-то{% endif %}</b>
+                                <span class="classic-person-sub">отметил(а) вас на фото</span>
+                            </span>
+                        </a>
+                        <span class="classic-inline-actions classic-inline-actions-stack">
+                            <form method="post" action="{% url 'albums.photos.tag.approve' t.photo.album_id t.photo.id t.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="inputsubmit">Подтвердить</button>
+                            </form>
+                            <form method="post" action="{% url 'albums.photos.tag.decline' t.photo.album_id t.photo.id t.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="linkish">Отклонить</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if feed_hidden_people %}
+            <div class="profile-box">
+                <h4>Скрыты из ленты</h4>
+                <div class="profile-box-body">
+                    {% for p in feed_hidden_people %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                            {% avatar p 32 %}
+                            <span><b>{{ p.name }}</b></span>
+                        </a>
+                        <span class="classic-inline-actions">
+                            <form method="post" action="{% url 'feed.unhide.actor' p.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="linkish">показать</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="profile-box">
                 <h4>События<a class="edit" href="{% url 'events' %}">все</a></h4>
                 <div class="profile-box-body">

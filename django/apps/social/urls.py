@@ -107,6 +107,14 @@ urlpatterns = [
     path("albums/<int:album_id>/photos/<int:photo_id>/like", albums.photo_like, name="albums.photos.like"),
     path("albums/<int:album_id>/photos/<int:photo_id>/tag", albums.photo_tag, name="albums.photos.tag"),
     path(
+        "albums/<int:album_id>/photos/<int:photo_id>/tags/<int:tag_id>/approve",
+        albums.photo_tag_approve, name="albums.photos.tag.approve",
+    ),
+    path(
+        "albums/<int:album_id>/photos/<int:photo_id>/tags/<int:tag_id>/decline",
+        albums.photo_tag_decline, name="albums.photos.tag.decline",
+    ),
+    path(
         "albums/<int:album_id>/photos/<int:photo_id>/tags/<int:tag_id>/delete",
         albums.photo_tag_delete, name="albums.photos.tag.delete",
     ),
@@ -145,6 +153,9 @@ urlpatterns = [
     path("profile/<int:pk>/poke", act.poke, name="profile.poke"),
     path("profile/<int:pk>/relationship/<int:req_id>/accept", act.relationship_accept, name="relationship.accept"),
     path("profile/<int:pk>/relationship/<int:req_id>/decline", act.relationship_decline, name="relationship.decline"),
+    path("feed/hide/<int:pk>", act.feed_hide_actor, name="feed.hide.actor"),
+    path("feed/unhide/<int:pk>", act.feed_unhide_actor, name="feed.unhide.actor"),
+    path("feed/hide-story", act.feed_hide_story, name="feed.hide.story"),
     path("profile/<int:pk>/walltowall", views.wall_to_wall, name="profile.walltowall"),
     path("profile/<int:pk>/friendship", views.see_friendship, name="profile.friendship"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),

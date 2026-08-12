@@ -173,14 +173,31 @@ def main():
     if friend:
         tag = pt.add_tag(me, ph, a2, friend.id)
         assert tag and PhotoTag.objects.filter(photo=ph, social_user=friend).exists()
+        assert tag.status == "pending"
         r = c.get(f"/albums/{a2.id}/photos/{ph.id}", secure=True)
         assert r.status_code == 200 and friend.name.encode() in r.content
-        assert "Отметить".encode() in r.content or b"name=\"person\"" in r.content
+        assert "ожидает".encode() in r.content
+        # Pending tags stay off Photos of Me
+        r = c.get(f"/profile/{friend.id}?tab=photos&view=of", secure=True)
+        assert r.status_code == 200
+        assert ph.path.encode() not in r.content
+        # Friend approves
+        u_friend = friend.user
+        c2 = Client(HTTP_HOST="vdruzya.ru")
+        c2.force_login(u_friend)
+        r = c2.post(
+            f"/albums/{a2.id}/photos/{ph.id}/tags/{tag.id}/approve",
+            {"next": f"/albums/{a2.id}/photos/{ph.id}"},
+            secure=True,
+        )
+        assert r.status_code in (301, 302)
+        tag.refresh_from_db()
+        assert tag.status == "approved"
         r = c.get(f"/profile/{friend.id}?tab=photos&view=of", secure=True)
         assert r.status_code == 200
         assert "Фото с".encode() in r.content or "Фото со мной".encode() in r.content
         assert b"profile-tagged" in r.content or ph.path.encode() in r.content or b"/albums/" in r.content
-        ok("photo tag + photos of me")
+        ok("photo tag approval + photos of me")
         PhotoTag.objects.filter(photo=ph).delete()
     else:
         ok("photo tag skipped (no friend)")
