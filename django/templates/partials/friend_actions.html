@@ -1,0 +1,25 @@
+{% load vd %}
+{# Action buttons for a person row — expects p + optional r (rel dict entry) #}
+{% if r and r.status == 'accepted' %}
+<span class="muted">У вас в друзьях</span>
+{% elif r and r.status == 'pending' and r.outgoing %}
+<form method="post" action="{% url 'friends.cancel' p.id %}">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="linkish">Отменить заявку</button>
+</form>
+{% elif r and r.status == 'pending' %}
+<form method="post" action="{% url 'friends.accept' p.id %}">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="inputsubmit">Принять</button>
+</form>
+·
+<form method="post" action="{% url 'friends.reject' p.id %}">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="linkish">Отклонить</button>
+</form>
+{% else %}
+<form method="post" action="{% url 'friends.request' p.id %}">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="linkish">Добавить</button>
+</form>
+{% endif %}
