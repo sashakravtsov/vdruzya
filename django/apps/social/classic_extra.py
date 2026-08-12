@@ -29,7 +29,13 @@ def normalize_url(raw: str) -> str:
 
 
 def pack_link_body(url: str, blurb: str = "") -> str:
-    url = normalize_url(url)
+    # File videos use storage:<path> — must not run through normalize_url
+    # (http:// prefix + netloc check would wipe the path).
+    url = (url or "").strip()
+    if not url.startswith("storage:"):
+        url = normalize_url(url)
+    else:
+        url = url[:500]
     blurb = (blurb or "").strip()[:2000]
     return f"{url}\n\n{blurb}".strip() if blurb else url
 
