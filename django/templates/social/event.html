@@ -41,6 +41,13 @@
                 </div>
             </div>
 
+            <div id="tabs">
+                <div class="{% if show_tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                <div class="{% if show_tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                <div class="{% if show_tab == 'guests' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=guests">Участники</a></div>
+            </div>
+
+            {% if show_tab == 'guests' %}
             <div class="profile-box">
                 <h4>Идут ({{ n_going }})</h4>
                 <div class="profile-box-body">
@@ -49,7 +56,6 @@
                     {% empty %}<p class="muted">Пока никто не подтвердил.</p>{% endfor %}
                 </div>
             </div>
-
             {% if maybe %}
             <div class="profile-box">
                 <h4>Возможно ({{ n_maybe }})</h4>
@@ -60,9 +66,58 @@
                 </div>
             </div>
             {% endif %}
+
+            {% elif show_tab == 'photos' %}
+            <div class="profile-box">
+                <h4>Фото события</h4>
+                <div class="profile-box-body">
+                    {% if form %}
+                    {% url 'events.posts' event.id as compose_action %}
+                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path|add:'?tab=photos' submit="Добавить фото" simple=1 %}
+                    {% endif %}
+                    <div class="profile-photo-thumbs" style="margin-top:8px">
+                        {% for p in photos %}
+                        {% if p.media_url %}
+                        <a href="{% url 'posts.show' p.id %}"><img src="{{ p.media_url }}" alt="" width="75" height="75"></a>
+                        {% endif %}
+                        {% empty %}<p class="muted">Пока нет фото.</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="profile-box wall-box">
+                <h4>Стена</h4>
+                <div class="profile-box-body">
+                    {% if form %}
+                    {% url 'events.posts' event.id as compose_action %}
+                    {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path|add:'?tab=wall' submit="Написать" simple=1 %}
+                    {% elif me %}
+                    <p class="muted">Стена доступна участникам (Иду / Возможно).</p>
+                    {% endif %}
+                    {% for post in wall_posts %}
+                    {% include "social/_wall_post.html" with post=post wall_owner=None next=request.path %}
+                    {% empty %}
+                    {% if not form %}<p class="muted">Пока нет записей.</p>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="event-side">
+            {% if show_tab != 'guests' %}
+            <div class="profile-box">
+                <h4>Идут ({{ n_going }})</h4>
+                <div class="profile-box-body">
+                    {% for p in going|slice:":8" %}
+                    {% include "social/_person_row.html" with person=p size=32 side=1 %}
+                    {% empty %}<p class="muted">Пока никто.</p>{% endfor %}
+                    {% if n_going > 8 %}<p class="muted"><a href="?tab=guests">все участники</a></p>{% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             {% if is_host and invite_friends %}
             <div class="profile-box">
                 <h4>Пригласить друзей</h4>

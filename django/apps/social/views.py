@@ -48,7 +48,9 @@ def profile(request, pk):
     if me and me.id != user.id and fr.is_blocked(me, user):
         return render(request, "social/profile_blocked.html", {"who": user, "me": me}, status=403)
     tab = (request.GET.get("tab") or "wall").lower()
-    return render(request, "social/profile.html", pp.build_context(user, me, tab=tab))
+    return render(request, "social/profile.html", pp.build_context(
+        user, me, tab=tab, photos_view=request.GET.get("view") or "albums",
+    ))
 
 
 @login_required

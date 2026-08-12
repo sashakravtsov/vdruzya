@@ -25,12 +25,12 @@ def ok(label):
 def main():
     from django.db import connection
     with connection.cursor() as cur:
-        for t in ("friend_lists", "friend_list_members", "marketplace_listings"):
+        for t in ("friend_lists", "friend_list_members", "marketplace_listings", "photo_tags"):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), f"missing {t} — run ensure-classic-modules.py"
-    ok("schema lists+market")
+    ok("schema lists+market+tags")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
     assert u

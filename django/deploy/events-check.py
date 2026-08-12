@@ -82,8 +82,6 @@ def main():
         ok("tab hosting")
 
         if friend:
-            from apps.social.friendship import send_request, accept_request, relation_of
-            # ensure friendship for invite
             from apps.social.models import Friendship
             if me.id not in __import__("apps.social.services", fromlist=["friend_ids"]).friend_ids(friend):
                 Friendship.objects.filter(
@@ -99,10 +97,30 @@ def main():
         else:
             ok("invite friend skipped (no other profile)")
 
+        # Event wall + photos
+        r = c.get(f"/events/{event.id}?tab=wall", secure=True)
+        assert r.status_code == 200
+        assert b"?tab=wall" in r.content and b"?tab=photos" in r.content
+        assert "Стена".encode() in r.content
+        r = c.post(f"/events/{event.id}/posts", {
+            "body": "__event_wall_probe__",
+            "next": f"/events/{event.id}?tab=wall",
+        }, secure=True)
+        assert r.status_code in (301, 302)
+        from apps.social.models import Post
+        ep = Post.objects.filter(topic=f"event:{event.id}", body="__event_wall_probe__").first()
+        assert ep
+        r = c.get(f"/events/{event.id}?tab=wall", secure=True)
+        assert b"__event_wall_probe__" in r.content
+        ok("event wall post")
+        Post.objects.filter(pk=ep.id).delete()
+
         print("ALL events probes passed")
         return 0
     finally:
         if created:
+            from apps.social.models import Post
+            Post.objects.filter(topic__in=[f"event:{i}" for i in created]).delete()
             EventAttendee.objects.filter(event_id__in=created).delete()
             Event.objects.filter(id__in=created).delete()
 

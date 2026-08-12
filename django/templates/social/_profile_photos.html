@@ -1,6 +1,24 @@
 <div class="profile-box">
     <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все альбомы</a>{% endif %}</h4>
-    <div class="profile-box-body profile-albums" id="photos">
-        {% include "social/_album_index.html" %}
+    <div class="profile-box-body" id="photos">
+        <div class="subtabs">
+            <div class="{% if photos_view != 'of' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Альбомы</a></div>
+            <div class="{% if photos_view == 'of' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos&amp;view=of">{% if is_own %}Фото со мной{% else %}Фото с {{ profile.name }}{% endif %}</a></div>
+        </div>
+        {% if photos_view == 'of' %}
+        <div class="profile-photo-thumbs profile-tagged">
+            {% for ph in tagged_photos %}
+            <a href="{% url 'albums.photos.show' ph.album.id ph.id %}" title="{{ ph.album.title }}">
+                {% if ph.url %}<img src="{{ ph.url }}" alt="{{ ph.title }}" width="75" height="75">{% endif %}
+            </a>
+            {% empty %}
+            <p class="muted">{% if is_own %}Вас пока нигде не отметили.{% else %}Пока нет отмеченных фото.{% endif %}</p>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="profile-albums">
+            {% include "social/_album_index.html" %}
+        </div>
+        {% endif %}
     </div>
 </div>

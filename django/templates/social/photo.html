@@ -36,6 +36,35 @@
                 {% if photo.title %}<p class="photo-caption">{{ photo.title }}</p>{% endif %}
                 {% if photo.created_at %}<p class="muted">Добавлено {{ photo.created_at|date:"j E Y" }}</p>{% endif %}
 
+                <div class="photo-tags">
+                    <p><b>На фото:</b>
+                        {% for t in tags %}
+                        <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if is_owner or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
+                        <form method="post" action="{% url 'albums.photos.tag.delete' album.id photo.id t.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted" title="Убрать отметку">×</button>
+                        </form>{% endif %}{% if not forloop.last %}, {% endif %}
+                        {% empty %}<span class="muted">никого не отметили</span>
+                        {% endfor %}
+                    </p>
+                    {% if can_tag and tag_candidates %}
+                    <form method="post" action="{% url 'albums.photos.tag' album.id photo.id %}" class="photo-tag-form">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="label">Отметить:</td>
+                                <td>
+                                    <select name="person">
+                                        {% for p in tag_candidates %}
+                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="submit" class="inputsubmit" value="Отметить">
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                </div>
+
                 {% if is_owner %}
                 <form method="post" action="{% url 'albums.photos.caption' album.id photo.id %}" class="photo-caption-form">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">

@@ -138,12 +138,15 @@ def photo_upload(request, album_id):
 
 @login_not_required
 def photo_show(request, album_id, photo_id):
+    from apps.social import photo_tags as pt
+
     album = get_object_or_404(Album.objects.select_related("social_user"), pk=album_id)
     me = profile_of(request.user) if request.user.is_authenticated else None
     if not can_view(album, me):
         return _forbid(request, album)
     photo = get_object_or_404(Photo, pk=photo_id, album=album)
     prev_id, next_id, n, pos = neighbors(album, photo.id)
+    tagging = bool(me and pt.can_tag(me, album))
     return render(
         request, "social/photo.html",
         {
@@ -151,8 +154,46 @@ def photo_show(request, album_id, photo_id):
             "prev_id": prev_id, "next_id": next_id, "n": n, "pos": pos,
             "comments": comments_for(photo),
             "comment_form": CommentForm() if me else None,
+            "tags": pt.tags_for(photo),
+            "tag_candidates": pt.tag_candidates(me, photo) if tagging else [],
+            "can_tag": tagging,
         },
     )
+
+
+@login_required
+@require_POST
+def photo_tag(request, album_id, photo_id):
+    from apps.social import photo_tags as pt
+
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    photo = get_object_or_404(Photo, pk=photo_id, album=album)
+    if not can_view(album, me):
+        return _forbid(request, album)
+    tag = pt.add_tag(me, photo, album, request.POST.get("person"))
+    if tag:
+        messages.success(request, "Отмечено на фото.")
+    else:
+        messages.error(request, "Не удалось отметить.")
+    return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
+
+
+@login_required
+@require_POST
+def photo_tag_delete(request, album_id, photo_id, tag_id):
+    from apps.social import photo_tags as pt
+    from apps.social.models import PhotoTag
+
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    photo = get_object_or_404(Photo, pk=photo_id, album=album)
+    tag = get_object_or_404(PhotoTag, pk=tag_id, photo=photo)
+    if pt.remove_tag(me, tag, album):
+        messages.info(request, "Отметка удалена.")
+    else:
+        messages.error(request, "Нельзя удалить отметку.")
+    return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
 
 
 @login_required

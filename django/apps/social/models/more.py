@@ -82,6 +82,22 @@ class PhotoComment(models.Model):
         ordering = ["id"]
 
 
+class PhotoTag(models.Model):
+    """Classic FB photo tag — person on a photo (Photos of Me)."""
+    id = models.BigAutoField(primary_key=True)
+    photo = models.ForeignKey(Photo, models.DO_NOTHING, related_name="tags")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="photo_tags")
+    tagged_by = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, null=True, blank=True, related_name="tags_made",
+    )
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "photo_tags"
+        ordering = ["id"]
+
+
 class Event(models.Model):
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255)
@@ -107,6 +123,10 @@ class Event(models.Model):
 
     def get_absolute_url(self):
         return f"/events/{self.pk}"
+
+    @property
+    def topic_key(self):
+        return f"event:{self.pk}"
 
 
 class EventAttendee(models.Model):

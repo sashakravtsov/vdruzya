@@ -8,7 +8,7 @@ from .groups import (
     CommunityPostMedia,
 )
 from .chat import Conversation, ConversationMember, Message, Notification
-from .more import Album, Event, EventAttendee, Photo, PhotoComment
+from .more import Album, Event, EventAttendee, Photo, PhotoComment, PhotoTag
 from .pages import Company, CompanyAdmin, CompanyFollower
 from .stickers import Sticker, StickerPack
 from .extra import FriendList, FriendListMember, MarketplaceListing
@@ -20,7 +20,7 @@ __all__ = [
     "Community", "CommunityMember", "CommunityPost", "CommunityPostComment",
     "CommunityPostMedia", "CommunityJoinRequest",
     "Conversation", "ConversationMember", "Message", "Notification",
-    "Album", "Photo", "PhotoComment", "Event", "EventAttendee",
+    "Album", "Photo", "PhotoComment", "PhotoTag", "Event", "EventAttendee",
     "Company", "CompanyAdmin", "CompanyFollower",
     "Sticker", "StickerPack",
     "FriendList", "FriendListMember", "MarketplaceListing",

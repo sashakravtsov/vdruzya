@@ -44,18 +44,30 @@ CREATE TABLE IF NOT EXISTS marketplace_listings (
 );
 CREATE INDEX IF NOT EXISTS marketplace_listings_user_idx ON marketplace_listings (social_user_id);
 CREATE INDEX IF NOT EXISTS marketplace_listings_created_idx ON marketplace_listings (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS photo_tags (
+  id bigserial PRIMARY KEY,
+  photo_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  tagged_by_id bigint NULL,
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS photo_tags_photo_user_uniq
+  ON photo_tags (photo_id, social_user_id);
+CREATE INDEX IF NOT EXISTS photo_tags_user_idx ON photo_tags (social_user_id);
+CREATE INDEX IF NOT EXISTS photo_tags_photo_idx ON photo_tags (photo_id);
 """
 
 
 def main():
     with connection.cursor() as cur:
         cur.execute(SQL)
-        for t in ("friend_lists", "friend_list_members", "marketplace_listings"):
+        for t in ("friend_lists", "friend_list_members", "marketplace_listings", "photo_tags"):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
-    print("OK   friend_lists + marketplace_listings")
+    print("OK   friend_lists + marketplace + photo_tags")
 
 
 if __name__ == "__main__":

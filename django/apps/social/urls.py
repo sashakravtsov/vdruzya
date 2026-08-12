@@ -88,6 +88,11 @@ urlpatterns = [
     path("albums/<int:album_id>/photos", albums.photo_upload, name="albums.photos"),
     path("albums/<int:album_id>/photos/<int:photo_id>", albums.photo_show, name="albums.photos.show"),
     path("albums/<int:album_id>/photos/<int:photo_id>/comment", albums.photo_comment, name="albums.photos.comment"),
+    path("albums/<int:album_id>/photos/<int:photo_id>/tag", albums.photo_tag, name="albums.photos.tag"),
+    path(
+        "albums/<int:album_id>/photos/<int:photo_id>/tags/<int:tag_id>/delete",
+        albums.photo_tag_delete, name="albums.photos.tag.delete",
+    ),
     path(
         "albums/<int:album_id>/photos/<int:photo_id>/comments/<int:comment_id>/delete",
         albums.photo_comment_delete, name="albums.photos.comment.delete",
@@ -101,6 +106,8 @@ urlpatterns = [
     path("events/<int:event_id>", events.event_show, name="events.show"),
     path("events/<int:event_id>/rsvp", events.event_rsvp, name="events.rsvp"),
     path("events/<int:event_id>/invite", events.event_invite, name="events.invite"),
+    path("events/<int:event_id>/posts", events.event_post, name="events.posts"),
+    path("events/<int:event_id>/posts/<int:post_id>/delete", events.event_post_delete, name="events.posts.delete"),
     path("profile/edit", act.profile_edit, name="profile.edit"),
     path("profile/status", act.status_update, name="profile.status"),
     path("profile/education", act.education_save, name="profile.education"),

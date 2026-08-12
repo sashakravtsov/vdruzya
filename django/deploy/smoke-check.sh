@@ -240,6 +240,28 @@ if ! grep -q 'Мои страницы' "${ROOT}/django/templates/partials/sideba
 else
   echo "OK   snav Pages + Apps"
 fi
+if ! grep -q "url 'videos'" "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null; then
+  echo "FAIL snav missing Videos"; FAIL=1
+else
+  echo "OK   snav Videos"
+fi
+if ! grep -q 'photo_tags' "${ROOT}/django/deploy/ensure-classic-modules.py" 2>/dev/null \
+  || ! grep -q 'PhotoTag' "${ROOT}/django/apps/social/models/more.py" 2>/dev/null; then
+  echo "FAIL Photos of Me / photo_tags missing"; FAIL=1
+else
+  echo "OK   Photos of Me schema"
+fi
+if ! grep -q 'events.posts' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'tab=photos' "${ROOT}/django/templates/social/event.html" 2>/dev/null; then
+  echo "FAIL event wall/photos missing"; FAIL=1
+else
+  echo "OK   event wall + photos"
+fi
+if [[ -f "${ROOT}/django/templates/social/videos.html" ]]; then
+  echo "FAIL duplicate videos.html still present"; FAIL=1
+else
+  echo "OK   links/videos share template"
+fi
 if ! grep -q 'def fb_when' "${ROOT}/django/apps/social/templatetags/vd.py" 2>/dev/null \
    || grep -RIl 'timesince' "${ROOT}/django/templates/social" 2>/dev/null | grep -q .; then
   echo "FAIL relative timesince still in social templates"; FAIL=1

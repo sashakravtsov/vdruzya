@@ -30,9 +30,4 @@ APPS = (
 @require_http_methods(["GET", "HEAD"])
 def apps_home(request):
     me = profile_of(request.user) if request.user.is_authenticated else None
-    items = []
-    for app in APPS:
-        row = dict(app)
-        row["href"] = None
-        items.append(row)
-    return render(request, "social/apps.html", {"me": me, "apps": items})
+    return render(request, "social/apps.html", {"me": me, "apps": list(APPS), "nav": "apps"})

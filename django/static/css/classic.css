@@ -760,6 +760,21 @@ button.linkish .ico { margin-right: 2px; }
   padding: 4px 0;
   border-bottom: solid 1px var(--fb);
 }
+.profile .subtabs {
+  text-align: left;
+  margin: 0 0 10px;
+  padding: 2px 0 6px;
+  border-bottom: solid 1px #D8DFEA;
+}
+.profile .subtabs div { display: inline; padding: 0; margin: 0; }
+.profile .subtabs a { margin: 0; padding: 3px 5px; }
+.profile .subtabs .activetab a { color: #fff; background: var(--fb); }
+.profile .subtabs .activetab a:hover { text-decoration: none; }
+.profile .subtabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.profile-tagged a { margin: 0 4px 4px 0; display: inline-block; vertical-align: top; }
+.profile-tagged img { width: 75px; height: 75px; border: 1px solid #B7B7B7; }
+.photo-tags { margin-top: 8px; }
+.photo-tag-form { margin-top: 6px; }
 .profile-picture {
   width: 200px;
   text-align: center;

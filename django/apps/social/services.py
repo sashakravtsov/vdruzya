@@ -118,6 +118,13 @@ def can_manage_wall_post(me, post) -> bool:
             return False
         from apps.social.models import CompanyAdmin
         return CompanyAdmin.objects.filter(company_id=pid, social_user=me).exists()
+    if topic.startswith("event:"):
+        try:
+            eid = int(topic.split(":", 1)[1])
+        except (TypeError, ValueError):
+            return False
+        from apps.social.models import Event
+        return Event.objects.filter(pk=eid, host_id=me.id).exists()
     return False
 
 
@@ -268,6 +275,8 @@ def mini_feed(profile, limit=8, viewer=None):
             kind = "status"
         elif p.kind == "note" or topic == "note":
             kind = "note"
+        elif p.kind in ("link", "video"):
+            kind = p.kind
         elif topic == "picture":
             kind = "picture"
         elif topic.startswith("wall:"):
@@ -277,7 +286,7 @@ def mini_feed(profile, limit=8, viewer=None):
                 wall_ids.add(oid)
             else:
                 kind = "post"
-        elif topic.startswith("page:"):
+        elif topic.startswith("page:") or topic.startswith("event:"):
             continue
         elif topic.startswith("gift:") or p.kind == "gift":
             if friends or own:
@@ -291,14 +300,18 @@ def mini_feed(profile, limit=8, viewer=None):
             continue
         else:
             kind = "post"
-        if kind in ("wall", "post", "note") and not show_wall:
+        if kind in ("wall", "post", "note", "link", "video") and not show_wall:
             continue
         row = {"kind": kind, "at": p.created_at, "post": p}
         if kind == "wall":
             row["wall_id"] = oid
+        if kind in ("link", "video"):
+            from apps.social.classic_extra import unpack_link_body
+            url, blurb = unpack_link_body(p.body)
+            p.link_url, p.link_blurb = url, blurb
         items.append(row)
     if friends or own:
-        from apps.social.models import CompanyFollower
+        from apps.social.models import CompanyFollower, PhotoTag
         for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:
             items.append({"kind": "joined", "at": m.created_at, "group": m.community})
         for g in Community.objects.filter(creator=profile).order_by("-id")[:4]:
@@ -313,6 +326,15 @@ def mini_feed(profile, limit=8, viewer=None):
             .select_related("album").order_by("-id")[:limit]
         ):
             items.append({"kind": "photo", "at": ph.created_at, "photo": ph, "album": ph.album})
+        for tag in (
+            PhotoTag.objects.filter(social_user=profile)
+            .select_related("photo", "photo__album", "tagged_by")
+            .order_by("-id")[:limit]
+        ):
+            items.append({
+                "kind": "tagged", "at": tag.created_at, "photo": tag.photo,
+                "album": tag.photo.album, "by": tag.tagged_by,
+            })
         for f in (
             Friendship.objects.filter(status="accepted")
             .filter(Q(user=profile) | Q(friend=profile))
@@ -523,6 +545,62 @@ def _add_gifts(items, viewer, fids, blocked, limit):
         })
 
 
+def _add_event_posts(items, viewer, fids, blocked, limit):
+    """Friends' posts on event walls."""
+    if not viewer or not fids:
+        return
+    from apps.social.models import Event
+    qs = (
+        feed_queryset(viewer)
+        .filter(social_user_id__in=fids, topic__startswith="event:")
+        .exclude(kind__in=("note", "gift"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    posts = list(qs[:limit])
+    need = set()
+    for p in posts:
+        try:
+            need.add(int((p.topic or "").split(":", 1)[1]))
+        except (IndexError, ValueError):
+            pass
+    events = Event.objects.in_bulk(need) if need else {}
+    for p in posts:
+        try:
+            eid = int((p.topic or "").split(":", 1)[1])
+        except (IndexError, ValueError):
+            continue
+        event = events.get(eid)
+        if not event:
+            continue
+        items.append({
+            "kind": "event_post", "at": p.created_at, "post": p,
+            "actor": p.social_user, "event": event,
+        })
+
+
+def _add_photo_tags(items, blocked, fids, limit):
+    """Friend was tagged on a photo."""
+    if not fids:
+        return
+    from apps.social.models import PhotoTag
+    qs = (
+        PhotoTag.objects.filter(social_user_id__in=fids)
+        .select_related("social_user", "tagged_by", "photo", "photo__album")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked).exclude(tagged_by_id__in=blocked)
+    for tag in qs[:limit]:
+        items.append({
+            "kind": "photo_tag", "at": tag.created_at,
+            "actor": tag.tagged_by or tag.social_user,
+            "person": tag.social_user,
+            "photo": tag.photo, "album": tag.photo.album,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -559,6 +637,7 @@ def news_items(viewer=None, limit=40):
         .filter(Q(social_user_id__in=fids) | Q(topic__in=wall_topics))
         .exclude(topic__in=("status", "picture"))
         .exclude(topic__startswith="page:")
+        .exclude(topic__startswith="event:")
         .exclude(topic__startswith="gift:")
         .exclude(kind="gift")[:limit]
     ) if fids else []
@@ -581,6 +660,8 @@ def news_items(viewer=None, limit=40):
     _add_page_posts(items, viewer, page_ids, blocked, limit)
     _add_page_fans(items, blocked, fids, limit)
     _add_gifts(items, viewer, fids, blocked, limit)
+    _add_event_posts(items, viewer, fids, blocked, limit)
+    _add_photo_tags(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)

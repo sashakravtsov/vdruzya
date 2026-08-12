@@ -140,6 +140,36 @@ def main():
     assert r.status_code == 200 and not Album.objects.filter(pk=a.id).exists()
     ok("album delete")
 
+    # Photos of Me / tags
+    from apps.social.models import PhotoTag
+    from apps.social import photo_tags as pt
+    t = now()
+    a2 = Album.objects.create(
+        social_user=me, title="QA Tags", description="", visibility="friends",
+        created_at=t, updated_at=t,
+    )
+    ph = Photo.objects.create(
+        album=a2, title="tagged", path="qa/tag.png", color="#ccc",
+        created_at=t, updated_at=t,
+    )
+    friend = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
+    if friend:
+        tag = pt.add_tag(me, ph, a2, friend.id)
+        assert tag and PhotoTag.objects.filter(photo=ph, social_user=friend).exists()
+        r = c.get(f"/albums/{a2.id}/photos/{ph.id}", secure=True)
+        assert r.status_code == 200 and friend.name.encode() in r.content
+        assert "Отметить".encode() in r.content or b"name=\"person\"" in r.content
+        r = c.get(f"/profile/{friend.id}?tab=photos&view=of", secure=True)
+        assert r.status_code == 200
+        assert "Фото с".encode() in r.content or "Фото со мной".encode() in r.content
+        assert b"profile-tagged" in r.content or ph.path.encode() in r.content or b"/albums/" in r.content
+        ok("photo tag + photos of me")
+        PhotoTag.objects.filter(photo=ph).delete()
+    else:
+        ok("photo tag skipped (no friend)")
+    Photo.objects.filter(pk=ph.id).delete()
+    Album.objects.filter(pk=a2.id).delete()
+
     print("ALL photos probes passed")
     return 0
 

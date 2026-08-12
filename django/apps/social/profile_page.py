@@ -342,11 +342,14 @@ def build_edit_context(me, request):
     }
 
 
-def build_context(profile, me, tab="wall"):
+def build_context(profile, me, tab="wall", photos_view="albums"):
     """Full template context for classic Profile — load only what the tab needs."""
     from apps.social import friendship as fr
 
     tab = tab if tab in TABS else "wall"
+    photos_view = (photos_view or "albums").lower()
+    if photos_view not in ("albums", "of"):
+        photos_view = "albums"
     relation, blocked, mutual, mutual_text = _relation(me, profile)
     can_see = fr.can_see_friends(me, profile)
     is_own = bool(me and me.id == profile.id)
@@ -392,6 +395,10 @@ def build_context(profile, me, tab="wall"):
     vis_albums = Album.objects.filter(social_user=profile).visible_to(me) if full else Album.objects.none()
     rail_photos = recent_photos(profile, me, 4) if full else []
     albums = albums_for(profile, me, 12) if full and tab == "photos" else []
+    tagged_photos = []
+    if full and tab == "photos" and photos_view == "of":
+        from apps.social.photo_tags import photos_of
+        tagged_photos = photos_of(profile, me, limit=40)
     notes = notes_for(profile, 20, viewer=me) if full and tab == "notes" else []
     gifts = []
     if wall and show_wall:
@@ -405,6 +412,8 @@ def build_context(profile, me, tab="wall"):
         "pages": pages,
         "rail_photos": rail_photos,
         "albums": albums,
+        "photos_view": photos_view,
+        "tagged_photos": tagged_photos,
         "notes": notes,
         "gifts": gifts,
         "note_form": NoteForm() if is_own and tab == "notes" else None,

@@ -11,6 +11,10 @@ from apps.social.models import FriendList, MarketplaceListing, SocialProfile
 from apps.social.services import bump_news, friend_ids, profile_of
 
 
+# links.html serves both Links and Videos (identical classic chrome).
+_POSTED_TEMPLATE = "social/links.html"
+
+
 def _posted_home(request, *, kind: str, title: str, template: str, nav: str):
     me = profile_of(request.user)
     form = PostedItemForm(request.POST or None)
@@ -43,7 +47,7 @@ def _posted_home(request, *, kind: str, title: str, template: str, nav: str):
 @require_http_methods(["GET", "POST"])
 def links_home(request):
     return _posted_home(
-        request, kind="link", title="Ссылки", template="social/links.html", nav="links",
+        request, kind="link", title="Ссылки", template=_POSTED_TEMPLATE, nav="links",
     )
 
 
@@ -51,7 +55,7 @@ def links_home(request):
 @require_http_methods(["GET", "POST"])
 def videos_home(request):
     return _posted_home(
-        request, kind="video", title="Видео", template="social/videos.html", nav="videos",
+        request, kind="video", title="Видео", template=_POSTED_TEMPLATE, nav="videos",
     )
 
 

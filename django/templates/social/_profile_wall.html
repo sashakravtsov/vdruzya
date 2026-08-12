@@ -20,6 +20,9 @@
             {% elif item.kind == 'photo' %}
             добавил(а) фото в <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>
             {% if item.photo %}<a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"> · смотреть</a>{% endif %}
+            {% elif item.kind == 'tagged' and item.photo and item.album %}
+            {% if item.by %}отметил(а) <a href="{% url 'profile' item.by.id %}">{{ item.by.name }}</a> на фото{% else %}отмечен(а) на фото{% endif %}
+            <a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"> · смотреть</a>
             {% elif item.kind == 'picture' %}
             обновил(а) фото профиля
             {% elif item.kind == 'friend' and item.other %}
@@ -28,6 +31,10 @@
             обновил(а) статус: {{ item.post.body|truncatewords:16 }}
             {% elif item.kind == 'note' %}
             написал(а) заметку <a href="{% url 'posts.show' item.post.id %}">«{{ item.post.media_label|default:"Заметка" }}»</a>
+            {% elif item.kind == 'link' %}
+            поделился ссылкой{% if item.post.link_url %} <a href="{{ item.post.link_url }}" rel="nofollow noopener">«{{ item.post.media_label|default:item.post.link_url }}»</a>{% endif %}
+            {% elif item.kind == 'video' %}
+            добавил(а) видео{% if item.post.link_url %} <a href="{{ item.post.link_url }}" rel="nofollow noopener">«{{ item.post.media_label|default:"Видео" }}»</a>{% endif %}
             {% elif item.kind == 'wall' %}
             написал(а) на стену{% if item.wall_name %} <a href="{% url 'profile' item.wall_id %}">{{ item.wall_name }}</a>{% endif %}: {{ item.post.body|truncatewords:12 }}
             {% elif item.kind == 'fan' and item.page %}

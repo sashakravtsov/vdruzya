@@ -146,5 +146,33 @@
             </div>
             {% endif %}
         </div>
+    {% elif item.kind == 'event_post' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            написал(а) на стене события
+            <a href="{% url 'events.show' item.event.id %}">{{ item.event.title }}</a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            <div class="news-snippet">
+                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                {% include "social/_post_media.html" with post=item.post %}
+            </div>
+            <div class="wall-actions muted">
+                <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
+                {% if item.post.n_comments %} <span class="muted">({{ item.post.n_comments }})</span>{% endif %}
+            </div>
+        </div>
+    {% elif item.kind == 'photo_tag' %}
+        <span class="ico ico-photo news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            отметил(а)
+            <a href="{% url 'profile' item.person.id %}">{{ item.person.name }}</a>
+            на фото
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.photo.url %}
+            <div class="news-photo-row"><a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"><img src="{{ item.photo.url }}" alt="" class="news-photo"></a></div>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
