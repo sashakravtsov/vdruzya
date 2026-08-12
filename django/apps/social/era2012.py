@@ -76,6 +76,14 @@ APP_CENTER = (
      "blurb": "ВДрузья с телефона.", "detail": "Подсказки по мобильному доступу.", "url_name": "mobile"},
     {"slug": "search", "name": "Поиск", "category": "tools", "featured": False,
      "blurb": "Найти людей и группы.", "detail": "Глобальный поиск по людям, группам и страницам.", "url_name": "search"},
+    {"slug": "graph", "name": "Graph Search", "category": "tools", "featured": True,
+     "blurb": "Друзья по сети: город и хэштеги.", "detail": "Graph Search 2013: «друзья в городе», «кто любит #тег» — без рекламы и без сторонних приложений.", "url_name": "graph"},
+    {"slug": "trending", "name": "В тренде", "category": "social", "featured": True,
+     "blurb": "Популярные хэштеги друзей.", "detail": "Trending Topics по хэштегам в круге друзей — классическая колонка и страница.", "url_name": "trending"},
+    {"slug": "nearby", "name": "Друзья рядом", "category": "places", "featured": True,
+     "blurb": "Друзья в вашем городе.", "detail": "Nearby Friends без GPS: совпадение по городу в профиле.", "url_name": "nearby"},
+    {"slug": "hashtags", "name": "Хэштеги", "category": "social", "featured": False,
+     "blurb": "Посты по #тегам.", "detail": "Хэштеги из статусов и стены — лента, тренды и Graph Search.", "url_name": "trending"},
 )
 
 

@@ -17,6 +17,7 @@ from . import views_classic as classic
 from . import views_era2010 as era
 from . import views_era2011 as era11
 from . import views_era2012 as era12
+from . import views_era2013 as era13
 from . import realtime as rt
 
 urlpatterns = [
@@ -36,6 +37,10 @@ urlpatterns = [
     path("pages/<int:pk>/unfan", pages.page_unfan, name="pages.unfan"),
     path("pages/<int:pk>/posts", pages.page_post, name="pages.posts"),
     path("pages/<int:pk>/events", pages.page_event_create, name="pages.events"),
+    path("pages/<int:pk>/milestones", era12.page_milestone_create, name="pages.milestones"),
+    path("pages/<int:pk>/milestones/<int:mid>/delete", era12.page_milestone_delete, name="pages.milestones.delete"),
+    path("pages/<int:pk>/cover", era12.page_cover_upload, name="pages.cover"),
+    path("pages/<int:pk>/cover/clear", era12.page_cover_clear, name="pages.cover.clear"),
     path("pages/<int:pk>", pages.page_show, name="pages.show"),
     path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
     path("apps", apps.apps_home, name="apps"),
@@ -46,10 +51,10 @@ urlpatterns = [
     path("collections/<int:pk>/delete", era12.collection_delete, name="collections.delete"),
     path("collections/<int:pk>/items", era12.collection_item_add, name="collections.items"),
     path("collections/<int:pk>/items/<int:item_id>/delete", era12.collection_item_delete, name="collections.items.delete"),
-    path("pages/<int:pk>/milestones", era12.page_milestone_create, name="pages.milestones"),
-    path("pages/<int:pk>/milestones/<int:mid>/delete", era12.page_milestone_delete, name="pages.milestones.delete"),
-    path("pages/<int:pk>/cover", era12.page_cover_upload, name="pages.cover"),
-    path("pages/<int:pk>/cover/clear", era12.page_cover_clear, name="pages.cover.clear"),
+    path("graph", era13.graph_search, name="graph"),
+    path("hashtag/<str:name>", era13.hashtag_show, name="hashtag"),
+    path("nearby", era13.nearby_friends, name="nearby"),
+    path("trending", era13.trending_home, name="trending"),
     path("gifts", gifts.gifts_home, name="gifts"),
     path("gifts/send", gifts.gift_send, name="gifts.send"),
     path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),

@@ -61,6 +61,43 @@
             </div>
 
             <div class="profile-box">
+                <h4>В тренде{% if trending %}<a class="edit" href="{% url 'trending' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if trending %}
+                        {% for t in trending %}
+                        <div class="rail-row">
+                            <a href="{% url 'hashtag' name=t.name %}">#{{ t.name }}</a>
+                            <span class="muted">({{ t.count }})</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока тихо. <a href="{% url 'trending' %}">Хэштеги</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Друзья рядом{% if nearby_rail %}<a class="edit" href="{% url 'nearby' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if nearby_rail %}
+                        {% for p in nearby_rail %}
+                        <div class="classic-person-row classic-person-row-side">
+                            <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                                {% avatar p 32 %}
+                                <span>
+                                    <b>{{ p.name }}</b>
+                                    {% if p.city %}<span class="classic-person-sub">{{ p.city }}</span>{% endif %}
+                                </span>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted"><a href="{% url 'nearby' %}">Друзья рядом</a> · укажите город в профиле</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
                 <h4>Заявки</h4>
                 <div class="profile-box-body">
                     {% if requests %}

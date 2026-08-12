@@ -355,7 +355,22 @@
             <a href="{% url 'collections.show' item.collection.id %}"><b>«{{ item.collection.title }}»</b></a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'hashtag' and item.tag and item.post %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            написал(а) про
+            <a href="{% url 'hashtag' name=item.tag.name %}"><b>#{{ item.tag.name }}</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            <div class="news-snippet">
+                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
+            </div>
+            <div class="wall-actions muted">
+                <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
+            </div>
+        </div>
     {% endif %}
+
     {% if me and item.actor and item.actor.id != me.id %}
     <div class="news-hide muted">
         {% if item.story_key %}

@@ -56,6 +56,10 @@ def story_key_for(item: dict) -> str | None:
     col = item.get("collection")
     if col is not None and getattr(col, "id", None):
         return f"collection:{col.id}"
+    tag = item.get("tag")
+    post = item.get("post")
+    if kind == "hashtag" and tag is not None and post is not None:
+        return f"hashtag:{tag.id}:{post.id}"
     return None
 
 

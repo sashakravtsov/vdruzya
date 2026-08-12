@@ -1006,6 +1006,8 @@ def news_items(viewer=None, limit=40):
     from apps.social import era2012 as e12
     e12._add_page_milestones(items, viewer, page_ids, blocked, limit)
     e12._add_collections(items, blocked, fids, limit)
+    from apps.social import era2013 as e13
+    e13._add_hashtag_stories(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[: limit * 2]
     if viewer:
@@ -1060,6 +1062,7 @@ def feed_rail(viewer):
     from apps.social import friendship as fr
     from apps.social import feed_hide as fh
     from apps.social import era2011 as e11
+    from apps.social import era2013 as e13
     from apps.social import photo_tags as ptags
     from apps.social.models import Community, Company, Notification
 
@@ -1099,6 +1102,8 @@ def feed_rail(viewer):
         "pending_photo_tags": ptags.pending_for(viewer, 6) if viewer else [],
         "feed_hidden_people": fh.hidden_people(viewer, 8) if viewer else [],
         "ticker": e11.ticker_items(viewer, 12) if viewer else [],
+        "trending": e13.trending_topics(viewer, 8) if viewer else [],
+        "nearby_rail": (e13.nearby_friends(viewer, limit=6)[0] if viewer else []),
     }
 
 
