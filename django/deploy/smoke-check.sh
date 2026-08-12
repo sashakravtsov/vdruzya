@@ -227,6 +227,12 @@ elif grep -q 'profile-content' "${ROOT}/django/templates/social/profile.html" 2>
 else
   echo "OK   profile #userprofile divider (archive)"
 fi
+if ! grep -q 'id="editnav"' "${ROOT}/django/templates/social/profile_edit.html" 2>/dev/null \
+   || grep -q 'type="date"' "${ROOT}/django/apps/social/forms.py" 2>/dev/null; then
+  echo "FAIL profile edit missing classic chrome / still has date input"; FAIL=1
+else
+  echo "OK   profile edit classic (editnav, no HTML5 date)"
+fi
 if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
   echo "FAIL albums_user.html still present"; FAIL=1
 else

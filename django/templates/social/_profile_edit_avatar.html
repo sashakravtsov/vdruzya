@@ -1,32 +1,23 @@
-<div class="profile-box" id="avatar">
-    <h4>Фото профиля</h4>
-    <div class="profile-box-body">
-        <form method="post" action="{% url 'profile.avatar' %}" enctype="multipart/form-data">{% csrf_token %}
-            <table class="formtable" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td class="label">Сейчас:</td>
-                    <td>
-                        {% if me.avatar_url %}
-                        <img src="{{ me.avatar_url }}" alt="" class="avatar-edit-preview">
-                        {% else %}
-                        <span class="muted">нет фото</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">Новое:</td>
-                    <td>
-                        <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp" class="inputfile" required>
-                        <div class="file-hint muted">JPEG, PNG или GIF · до 2 МБ</div>
-                    </td>
-                </tr>
-                <tr><td></td><td><input type="submit" class="inputsubmit" value="Сменить фото"></td></tr>
-            </table>
-        </form>
+{% load static %}
+<div id="picture">
+    <div id="currentpicture">
+        <h4>Текущее фото</h4>
         {% if me.avatar_url %}
+        <img src="{{ me.avatar_url }}" alt="" width="200" height="200" class="avatar-edit-preview">
         <form method="post" action="{% url 'profile.avatar.clear' %}" class="avatar-clear">{% csrf_token %}
             <button type="submit" class="linkish muted">Удалить фото</button>
         </form>
+        {% else %}
+        <div id="nopicture">нет фото</div>
         {% endif %}
     </div>
+    <div id="uploadpicture">
+        <h4>Загрузить новое фото</h4>
+        <form method="post" action="{% url 'profile.avatar' %}" enctype="multipart/form-data">{% csrf_token %}
+            <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp" class="inputfile" required>
+            <small>JPEG, PNG или GIF · до 2 МБ. Квадратное фото смотрится лучше.</small>
+            <p><input type="submit" class="inputsubmit" value="Загрузить"></p>
+        </form>
+    </div>
+    <div class="clear"></div>
 </div>

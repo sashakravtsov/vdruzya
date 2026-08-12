@@ -1,5 +1,7 @@
 from django import forms
 from django.db.models import Q
+from django.forms.widgets import SelectDateWidget
+from django.utils import timezone
 from apps.social.categories import CHOICES as GROUP_CATS
 from apps.social.models import (
     Album, Community, CommunityPost, Education, Experience,
@@ -21,6 +23,21 @@ def _file(**attrs):
         "accept": "image/jpeg,image/png,image/gif,image/webp",
         **attrs,
     })
+
+
+def _birthday():
+    """FB 2005 birthday — three selects, never HTML5 date."""
+    y = timezone.localdate().year
+    return SelectDateWidget(
+        years=range(y, 1929, -1),
+        months={
+            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+            5: "мая", 6: "июня", 7: "июля", 8: "августа",
+            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
+        },
+        empty_label=("год", "мес", "день"),
+        attrs={"class": "inputtext"},
+    )
 
 
 class _MultiFile(forms.ClearableFileInput):
@@ -104,7 +121,7 @@ class ProfileForm(forms.ModelForm):
         widgets = {
             "name": _in(), "slug": _in(autocomplete="off"),
             "city": _in(),
-            "birthday": forms.DateInput(attrs={"class": "inputtext", "type": "date"}),
+            "birthday": _birthday(),
             "hometown": _in(), "country": _in(),
             "workplace": _in(style="width:100%"), "education_note": _in(style="width:100%"),
             "website": _in(style="width:100%"), "phone": _in(),

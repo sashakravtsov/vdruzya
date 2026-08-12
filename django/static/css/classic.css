@@ -216,6 +216,80 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 .profile-edit-main { float: left; width: 420px; }
 .profile-edit-links { list-style: none; padding-left: 0; margin: 0; }
 .profile-edit-links li { margin: 0 0 4px; }
+/* Edit My Profile — archive editprofile.css (Dec 2005) */
+.editprofile #content { padding: 12px 0 10px !important; overflow: hidden; }
+.editprofile #editprofile { overflow: hidden; margin: 0; }
+.editprofile #editnav {
+  float: left; width: 180px; margin: 0 10px 0 10px; padding: 0;
+  list-style: none; border-bottom: solid 1px #fff;
+}
+.editprofile #editnav li {
+  margin: 0; padding: 0; border-bottom: solid 1px var(--line);
+  font: 11px/16px var(--font);
+}
+.editprofile #editnav a, .editprofile #editnav b {
+  display: block; padding: 2px 3px; color: var(--fb); font-weight: normal;
+}
+.editprofile #editnav b { color: #333; font-weight: bold; background: #eee; }
+.editprofile #editnav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
+.editprofile .editor {
+  float: left; width: 400px; margin: 0 10px 0 0; padding: 0;
+}
+.editprofile .formtable.editor td.label,
+.editprofile table.editor td.label {
+  text-align: right; padding-right: 15px; width: 150px;
+  color: gray; font-weight: bold; white-space: nowrap; vertical-align: top;
+}
+.editprofile .formtable.editor td,
+.editprofile table.editor td { padding: 3px 0; vertical-align: top; }
+.editprofile .editor-buttons,
+.editprofile td.buttons {
+  text-align: left; padding-left: 0; margin: 8px 0 12px 165px;
+}
+.editprofile .profile_note {
+  background: #fff; padding: 10px; margin: 0 0 10px;
+  border: 1px solid #bdc7d8; color: #444; font-size: 11px; line-height: 14px;
+}
+.editprofile .checkgrid ul {
+  list-style: none; margin: 0; padding: 0;
+}
+.editprofile .checkgrid li {
+  margin: 0 0 2px; padding: 0; font-weight: normal;
+}
+.editprofile .checkgrid label { font-weight: normal; color: #000; }
+.editprofile .bday select.inputtext { width: auto; margin-right: 2px; }
+.editprofile #picture { overflow: hidden; margin: 0 10px; }
+.editprofile #currentpicture {
+  float: left; width: 200px; margin: 10px 10px 20px 10px;
+}
+.editprofile #currentpicture h4,
+.editprofile #uploadpicture h4 {
+  margin: 0; padding: 0 0 4px; font-size: 11px; font-weight: bold;
+  border-bottom: solid 1px #D8DFEA; color: #333;
+}
+.editprofile #currentpicture img {
+  width: 200px; height: 200px; border: 1px solid #B3B3B3; display: block; margin: 6px 0;
+}
+.editprofile #nopicture {
+  width: 200px; font-size: 12px; padding: 75px 0; text-align: center;
+  background: #f7f7f7; border: solid 1px #ddd; color: gray; margin: 6px 0;
+}
+.editprofile #uploadpicture {
+  float: left; width: 280px; margin: 10px 10px 20px 10px;
+}
+.editprofile #uploadpicture small {
+  display: block; margin: 5px 0; color: gray; font-size: 10px;
+}
+.editprofile .avatar-clear { margin: 4px 0 0; }
+.editprofile .profile-box { margin: 0 0 12px; }
+.editprofile .profile-box > h4 {
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px var(--font);
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.editprofile .profile-box-body { padding: 10px 8px 12px; line-height: 13px; }
+.editprofile .formtable textarea { width: 100%; max-width: 280px; }
+.editprofile .formtable .inputtext { max-width: 250px; }
 .profile-subsection { margin: 0 0 10px; }
 .profile-subsection h5 {
   color: #3B5998; font: bold 12px var(--font); margin: 0 0 6px; padding: 2px 8px;
@@ -1044,8 +1118,7 @@ button.linkish .ico { margin-right: 2px; }
 .events-page .profile-box > h4,
 .pokes-page .profile-box > h4,
 .inbox-page .profile-box > h4,
-.account-page .profile-box > h4,
-.profile-edit-page .profile-box > h4 {
+.account-page .profile-box > h4 {
   background: #D8DFEA; color: #3B5998;
   font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
   margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
@@ -1054,15 +1127,13 @@ button.linkish .ico { margin-right: 2px; }
 .events-page .profile-box-body,
 .pokes-page .profile-box-body,
 .inbox-page .profile-box-body,
-.account-page .profile-box-body,
-.profile-edit-page .profile-box-body {
+.account-page .profile-box-body {
   padding: 10px 8px 12px; line-height: 13px;
 }
 .search-page #content,
 .events-page #content,
 .pokes-page #content,
-.account-page #content,
-.profile-edit-page #content { padding: 10px; }
+.account-page #content { padding: 10px; }
 .search-page .profilelinks { margin: 0; padding: 0 0 0 16px; list-style: disc; color: #3B5998; }
 .search-page .profilelinks li { padding: 0 0 4px; }
 .search-page .minifeed-item {
@@ -1142,11 +1213,7 @@ button.linkish .ico { margin-right: 2px; }
   margin: 8px 0 0; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
 .group-page .event-row:last-child { border-bottom: 0; }
-.profile-edit-page .formtable textarea { width: 100%; max-width: 360px; }
-.profile-edit-page .formtable .inputtext { max-width: 280px; }
-
-.group-page .profile-subsection h5,
-.profile-edit-page .profile-subsection h5 {
+.group-page .profile-subsection h5 {
   color: #3B5998; font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif;
   margin: 0 0 6px; padding: 2px 8px; background: #eee; border-top: solid 1px #ccc; border-bottom: 0;
 }

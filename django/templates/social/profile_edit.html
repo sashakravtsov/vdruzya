@@ -1,59 +1,60 @@
 {% extends "layout.html" %}
-{% block title %}Редактирование профиля — ВДрузья{% endblock %}
+{% block title %}Редактирование моего профиля — ВДрузья{% endblock %}
+{% block bodyclass %} editprofile{% endblock %}
 {% block pagebody %}
-<div id="pagebody" class="profile-edit-page">
+<div id="pagebody" class="editprofile">
     <div id="header" class="withsubtitle">
-        <h1>Редактирование профиля</h1>
-        <div class="subtitle"><a href="{% url 'profile' me.id %}">← {{ me.name }}</a></div>
+        <h1>Редактирование моего профиля</h1>
+        <div class="subtitle"><a href="{% url 'profile' me.id %}">← к профилю</a></div>
     </div>
-    <div id="content" class="profile-edit-content">
+    <div id="content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
-        <div class="profile-edit-nav profile-box">
-            <h4>Разделы</h4>
-            <div class="profile-box-body">
-                <ul class="plain profile-edit-links">
-                    <li>{% if section == 'basic' %}<b>Основная информация</b>{% else %}<a href="?section=basic">Основная информация</a>{% endif %}</li>
-                    <li>{% if section == 'contact' %}<b>Контактная информация</b>{% else %}<a href="?section=contact">Контактная информация</a>{% endif %}</li>
-                    <li>{% if section == 'personal' %}<b>Личная информация</b>{% else %}<a href="?section=personal">Личная информация</a>{% endif %}</li>
-                    <li>{% if section == 'eduwork' %}<b>Образование и работа</b>{% else %}<a href="?section=eduwork">Образование и работа</a>{% endif %}</li>
-                    <li>{% if section == 'picture' %}<b>Фото</b>{% else %}<a href="?section=picture">Фото</a>{% endif %}</li>
-                    <li>{% if section == 'privacy' %}<b>Приватность</b>{% else %}<a href="?section=privacy">Приватность</a>{% endif %}</li>
-                </ul>
-            </div>
-        </div>
+        <div id="editprofile">
+            <ul id="editnav">
+                {% for key, label in edit_nav %}
+                <li class="{% if section == key %}is-on{% endif %}">
+                    {% if section == key %}<b>{{ label }}</b>{% else %}<a href="?section={{ key }}">{{ label }}</a>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
 
-        <div class="profile-edit-main">
-            {% if section == 'picture' %}
-            {% include "social/_profile_edit_avatar.html" %}
-            {% elif section == 'eduwork' %}
-            <form method="post" action="?section=eduwork">{% csrf_token %}
-                <div class="profile-box">
-                    <h4>Кратко</h4>
-                    <div class="profile-box-body">
-                        <table class="formtable" cellpadding="0" cellspacing="0">
-                            <tr><td class="label">Место работы:</td><td>{{ form.workplace }}</td></tr>
-                            <tr><td class="label">Образование:</td><td>{{ form.education_note }}</td></tr>
-                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить"> · <a href="{% url 'profile' me.id %}">Отмена</a></td></tr>
-                        </table>
+            <div class="editor">
+                {% if section == 'picture' %}
+                {% include "social/_profile_edit_avatar.html" %}
+                {% elif section == 'eduwork' %}
+                <form method="post" action="?section=eduwork">{% csrf_token %}
+                    <div class="profile-box">
+                        <h4>Кратко</h4>
+                        <div class="profile-box-body">
+                            <table class="formtable editor" cellpadding="0" cellspacing="0">
+                                <tr><td class="label">Место работы:</td><td>{{ form.workplace }}</td></tr>
+                                <tr><td class="label">Образование:</td><td>{{ form.education_note }}</td></tr>
+                                <tr><td class="label"></td><td class="buttons">
+                                    <input type="submit" class="inputsubmit" value="Сохранить">
+                                    · <a href="{% url 'profile' me.id %}">Отмена</a>
+                                </td></tr>
+                            </table>
+                        </div>
                     </div>
-                </div>
-            </form>
-            {% include "social/_profile_edit_education.html" %}
-            {% include "social/_profile_edit_experience.html" %}
-            {% else %}
-            <form method="post" action="?section={{ section }}">{% csrf_token %}
-                {% if section == 'basic' %}{% include "social/_profile_edit_basic.html" %}
-                {% elif section == 'contact' %}{% include "social/_profile_edit_contact.html" %}
-                {% elif section == 'personal' %}{% include "social/_profile_edit_personal.html" %}
-                {% elif section == 'privacy' %}{% include "social/_profile_edit_privacy.html" %}
+                </form>
+                {% include "social/_profile_edit_education.html" %}
+                {% include "social/_profile_edit_experience.html" %}
+                {% else %}
+                <form method="post" action="?section={{ section }}">{% csrf_token %}
+                    {% if section == 'basic' %}{% include "social/_profile_edit_basic.html" %}
+                    {% elif section == 'contact' %}{% include "social/_profile_edit_contact.html" %}
+                    {% elif section == 'personal' %}{% include "social/_profile_edit_personal.html" %}
+                    {% elif section == 'privacy' %}{% include "social/_profile_edit_privacy.html" %}
+                    {% endif %}
+                    <p class="editor-buttons">
+                        <input type="submit" class="inputsubmit" value="Сохранить изменения">
+                        · <a href="{% url 'profile' me.id %}">Отмена</a>
+                    </p>
+                </form>
                 {% endif %}
-                <p style="margin:0 0 12px 8px">
-                    <input type="submit" class="inputsubmit" value="Сохранить">
-                    · <a href="{% url 'profile' me.id %}">Отмена</a>
-                </p>
-            </form>
-            {% endif %}
+            </div>
+            <div class="clear"></div>
         </div>
     </div>
 </div>

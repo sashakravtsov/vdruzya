@@ -11,7 +11,7 @@
                 <table class="infotable">
                     <tr><td class="label">Email:</td><td><b>{{ user_obj.email }}</b></td></tr>
                     {% if me %}
-                    <tr><td class="label">Профиль:</td><td><a href="{% url 'profile' me.id %}">{{ me.name }}</a> · <a href="{% url 'profile.edit' %}">редактировать</a></td></tr>
+                    <tr><td class="label">Профиль:</td><td><a href="{% url 'profile' me.id %}">{{ me.name }}</a> · <a href="{% url 'profile.edit' %}">редактировать профиль</a></td></tr>
                     <tr><td class="label">Приватность:</td><td><a href="{% url 'profile.edit' %}?section=privacy">настройки профиля</a></td></tr>
                     {% endif %}
                 </table>

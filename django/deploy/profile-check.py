@@ -155,12 +155,17 @@ def main():
 
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
-    assert "Основная информация".encode() in r.content
+    assert "Редактирование моего профиля".encode() in r.content
+    assert b'id="editnav"' in r.content
+    assert "Основное".encode() in r.content
     assert "Контактная информация".encode() in r.content  # nav
     assert "Приватность".encode() in r.content  # nav
     assert "Интересуюсь".encode() in r.content
     assert "Ищу".encode() in r.content
     assert b"section=picture" in r.content
+    assert b'type="date"' not in r.content
+    assert b"datetime-local" not in r.content
+    assert b'name="birthday_year"' in r.content or b'birthday_year' in r.content
     ok("profile edit sections")
 
     r = c.get("/profile/edit?section=contact", secure=True)
@@ -172,6 +177,12 @@ def main():
     assert r.status_code == 200
     assert "Игры".encode() in r.content
     ok("profile edit personal games")
+
+    r = c.get("/profile/edit?section=picture", secure=True)
+    assert r.status_code == 200
+    assert b'id="currentpicture"' in r.content and b'id="uploadpicture"' in r.content
+    assert b'type="date"' not in r.content
+    ok("profile edit picture chrome")
 
     other = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
     assert other, "need a friend"
@@ -185,14 +196,14 @@ def main():
     assert "<h4>Общие друзья".encode() not in right
     ok("friend profile: friends tab lists friends")
 
-    r = c.post("/profile/edit?section=basic", {
+    bday = me.birthday
+    basic = {
         "name": me.name,
         "slug": me.slug,
         "city": me.city or "Москва",
         "hometown": me.hometown or "",
         "country": me.country or "",
         "gender": me.gender or "male",
-        "birthday": me.birthday.isoformat() if me.birthday else "",
         "birthday_visibility": me.birthday_visibility or "day_month",
         "relationship_status": "in_a_relationship",
         "relationship_with": str(other.id),
@@ -201,7 +212,12 @@ def main():
         "languages_text": me.languages_label(),
         "looking_for_choices": ["friendship"],
         "interested_in_choices": ["women"],
-    }, secure=True)
+    }
+    if bday:
+        basic["birthday_year"] = str(bday.year)
+        basic["birthday_month"] = str(bday.month)
+        basic["birthday_day"] = str(bday.day)
+    r = c.post("/profile/edit?section=basic", basic, secure=True)
     assert r.status_code in (301, 302), getattr(r, "context", None) and r.context["form"].errors
 
     r = c.post("/profile/edit?section=contact", {
