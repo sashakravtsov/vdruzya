@@ -4,13 +4,13 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.social.albums import albums_for
-from apps.social.forms import CommentForm, PostForm, StatusForm
+from apps.social.forms import CommentForm, NoteForm, PostForm, StatusForm
 from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
 )
-from apps.social.services import friend_count, mini_feed, wall_posts_for
+from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_for
 
-TABS = frozenset({"wall", "info", "photos", "friends"})
+TABS = frozenset({"wall", "info", "photos", "notes", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
 
 
@@ -324,6 +324,7 @@ def build_context(profile, me, tab="wall"):
     vis_albums = Album.objects.filter(social_user=profile).visible_to(me) if full else Album.objects.none()
     rail_photos = recent_photos(profile, me, 4) if full else []
     albums = albums_for(profile, me, 12) if full and tab == "photos" else []
+    notes = notes_for(profile, 20, viewer=me) if full and tab == "notes" else []
 
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
@@ -332,6 +333,8 @@ def build_context(profile, me, tab="wall"):
         "communities": communities,
         "rail_photos": rail_photos,
         "albums": albums,
+        "notes": notes,
+        "note_form": NoteForm() if is_own and tab == "notes" else None,
         "posts": wall_posts_for(profile, 20, viewer=me) if wall and show_wall else [],
         "relation": relation, "blocked": blocked,
         "mutual": mutual, "mutual_text": mutual_text,
@@ -346,7 +349,7 @@ def build_context(profile, me, tab="wall"):
             ),
         },
         "form": PostForm(simple=True) if wall and can_wall else None,
-        "comment_form": CommentForm() if wall and me and show_wall else None,
+        "comment_form": CommentForm() if ((wall and me and show_wall) or (tab == "notes" and me)) else None,
         "can_wall": can_wall,
         "show_wall": show_wall,
         "can_see_friends": can_see,

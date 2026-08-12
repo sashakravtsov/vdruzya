@@ -75,6 +75,39 @@ def post_create(request):
 
 @login_required
 @require_POST
+def note_create(request):
+    """FB Notes publish — kind=note, title in media_label."""
+    from apps.social.forms import NoteForm
+    from apps.social.throttle import throttle
+
+    @throttle("posts", 20, 60)
+    def _go(req):
+        me = profile_of(req.user)
+        form = NoteForm(req.POST)
+        go = req.POST.get("next") or (f"{me.get_absolute_url()}?tab=notes" if me else "feed")
+        if not (form.is_valid() and me):
+            messages.error(req, "Укажите заголовок и текст.")
+            return redirect(go)
+        d = form.cleaned_data
+        Post.objects.create(
+            social_user=me,
+            body=d["body"],
+            kind="note",
+            topic="note",
+            media_label=d["title"],
+            visibility=d["visibility"],
+            created_at=_now(),
+            updated_at=_now(),
+        )
+        bump_news()
+        messages.success(req, "Заметка опубликована.")
+        return redirect(go)
+
+    return _go(request)
+
+
+@login_required
+@require_POST
 def status_update(request):
     from apps.social.forms import StatusForm
     me = profile_of(request.user)

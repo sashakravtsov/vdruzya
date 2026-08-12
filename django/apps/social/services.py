@@ -145,8 +145,8 @@ def wall_posts_for(profile, limit=20, viewer=None):
             Q(topic=key)
             | (Q(social_user=profile) & ~Q(topic__startswith="wall:"))
         )
-        .exclude(kind__in=("status", "picture", "poll", "share"))
-        .exclude(topic__in=("status", "picture"))
+        .exclude(kind__in=("status", "picture", "poll", "share", "note"))
+        .exclude(topic__in=("status", "picture", "note"))
         .select_related("social_user")
         .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
@@ -168,13 +168,35 @@ def wall_posts_for(profile, limit=20, viewer=None):
     return qs.order_by("-id")[:limit]
 
 
+def notes_for(profile, limit=20, viewer=None):
+    """FB Notes — authored notes (kind=note), classic mid-2006 tab."""
+    qs = (
+        Post.objects.filter(social_user=profile, kind="note")
+        .select_related("social_user")
+        .defer(*POST_DEFER, *profile_related("social_user__"))
+        .prefetch_related(
+            Prefetch(
+                "comments",
+                queryset=Comment.objects.select_related("social_user")
+                .defer(*profile_related("social_user__")).order_by("id"),
+            ),
+        )
+        .annotate(n_comments=Count("comments", distinct=True))
+    )
+    if not (viewer and viewer.id == profile.id):
+        qs = qs.filter(post_visible_q(viewer))
+        if viewer:
+            qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
+    return list(qs.order_by("-id")[:limit])
+
+
 def wall_to_wall(a, b, limit=40, viewer=None):
     """FB Wall-to-Wall: notes exchanged between two profiles."""
     qs = (
         Post.objects.filter(
             Q(topic=f"wall:{a.id}", social_user=b) | Q(topic=f"wall:{b.id}", social_user=a)
         )
-        .exclude(kind__in=("status", "picture", "poll", "share"))
+        .exclude(kind__in=("status", "picture", "poll", "share", "note"))
         .select_related("social_user")
         .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
@@ -222,6 +244,8 @@ def mini_feed(profile, limit=8, viewer=None):
         topic = p.topic or ""
         if p.kind == "status" or topic == "status":
             kind = "status"
+        elif p.kind == "note" or topic == "note":
+            kind = "note"
         elif topic == "picture":
             kind = "picture"
         elif topic.startswith("wall:"):
@@ -233,7 +257,7 @@ def mini_feed(profile, limit=8, viewer=None):
                 kind = "post"
         else:
             kind = "post"
-        if kind in ("wall", "post") and not show_wall:
+        if kind in ("wall", "post", "note") and not show_wall:
             continue
         row = {"kind": kind, "at": p.created_at, "post": p}
         if kind == "wall":
@@ -383,7 +407,10 @@ def news_items(viewer=None, limit=40):
     ) if fids else []
     attach_wall_notes(posts)
     for p in posts:
-        items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})
+        if getattr(p, "kind", None) == "note":
+            items.append({"kind": "note", "at": p.created_at, "post": p, "actor": p.social_user})
+        else:
+            items.append({"kind": "wall", "at": p.created_at, "post": p, "actor": p.social_user})
     _add_group_posts(items, blocked, member_ids, limit)
     _add_joins(items, blocked, fids, limit)
     _add_created(items, blocked, fids)

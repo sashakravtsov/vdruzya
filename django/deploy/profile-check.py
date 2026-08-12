@@ -37,7 +37,9 @@ def main():
     assert b"?tab=wall" in r.content
     assert b"?tab=info" in r.content
     assert b"?tab=photos" in r.content
+    assert b"?tab=notes" in r.content
     assert b"?tab=friends" in r.content
+    assert "Заметки".encode() in r.content
     assert "Мини-лента".encode() in r.content
     assert "Стена".encode() in r.content
     assert "Группы".encode() in r.content
@@ -77,6 +79,14 @@ def main():
     assert b'id="photos"' in right
     assert b"profile-photo-thumbs" not in right  # thumbs stay on left rail
     ok("profile photos tab albums")
+
+    r = c.get(f"/profile/{me.id}?tab=notes", secure=True)
+    assert r.status_code == 200
+    assert "Заметки".encode() in r.content
+    assert b'action="/notes"' in r.content
+    assert b'name="title"' in r.content and b'name="body"' in r.content
+    assert b"timesince" not in r.content
+    ok("profile notes tab")
 
     r = c.get(f"/profile/{me.id}?tab=friends", secure=True)
     assert r.status_code == 200

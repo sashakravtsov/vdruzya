@@ -18,7 +18,7 @@
                     {% else %}
                     <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
                     {% endif %}
-                    {% if p.created_at %}<span class="muted"> · {{ p.created_at|timesince }} назад</span>{% endif %}
+                    {% if p.created_at %}<span class="muted"> · {{ p.created_at|fb_when }}</span>{% endif %}
                     {% if is_admin or me and me.id == p.social_user_id %}
                     <span class="wallpost-edit">
                         <a href="{% url 'groups.posts.edit' group.id p.id %}">ред.</a>

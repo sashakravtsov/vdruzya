@@ -1,6 +1,5 @@
 """Browse FBVs: people, groups, search — short only."""
 from django.contrib.auth.decorators import login_not_required, login_required
-from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchRank
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
@@ -119,16 +118,15 @@ def group_show(request, pk):
 
 @login_required
 def search(request):
-    """Global Search (gnav) — people / groups / posts tabs. Find Friends stays on /people."""
+    """Global Search (gnav) — people / groups. Find Friends stays on /people."""
     from apps.social import friendship as fr
-    from apps.social.models import Post
 
     q = (request.GET.get("q") or request.GET.get("name") or "").strip()
     tab = (request.GET.get("tab") or "people").strip()
-    if tab not in ("people", "groups", "posts"):
+    if tab not in ("people", "groups"):
         tab = "people"
     me = profile_of(request.user)
-    people = groups_qs = posts = []
+    people = groups_qs = []
     searched = bool(q)
     if searched and me:
         page = fr.find_people(me, q=q, page=1, per=20)
@@ -141,21 +139,11 @@ def search(request):
         groups_qs = list(
             Community.objects.filter(Q(name__icontains=q) | Q(slug__icontains=q)).order_by("name")[:20]
         )
-        query = SearchQuery(q, config="simple", search_type="websearch")
-        posts = list(
-            Post.objects.annotate(
-                rank=SearchRank("search_vector", query),
-                headline=SearchHeadline("body", query, config="simple", start_sel="<b>", stop_sel="</b>", max_words=32),
-            )
-            .filter(search_vector=query)
-            .select_related("social_user")
-            .order_by("-rank")[:20]
-        )
     return render(
         request, "social/search.html",
         {
             "q": q, "tab": tab, "searched": searched,
-            "people": people, "groups": groups_qs, "posts": posts, "me": me,
+            "people": people, "groups": groups_qs, "me": me,
         },
     )
 

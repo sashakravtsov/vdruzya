@@ -5,12 +5,12 @@
     <div class="wc-body">
         <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
         {{ c.body }}
-        {% if c.created_at %}<div class="muted wc-time">{{ c.created_at|timesince }} назад</div>{% endif %}
+        {% if c.created_at %}<div class="muted wc-time">{{ c.created_at|fb_when }}</div>{% endif %}
     </div>
     {% if can_delete and delete_url %}
     <form method="post" action="{{ delete_url }}" class="inline wc-del">{% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-        <button type="submit" class="linkish muted" title="Удалить">×</button>
+        <button type="submit" class="linkish muted">удалить</button>
     </form>
     {% endif %}
 </div>

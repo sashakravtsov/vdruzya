@@ -30,58 +30,38 @@
             <div class="{% if tab == 'groups' %}activetab{% else %}inactivetab{% endif %}">
                 <a href="?q={{ q|urlencode }}&amp;tab=groups">Группы{% if groups %} ({{ groups|length }}){% endif %}</a>
             </div>
-            <div class="{% if tab == 'posts' %}activetab{% else %}inactivetab{% endif %}">
-                <a href="?q={{ q|urlencode }}&amp;tab=posts">Записи{% if posts %} ({{ posts|length }}){% endif %}</a>
-            </div>
         </div>
 
-        {% if tab == 'people' %}
-        <div class="profile-box">
-            <h4>Люди</h4>
-            <div class="profile-box-body">
-                {% for p in people %}
-                {% include "social/_person_row.html" with person=p with_friend_actions=me %}
-                {% empty %}<p class="muted">Никого не найдено.</p>{% endfor %}
-            </div>
-        </div>
-        {% elif tab == 'groups' %}
-        <div class="profile-box">
-            <h4>Группы</h4>
-            <div class="profile-box-body">
-                {% if groups %}
-                <table class="mygroups-table" cellspacing="0" cellpadding="0">
-                    <thead>
-                        <tr>
-                            <th class="col-name">Группа</th>
-                            <th class="col-type">Тип</th>
-                            <th class="col-act"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for g in groups %}
-                        <tr>
-                            <td class="col-name"><a href="{% url 'groups.show' g.id %}"><b>{{ g.name }}</b></a></td>
-                            <td class="col-type">{% if g.category %}{{ g.category|ru_label }}{% else %}—{% endif %}</td>
-                            <td class="col-act"><a href="{% url 'groups.show' g.id %}">открыть</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}<p class="muted">Групп не найдено.</p>{% endif %}
-            </div>
+        {% if tab == 'groups' %}
+        <h4 class="dir-heading">Группы</h4>
+        <div class="dir-list">
+            {% if groups %}
+            <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                <thead>
+                    <tr>
+                        <th class="col-name">Группа</th>
+                        <th class="col-type">Тип</th>
+                        <th class="col-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in groups %}
+                    <tr>
+                        <td class="col-name"><a href="{% url 'groups.show' g.id %}"><b>{{ g.name }}</b></a></td>
+                        <td class="col-type">{% if g.category %}{{ g.category|ru_label }}{% else %}—{% endif %}</td>
+                        <td class="col-act"><a href="{% url 'groups.show' g.id %}">открыть</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}<p class="muted">Групп не найдено.</p>{% endif %}
         </div>
         {% else %}
-        <div class="profile-box">
-            <h4>Записи</h4>
-            <div class="profile-box-body">
-                {% for p in posts %}
-                <div class="minifeed-item">
-                    <span class="ico ico-wall news-ico"></span>
-                    <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>:
-                    {% if p.headline %}{{ p.headline|safe }}{% else %}{{ p.body|truncatewords:20 }}{% endif %}
-                </div>
-                {% empty %}<p class="muted">Записей не найдено.</p>{% endfor %}
-            </div>
+        <h4 class="dir-heading">Люди</h4>
+        <div class="dir-list">
+            {% for p in people %}
+            {% include "social/_person_row.html" with person=p with_friend_actions=me %}
+            {% empty %}<p class="muted">Никого не найдено.</p>{% endfor %}
         </div>
         {% endif %}
         {% endif %}

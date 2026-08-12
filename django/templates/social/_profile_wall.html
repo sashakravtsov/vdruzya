@@ -25,12 +25,14 @@
             теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
             {% elif item.kind == 'status' %}
             обновил(а) статус: {{ item.post.body|truncatewords:16 }}
+            {% elif item.kind == 'note' %}
+            написал(а) заметку <a href="{% url 'posts.show' item.post.id %}">«{{ item.post.media_label|default:"Заметка" }}»</a>
             {% elif item.kind == 'wall' %}
             написал(а) на стену{% if item.wall_name %} <a href="{% url 'profile' item.wall_id %}">{{ item.wall_name }}</a>{% endif %}: {{ item.post.body|truncatewords:12 }}
             {% else %}
             написал(а): {{ item.post.body|truncatewords:16 }}
             {% endif %}
-            {% if item.at %}<span class="muted"> · {{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.at %}<span class="muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
         {% empty %}
         <p class="muted">Пока нет событий.</p>

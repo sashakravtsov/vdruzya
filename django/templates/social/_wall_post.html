@@ -12,7 +12,7 @@
                     написал(а) на стену <a href="{% url 'profile' post.wall_note_owner.id %}">{{ post.wall_note_owner.name }}</a>
                     {% endif %}
                     {% if post.created_at %}
-                    <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.id %}">{{ post.created_at|timesince }} назад</a></span>
+                    <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.id %}">{{ post.created_at|fb_when }}</a></span>
                     {% endif %}
                     {% if me|can_manage_post:post %}
                     <span class="wallpost-edit">
@@ -28,6 +28,7 @@
                     {% endif %}
                 </div>
                 <div class="text">
+                    {% if post.kind == 'note' and post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
                     {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
                     {% include "social/_post_media.html" with post=post %}
                 </div>

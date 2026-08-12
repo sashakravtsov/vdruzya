@@ -96,6 +96,8 @@ def main():
         r = c.get("/search?q=QA", secure=True)
         assert r.status_code == 200 and b'id="tabs"' in r.content
         assert "Люди".encode() in r.content and "Группы".encode() in r.content
+        assert "Записи".encode() not in r.content
+        assert b"tab=posts" not in r.content
         assert b"placeholder=" not in r.content
         ok("global search tabs")
 

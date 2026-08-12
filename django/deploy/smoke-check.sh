@@ -196,6 +196,28 @@ if grep -q '<details' "${ROOT}/django/templates/social/_comment_thread.html" 2>/
 else
   echo "OK   comment reveal is classic link"
 fi
+if ! grep -q 'tab=notes' "${ROOT}/django/templates/social/profile.html" 2>/dev/null \
+   || ! grep -q 'notes.store' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL Notes tab/route missing"; FAIL=1
+else
+  echo "OK   Notes tab (mid-2006)"
+fi
+if grep -q 'tab=posts\|Записи' "${ROOT}/django/templates/social/search.html" 2>/dev/null; then
+  echo "FAIL search still has posts tab"; FAIL=1
+else
+  echo "OK   search is people|groups only"
+fi
+if ! grep -q 'def fb_when' "${ROOT}/django/apps/social/templatetags/vd.py" 2>/dev/null \
+   || grep -RIl 'timesince' "${ROOT}/django/templates/social" 2>/dev/null | grep -q .; then
+  echo "FAIL relative timesince still in social templates"; FAIL=1
+else
+  echo "OK   absolute fb_when dates"
+fi
+if ! grep -q '>Главная<' "${ROOT}/django/templates/layout.html" 2>/dev/null; then
+  echo "FAIL gnav missing Главная"; FAIL=1
+else
+  echo "OK   gnav capitalized"
+fi
 if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
   echo "FAIL albums_user.html still present"; FAIL=1
 else

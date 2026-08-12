@@ -258,6 +258,26 @@ class PostForm(forms.ModelForm):
         return data
 
 
+class NoteForm(forms.Form):
+    """FB Notes (mid-2006) — title + body."""
+    title = forms.CharField(max_length=120, label="Заголовок", widget=_in(style="width:100%"))
+    body = forms.CharField(label="Текст", widget=_ta(8, style="width:100%"))
+    visibility = forms.ChoiceField(
+        choices=[("public", "Всем"), ("friends", "Друзьям"), ("private", "Только мне")],
+        initial="public",
+        widget=forms.Select(),
+    )
+
+    def clean_title(self):
+        return (self.cleaned_data.get("title") or "").strip()[:120]
+
+    def clean_body(self):
+        body = (self.cleaned_data.get("body") or "").strip()
+        if not body:
+            raise forms.ValidationError("Напишите текст заметки.")
+        return body
+
+
 class CommentForm(forms.Form):
     """Flat comment body for wall / group / photo (classic FB — one form)."""
     body = forms.CharField(

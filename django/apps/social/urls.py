@@ -87,6 +87,7 @@ urlpatterns = [
     path("profile/<int:pk>", views.profile, name="profile"),
     path("profile/<slug:slug>", browse.profile_slug_redirect, name="profile.slug"),
     path("u/<slug:slug>", browse.profile_slug_redirect, name="profile.vanity"),
+    path("notes", act.note_create, name="notes.store"),
     path("posts", act.post_create, name="posts.store"),
     path("posts/<int:post_id>", wall.post_show, name="posts.show"),
     path("posts/<int:post_id>/edit", wall.post_edit, name="posts.edit"),

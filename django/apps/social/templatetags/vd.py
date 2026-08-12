@@ -44,6 +44,24 @@ _LABELS = {
 
 
 @register.filter
+def fb_when(dt):
+    """Classic FB absolute stamp — «12 августа, 15:04» (year if not current)."""
+    if not dt:
+        return ""
+    from django.utils import formats, timezone
+    now = timezone.now()
+    try:
+        if timezone.is_aware(dt) and timezone.is_aware(now):
+            same_year = timezone.localtime(dt).year == timezone.localtime(now).year
+        else:
+            same_year = getattr(dt, "year", None) == getattr(now, "year", None)
+    except Exception:
+        same_year = True
+    fmt = "j E, H:i" if same_year else "j E Y, H:i"
+    return formats.date_format(dt, fmt)
+
+
+@register.filter
 def storage_url(path):
     from apps.social.media import media_url
     return media_url(path) or ""

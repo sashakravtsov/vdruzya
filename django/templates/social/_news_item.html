@@ -9,10 +9,25 @@
             {% else %}
             написал(а)
             {% endif %}
-            {% if item.at %}<span class="news-time muted"> · {{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
                 {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
                 {% include "social/_post_media.html" with post=item.post %}
+            </div>
+            <div class="wall-actions muted">
+                <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
+                {% if item.post.n_comments %} <span class="muted">({{ item.post.n_comments }})</span>{% endif %}
+            </div>
+        </div>
+    {% elif item.kind == 'note' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            написал(а) заметку
+            <a href="{% url 'posts.show' item.post.id %}"><b>«{{ item.post.media_label|default:"Заметка" }}»</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            <div class="news-snippet">
+                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
             </div>
             <div class="wall-actions muted">
                 <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
@@ -25,7 +40,7 @@
             <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
             вступил(а) в группу
             <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>.
-            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
         </div>
     {% elif item.kind == 'created' %}
         <span class="ico ico-group news-ico"></span>
@@ -34,7 +49,7 @@
             создал(а) группу
             <a href="{% url 'groups.show' item.group.id %}"><b>{{ item.group.name }}</b></a>.
             {% if item.group.category %}<span class="muted">({{ item.group.category|ru_label }})</span>{% endif %}
-            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
         </div>
     {% elif item.kind == 'group_post' %}
         <span class="ico ico-note news-ico"></span>
@@ -46,7 +61,7 @@
             написал(а) в
             <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
             {% endif %}
-            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
                 <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
                 {% with text=item.post.body_text|default:item.post.body %}
@@ -64,7 +79,7 @@
             <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
             добавил(а) фото в альбом
             <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>.
-            {% if item.at %}<span class="news-time muted">{{ item.at|timesince }} назад</span>{% endif %}
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
             {% if item.photo.url %}
             <div class="news-photo-row"><img src="{{ item.photo.url }}" alt="" class="news-photo"></div>
             {% endif %}

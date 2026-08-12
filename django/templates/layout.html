@@ -15,20 +15,20 @@
         <h1 id="homelink"><a href="{% if user.is_authenticated %}{% url 'feed' %}{% else %}{% url 'home' %}{% endif %}" title="вдрузья"><span class="hide">вдрузья</span></a></h1>
         <ul id="gnav">
             {% if user.is_authenticated %}
-                <li><a href="{% url 'feed' %}">главная</a></li>
-                <li><a href="{% url 'search' %}">поиск</a></li>
-                <li><a href="{% url 'invite.mine' %}">пригласить</a></li>
-                <li><a href="{% url 'security' %}">помощь</a></li>
+                <li><a href="{% url 'feed' %}">Главная</a></li>
+                <li><a href="{% url 'search' %}">Поиск</a></li>
+                <li><a href="{% url 'invite.mine' %}">Пригласить</a></li>
+                <li><a href="{% url 'security' %}">Помощь</a></li>
                 <li>
                     <form method="post" action="{% url 'logout' %}" class="gnav-logout">{% csrf_token %}
-                        <button type="submit" class="linkish">выход</button>
+                        <button type="submit" class="linkish">Выход</button>
                     </form>
                 </li>
             {% else %}
-                <li><a href="{% url 'login' %}">вход</a></li>
-                <li><a href="{% url 'register' %}">регистрация</a></li>
-                <li><a href="{% url 'about' %}">о сайте</a></li>
-                <li><a href="{% url 'security' %}">помощь</a></li>
+                <li><a href="{% url 'login' %}">Вход</a></li>
+                <li><a href="{% url 'register' %}">Регистрация</a></li>
+                <li><a href="{% url 'about' %}">О сайте</a></li>
+                <li><a href="{% url 'security' %}">Помощь</a></li>
             {% endif %}
         </ul>
     </div>

@@ -206,7 +206,7 @@
                                 <td class="col-topic"><a href="?tab=discussion&amp;topic={{ p.id }}">{{ p.title_line }}</a></td>
                                 <td class="col-n">{{ p.n_comments }}</td>
                                 <td class="col-author"><a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a></td>
-                                <td class="col-when muted">{% if p.updated_at or p.created_at %}{{ p.updated_at|default:p.created_at|timesince }} назад{% else %}—{% endif %}</td>
+                                <td class="col-when muted">{% if p.updated_at or p.created_at %}{{ p.updated_at|default:p.created_at|fb_when }}{% else %}—{% endif %}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

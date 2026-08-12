@@ -21,6 +21,7 @@
                 <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
                 <div class="{% if tab == 'info' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=info">Информация</a></div>
                 <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                <div class="{% if tab == 'notes' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=notes">Заметки</a></div>
                 <div class="{% if tab == 'friends' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=friends">Друзья</a></div>
             </div>
             {% endif %}
@@ -36,6 +37,8 @@
             {% include "social/_profile_info.html" %}
             {% elif tab == 'photos' %}
             {% include "social/_profile_photos.html" %}
+            {% elif tab == 'notes' %}
+            {% include "social/_profile_notes.html" %}
             {% elif tab == 'friends' %}
             {% include "social/_profile_friends.html" %}
             {% else %}
