@@ -196,16 +196,17 @@ input[type="submit"], input[type="button"] {
 .profile-box > h4 .edit:hover { color: var(--fb); }
 .profile-box-body { padding: 8px; }
 .profile-box-body p { margin: 0 0 6px; }
-.profile #header .profile-status-form {
-  display: inline; margin: 0; font: 11px var(--font); color: #fff;
+/* FB 2005–06 status under picture (not in blue #header) */
+.profile #status.profile-status {
+  margin: 8px 0 0; padding: 0 2px; font: 11px/14px var(--font); color: #333;
 }
-.profile #header .profile-status-form .inputtext {
-  width: 240px; max-width: 55%;
-  border: 1px solid #910A0A; padding: 1px 3px;
-  font: 11px var(--font); vertical-align: middle;
+.profile #status .profile-status-form { margin: 0; }
+.profile #status .profile-status-form .inputtext {
+  width: 170px; max-width: 100%; box-sizing: border-box;
+  border: 1px solid #bdc7d8; padding: 1px 3px; font: 11px var(--font); margin: 2px 0;
 }
-.profile #header .profile-status-form .inputbutton {
-  margin-left: 4px; vertical-align: middle; font: 11px var(--font);
+.profile #status .profile-status-form .inputbutton {
+  margin: 2px 0 0; font: 11px var(--font);
 }
 .profile-edit-content { overflow: hidden; padding: 10px !important; }
 .profile-edit-nav { float: left; width: 180px; margin: 0 12px 0 0; }
@@ -293,9 +294,6 @@ button.linkish .ico { margin-right: 2px; }
 .wall-comments-more[open] > summary { border-bottom: solid 1px #d8dfea; }
 #header.withsubtitle .subtitle {
   float: right; font-weight: normal; font-size: 11px; line-height: 23px; white-space: nowrap;
-}
-.profile #header.withsubtitle .subtitle.profile-status-bar {
-  white-space: normal; max-width: 58%; line-height: 1.35; padding-top: 2px;
 }
 .pager { padding-left: 4px; text-align: right; }
 .pager a:hover { color: #fff; background: var(--fb); text-decoration: none; padding: 3px; }

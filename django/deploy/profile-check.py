@@ -41,9 +41,15 @@ def main():
     assert "Мини-лента".encode() in r.content
     assert "Стена".encode() in r.content
     assert "Группы".encode() in r.content
-    assert b'name="headline"' in r.content  # status in header
+    assert b'name="headline"' in r.content  # status under picture
+    assert b'id="status"' in r.content
     assert "сейчас".encode() in r.content  # classic "Name сейчас …"
+    assert b"profile-status-bar" not in r.content  # not jammed into blue #header
     assert "<h4>Статус</h4>".encode() not in r.content
+    header = r.content.split(b'id="header"', 1)[-1].split(b'id="content"', 1)[0]
+    assert b'name="headline"' not in header and b'id="status"' not in header
+    left = r.content.split(b'class="profile-left"', 1)[-1].split(b'class="profile-right"', 1)[0]
+    assert b'id="status"' in left and b'name="headline"' in left
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
     assert b'name="visibility"' not in r.content  # server sets from wall_view

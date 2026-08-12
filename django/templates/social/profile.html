@@ -3,21 +3,12 @@
 {% block title %}{{ profile.name }} — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="profile">
-    <div id="header" class="withsubtitle">
+    <div id="header"{% if profile.city or networks %} class="withsubtitle"{% endif %}>
         <h1>{{ profile.name }}</h1>
-        {% if is_own and status_form %}
-        <div class="subtitle profile-status-bar">
-            <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
-                <input type="hidden" name="next" value="{{ request.path }}">
-                <b>{{ profile.name }}</b> сейчас
-                {{ status_form.headline }}
-                <input type="submit" class="inputbutton" value="Обновить">
-            </form>
-        </div>
-        {% elif profile.headline %}
-        <div class="subtitle"><b>{{ profile.name }}</b> сейчас {{ profile.headline }}</div>
-        {% elif profile.city %}
+        {% if profile.city %}
         <div class="subtitle">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>
+        {% elif networks %}
+        <div class="subtitle">{{ networks.0.label }}</div>
         {% endif %}
     </div>
     <div id="content" class="profile-content">

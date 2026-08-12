@@ -435,7 +435,7 @@ class CommunityPostForm(forms.ModelForm):
 class StatusForm(forms.Form):
     headline = forms.CharField(
         max_length=255, required=False,
-        widget=_in(style="width:240px;max-width:55%", placeholder="…"),
+        widget=_in(style="width:170px", autocomplete="off"),
     )
 
 

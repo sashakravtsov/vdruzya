@@ -8,6 +8,23 @@
     {% endif %}
     </a>
 </div>
+
+{# FB 2005–06: status under picture — «Name is …» #}
+{% if not limited and is_own and status_form %}
+<div id="status" class="profile-status">
+    <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <b>{{ profile.name }}</b> сейчас
+        {{ status_form.headline }}
+        <input type="submit" class="inputbutton" value="Обновить">
+    </form>
+</div>
+{% elif not limited and profile.headline %}
+<div id="status" class="profile-status">
+    <b>{{ profile.name }}</b> сейчас {{ profile.headline }}.
+</div>
+{% endif %}
+
 <div class="profile-action-links">
     {% if is_own %}
         <a href="{% url 'albums' %}">Смотреть фотографии ({{ stats.photos }})</a>
