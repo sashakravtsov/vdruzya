@@ -97,6 +97,7 @@ def main():
     assert "Лента новостей".encode() in r.content
     assert b"wallposter" not in r.content
     assert "Что у вас нового".encode() not in r.content
+    assert b"<h4>Новости</h4>" not in r.content
     assert "Подмигивания".encode() in r.content
     assert "События".encode() in r.content
     assert "Дни рождения".encode() in r.content
@@ -123,10 +124,6 @@ def main():
     assert "Расширенный поиск людей".encode() in r.content
     assert b'name="city"' not in r.content
     ok("global search")
-
-    r = c.get("/feed", secure=True)
-    assert b"<h4>Новости</h4>" not in r.content
-    ok("feed has no Новости wrapper")
 
     r = c.get("/profile/edit", secure=True)
     assert r.status_code == 200
