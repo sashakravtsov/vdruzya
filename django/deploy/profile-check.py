@@ -270,6 +270,9 @@ def main():
     r = c.get(f"/profile/edit?edu={edu.id}", secure=True)
     assert r.status_code == 200
     assert b"__edu_check__" in r.content
+    assert b"2004" in r.content and b"2008" in r.content  # years in list
+    assert b"Сохранить" in r.content
+    assert b"_profile_edit_education" not in r.content
     r = c.post(f"/profile/education/{edu.id}", {
         "institution": "__edu_check_edited__",
         "degree": "BA", "field": "CS", "start_year": "2004", "end_year": "2008",
@@ -278,7 +281,7 @@ def main():
     edu.refresh_from_db()
     assert edu.institution == "__edu_check_edited__"
     Education.objects.filter(pk=edu.id).delete()
-    ok("education edit")
+    ok("education edit (row_editors + years)")
 
     t = now()
     note = Post.objects.create(
