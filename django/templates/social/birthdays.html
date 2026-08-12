@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Дни рождения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="birthdays-page">
+    <div id="header" class="withsubtitle">
+        <h1>Дни рождения</h1>
+        <div class="subtitle">Друзья в ближайшие 60 дней</div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Скоро</h4>
+            <div class="profile-box-body">
+                {% for day, person in birthdays %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <a class="classic-person-name" href="{% url 'profile' person.id %}">
+                        {% avatar person 50 %}
+                        <span>
+                            <b>{{ person.name }}</b>
+                            <span class="classic-person-sub">{{ day|date:"j E" }}{% if day.month == today.month and day.day == today.day %} · сегодня{% endif %}</span>
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <a href="{% url 'gifts.send' %}?to={{ person.id }}">подарок</a>
+                        ·
+                        <form method="post" action="{% url 'inbox.start' person.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">написать</button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">Скоро ни у кого нет дня рождения. Укажите дату в <a href="{% url 'profile.edit' %}?section=basic">профиле</a>.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

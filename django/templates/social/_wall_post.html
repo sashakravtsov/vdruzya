@@ -1,0 +1,51 @@
+{% load vd %}
+<div class="wallpost" id="post-{{ post.id }}">
+    <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
+        <td class="image"><a href="{% url 'profile' post.social_user.id %}">{% avatar post.social_user 50 %}</a></td>
+        <td>
+            <div class="info">
+                <div class="header">
+                    <a href="{% url 'profile' post.social_user.id %}"><b>{{ post.social_user.name }}</b></a>
+                    {% if wall_owner and post.social_user_id != wall_owner.id %}
+                    написал(а) на стену
+                    {% elif post.wall_note_owner %}
+                    написал(а) на стену <a href="{% url 'profile' post.wall_note_owner.id %}">{{ post.wall_note_owner.name }}</a>
+                    {% endif %}
+                    {% if post.created_at %}
+                    <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.id %}">{{ post.created_at|fb_when }}</a></span>
+                    {% endif %}
+                    {% if me|can_manage_post:post %}
+                    <span class="wallpost-edit">
+                        {# FB 2006 wall notes: remove only; edit kept for Notes (kind=note) #}
+                        {% if me.id == post.social_user_id and post.kind == 'note' %}
+                        <a href="{% url 'posts.edit' post.id %}{% if next %}?next={{ next|urlencode }}{% endif %}">ред.</a>
+                        ·
+                        {% endif %}
+                        <form method="post" action="{% url 'posts.delete' post.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text">
+                    {% if post.kind == 'note' and post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
+                    {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
+                    {% include "social/_post_media.html" with post=post %}
+                </div>
+                <div class="actions">
+                    {% if me %}
+                    <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
+                    {% else %}
+                    <span class="ico ico-comment"></span> {{ post.n_comments|default:0 }}
+                    {% endif %}
+                </div>
+                {% comment_thread post.comments.all preview=comment_preview|default_if_none:2 kind="wall" expand=comment_expand %}
+                {% if comment_form and me %}
+                {% url 'comments.store' post.id as c_action %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=post.id form=comment_form next=next %}
+                {% endif %}
+            </div>
+        </td>
+    </tr></table>
+</div>

@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="groups-index apps-index">
+    <div id="header"><h1>Приложения</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Встроенные приложения ВДрузья — в классическом интерфейсе.</p>
+        <div class="profile-box">
+            <h4>Каталог</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in apps %}
+                        <tr>
+                            <td class="col-name"><b>{{ app.name }}</b></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                {% if app.href %}
+                                <a href="{{ app.href }}">открыть</a>
+                                {% elif app.url_name %}
+                                <a href="{% url app.url_name %}">открыть</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
