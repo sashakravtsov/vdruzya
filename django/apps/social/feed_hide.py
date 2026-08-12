@@ -41,6 +41,11 @@ def story_key_for(item: dict) -> str | None:
     event = item.get("event")
     if event is not None and getattr(event, "id", None):
         return f"{kind}:event:{event.id}"
+    other = item.get("other")
+    actor = item.get("actor")
+    if kind in ("friend", "relationship") and actor and other:
+        a, b = sorted((actor.id, other.id))
+        return f"{kind}:{a}:{b}"
     return None
 
 

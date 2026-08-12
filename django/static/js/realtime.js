@@ -15,6 +15,7 @@
   function applyBadges(d) {
     if (!d) return;
     if (typeof d.unread_messages === "number") setCount("nav-inbox", d.unread_messages, "Входящие");
+    if (typeof d.notifications === "number") setCount("nav-notifications", d.notifications, "Уведомления");
     if (typeof d.pokes === "number") setCount("nav-pokes", d.pokes, "Подмигивания");
     if (typeof d.friend_requests === "number") setCount("nav-friends", d.friend_requests, "Мои друзья");
   }

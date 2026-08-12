@@ -17,6 +17,7 @@ for path in \
   /password-reset:200 \
   /sitemap.xml:200 /robots.txt:200 \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
+  /notifications:302 /pokes:302 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
   /places:302 /questions:302 /polls:302 /anniversaries:302 \

@@ -31,12 +31,15 @@ def _unread(me) -> int:
 
 
 def snapshot(me, *, conv_id=None) -> dict:
+    from apps.social import notify
+
     data = {
         "unread_messages": _unread(me),
         "friend_requests": fr.pending_to(me).count(),
         "pokes": Notification.objects.filter(
             social_user=me, type="poke", seen=False,
         ).count(),
+        "notifications": notify.unread_count(me),
     }
     if conv_id and ch.is_member(me, conv_id):
         data["last_message_id"] = (

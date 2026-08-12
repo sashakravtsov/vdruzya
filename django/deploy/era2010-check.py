@@ -331,6 +331,67 @@ def main():
     else:
         ok("family confirm skipped (no buddy)")
 
+    # Status + picture + friend stories in News Feed
+    st = Post.objects.create(
+        social_user=me, body=f"QA status {uuid.uuid4().hex[:6]}",
+        visibility="public", kind="status", topic="status",
+        created_at=now(), updated_at=now(),
+    )
+    pic = Post.objects.create(
+        social_user=me, body="", visibility="friends",
+        kind="photo", topic="picture", media_path=me.avatar_path or "avatars/qa.png",
+        created_at=now(), updated_at=now(),
+    )
+    bump_news()
+    feed = news_items(me, limit=80)
+    assert any(i.get("kind") == "status" and i.get("post") and i["post"].id == st.id for i in feed)
+    assert any(i.get("kind") == "picture" and i.get("post") and i["post"].id == pic.id for i in feed)
+    ok("status + picture in news feed")
+    from django.db.models import Q
+    from apps.social.models import Friendship, SocialProfile
+    buddy_f = SocialProfile.objects.exclude(pk=me.id).order_by("id").first()
+    if buddy_f:
+        pair = Friendship.objects.filter(
+            Q(user=me, friend=buddy_f) | Q(user=buddy_f, friend=me),
+            status="accepted",
+        )
+        created = False
+        if not pair.exists():
+            t = now()
+            Friendship.objects.create(
+                user=me, friend=buddy_f, status="accepted", created_at=t, updated_at=t,
+            )
+            Friendship.objects.create(
+                user=buddy_f, friend=me, status="accepted", created_at=t, updated_at=t,
+            )
+            created = True
+        else:
+            Friendship.objects.filter(
+                Q(user=me, friend=buddy_f) | Q(user=buddy_f, friend=me),
+                status="accepted",
+            ).update(updated_at=now())
+        bump_news()
+        feed = news_items(me, limit=80)
+        assert any(
+            i.get("kind") == "friend" and i.get("other")
+            and {i["actor"].id, i["other"].id} == {me.id, buddy_f.id}
+            for i in feed
+        ), "friend story missing"
+        ok("friend story in news feed")
+        if created:
+            Friendship.objects.filter(
+                Q(user=me, friend=buddy_f) | Q(user=buddy_f, friend=me)
+            ).delete()
+    else:
+        ok("friend story skipped (no buddy)")
+
+    r = c.get("/notifications", secure=True)
+    assert r.status_code == 200
+    assert "Уведомления".encode() in r.content
+    ok("notifications page")
+
+    Post.objects.filter(pk__in=[st.id, pic.id]).delete()
+
     # cleanup
     Reaction.objects.filter(post=tpost).delete()
     Post.objects.filter(pk__in=[tpost.id, shared.id]).delete()

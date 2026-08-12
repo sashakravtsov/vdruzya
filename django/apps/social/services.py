@@ -838,6 +838,79 @@ def _add_group_docs(items, blocked, member_ids, limit):
         })
 
 
+def _add_status_picture(items, viewer, blocked, fids, limit):
+    """Status + profile-picture stories (Mini-Feed topics → News Feed)."""
+    if not viewer or not fids:
+        return
+    qs = (
+        Post.objects.filter(social_user_id__in=fids)
+        .filter(Q(kind="status") | Q(topic__in=("status", "picture")))
+        .filter(post_visible_q(viewer))
+        .select_related("social_user")
+        .defer(*POST_DEFER, *profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for p in qs[:limit]:
+        topic = p.topic or ""
+        if p.kind == "status" or topic == "status":
+            kind = "status"
+        elif topic == "picture":
+            kind = "picture"
+        else:
+            continue
+        items.append({"kind": kind, "at": p.created_at, "post": p, "actor": p.social_user})
+
+
+def _add_friends(items, blocked, fids, limit):
+    """«X и Y теперь друзья» — one row per accepted pair."""
+    if not fids:
+        return
+    from django.db.models import F
+
+    qs = (
+        Friendship.objects.filter(status="accepted")
+        .filter(Q(user_id__in=fids) | Q(friend_id__in=fids))
+        .filter(user_id__lt=F("friend_id"))
+        .select_related("user", "friend")
+        .defer(*profile_related("user__"), *profile_related("friend__"))
+        .order_by("-updated_at", "-id")
+    )
+    blocked = set(blocked or [])
+    for row in qs[:limit]:
+        if row.user_id in blocked or row.friend_id in blocked:
+            continue
+        items.append({
+            "kind": "friend", "at": row.updated_at or row.created_at,
+            "actor": row.user, "other": row.friend,
+        })
+
+
+def _add_relationships(items, blocked, fids, limit):
+    """Confirmed partner relationships among friends."""
+    if not fids:
+        return
+    from apps.social.models import RelationshipRequest
+
+    qs = (
+        RelationshipRequest.objects.filter(status="accepted")
+        .filter(Q(requester_id__in=fids) | Q(partner_id__in=fids))
+        .select_related("requester", "partner")
+        .defer(*profile_related("requester__"), *profile_related("partner__"))
+        .order_by("-updated_at", "-id")
+    )
+    blocked = set(blocked or [])
+    for row in qs[:limit]:
+        if row.requester_id in blocked or row.partner_id in blocked:
+            continue
+        status = (row.requester.relationship_status or "in_a_relationship")
+        items.append({
+            "kind": "relationship", "at": row.updated_at or row.created_at,
+            "actor": row.requester, "other": row.partner, "status": status,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -915,6 +988,9 @@ def news_items(viewer=None, limit=40):
     _add_photo_likes(items, blocked, fids, limit)
     _add_anniversaries(items, viewer, blocked, fids, limit)
     _add_group_docs(items, blocked, member_ids, limit)
+    _add_status_picture(items, viewer, blocked, fids, limit)
+    _add_friends(items, blocked, fids, limit)
+    _add_relationships(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[: limit * 2]
     if viewer:

@@ -281,6 +281,47 @@
             в группе <a href="{% url 'groups.show' item.group.id %}?tab=docs">{{ item.group.name }}</a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'status' and item.post %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            обновил(а) статус
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.post.body %}
+            <div class="news-snippet"><div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div></div>
+            {% endif %}
+        </div>
+    {% elif item.kind == 'picture' and item.post %}
+        <span class="ico ico-photo news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            обновил(а) фото профиля
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.post.media_url %}
+            <div class="news-photo-row"><a href="{% url 'profile' item.actor.id %}"><img src="{{ item.post.media_url }}" alt="" class="news-photo"></a></div>
+            {% endif %}
+        </div>
+    {% elif item.kind == 'friend' and item.other %}
+        <span class="ico ico-group news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            и
+            <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
+            теперь друзья.
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'relationship' and item.other %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            и
+            <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
+            {% if item.status == 'engaged' %}помолвлены
+            {% elif item.status == 'married' %}в браке
+            {% elif item.status == 'complicated' %}в сложных отношениях
+            {% else %}теперь в отношениях{% endif %}.
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
     {% if me and item.actor and item.actor.id != me.id %}
     <div class="news-hide muted">

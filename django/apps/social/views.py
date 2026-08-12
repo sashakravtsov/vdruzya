@@ -1,12 +1,10 @@
-"""Core social FBVs — home, feed, profile, pokes."""
+"""Core social FBVs — home, feed, profile, pokes, notifications."""
 from django.contrib.auth.decorators import login_not_required, login_required
-from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page, never_cache
 
 from apps.social.forms import CommentForm
-from apps.social.models import Notification
 from apps.social.services import feed_rail, get_profile, news_items, profile_of
 
 
@@ -130,12 +128,25 @@ def see_friendship(request, pk):
 def pokes(request):
     """Classic FB Pokes inbox."""
     me = profile_of(request.user)
-    from apps.social.notify import attach_poker_ids
-    items = list(
-        Notification.objects.filter(social_user=me, type="poke").order_by("-id")[:50]
-    ) if me else []
-    attach_poker_ids(items)
-    if me:
-        Notification.objects.filter(social_user=me, type="poke", seen=False).update(seen=True)
-        cache.delete(f"nav:{me.id}")
-    return render(request, "social/pokes.html", {"items": items, "me": me})
+    from apps.social import notify
+    items = notify.for_user(me, type="poke", limit=50)
+    notify.attach_poker_ids(items)
+    notify.mark_seen(me, type="poke")
+    return render(request, "social/pokes.html", {"items": items, "me": me, "nav": "pokes"})
+
+
+@login_required
+@never_cache
+def notifications(request):
+    """Classic FB Notifications — all types (not poke-only)."""
+    me = profile_of(request.user)
+    from apps.social import notify
+    items = notify.for_user(me, limit=60)
+    notify.attach_actors(items)
+    for n in items:
+        n.type_label = notify.type_label(n)
+    notify.mark_seen(me)
+    return render(
+        request, "social/notifications.html",
+        {"items": items, "me": me, "nav": "notifications"},
+    )

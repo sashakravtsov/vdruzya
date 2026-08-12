@@ -157,6 +157,8 @@ def relations_for(me, ids):
 def accept_request(me, other) -> bool:
     from django.db import transaction
 
+    from apps.social.services import bump_news
+
     pending = Friendship.objects.filter(user=other, friend=me, status="pending").first()
     if not pending:
         return False
@@ -167,6 +169,7 @@ def accept_request(me, other) -> bool:
             user=me, friend=other,
             defaults={"status": "accepted", "created_at": now(), "updated_at": now()},
         )
+    bump_news()
     return True
 
 

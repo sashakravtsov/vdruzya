@@ -456,6 +456,7 @@ def avatar_upload(request):
             kind="photo", topic="picture", media_path=me.avatar_path,
             created_at=_now(), updated_at=_now(),
         )
+        bump_news()
         messages.success(request, "Аватар обновлён.")
     return redirect("/profile/edit?section=picture")
 

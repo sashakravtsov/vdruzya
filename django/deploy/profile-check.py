@@ -137,6 +137,11 @@ def main():
     assert "Подмигивания".encode() in r.content
     ok("pokes inbox")
 
+    r = c.get("/notifications", secure=True)
+    assert r.status_code == 200
+    assert "Уведомления".encode() in r.content
+    ok("notifications inbox")
+
     r = c.get("/account", secure=True)
     assert r.status_code == 200
     assert "Мой аккаунт".encode() in r.content
