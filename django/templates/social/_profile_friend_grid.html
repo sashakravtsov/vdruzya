@@ -1,18 +1,22 @@
 {% load vd %}
 {% if friends %}
-<div class="profile-friend-grid">
-    {% for f in friends %}
-    <a class="profile-friend-tile" href="{% url 'profile' f.id %}">
-        {% avatar f 50 %}
-        <span>{{ f.name }}</span>
-    </a>
-    {% endfor %}
-</div>
+{# Archive friendTable — 62px cells, ~3 across the 200px left rail #}
+<table class="friendTable" cellpadding="0" cellspacing="0"><tr>
+{% for f in friends %}
+    <td>
+        <a href="{% url 'profile' f.id %}">
+            {% avatar f 50 %}
+            <br>{{ f.name }}
+        </a>
+    </td>
+    {% if forloop.counter|divisibleby:3 and not forloop.last %}</tr><tr>{% endif %}
+{% endfor %}
+</tr></table>
 {% if compact %}
 {% if friends_are_mutual %}
-<p><a href="{% url 'profile.mutual' profile.id %}">Смотреть всех общих</a></p>
+<p class="morefriends"><a href="{% url 'profile.mutual' profile.id %}">Смотреть всех общих</a></p>
 {% elif can_see_friends %}
-<p><a href="{% if is_own %}{% url 'friends' %}{% else %}{% url 'profile.friends' profile.id %}{% endif %}">Смотреть всех</a></p>
+<p class="morefriends"><a href="{% if is_own %}{% url 'friends' %}{% else %}{% url 'profile.friends' profile.id %}{% endif %}">Смотреть всех</a></p>
 {% endif %}
 {% endif %}
 {% elif can_see_friends %}

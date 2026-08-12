@@ -11,39 +11,43 @@
         <div class="subtitle">{{ networks.0.label }}</div>
         {% endif %}
     </div>
-    <div id="content" class="profile-content">
-        <div class="profile-left">
-            {% include "social/_profile_left.html" %}
-        </div>
-        <div class="profile-right">
-            {% if not limited %}
-            <div id="tabs" class="profile-tabs">
-                <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
-                <div class="{% if tab == 'info' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=info">Информация</a></div>
-                <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
-                <div class="{% if tab == 'notes' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=notes">Заметки</a></div>
-                <div class="{% if tab == 'friends' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=friends">Друзья</a></div>
+    {# Archive Dec 2005: padding on #content, divider bg on #userprofile (not on #content) #}
+    <div id="content">
+        <div id="userprofile">
+            <div id="profilenarrowcolumn">
+                {% include "social/_profile_left.html" %}
             </div>
-            {% endif %}
-
-            {% if limited %}
-            <div class="profile-box">
-                <h4>Информация</h4>
-                <div class="profile-box-body">
-                    <p class="muted">Профиль доступен только друзьям. Вы видите имя, фото и сети.</p>
+            <div id="profilewidecolumn">
+                {% if not limited %}
+                <div id="tabs">
+                    <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                    <div class="{% if tab == 'info' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=info">Информация</a></div>
+                    <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                    <div class="{% if tab == 'notes' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=notes">Заметки</a></div>
+                    <div class="{% if tab == 'friends' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=friends">Друзья</a></div>
                 </div>
+                {% endif %}
+
+                {% if limited %}
+                <div class="profile-box">
+                    <h4>Информация</h4>
+                    <div class="profile-box-body">
+                        <p class="muted">Профиль доступен только друзьям. Вы видите имя, фото и сети.</p>
+                    </div>
+                </div>
+                {% elif tab == 'info' %}
+                {% include "social/_profile_info.html" %}
+                {% elif tab == 'photos' %}
+                {% include "social/_profile_photos.html" %}
+                {% elif tab == 'notes' %}
+                {% include "social/_profile_notes.html" %}
+                {% elif tab == 'friends' %}
+                {% include "social/_profile_friends.html" %}
+                {% else %}
+                {% include "social/_profile_wall.html" %}
+                {% endif %}
             </div>
-            {% elif tab == 'info' %}
-            {% include "social/_profile_info.html" %}
-            {% elif tab == 'photos' %}
-            {% include "social/_profile_photos.html" %}
-            {% elif tab == 'notes' %}
-            {% include "social/_profile_notes.html" %}
-            {% elif tab == 'friends' %}
-            {% include "social/_profile_friends.html" %}
-            {% else %}
-            {% include "social/_profile_wall.html" %}
-            {% endif %}
+            <div class="clear"></div>
         </div>
     </div>
 </div>

@@ -50,7 +50,7 @@ def main():
     assert "<h4>Статус</h4>".encode() not in r.content
     header = r.content.split(b'id="header"', 1)[-1].split(b'id="content"', 1)[0]
     assert b'name="headline"' not in header and b'id="status"' not in header
-    left = r.content.split(b'class="profile-left"', 1)[-1].split(b'class="profile-right"', 1)[0]
+    left = r.content.split(b'id="profilenarrowcolumn"', 1)[-1].split(b'id="profilewidecolumn"', 1)[0]
     assert b'id="status"' in left and b'name="headline"' in left
     assert "<h4>Ограниченный профиль</h4>".encode() not in r.content
     assert b"compose-more" not in r.content  # simple wall compose (no «ещё»)
@@ -61,10 +61,13 @@ def main():
     n_friends = len(friend_ids(me))
     assert friend_count(me) == n_friends
     assert f"Друзья ({n_friends})".encode() in r.content
+    assert b'id="userprofile"' in r.content
+    assert b'id="profilenarrowcolumn"' in r.content
+    assert b'id="profilewidecolumn"' in r.content
     ok("own profile wall tab")
 
     # Wall-to-Wall only for friends (own profile has no link)
-    assert "Стена к стене".encode() not in r.content.split(b'class="profile-left"', 1)[-1].split(b'class="profile-right"', 1)[0]
+    assert "Стена к стене".encode() not in r.content.split(b'id="profilenarrowcolumn"', 1)[-1].split(b'id="profilewidecolumn"', 1)[0]
     ok("own profile has no wall-to-wall")
 
     r = c.get(f"/profile/{me.id}?tab=info", secure=True)
@@ -75,7 +78,7 @@ def main():
 
     r = c.get(f"/profile/{me.id}?tab=photos", secure=True)
     assert r.status_code == 200
-    right = r.content.split(b'class="profile-right"', 1)[-1]
+    right = r.content.split(b'id="profilewidecolumn"', 1)[-1]
     assert b'id="photos"' in right
     assert b"profile-photo-thumbs" not in right  # thumbs stay on left rail
     ok("profile photos tab albums")
@@ -177,7 +180,7 @@ def main():
     assert r.status_code == 200
     r2 = c.get(f"/profile/{other.id}?tab=friends", secure=True)
     assert r2.status_code == 200
-    right = r2.content.split(b'class="profile-right"', 1)[-1]
+    right = r2.content.split(b'id="profilewidecolumn"', 1)[-1]
     assert "<h4>Друзья".encode() in right
     assert "<h4>Общие друзья".encode() not in right
     ok("friend profile: friends tab lists friends")

@@ -218,6 +218,15 @@ if ! grep -q '>Главная<' "${ROOT}/django/templates/layout.html" 2>/dev/nu
 else
   echo "OK   gnav capitalized"
 fi
+if ! grep -q 'id="userprofile"' "${ROOT}/django/templates/social/profile.html" 2>/dev/null \
+   || ! grep -q '#userprofile' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL profile missing #userprofile divider shell"; FAIL=1
+elif grep -q 'profile-content' "${ROOT}/django/templates/social/profile.html" 2>/dev/null \
+   || grep -Eq 'profile-content.*narrowleftbg|narrowleftbg.*profile-content' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL divider still on #content (shifted left)"; FAIL=1
+else
+  echo "OK   profile #userprofile divider (archive)"
+fi
 if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
   echo "FAIL albums_user.html still present"; FAIL=1
 else

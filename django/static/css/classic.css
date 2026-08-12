@@ -142,7 +142,6 @@ ul.bulletpoints li span { color: #000; }
 #tabs .activetab a { color: #fff; background: var(--fb); }
 #tabs .activetab a:hover { text-decoration: none; }
 #tabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
-.profile #tabs.profile-tabs { margin: 0 0 12px; padding-top: 0; text-align: left; }
 .legal-content #tabs { margin: 10px 0 16px; }
 .legal-content .infocontent { margin: 0 0 10px; }
 #loginform input[type="password"],
@@ -663,23 +662,39 @@ button.linkish .ico { margin-right: 2px; }
 .note-body{margin:0 0 4px;color:#333}
 
 
-/* ===== Profile FB Dec 2005 (profile.css) ===== */
-.profile #content.profile-content {
+/* ===== Profile FB Dec 2005 (profile.css) =====
+   #content only pads; #userprofile carries narrowleftbg so the rule
+   aligns with the 200px left column (not shifted by padding). */
+.profile #content {
   padding: 10px 0 10px 10px !important;
-  display: block;
   overflow: hidden;
-  background: url("../img/narrowleftbg.gif") repeat-y;
+  background: #fff;
 }
-.profile-left {
+.profile #userprofile {
+  background: #fff url("../img/narrowleftbg.gif") repeat-y left top;
+  overflow: hidden;
+}
+.profile #profilenarrowcolumn {
   float: left;
   width: 200px;
   margin: 0 10px 0 0;
+  padding: 0;
 }
-.profile-right {
+.profile #profilewidecolumn {
   float: left;
   width: 396px;
-  margin: 0;
+  margin: 0 10px 0 0;
+  padding: 0;
   min-width: 0;
+}
+/* legacy class aliases (partials / smoke) */
+.profile-left { float: left; width: 200px; margin: 0 10px 0 0; }
+.profile-right { float: left; width: 396px; margin: 0 10px 0 0; min-width: 0; }
+.profile #tabs {
+  text-align: left;
+  margin: 0 0 12px;
+  padding: 4px 0;
+  border-bottom: solid 1px var(--fb);
 }
 .profile-picture {
   width: 200px;
@@ -803,6 +818,33 @@ button.linkish .ico { margin-right: 2px; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Archive profile.css friendTable */
+.profile .friendTable {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  border-collapse: collapse;
+}
+.profile .friendTable td {
+  margin: 0;
+  padding: 3px 0;
+  vertical-align: bottom;
+  text-align: center;
+  width: 62px;
+  font-size: 11px;
+  line-height: 13px;
+}
+.profile .friendTable td a { color: #3B5998; text-decoration: none; }
+.profile .friendTable td a:hover { text-decoration: underline; }
+.profile .friendTable img,
+.profile .friendTable .avatar {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 4px;
+  border: 1px solid #B3B3B3;
+  display: block;
+}
+.profile .morefriends { margin: 5px 0 0; }
 
 /* Info / legal pages — about + FAQ */
 .about #content { margin: 0; padding: 0 20px 20px; }
