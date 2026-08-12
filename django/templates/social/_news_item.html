@@ -339,6 +339,22 @@
             <a href="{% url 'profile' item.actor.id %}?tab=timeline&amp;y={{ item.milestone.occurred_on.year }}"><b>{{ item.milestone.title }}</b></a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'page_milestone' and item.page and item.milestone %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            Страница <a href="{% url 'pages.show' item.page.id %}"><b>{{ item.page.name }}</b></a>
+            добавила этап:
+            <a href="{% url 'pages.show' item.page.id %}?tab=timeline&amp;y={{ item.milestone.occurred_on.year }}"><b>{{ item.milestone.title }}</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'collection' and item.collection %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            создал(а) коллекцию
+            <a href="{% url 'collections.show' item.collection.id %}"><b>«{{ item.collection.title }}»</b></a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
     {% if me and item.actor and item.actor.id != me.id %}
     <div class="news-hide muted">

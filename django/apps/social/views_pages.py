@@ -115,7 +115,10 @@ def page_show(request, pk):
     me = profile_of(request.user) if request.user.is_authenticated else None
     is_admin = _is_admin(me, page)
     is_fan = _is_fan(me, page)
-    posts = _page_posts(page)
+    tab = (request.GET.get("tab") or "wall").lower()
+    if tab not in ("wall", "timeline", "info"):
+        tab = "wall"
+    posts = _page_posts(page, limit=80 if tab == "timeline" else 30)
     fans = list(
         CompanyFollower.objects.filter(company=page)
         .select_related("social_user")
@@ -127,18 +130,27 @@ def page_show(request, pk):
         .order_by("id")[:8]
     )
     from apps.social import events as ev
+    from apps.social import era2012 as e12
     from apps.social.forms import EventForm
     page_events = ev.list_page_events(page, upcoming=True, limit=12)
+    timeline = {}
+    if tab == "timeline":
+        y = None
+        if (request.GET.get("y") or "").isdigit():
+            y = int(request.GET.get("y"))
+        timeline = e12.page_timeline_bundle(page, year=y, posts=posts)
     return render(request, "social/page.html", {
         "page": page, "me": me, "is_admin": is_admin, "is_fan": is_fan,
-        "posts": posts, "fans": fans, "admins": admins,
+        "posts": posts if tab == "wall" else [], "fans": fans, "admins": admins,
         "industry_label": industry_label(page.industry),
-        "post_form": PagePostForm() if is_admin else None,
-        "event_form": EventForm() if is_admin else None,
-        "page_events": page_events,
-        "comment_form": CommentForm() if me else None,
+        "post_form": PagePostForm() if is_admin and tab == "wall" else None,
+        "event_form": EventForm() if is_admin and tab == "wall" else None,
+        "page_events": page_events if tab == "wall" else [],
+        "comment_form": CommentForm() if me and tab == "wall" else None,
         "wall_owner": None,
         "next": request.path,
+        "tab": tab,
+        **timeline,
     })
 
 

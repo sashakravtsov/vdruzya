@@ -1003,6 +1003,9 @@ def news_items(viewer=None, limit=40):
     e11._add_milestones(items, blocked, fids, limit)
     follows = e11.followee_ids(viewer) - fids if viewer else set()
     e11._add_follow_public(items, viewer, blocked, follows, limit)
+    from apps.social import era2012 as e12
+    e12._add_page_milestones(items, viewer, page_ids, blocked, limit)
+    e12._add_collections(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[: limit * 2]
     if viewer:

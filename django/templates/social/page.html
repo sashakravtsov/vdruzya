@@ -12,7 +12,11 @@
 
         <div class="group-rail">
             <div class="group-picture">
+                {% if page.cover_url %}
+                <img src="{{ page.cover_url }}" alt="" class="profile-cover-img" width="180">
+                {% else %}
                 <div class="page-cover" style="background:{{ page.cover_color|default:'#3B5998' }};width:180px;height:180px;border:1px solid #B3B3B3"></div>
+                {% endif %}
             </div>
             <div class="group-join-panel profile-action-links">
                 {% if user.is_authenticated %}
@@ -77,6 +81,26 @@
         </div>
 
         <div class="group-main">
+            <div id="tabs">
+                <div class="{% if tab == 'wall' or not tab %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                <div class="{% if tab == 'timeline' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=timeline">Timeline</a></div>
+                <div class="{% if tab == 'info' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=info">Информация</a></div>
+            </div>
+
+            {% if tab == 'timeline' %}
+            {% include "social/_page_timeline.html" %}
+            {% elif tab == 'info' %}
+            <div class="profile-box">
+                <h4>Информация</h4>
+                <div class="profile-box-body">
+                    <table class="infotable">
+                        <tr><td class="label">Тип:</td><td>{{ industry_label }}</td></tr>
+                        {% if page.city %}<tr><td class="label">Город:</td><td>{{ page.city }}</td></tr>{% endif %}
+                    </table>
+                    {% if page.description %}<p style="margin-top:8px">{{ page.description|linebreaksbr }}</p>{% endif %}
+                </div>
+            </div>
+            {% else %}
             <div class="profile-box">
                 <h4>Информация</h4>
                 <div class="profile-box-body">
@@ -139,6 +163,7 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
         </div>
         <div class="clear"></div>
     </div>

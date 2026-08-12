@@ -16,6 +16,7 @@ from . import views_birthdays as birthdays
 from . import views_classic as classic
 from . import views_era2010 as era
 from . import views_era2011 as era11
+from . import views_era2012 as era12
 from . import realtime as rt
 
 urlpatterns = [
@@ -38,7 +39,17 @@ urlpatterns = [
     path("pages/<int:pk>", pages.page_show, name="pages.show"),
     path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
     path("apps", apps.apps_home, name="apps"),
+    path("apps/<slug:slug>", era12.app_show, name="apps.show"),
     path("applications", meta.redirect_permanent, {"to": "/apps"}, name="applications.legacy"),
+    path("collections", era12.collections_home, name="collections"),
+    path("collections/<int:pk>", era12.collection_show, name="collections.show"),
+    path("collections/<int:pk>/delete", era12.collection_delete, name="collections.delete"),
+    path("collections/<int:pk>/items", era12.collection_item_add, name="collections.items"),
+    path("collections/<int:pk>/items/<int:item_id>/delete", era12.collection_item_delete, name="collections.items.delete"),
+    path("pages/<int:pk>/milestones", era12.page_milestone_create, name="pages.milestones"),
+    path("pages/<int:pk>/milestones/<int:mid>/delete", era12.page_milestone_delete, name="pages.milestones.delete"),
+    path("pages/<int:pk>/cover", era12.page_cover_upload, name="pages.cover"),
+    path("pages/<int:pk>/cover/clear", era12.page_cover_clear, name="pages.cover.clear"),
     path("gifts", gifts.gifts_home, name="gifts"),
     path("gifts/send", gifts.gift_send, name="gifts.send"),
     path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),

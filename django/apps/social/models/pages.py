@@ -15,6 +15,7 @@ class Company(models.Model):
     city = models.CharField(max_length=255, blank=True, default="")
     size = models.CharField(max_length=255, blank=True, default="")
     cover_color = models.CharField(max_length=255, default="#3B5998")
+    cover_path = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
@@ -33,6 +34,11 @@ class Company(models.Model):
     @property
     def topic_key(self) -> str:
         return f"page:{self.id}"
+
+    @property
+    def cover_url(self) -> str | None:
+        from apps.social.media import media_url
+        return media_url(self.cover_path)
 
 
 class CompanyAdmin(models.Model):

@@ -23,6 +23,7 @@ from .legacy import (
     Reaction, RelationshipRequest,
 )
 from .era2011 import OgStory, ProfileFollow, TimelineMilestone
+from .era2012 import Collection, CollectionItem, PageTimelineMilestone
 
 __all__ = [
     "PgJSON", "PROFILE_DEFER", "POST_DEFER", "GROUP_POST_DEFER", "profile_related",
@@ -43,4 +44,5 @@ __all__ = [
     "PostTag", "GroupDoc", "RelationshipRequest",
     "FeedHide", "FeedStoryHide", "FamilyLink",
     "ProfileFollow", "TimelineMilestone", "OgStory",
+    "PageTimelineMilestone", "Collection", "CollectionItem",
 ]

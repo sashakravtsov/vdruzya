@@ -20,7 +20,7 @@ for path in \
   /notifications:302 /pokes:302 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
-  /places:302 /questions:302 /polls:302 /anniversaries:302 /og:302 \
+  /places:302 /questions:302 /polls:302 /anniversaries:302 /og:302 /collections:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -635,6 +635,13 @@ fi
 if grep -q 'consumers.py\|static/js/messenger.js' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
   echo "FAIL messenger WS product reintroduced"; FAIL=1
 fi
+if ! grep -q 'name="collections"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'pages.milestones' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'apps.show' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL 2012 Collections/Page Timeline/App Center routes missing"; FAIL=1
+else
+  echo "OK   2012 Collections + Page Timeline + App Center routes"
+fi
 echo "== FB 2009-10 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2010-modules.py \
   && .venv/bin/python deploy/era2010-check.py; then
@@ -648,5 +655,12 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2011-modules.py \
   echo "OK   2011 classic modules features"
 else
   echo "FAIL 2011 classic modules features"; FAIL=1
+fi
+echo "== FB 2012 classic modules probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2012-modules.py \
+  && .venv/bin/python deploy/era2012-check.py; then
+  echo "OK   2012 classic modules features"
+else
+  echo "FAIL 2012 classic modules features"; FAIL=1
 fi
 exit "$FAIL"

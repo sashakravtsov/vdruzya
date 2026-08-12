@@ -32,6 +32,7 @@
         <a href="{% url 'anniversaries' %}"{% if nav == 'anniversaries' %} class="is-on"{% endif %}>Годовщины</a>
         <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
         <a href="{% url 'apps' %}"{% if nav == 'apps' %} class="is-on"{% endif %}>Приложения</a>
+        <a href="{% url 'collections' %}"{% if nav == 'collections' %} class="is-on"{% endif %}>Коллекции</a>
         <a id="nav-inbox" href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
         <a id="nav-notifications" href="{% url 'notifications' %}"{% if nav == 'notifications' %} class="is-on"{% endif %}>Уведомления</a>
         <a id="nav-pokes" href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>

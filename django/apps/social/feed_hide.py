@@ -51,7 +51,11 @@ def story_key_for(item: dict) -> str | None:
         return f"og:{og.id}"
     milestone = item.get("milestone")
     if milestone is not None and getattr(milestone, "id", None):
-        return f"milestone:{milestone.id}"
+        prefix = "page_milestone" if kind == "page_milestone" else "milestone"
+        return f"{prefix}:{milestone.id}"
+    col = item.get("collection")
+    if col is not None and getattr(col, "id", None):
+        return f"collection:{col.id}"
     return None
 
 
