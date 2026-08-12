@@ -41,13 +41,13 @@ def main():
     c.force_login(u)
 
     for path, needle in (
-        ("/graph", b"Graph Search"),
-        ("/trending", "В тренде".encode()),
-        ("/nearby", "Друзья рядом".encode()),
+        ("/graph", "Graph Search"),
+        ("/trending", "В тренде"),
+        ("/nearby", "Друзья рядом"),
     ):
         r = c.get(path, secure=True)
         assert r.status_code == 200, f"{path} -> {r.status_code}"
-        assert needle in r.content, f"{path} missing {needle!r}"
+        assert needle.encode() in r.content, f"{path} missing {needle!r}"
         assert b"page-tabs" not in r.content
         assert b"display: flex" not in r.content.lower()
     ok("graph/trending/nearby pages")
@@ -77,7 +77,7 @@ def main():
 
     r = c.get("/graph", {"q": f"кто любит #{tag}"}, secure=True)
     assert r.status_code == 200
-    assert me.name.encode() in r.content or b"Результаты" in r.content
+    assert me.name.encode() in r.content or "Результаты".encode() in r.content
     ok("graph search by hashtag")
 
     topics = e13.trending_topics(me, 30, hours=24 * 30)
@@ -94,7 +94,7 @@ def main():
         me.save(update_fields=["city"])
     r = c.get("/nearby", secure=True)
     assert r.status_code == 200
-    assert "рядом".encode() in r.content.lower() or city.encode() in r.content
+    assert "рядом".encode() in r.content or city.encode() in r.content
     ok("nearby")
 
     bump_news()
