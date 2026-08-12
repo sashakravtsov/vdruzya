@@ -41,6 +41,29 @@
     </div>
 </div>
 
+{% if gifts %}
+<div class="profile-box">
+    <h4>Подарки ({{ gifts|length }}){% if is_own %} <a class="edit" href="{% url 'gifts' %}?tab=received">[все]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        <div class="gift-grid gift-grid-profile">
+            {% for p in gifts %}
+            <div class="gift-recv-row">
+                {% if p.gift_sticker %}
+                <span class="gift-tile gift-tile-sm" style="background:{{ p.gift_sticker.bg }};color:{{ p.gift_sticker.fg }}" title="{{ p.gift_sticker.title }}">
+                    <span class="gift-tile-title">{{ p.gift_sticker.title }}</span>
+                </span>
+                {% endif %}
+                <div class="gift-recv-meta">
+                    <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
+                    {% if p.created_at %}<span class="muted"> · {{ p.created_at|fb_when }}</span>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if show_wall %}
 <div class="profile-box wall-box">
     <h4>Стена</h4>

@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models import OuterRef, Subquery
 
 from .groups import Community
+from .pages import Company
 from .people import SocialProfile
 
 
@@ -91,6 +92,11 @@ class Event(models.Model):
         SocialProfile, models.DO_NOTHING, null=True, blank=True, related_name="hosted_events",
     )
     community = models.ForeignKey(Community, models.DO_NOTHING, null=True, blank=True)
+    # Page-hosted events (nullable; ensured via deploy ALTER IF NOT EXISTS)
+    company = models.ForeignKey(
+        Company, models.DO_NOTHING, null=True, blank=True, related_name="events",
+        db_column="company_id",
+    )
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

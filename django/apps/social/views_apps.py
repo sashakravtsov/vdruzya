@@ -44,6 +44,11 @@ APPS = (
         "url_name": "pokes",
     },
     {
+        "slug": "gifts", "name": "Подарки",
+        "blurb": "Отправьте другу виртуальный подарок.",
+        "url_name": "gifts",
+    },
+    {
         "slug": "search", "name": "Поиск",
         "blurb": "Найти людей и группы во ВДрузья.",
         "url_name": "search",

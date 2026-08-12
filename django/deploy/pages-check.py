@@ -32,6 +32,7 @@ def main():
     r = c.get("/apps", secure=True)
     assert r.status_code == 200 and "Приложения".encode() in r.content
     assert "Страницы".encode() in r.content and "Фото".encode() in r.content
+    assert "Подарки".encode() in r.content
     ok("apps catalog")
 
     r = c.get("/pages", secure=True)

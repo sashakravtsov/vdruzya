@@ -11,6 +11,7 @@ from . import views_inbox as inbox
 from . import views_wall_ops as wall
 from . import views_pages as pages
 from . import views_apps as apps
+from . import views_gifts as gifts
 
 urlpatterns = [
     path("up", meta.up, name="up"),
@@ -25,10 +26,14 @@ urlpatterns = [
     path("pages/<int:pk>/fan", pages.page_fan, name="pages.fan"),
     path("pages/<int:pk>/unfan", pages.page_unfan, name="pages.unfan"),
     path("pages/<int:pk>/posts", pages.page_post, name="pages.posts"),
+    path("pages/<int:pk>/events", pages.page_event_create, name="pages.events"),
     path("pages/<int:pk>", pages.page_show, name="pages.show"),
     path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
     path("apps", apps.apps_home, name="apps"),
     path("applications", meta.redirect_permanent, {"to": "/apps"}, name="applications.legacy"),
+    path("gifts", gifts.gifts_home, name="gifts"),
+    path("gifts/send", gifts.gift_send, name="gifts.send"),
+    path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),
     path("groups", browse.groups, name="groups"),
     path("groups/<int:pk>/edit", gops.group_edit, name="groups.edit"),
     path("groups/<int:pk>/members", gops.group_members, name="groups.members"),

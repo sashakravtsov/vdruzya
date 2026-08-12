@@ -529,6 +529,26 @@ class EventForm(ClassicForm, forms.Form):
         return (self.cleaned_data.get("place") or "").strip()[:160]
 
 
+class GiftSendForm(ClassicForm, forms.Form):
+    """Send a classic Gift (sticker) to a friend."""
+    to = forms.ModelChoiceField(
+        queryset=SocialProfile.objects.none(),
+        empty_label="— выберите друга —",
+        widget=forms.Select(attrs={"class": "inputtext"}),
+    )
+    gift = forms.CharField(max_length=80, widget=forms.HiddenInput())
+    message = forms.CharField(
+        max_length=500, required=False,
+        widget=_ta(2, style="width:100%"),
+    )
+
+    def clean_gift(self):
+        slug = (self.cleaned_data.get("gift") or "").strip()
+        if not slug:
+            raise forms.ValidationError("Выберите подарок")
+        return slug
+
+
 
 class PasswordForm(ClassicForm, forms.Form):
     old = forms.CharField(label="Текущий пароль", widget=forms.PasswordInput(attrs={"class": "inputtext"}))

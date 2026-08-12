@@ -1099,6 +1099,31 @@ button.linkish .ico { margin-right: 2px; }
 .events-page .event-side { float: right; width: 180px; }
 .events-page .event-rsvp { margin-top: 10px; }
 .events-page .event-rsvp form.inline { margin-right: 4px; }
+.page-page .event-list-row {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.page-page .event-list-row:last-child { border-bottom: 0; }
+.gifts-page #content { padding: 10px; }
+.gift-grid { overflow: hidden; margin: 8px 0 0; }
+.gift-tile {
+  display: block; float: left; width: 90px; height: 90px; margin: 0 8px 8px 0;
+  border: solid 1px #B3B3B3; text-align: center; text-decoration: none;
+  box-sizing: border-box; position: relative; overflow: hidden;
+}
+.gift-tile:hover, .gift-tile.is-on { border-color: #3B5998; outline: 1px solid #3B5998; }
+.gift-tile-sm { width: 50px; height: 50px; float: left; margin: 0 8px 0 0; }
+.gift-tile-title {
+  display: block; padding: 18px 4px 0; font-size: 11px; font-weight: bold; line-height: 1.2;
+}
+.gift-tile-sm .gift-tile-title { padding-top: 14px; font-size: 9px; }
+.gift-tile-cap {
+  display: block; position: absolute; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35); color: #fff; font-size: 9px; padding: 2px 3px;
+}
+.gift-recv-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
+.gift-recv-row:last-child { border-bottom: 0; }
+.gift-recv-meta { overflow: hidden; }
+.gift-grid-profile .gift-recv-row { border-bottom: 0; padding: 0; margin: 0 0 6px; }
 .pokes-page .notify-row {
   overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }

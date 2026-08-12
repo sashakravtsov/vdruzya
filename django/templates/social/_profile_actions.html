@@ -4,6 +4,7 @@
 <form method="post" action="{% url 'inbox.start' profile.id %}">{% csrf_token %}<button type="submit">Написать сообщение</button></form>
 <a href="{% url 'profile.walltowall' profile.id %}">Стена к стене</a>
 <form method="post" action="{% url 'profile.poke' profile.id %}">{% csrf_token %}<button type="submit">Подмигнуть</button></form>
+<a href="{% url 'gifts.send' %}?to={{ profile.id }}">Отправить подарок</a>
 <form method="post" action="{% url 'friends.remove' profile.id %}">{% csrf_token %}<button type="submit" class="muted">Удалить из друзей</button></form>
 {% elif relation and relation.status == 'pending' and relation.user_id == me.id %}
 <span class="muted">Заявка отправлена</span>

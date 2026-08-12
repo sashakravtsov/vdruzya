@@ -97,7 +97,7 @@ def wall_owner_id(post) -> int | None:
 
 
 def can_manage_wall_post(me, post) -> bool:
-    """Author, wall owner, or page admin may remove the post (classic FB)."""
+    """Author, wall owner, gift recipient, or page admin may remove the post (classic FB)."""
     if not me or not post:
         return False
     if post.social_user_id == me.id:
@@ -106,6 +106,11 @@ def can_manage_wall_post(me, post) -> bool:
     if oid and oid == me.id:
         return True
     topic = getattr(post, "topic", None) or ""
+    if topic.startswith("gift:"):
+        try:
+            return int(topic.split(":", 1)[1]) == me.id
+        except (TypeError, ValueError):
+            return False
     if topic.startswith("page:"):
         try:
             pid = int(topic.split(":", 1)[1])
@@ -153,11 +158,17 @@ def wall_posts_for(profile, limit=20, viewer=None):
     qs = (
         Post.objects.filter(
             Q(topic=key)
-            | (Q(social_user=profile) & ~Q(topic__startswith="wall:") & ~Q(topic__startswith="page:"))
+            | (
+                Q(social_user=profile)
+                & ~Q(topic__startswith="wall:")
+                & ~Q(topic__startswith="page:")
+                & ~Q(topic__startswith="gift:")
+            )
         )
-        .exclude(kind__in=("status", "picture", "poll", "share", "note"))
+        .exclude(kind__in=("status", "picture", "poll", "share", "note", "gift"))
         .exclude(topic__in=("status", "picture", "note"))
         .exclude(topic__startswith="page:")
+        .exclude(topic__startswith="gift:")
         .select_related("social_user")
         .defer(*POST_DEFER, *profile_related("social_user__"))
         .prefetch_related(
@@ -267,6 +278,8 @@ def mini_feed(profile, limit=8, viewer=None):
             else:
                 kind = "post"
         elif topic.startswith("page:"):
+            continue
+        elif topic.startswith("gift:") or p.kind == "gift":
             continue
         else:
             kind = "post"
@@ -417,7 +430,9 @@ def news_items(viewer=None, limit=40):
         feed_queryset(viewer)
         .filter(Q(social_user_id__in=fids) | Q(topic__in=wall_topics))
         .exclude(topic__in=("status", "picture"))
-        .exclude(topic__startswith="page:")[:limit]
+        .exclude(topic__startswith="page:")
+        .exclude(topic__startswith="gift:")
+        .exclude(kind="gift")[:limit]
     ) if fids else []
     attach_wall_notes(posts)
     for p in posts:

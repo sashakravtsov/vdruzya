@@ -9,6 +9,7 @@ from apps.social.models import (
     Album, Block, Community, Education, Experience, Friendship, Photo,
 )
 from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_for
+from apps.social import gifts as gf
 
 TABS = frozenset({"wall", "info", "photos", "notes", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
@@ -385,6 +386,9 @@ def build_context(profile, me, tab="wall"):
     rail_photos = recent_photos(profile, me, 4) if full else []
     albums = albums_for(profile, me, 12) if full and tab == "photos" else []
     notes = notes_for(profile, 20, viewer=me) if full and tab == "notes" else []
+    gifts = []
+    if wall and show_wall:
+        gifts = gf.attach_stickers(gf.gifts_for(profile, limit=12))
 
     return {
         "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
@@ -394,6 +398,7 @@ def build_context(profile, me, tab="wall"):
         "rail_photos": rail_photos,
         "albums": albums,
         "notes": notes,
+        "gifts": gifts,
         "note_form": NoteForm() if is_own and tab == "notes" else None,
         "posts": wall_posts_for(profile, 20, viewer=me) if wall and show_wall else [],
         "relation": relation, "blocked": blocked,

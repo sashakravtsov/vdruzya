@@ -125,11 +125,16 @@ def page_show(request, pk):
         .select_related("social_user")
         .order_by("id")[:8]
     )
+    from apps.social import events as ev
+    from apps.social.forms import EventForm
+    page_events = ev.list_page_events(page, upcoming=True, limit=12)
     return render(request, "social/page.html", {
         "page": page, "me": me, "is_admin": is_admin, "is_fan": is_fan,
         "posts": posts, "fans": fans, "admins": admins,
         "industry_label": industry_label(page.industry),
         "post_form": PagePostForm() if is_admin else None,
+        "event_form": EventForm() if is_admin else None,
+        "page_events": page_events,
         "comment_form": CommentForm() if me else None,
         "wall_owner": None,
         "next": request.path,
@@ -215,6 +220,36 @@ def page_post(request, pk):
         post.save(update_fields=["media_path", "kind"])
     bump_news()
     messages.success(request, "Запись опубликована.")
+    return redirect(page)
+
+
+@login_required
+@require_POST
+def page_event_create(request, pk):
+    me = profile_of(request.user)
+    page = get_object_or_404(Company, pk=pk)
+    if not _is_admin(me, page):
+        messages.error(request, "Создавать события могут администраторы.")
+        return redirect(page)
+    from apps.social import events as ev
+    from apps.social.forms import EventForm
+    form = EventForm(request.POST)
+    if form.is_valid():
+        event = ev.create_event(
+            me,
+            title=form.cleaned_data["title"],
+            place=form.cleaned_data.get("place") or "—",
+            description=form.cleaned_data.get("description") or "",
+            starts_at=form.cleaned_data["starts_at"],
+            company=page,
+        )
+        if event:
+            ev.set_rsvp(me, event, "going")
+            messages.success(request, "Событие страницы создано.")
+            return redirect(event)
+        messages.error(request, "Не удалось создать событие.")
+    else:
+        messages.error(request, "Укажите название и дату.")
     return redirect(page)
 
 

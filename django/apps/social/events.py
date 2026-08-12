@@ -38,7 +38,7 @@ def parse_starts(raw):
     return starts
 
 
-def create_event(me, *, title, place="", description="", starts_at=None, community=None):
+def create_event(me, *, title, place="", description="", starts_at=None, community=None, company=None):
     title = (title or "").strip()[:255]
     if not me or not title or not starts_at:
         return None
@@ -50,13 +50,17 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
         starts_at=starts_at,
         host=me,
         community=community,
+        company=company,
         created_at=t,
         updated_at=t,
     )
 
 
 def get_event(pk):
-    return get_object_or_404(Event.objects.select_related("host", "community"), pk=pk)
+    return get_object_or_404(
+        Event.objects.select_related("host", "community", "company"),
+        pk=pk,
+    )
 
 
 def annotate_counts(qs):
@@ -70,7 +74,7 @@ def annotate_counts(qs):
 def list_events(me, tab="upcoming"):
     """Tabs: upcoming | past | hosting | going | invited."""
     qs = annotate_counts(
-        Event.objects.select_related("host", "community").defer(*profile_related("host__"))
+        Event.objects.select_related("host", "community", "company").defer(*profile_related("host__"))
     )
     t = now()
     if tab == "past":
@@ -82,6 +86,16 @@ def list_events(me, tab="upcoming"):
     if tab == "invited" and me:
         return qs.filter(attendees__social_user=me, attendees__status="maybe").order_by("starts_at")[:50]
     return qs.filter(starts_at__gte=t).order_by("starts_at")[:50]
+
+
+def list_page_events(page, *, upcoming=True, limit=20):
+    qs = annotate_counts(
+        Event.objects.filter(company=page).select_related("host", "company").defer(*profile_related("host__"))
+    )
+    t = now()
+    if upcoming:
+        return qs.filter(starts_at__gte=t).order_by("starts_at")[:limit]
+    return qs.filter(starts_at__lt=t).order_by("-starts_at")[:limit]
 
 
 def my_status(me, event) -> str:
