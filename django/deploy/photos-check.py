@@ -160,13 +160,15 @@ def main():
     # Photos of Me / tags
     from apps.social.models import PhotoTag
     from apps.social import photo_tags as pt
+    import uuid as _uuid
     t = now()
     a2 = Album.objects.create(
         social_user=me, title="QA Tags", description="", visibility="friends",
         created_at=t, updated_at=t,
     )
+    uniq = f"qa/tag_{_uuid.uuid4().hex[:8]}.png"
     ph = Photo.objects.create(
-        album=a2, title="tagged", path="qa/tag.png", color="#ccc",
+        album=a2, title="tagged", path=uniq, color="#ccc",
         created_at=t, updated_at=t,
     )
     friend = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
@@ -178,9 +180,10 @@ def main():
         assert r.status_code == 200 and friend.name.encode() in r.content
         assert "ожидает".encode() in r.content
         # Pending tags stay off Photos of Me
+        assert ph.id not in {p.id for p in pt.photos_of(friend, me, limit=40)}
         r = c.get(f"/profile/{friend.id}?tab=photos&view=of", secure=True)
         assert r.status_code == 200
-        assert ph.path.encode() not in r.content
+        assert uniq.encode() not in r.content
         # Friend approves
         u_friend = friend.user
         c2 = Client(HTTP_HOST="vdruzya.ru")
@@ -193,10 +196,11 @@ def main():
         assert r.status_code in (301, 302)
         tag.refresh_from_db()
         assert tag.status == "approved"
+        assert ph.id in {p.id for p in pt.photos_of(friend, me, limit=40)}
         r = c.get(f"/profile/{friend.id}?tab=photos&view=of", secure=True)
         assert r.status_code == 200
         assert "Фото с".encode() in r.content or "Фото со мной".encode() in r.content
-        assert b"profile-tagged" in r.content or ph.path.encode() in r.content or b"/albums/" in r.content
+        assert b"profile-tagged" in r.content or uniq.encode() in r.content or b"/albums/" in r.content
         ok("photo tag approval + photos of me")
         PhotoTag.objects.filter(photo=ph).delete()
     else:
