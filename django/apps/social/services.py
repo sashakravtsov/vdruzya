@@ -601,6 +601,65 @@ def _add_photo_tags(items, blocked, fids, limit):
         })
 
 
+def _add_event_created(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import Event
+    qs = (
+        Event.objects.filter(host_id__in=fids)
+        .select_related("host")
+        .defer(*profile_related("host__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(host_id__in=blocked)
+    for event in qs[:limit]:
+        items.append({
+            "kind": "event_created", "at": event.created_at or event.starts_at,
+            "actor": event.host, "event": event,
+        })
+
+
+def _add_event_going(items, blocked, fids, limit):
+    if not fids:
+        return
+    from django.db.models import F
+    from apps.social.models import EventAttendee
+    qs = (
+        EventAttendee.objects.filter(social_user_id__in=fids, status="going")
+        .exclude(social_user_id=F("event__host_id"))
+        .select_related("social_user", "event")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "event_going", "at": row.updated_at or row.created_at,
+            "actor": row.social_user, "event": row.event,
+        })
+
+
+def _add_market(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models import MarketplaceListing
+    qs = (
+        MarketplaceListing.objects.filter(social_user_id__in=fids)
+        .select_related("social_user")
+        .defer(*profile_related("social_user__"))
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "market", "at": row.created_at,
+            "actor": row.social_user, "listing": row,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -662,6 +721,9 @@ def news_items(viewer=None, limit=40):
     _add_gifts(items, viewer, fids, blocked, limit)
     _add_event_posts(items, viewer, fids, blocked, limit)
     _add_photo_tags(items, blocked, fids, limit)
+    _add_event_created(items, blocked, fids, limit)
+    _add_event_going(items, blocked, fids, limit)
+    _add_market(items, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)

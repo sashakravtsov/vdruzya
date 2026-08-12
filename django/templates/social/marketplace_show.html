@@ -27,9 +27,13 @@
                 </p>
                 {% endif %}
                 {% if is_owner %}
-                <form method="post" action="{% url 'marketplace.delete' item.id %}" style="margin-top:8px">{% csrf_token %}
-                    <button type="submit" class="linkish muted" onclick="return confirm('Удалить объявление?');">удалить</button>
-                </form>
+                <p style="margin-top:10px">
+                    <a href="{% url 'marketplace.edit' item.id %}">ред.</a>
+                    ·
+                    <form method="post" action="{% url 'marketplace.delete' item.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted" onclick="return confirm('Удалить объявление?');">удалить</button>
+                    </form>
+                </p>
                 {% endif %}
             </div>
         </div>

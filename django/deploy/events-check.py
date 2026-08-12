@@ -115,6 +115,46 @@ def main():
         ok("event wall post")
         Post.objects.filter(pk=ep.id).delete()
 
+        # Host edit
+        r = c.get(f"/events/{event.id}/edit", secure=True)
+        assert r.status_code == 200 and b'name="title"' in r.content
+        starts = (now() + timedelta(days=3)).strftime("%d.%m.%Y %H:%M")
+        r = c.post(f"/events/{event.id}/edit", {
+            "title": "QA Event Night Edited",
+            "place": "СПб",
+            "description": "edited",
+            "starts_at": starts,
+        }, secure=True)
+        assert r.status_code in (301, 302)
+        event.refresh_from_db()
+        assert event.title == "QA Event Night Edited" and event.place == "СПб"
+        ok("event host edit")
+
+        from apps.social.services import bump_news, news_items
+        bump_news()
+        feed = news_items(me, limit=80)
+        assert any(i.get("kind") == "event_created" and i.get("event") and i["event"].id == event.id for i in feed)
+        ok("event created in news feed")
+
+        if friend:
+            # friend going → feed story for me
+            from apps.social.models import EventAttendee
+            t = now()
+            EventAttendee.objects.update_or_create(
+                event=event, social_user=friend,
+                defaults={"status": "going", "created_at": t, "updated_at": t},
+            )
+            bump_news()
+            feed = news_items(me, limit=80)
+            assert any(
+                i.get("kind") == "event_going" and i.get("event") and i["event"].id == event.id
+                and i.get("actor") and i["actor"].id == friend.id
+                for i in feed
+            )
+            ok("event going in news feed")
+        else:
+            ok("event going in news feed skipped")
+
         print("ALL events probes passed")
         return 0
     finally:

@@ -89,6 +89,7 @@ def networks_home(request):
 def marketplace_home(request):
     me = profile_of(request.user)
     form = MarketForm(request.POST or None)
+    mine = request.GET.get("mine") == "1"
     if request.method == "POST":
         if form.is_valid():
             row = cx.market_create(
@@ -106,9 +107,10 @@ def marketplace_home(request):
             messages.error(request, "Укажите название.")
     q = (request.GET.get("q") or "").strip()
     place = (request.GET.get("place") or "").strip()
-    items = cx.market_list(q=q, place=place, limit=40)
+    items = cx.market_list(q=q, place=place, mine=mine, viewer=me, limit=40)
     return render(request, "social/marketplace.html", {
-        "me": me, "form": form, "items": items, "q": q, "place": place, "nav": "marketplace",
+        "me": me, "form": form, "items": items, "q": q, "place": place,
+        "mine": mine, "nav": "marketplace",
     })
 
 
@@ -124,6 +126,37 @@ def marketplace_show(request, pk):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
+def marketplace_edit(request, pk):
+    me = profile_of(request.user)
+    item = get_object_or_404(MarketplaceListing, pk=pk)
+    if item.social_user_id != me.id:
+        messages.error(request, "Редактировать можно только своё объявление.")
+        return redirect(item)
+    initial = {
+        "title": item.title, "price": item.price, "place": item.place,
+        "description": item.description,
+    }
+    form = MarketForm(request.POST or None, initial=None if request.method == "POST" else initial)
+    if request.method == "POST":
+        if form.is_valid():
+            row = cx.market_update(
+                me, item,
+                title=form.cleaned_data["title"],
+                price=form.cleaned_data.get("price") or "",
+                place=form.cleaned_data.get("place") or "",
+                description=form.cleaned_data.get("description") or "",
+            )
+            if row:
+                messages.success(request, "Объявление сохранено.")
+                return redirect(row)
+        messages.error(request, "Укажите название.")
+    return render(request, "social/marketplace_edit.html", {
+        "me": me, "item": item, "form": form, "nav": "marketplace",
+    })
+
+
+@login_required
 @require_POST
 def marketplace_delete(request, pk):
     me = profile_of(request.user)
@@ -132,6 +165,8 @@ def marketplace_delete(request, pk):
         messages.error(request, "Можно удалить только своё объявление.")
         return redirect(item)
     item.delete()
+    from apps.social.services import bump_news
+    bump_news()
     messages.info(request, "Объявление удалено.")
     return redirect("marketplace")
 

@@ -93,19 +93,54 @@ def main():
     assert item
     r = c.get(f"/marketplace/{item.id}", secure=True)
     assert r.status_code == 200 and "велосипед".encode() in r.content
-    ok("marketplace listing")
+    feed = news_items(me, limit=80)
+    assert any(i.get("kind") == "market" and i.get("listing") and i["listing"].id == item.id for i in feed)
+    r = c.get("/marketplace?mine=1", secure=True)
+    assert r.status_code == 200 and item.title.encode() in r.content
+    r = c.post(f"/marketplace/{item.id}/edit", {
+        "title": item.title, "price": "1200", "place": "Москва", "description": "велосипед edited",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    item.refresh_from_db()
+    assert item.price == "1200" and "edited" in item.description
+    ok("marketplace listing + edit + feed + mine")
+
+    # video post
+    r = c.post("/videos", {
+        "title": "QA Video",
+        "url": "https://example.com/qa.mp4",
+        "blurb": "clip",
+        "visibility": "friends",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    video = Post.objects.filter(social_user=me, kind="video", media_label="QA Video").order_by("-id").first()
+    assert video
+    feed = news_items(me, limit=80)
+    assert any(i.get("kind") == "video" and i.get("post") and i["post"].id == video.id for i in feed)
+    ok("video in news feed")
 
     # friend list
     r = c.post("/friends/lists", {"name": f"QA List {uuid.uuid4().hex[:4]}"}, secure=True)
     assert r.status_code in (301, 302)
     fl = FriendList.objects.filter(social_user=me, name__startswith="QA List").order_by("-id").first()
     assert fl
-    ok("friend list create")
+    from apps.social.models import FriendListMember, SocialProfile
+    from apps.social.services import friend_ids
+    buddy = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
+    if buddy:
+        r = c.post(f"/friends/lists/{fl.id}", {"action": "add", "friend_id": str(buddy.id)}, secure=True)
+        assert r.status_code in (301, 302)
+        assert FriendListMember.objects.filter(friend_list=fl, social_user=buddy).exists()
+        r = c.post(f"/friends/lists/{fl.id}", {"action": "remove", "friend_id": str(buddy.id)}, secure=True)
+        assert r.status_code in (301, 302)
+        assert not FriendListMember.objects.filter(friend_list=fl, social_user=buddy).exists()
+        ok("friend list membership")
+    else:
+        ok("friend list membership skipped (no friend)")
 
     # cleanup
-    Post.objects.filter(id__in=[link.id, note.id]).delete()
+    Post.objects.filter(id__in=[x.id for x in (link, note, video) if x]).delete()
     item.delete()
-    from apps.social.models import FriendListMember
     FriendListMember.objects.filter(friend_list=fl).delete()
     fl.delete()
     ok("cleanup")

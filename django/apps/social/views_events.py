@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social import events as ev
 from apps.social.forms import CommentForm, EventForm, PostForm
@@ -170,6 +170,51 @@ def event_post_delete(request, event_id, post_id):
     bump_news()
     messages.info(request, "Удалено.")
     return redirect(request.POST.get("next") or event.get_absolute_url())
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def event_edit(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    if not me or event.host_id != me.id:
+        messages.error(request, "Редактировать может только организатор.")
+        return redirect(event)
+    initial = {
+        "title": event.title,
+        "place": event.place,
+        "description": event.description or "",
+        "starts_at": event.starts_at.strftime("%d.%m.%Y %H:%M") if event.starts_at else "",
+    }
+    form = EventForm(request.POST or None, initial=None if request.method == "POST" else initial)
+    if request.method == "POST":
+        if form.is_valid():
+            row = ev.update_event(
+                me, event,
+                title=form.cleaned_data["title"],
+                place=form.cleaned_data.get("place") or "—",
+                description=form.cleaned_data.get("description") or "",
+                starts_at=form.cleaned_data["starts_at"],
+            )
+            if row:
+                messages.success(request, "Событие сохранено.")
+                return redirect(row)
+        messages.error(request, "Укажите название и дату.")
+    return render(request, "social/event_edit.html", {
+        "event": event, "form": form, "me": me, "nav": "events",
+    })
+
+
+@login_required
+@require_POST
+def event_delete(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    if ev.delete_event(me, event):
+        messages.info(request, "Событие удалено.")
+        return redirect("events")
+    messages.error(request, "Удалить может только организатор.")
+    return redirect(event)
 
 
 @login_required

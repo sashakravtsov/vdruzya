@@ -43,7 +43,7 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
     if not me or not title or not starts_at:
         return None
     t = now()
-    return Event.objects.create(
+    event = Event.objects.create(
         title=title,
         place=(place or "").strip()[:255] or "—",
         description=(description or "").strip()[:4000],
@@ -54,6 +54,38 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
         created_at=t,
         updated_at=t,
     )
+    from apps.social.services import bump_news
+    bump_news()
+    return event
+
+
+def update_event(me, event, *, title, place="", description="", starts_at=None):
+    if not me or not event or event.host_id != me.id:
+        return None
+    title = (title or "").strip()[:255]
+    if not title or not starts_at:
+        return None
+    event.title = title
+    event.place = (place or "").strip()[:255] or "—"
+    event.description = (description or "").strip()[:4000]
+    event.starts_at = starts_at
+    event.updated_at = now()
+    event.save(update_fields=["title", "place", "description", "starts_at", "updated_at"])
+    from apps.social.services import bump_news
+    bump_news()
+    return event
+
+
+def delete_event(me, event) -> bool:
+    if not me or not event or event.host_id != me.id:
+        return False
+    from apps.social.models import Post
+    Post.objects.filter(topic=event.topic_key).delete()
+    EventAttendee.objects.filter(event=event).delete()
+    event.delete()
+    from apps.social.services import bump_news
+    bump_news()
+    return True
 
 
 def get_event(pk):
@@ -125,6 +157,9 @@ def set_rsvp(me, event, status: str):
     if not created and row.status != status:
         row.status, row.updated_at = status, t
         row.save(update_fields=["status", "updated_at"])
+    if status == "going":
+        from apps.social.services import bump_news
+        bump_news()
     if event.host_id and event.host_id != me.id and status == "going":
         Notification.objects.create(
             social_user_id=event.host_id,

@@ -23,6 +23,16 @@
                     </table>
                     {% if event.description %}<p style="margin-top:8px">{{ event.description|linebreaksbr }}</p>{% endif %}
 
+                    {% if is_host %}
+                    <p class="muted" style="margin-top:8px">
+                        <a href="{% url 'events.edit' event.id %}">ред.</a>
+                        ·
+                        <form method="post" action="{% url 'events.delete' event.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted" onclick="return confirm('Удалить событие?');">удалить</button>
+                        </form>
+                    </p>
+                    {% endif %}
+
                     <div class="event-rsvp">
                         <form method="post" action="{% url 'events.rsvp' event.id %}" class="inline">{% csrf_token %}
                             <input type="hidden" name="status" value="going">

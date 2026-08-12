@@ -257,6 +257,17 @@ if ! grep -q 'events.posts' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
 else
   echo "OK   event wall + photos"
 fi
+if ! grep -q 'events.edit' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'marketplace.edit' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL event/marketplace edit routes missing"; FAIL=1
+else
+  echo "OK   event + marketplace edit"
+fi
+if ! grep -q 'event_going\|_add_market' "${ROOT}/django/apps/social/services.py" 2>/dev/null; then
+  echo "FAIL event/market news stories missing"; FAIL=1
+else
+  echo "OK   event/market news stories"
+fi
 if [[ -f "${ROOT}/django/templates/social/videos.html" ]]; then
   echo "FAIL duplicate videos.html still present"; FAIL=1
 else

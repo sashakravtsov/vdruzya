@@ -174,5 +174,30 @@
             <div class="news-photo-row"><a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"><img src="{{ item.photo.url }}" alt="" class="news-photo"></a></div>
             {% endif %}
         </div>
+    {% elif item.kind == 'event_created' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            создал(а) событие
+            <a href="{% url 'events.show' item.event.id %}"><b>{{ item.event.title }}</b></a>.
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'event_going' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            идёт на
+            <a href="{% url 'events.show' item.event.id %}">{{ item.event.title }}</a>.
+            {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'market' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}"><b>{{ item.actor.name }}</b></a>
+            разместил(а) объявление
+            <a href="{% url 'marketplace.show' item.listing.id %}"><b>«{{ item.listing.title }}»</b></a>
+            {% if item.listing.price %}<span class="muted"> · {{ item.listing.price }}</span>{% endif %}
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
 </div>

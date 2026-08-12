@@ -124,8 +124,10 @@ def notes_feed(viewer, *, mine=False, limit=40):
     return list(qs[:limit])
 
 
-def market_list(q="", place="", limit=40):
+def market_list(q="", place="", *, mine=False, viewer=None, limit=40):
     qs = MarketplaceListing.objects.select_related("social_user").order_by("-id")
+    if mine and viewer:
+        qs = qs.filter(social_user=viewer)
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
     if place:
@@ -138,7 +140,7 @@ def market_create(me, *, title, price="", place="", description=""):
     if not me or not title:
         return None
     t = now()
-    return MarketplaceListing.objects.create(
+    row = MarketplaceListing.objects.create(
         social_user=me,
         title=title,
         price=(price or "").strip()[:40],
@@ -147,6 +149,24 @@ def market_create(me, *, title, price="", place="", description=""):
         created_at=t,
         updated_at=t,
     )
+    from apps.social.services import bump_news
+    bump_news()
+    return row
+
+
+def market_update(me, item, *, title, price="", place="", description=""):
+    if not me or not item or item.social_user_id != me.id:
+        return None
+    title = (title or "").strip()[:160]
+    if not title:
+        return None
+    item.title = title
+    item.price = (price or "").strip()[:40]
+    item.place = (place or "").strip()[:120]
+    item.description = (description or "").strip()[:4000]
+    item.updated_at = now()
+    item.save(update_fields=["title", "price", "place", "description", "updated_at"])
+    return item
 
 
 def lists_for(me):
