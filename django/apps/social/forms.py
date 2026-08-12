@@ -106,8 +106,11 @@ class ProfileForm(forms.ModelForm):
             "favorite_quotes", "favorite_games",
         )
         labels = {
-            "slug": "Короткое имя", "birthday": "День рождения",
-            "birthday_visibility": "Показ дня рождения", "religious_views": "Религия",
+            "name": "Имя", "slug": "Короткое имя",
+            "city": "Город", "hometown": "Родной город", "country": "Страна",
+            "birthday": "День рождения", "birthday_visibility": "Показ дня рождения",
+            "religious_views": "Религия", "website": "Сайт",
+            "bio": "О себе", "interests": "Интересы", "hobbies": "Хобби",
             "education_note": "Образование", "workplace": "Место работы",
             "phone": "Телефон", "show_phone": "Показывать телефон",
             "show_email": "Показывать email",
@@ -116,7 +119,12 @@ class ProfileForm(forms.ModelForm):
             "profile_visibility": "Кто видит профиль",
             "wall_write": "Кто пишет на стену",
             "wall_view": "Кто видит стену",
-            "favorite_games": "Игры",
+            "favorite_music": "Музыка", "favorite_movies": "Фильмы",
+            "favorite_tv": "ТВ", "favorite_books": "Книги",
+            "favorite_quotes": "Цитаты", "favorite_games": "Игры",
+        }
+        help_texts = {
+            "slug": "vdruzya.ru/…",
         }
         widgets = {
             "name": _in(), "slug": _in(autocomplete="off"),

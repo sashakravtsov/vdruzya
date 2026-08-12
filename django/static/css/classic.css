@@ -28,8 +28,9 @@ label { font-weight: bold; color: gray; }
 #gnav {
   position: absolute; top: 1px; left: 120px; width: 630px;
   margin: 0; padding: 3px 0; list-style: none; text-align: right; line-height: 25px;
+  white-space: nowrap;
 }
-#gnav li { display: inline; }
+#gnav li { display: inline; white-space: nowrap; }
 #gnav a, #gnav button.linkish {
   margin: 0; padding: 2px 4px; color: #D8DFEA; text-decoration: none;
   background: 0; border: 0; font: 11px var(--font); cursor: pointer;
@@ -215,21 +216,25 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 /* Edit My Profile — archive editprofile.css (Dec 2005): #tabs + wide .editor */
 .editprofile #content { padding: 12px 0 10px !important; overflow: hidden; }
 .editprofile #tabs {
-  text-align: left; margin: 0 10px 14px; padding: 4px 0;
-  border-bottom: solid 1px var(--fb);
+  text-align: left; margin: 0 10px 12px; padding: 0 0 1px;
+  border-bottom: solid 1px var(--fb); white-space: nowrap;
 }
 .editprofile #tabs .activetab,
-.editprofile #tabs .inactivetab { display: inline; padding: 0; margin: 0; }
-.editprofile #tabs a { margin: 0; padding: 4px; }
+.editprofile #tabs .inactivetab {
+  display: inline-block; padding: 0; margin: 0 2px 0 0; vertical-align: bottom;
+}
+.editprofile #tabs a {
+  display: inline-block; margin: 0; padding: 3px 5px; font: 11px var(--font);
+}
 .editprofile #tabs .activetab a {
   color: #fff; background: var(--fb); text-decoration: none;
 }
 .editprofile #tabs .inactivetab a:hover {
   background: var(--line); text-decoration: none;
 }
+/* #pagebody 628 − borders ≈ 606; editor fills it */
 .editprofile .editor {
-  width: 585px; margin: 0 auto; padding: 0 10px 0 0;
-  float: none;
+  width: 600px; margin: 0; padding: 0 0 0 10px; float: none;
 }
 .editprofile .formtable.editor td.label,
 .editprofile table.editor td.label {
@@ -246,7 +251,7 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
   background: #fff; padding: 10px; margin: 0 0 10px;
   border: 1px solid #bdc7d8; color: #444; font-size: 11px; line-height: 14px;
 }
-.editprofile #infoarea { margin: 0 10px 12px; }
+.editprofile #infoarea { margin: 0 10px 12px 0; }
 .editprofile #infoarea > h4 {
   border-bottom: solid 1px #D8DFEA;
   margin: 0 0 10px; padding: 0 0 2px;
@@ -261,10 +266,10 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 }
 .editprofile .checkgrid label { font-weight: normal; color: #000; }
 .editprofile .bday select.inputtext { width: auto; margin-right: 2px; }
-/* Picture — archive #currentpicture 200 + #uploadpicture 366 */
-.editprofile #picture { overflow: hidden; margin: 0 10px; }
+/* Picture — side-by-side: 200 + gutter + ~360 ≤ 600 */
+.editprofile #picture { overflow: hidden; margin: 0 10px 0 0; }
 .editprofile #currentpicture {
-  float: left; width: 200px; margin: 10px 10px 20px 10px;
+  float: left; width: 200px; margin: 0 20px 16px 0;
 }
 .editprofile #currentpicture h4 {
   margin: 0; padding: 1px 0 4px; font-size: 11px; font-weight: bold;
@@ -282,13 +287,13 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
   background: #f7f7f7; border: solid 1px #ddd; color: gray; margin: 6px 0;
 }
 .editprofile #uploadpicture {
-  float: left; width: 340px; margin: 10px 10px 20px 10px;
+  float: left; width: 360px; margin: 0 0 16px 0;
 }
 .editprofile #uploadpicture small {
   display: block; margin: 5px 0; color: gray; font-size: 10px;
 }
 .editprofile .avatar-clear { margin: 4px 0 0; }
-.editprofile .profile-box { margin: 0 10px 12px; }
+.editprofile .profile-box { margin: 0 10px 12px 0; }
 .editprofile .profile-box > h4 {
   background: #D8DFEA; color: #3B5998;
   font: bold 11px/16px var(--font);

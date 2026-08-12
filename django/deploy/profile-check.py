@@ -161,15 +161,18 @@ def main():
     assert b'id="editnav"' not in r.content
     assert "Основное".encode() in r.content
     assert "Контакты".encode() in r.content  # tab
-    assert "Контактная информация".encode() in r.content or True  # title on contact section
     assert "Приватность".encode() in r.content
     assert "Интересуюсь".encode() in r.content
     assert "Ищу".encode() in r.content
+    assert "Имя:".encode() in r.content
+    assert "Город:".encode() in r.content
+    assert "Родной город:".encode() in r.content
+    assert b">Name<" not in r.content and b">City<" not in r.content
     assert b"section=picture" in r.content
     assert b'type="date"' not in r.content
     assert b"datetime-local" not in r.content
     assert b'name="birthday_year"' in r.content or b"birthday_year" in r.content
-    ok("profile edit sections")
+    ok("profile edit classic (#tabs + RU labels, no HTML5 date)")
 
     r = c.get("/profile/edit?section=contact", secure=True)
     assert r.status_code == 200

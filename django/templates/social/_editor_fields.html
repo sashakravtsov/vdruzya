@@ -10,7 +10,7 @@
 {% else %}
 <tr>
     <td class="label">{{ field.label }}:</td>
-    <td{% if field.name == 'birthday' %} class="bday"{% elif field.name == 'looking_for_choices' or field.name == 'interested_in_choices' %} class="checkgrid"{% endif %}>
+    <td{% if field.name == 'birthday' %} class="bday"{% elif field.name == 'looking_for_choices' or field.name == 'interested_in_choices' %} class="checkgrid"{% elif field.name == 'slug' %} class="hometown"{% endif %}>
         {{ field }}
         {% if field.name == 'birthday' %}{{ form.birthday_visibility }}{% endif %}
         {% if field.name == 'phone' %} · <label class="inline">{{ form.show_phone }} показывать</label>{% endif %}
