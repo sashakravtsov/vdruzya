@@ -28,6 +28,7 @@
         <a href="{% url 'networks' %}"{% if nav == 'networks' %} class="is-on"{% endif %}>Сети</a>
         <a href="{% url 'gifts' %}"{% if nav == 'gifts' %} class="is-on"{% endif %}>Подарки</a>
         <a href="{% url 'birthdays' %}"{% if nav == 'birthdays' %} class="is-on"{% endif %}>Дни рождения</a>
+        <a href="{% url 'anniversaries' %}"{% if nav == 'anniversaries' %} class="is-on"{% endif %}>Годовщины</a>
         <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
         <a href="{% url 'apps' %}"{% if nav == 'apps' %} class="is-on"{% endif %}>Приложения</a>
         <a href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>

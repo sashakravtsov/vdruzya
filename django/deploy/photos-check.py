@@ -99,7 +99,14 @@ def main():
     assert "Комментарии".encode() in r.content
     assert "полный размер".encode() in r.content
     assert b"max-height: 520px" not in r.content
+    assert "Мне нравится".encode() in r.content
     ok("photo show (full size chrome)")
+
+    r = c.post(f"/albums/{a.id}/photos/{ph.id}/like", {}, secure=True, follow=True)
+    assert r.status_code == 200
+    from apps.social.models.legacy import PhotoReaction
+    assert PhotoReaction.objects.filter(photo=ph, social_user=me, type="like").exists()
+    ok("photo like")
 
     r = c.post(f"/albums/{a.id}/photos/{ph.id}/comment", {"body": "Классное фото"}, secure=True, follow=True)
     assert r.status_code == 200
@@ -133,6 +140,8 @@ def main():
     ok("profile albums")
 
     r = c.post(f"/albums/{a.id}/photos/{ph.id}/delete", {}, secure=True, follow=True)
+    from apps.social.models.legacy import PhotoReaction
+    PhotoReaction.objects.filter(photo_id=ph.id).delete()
     assert r.status_code == 200 and not Photo.objects.filter(pk=ph.id).exists()
     ok("photo delete")
 

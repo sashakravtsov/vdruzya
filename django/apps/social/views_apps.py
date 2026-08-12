@@ -24,6 +24,7 @@ APPS = (
     {"slug": "pokes", "name": "Подмигивания", "blurb": "Лёгкий способ сказать «привет».", "url_name": "pokes"},
     {"slug": "gifts", "name": "Подарки", "blurb": "Отправьте другу виртуальный подарок.", "url_name": "gifts"},
     {"slug": "birthdays", "name": "Дни рождения", "blurb": "Не пропустите дни рождения друзей.", "url_name": "birthdays"},
+    {"slug": "anniversaries", "name": "Годовщины дружбы", "blurb": "Сколько лет вы дружите.", "url_name": "anniversaries"},
     {"slug": "mobile", "name": "Мобильная версия", "blurb": "ВДрузья с телефона.", "url_name": "mobile"},
     {"slug": "search", "name": "Поиск", "blurb": "Найти людей и группы во ВДрузья.", "url_name": "search"},
 )

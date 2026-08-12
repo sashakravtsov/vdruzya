@@ -255,5 +255,22 @@
             <a href="{% url 'polls.show' item.poll.id %}"><b>{{ item.poll.question|truncatewords:16 }}</b></a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>
+    {% elif item.kind == 'photo_like' and item.photo %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            нравится
+            <a href="{% url 'albums.photos.show' item.photo.album_id item.photo.id %}">фото</a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+    {% elif item.kind == 'anniversary' %}
+        <span class="ico ico-note news-ico"></span>
+        <div class="news-body">
+            Вы и
+            <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
+            дружите уже {{ item.years }} {% if item.years == 1 %}год{% elif item.years >= 2 and item.years <= 4 %}года{% else %}лет{% endif %}!
+            <a href="{% url 'profile.friendship' item.actor.id %}">Смотреть дружбу</a>
+            {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
     {% endif %}
 </div>

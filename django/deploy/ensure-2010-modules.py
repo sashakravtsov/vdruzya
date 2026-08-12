@@ -114,6 +114,17 @@ CREATE TABLE IF NOT EXISTS classic_poll_votes (
 CREATE UNIQUE INDEX IF NOT EXISTS classic_poll_votes_uniq
   ON classic_poll_votes (poll_id, social_user_id);
 CREATE INDEX IF NOT EXISTS classic_poll_votes_option_idx ON classic_poll_votes (option_id);
+
+CREATE TABLE IF NOT EXISTS photo_reactions (
+  id bigserial PRIMARY KEY,
+  photo_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  type varchar(255) NOT NULL DEFAULT 'like',
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS photo_reactions_uniq
+  ON photo_reactions (photo_id, social_user_id, type);
+CREATE INDEX IF NOT EXISTS photo_reactions_photo_idx ON photo_reactions (photo_id);
 """
 
 
@@ -124,12 +135,13 @@ def main():
             "reactions", "places", "place_checkins", "place_reviews",
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
+            "photo_reactions",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
-    print("OK   likes + places + questions + reviews + classic polls schema")
+    print("OK   likes + places + questions + reviews + classic polls + photo likes schema")
 
 
 if __name__ == "__main__":

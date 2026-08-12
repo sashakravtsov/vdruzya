@@ -6,7 +6,7 @@ from django.utils.html import format_html
 from apps.social.albums import albums_for
 from apps.social.forms import CommentForm, NoteForm, PostForm, StatusForm
 from apps.social.models import (
-    Album, Block, Community, Company, Education, Experience, Friendship, Photo,
+    Album, Block, Community, Company, Education, Experience, Friendship, Photo, Place,
 )
 from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_for
 from apps.social import gifts as gf
@@ -441,5 +441,10 @@ def build_context(profile, me, tab="wall", photos_view="albums"):
         "show_wall": show_wall,
         "can_see_friends": can_see,
         "mini": mini_feed(profile, viewer=me) if wall else [],
-        "status_form": StatusForm(initial={"headline": profile.headline or ""}) if is_own else None,
+        "status_form": (
+            StatusForm(
+                initial={"headline": profile.headline or ""},
+                places=list(Place.objects.order_by("name")[:80]),
+            ) if is_own else None
+        ),
     }

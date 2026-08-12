@@ -208,6 +208,12 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 .profile #status .profile-status-form .inputbutton {
   margin: 2px 0 0; font: 11px var(--font);
 }
+.profile #status .status-place {
+  margin: 2px 0; color: #555;
+}
+.profile #status .status-place select {
+  max-width: 170px; font: 11px var(--font); border: 1px solid #bdc7d8;
+}
 /* Edit My Profile — archive editprofile.css (Dec 2005): #tabs + wide .editor */
 .editprofile #content { padding: 12px 0 10px !important; overflow: hidden; }
 .editprofile #tabs {

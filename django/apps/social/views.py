@@ -77,6 +77,40 @@ def wall_to_wall(request, pk):
 
 
 @login_required
+def see_friendship(request, pk):
+    """FB 2009 «Смотреть дружбу» — mutuals, since, shared groups/photos, W2W link."""
+    from apps.social import friendship as fr
+    from apps.social.services import wall_to_wall as w2w
+
+    other = get_profile(pk)
+    me = profile_of(request.user)
+    if not me or me.id == other.id:
+        return redirect(other)
+    if fr.is_blocked(me, other):
+        return render(request, "social/profile_blocked.html", {"who": other, "me": me}, status=403)
+    data = fr.friendship_page(me, other)
+    wall_preview = []
+    if data["are_friends"]:
+        from apps.social.likes import attach_likes
+        from apps.social.shares import attach_share_flags
+        wall_preview = w2w(me, other, limit=5, viewer=me)
+        attach_likes(wall_preview, me)
+        attach_share_flags(wall_preview, me)
+    return render(request, "social/friendship.html", {
+        "me": me, "other": other,
+        "since": data["since"],
+        "are_friends": data["are_friends"],
+        "mutual": data["mutual"],
+        "mutual_count": data["mutual_count"],
+        "mutual_label": fr.mutual_label(data["mutual_count"]) if data["mutual_count"] else "",
+        "groups": data["groups"],
+        "photos": data["photos"],
+        "wall_preview": wall_preview,
+        "nav": "friends",
+    })
+
+
+@login_required
 @never_cache
 def pokes(request):
     """Classic FB Pokes inbox."""

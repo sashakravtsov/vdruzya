@@ -19,7 +19,7 @@ for path in \
   /sw.js:404 /offline.html:404 /feed:302 /inbox:302 /account:302 /messenger:301 /activity:301 \
   /app:410 /pages:200 /apps:200 /gifts:302 /birthdays:302 \
   /networks:200 /mobile:200 /notes:302 /links:302 /videos:302 /marketplace:302 /blocked:302 \
-  /places:302 /questions:302 /polls:302 \
+  /places:302 /questions:302 /polls:302 /anniversaries:302 \
   /posts/abc:404 /articles/foo:404 /albums/foo:404 /events/foo:404; do
   check_http "${path%%:*}" "${path##*:}"
 done
@@ -197,6 +197,17 @@ if ! grep -q 'profile.walltowall' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
   echo "FAIL wall-to-wall route missing"; FAIL=1
 else
   echo "OK   wall-to-wall route"
+fi
+if ! grep -q 'profile.friendship' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'name="anniversaries"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL See Friendship / anniversaries routes missing"; FAIL=1
+else
+  echo "OK   See Friendship + anniversaries routes"
+fi
+if ! grep -q 'albums.photos.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL photo like route missing"; FAIL=1
+else
+  echo "OK   photo Like route (FB 2009)"
 fi
 if grep -q 'Закрепить' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
    || grep -q 'Закрепить' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then

@@ -227,6 +227,16 @@ def main():
         assert Notification.objects.filter(social_user=other, type="poke", url=f"/profile/{me.id}").exists()
         ok("poke")
 
+        r = c.get(f"/profile/{other.id}/friendship", secure=True)
+        assert r.status_code == 200 and "Дружба".encode() in r.content
+        assert "Стена к стене".encode() in r.content
+        assert b"placeholder=" not in r.content
+        ok("see friendship page")
+
+        r = c.get("/anniversaries", secure=True)
+        assert r.status_code == 200 and "Годовщины".encode() in r.content
+        ok("anniversaries directory")
+
         guest = Client(HTTP_HOST="vdruzya.ru")
         from apps.social.friendship import ensure_invite_code
         code = ensure_invite_code(me)

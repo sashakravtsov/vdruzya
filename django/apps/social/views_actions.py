@@ -110,21 +110,34 @@ def note_create(request):
 @require_POST
 def status_update(request):
     from apps.social.forms import StatusForm
+    from apps.social.models import Place
+    from apps.social import era2010 as e10
+
     me = profile_of(request.user)
-    form = StatusForm(request.POST)
+    places = list(Place.objects.order_by("name")[:80]) if me else []
+    form = StatusForm(request.POST, places=places)
     if me and form.is_valid():
         headline = (form.cleaned_data.get("headline") or "").strip() or None
-        me.headline = headline
+        place_id = form.cleaned_data.get("place")
+        place = Place.objects.filter(pk=place_id).first() if place_id else None
+        display = headline or ""
+        if place:
+            suffix = f"в «{place.name}»"
+            display = f"{display} {suffix}".strip() if display else suffix
+        me.headline = display or None
         me.updated_at = _now()
         me.save(update_fields=["headline", "updated_at"])
-        if headline:
+        if place:
+            e10.place_checkin(me, place, headline or "")
+        elif display:
             Post.objects.create(
-                social_user=me, body=headline, visibility="public",
-                kind="status", topic="status", created_at=_now(), updated_at=_now(),
+                social_user=me, body=display, visibility="public",
+                kind="status", topic="status",
+                created_at=_now(), updated_at=_now(),
             )
         bump_news()
         messages.success(request, "Статус обновлён.")
-    return redirect(request.POST.get("next") or "feed")
+    return redirect(request.POST.get("next") or me or "feed")
 
 
 @login_required

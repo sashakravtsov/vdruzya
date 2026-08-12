@@ -41,6 +41,7 @@ urlpatterns = [
     path("gifts/send", gifts.gift_send, name="gifts.send"),
     path("gifts/send/<int:pk>", gifts.gift_send_quick, name="gifts.send.quick"),
     path("birthdays", birthdays.birthdays_home, name="birthdays"),
+    path("anniversaries", birthdays.anniversaries_home, name="anniversaries"),
     path("networks", classic.networks_home, name="networks"),
     path("links", classic.links_home, name="links"),
     path("videos", classic.videos_home, name="videos"),
@@ -98,6 +99,7 @@ urlpatterns = [
     path("albums/<int:album_id>/photos", albums.photo_upload, name="albums.photos"),
     path("albums/<int:album_id>/photos/<int:photo_id>", albums.photo_show, name="albums.photos.show"),
     path("albums/<int:album_id>/photos/<int:photo_id>/comment", albums.photo_comment, name="albums.photos.comment"),
+    path("albums/<int:album_id>/photos/<int:photo_id>/like", albums.photo_like, name="albums.photos.like"),
     path("albums/<int:album_id>/photos/<int:photo_id>/tag", albums.photo_tag, name="albums.photos.tag"),
     path(
         "albums/<int:album_id>/photos/<int:photo_id>/tags/<int:tag_id>/delete",
@@ -133,6 +135,7 @@ urlpatterns = [
     path("profile/<int:pk>/block", act.block_toggle, name="profile.block"),
     path("profile/<int:pk>/poke", act.poke, name="profile.poke"),
     path("profile/<int:pk>/walltowall", views.wall_to_wall, name="profile.walltowall"),
+    path("profile/<int:pk>/friendship", views.see_friendship, name="profile.friendship"),
     path("profile/<int:pk>/friends", friends.profile_friends, name="profile.friends"),
     path("profile/<int:pk>/mutual", friends.mutual_friends_view, name="profile.mutual"),
     path("profile/<int:pk>", views.profile, name="profile"),

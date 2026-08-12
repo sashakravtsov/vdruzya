@@ -139,12 +139,14 @@ def photo_upload(request, album_id):
 @login_not_required
 def photo_show(request, album_id, photo_id):
     from apps.social import photo_tags as pt
+    from apps.social.likes import attach_photo_likes
 
     album = get_object_or_404(Album.objects.select_related("social_user"), pk=album_id)
     me = profile_of(request.user) if request.user.is_authenticated else None
     if not can_view(album, me):
         return _forbid(request, album)
     photo = get_object_or_404(Photo, pk=photo_id, album=album)
+    attach_photo_likes([photo], me)
     prev_id, next_id, n, pos = neighbors(album, photo.id)
     tagging = bool(me and pt.can_tag(me, album))
     return render(
@@ -159,6 +161,24 @@ def photo_show(request, album_id, photo_id):
             "can_tag": tagging,
         },
     )
+
+
+@login_required
+@require_POST
+def photo_like(request, album_id, photo_id):
+    from apps.social.likes import toggle_photo_like
+
+    me = profile_of(request.user)
+    album = get_object_or_404(Album, pk=album_id)
+    photo = get_object_or_404(Photo, pk=photo_id, album=album)
+    if not can_view(album, me):
+        return _forbid(request, album)
+    out = toggle_photo_like(me, photo)
+    if out == "liked":
+        messages.success(request, "Вам это нравится.")
+    elif out == "unliked":
+        messages.info(request, "Отметка снята.")
+    return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
 
 
 @login_required

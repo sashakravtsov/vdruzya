@@ -173,6 +173,22 @@
                     {% endif %}
                 </div>
             </div>
+
+            <div class="profile-box">
+                <h4>Годовщины{% if anniversaries %}<a class="edit" href="{% url 'anniversaries' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if anniversaries %}
+                        {% for day, years, person, since in anniversaries %}
+                        <div>
+                            <a href="{% url 'profile.friendship' person.id %}">{{ person.name }}</a>
+                            <span class="muted">· {{ years }} г. · {{ day|date:"j E" }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted"><a href="{% url 'anniversaries' %}">Годовщины дружбы</a></p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
         <div class="clear"></div>
     </div>

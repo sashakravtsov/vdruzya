@@ -502,6 +502,30 @@ class StatusForm(ClassicForm, forms.Form):
         max_length=255, required=False,
         widget=_in(style="width:170px", autocomplete="off"),
     )
+    place = forms.ChoiceField(
+        required=False,
+        choices=[("", "— без места —")],
+        widget=forms.Select(attrs={"class": "inputtext"}),
+    )
+
+    def __init__(self, *args, places=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        opts = [("", "— без места —")]
+        for p in places or []:
+            label = p.name
+            if p.city:
+                label = f"{p.name} ({p.city})"
+            opts.append((str(p.id), label))
+        self.fields["place"].choices = opts
+
+    def clean_place(self):
+        raw = self.cleaned_data.get("place") or ""
+        if not raw:
+            return None
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
 
 
 class EventForm(ClassicForm, forms.Form):

@@ -17,7 +17,7 @@ from .era2010 import (
     Place, PlaceCheckin, PlaceReview,
     Question, QuestionAnswer, QuestionVote,
 )
-from .legacy import Reaction
+from .legacy import PhotoReaction, Reaction
 
 __all__ = [
     "PgJSON", "PROFILE_DEFER", "POST_DEFER", "GROUP_POST_DEFER", "profile_related",
@@ -33,5 +33,5 @@ __all__ = [
     "Place", "PlaceCheckin", "PlaceReview",
     "Question", "QuestionAnswer", "QuestionVote",
     "ClassicPoll", "ClassicPollOption", "ClassicPollVote",
-    "Reaction",
+    "Reaction", "PhotoReaction",
 ]

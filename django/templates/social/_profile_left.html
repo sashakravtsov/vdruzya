@@ -5,13 +5,14 @@
     </a>
 </div>
 
-{# FB 2005–06: status under picture — «Name is …» #}
+{# FB 2005–06: status under picture — «Name is …» (+ optional Place, 2010) #}
 {% if not limited and is_own and status_form %}
 <div id="status" class="profile-status">
     <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
         <b>{{ profile.name }}</b> сейчас
         {{ status_form.headline }}
+        <div class="status-place">в {{ status_form.place }}</div>
         <input type="submit" class="inputbutton" value="Обновить">
     </form>
 </div>

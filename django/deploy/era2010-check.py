@@ -34,6 +34,7 @@ def main():
             "reactions", "places", "place_checkins", "place_reviews",
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
+            "photo_reactions",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
@@ -157,6 +158,18 @@ def main():
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "share" and i.get("post") and i["post"].id == shared.id for i in feed)
     ok("share to wall + feed")
+
+    # Status + Place
+    r = c.post(
+        "/profile/status",
+        {"headline": "QA status place", "place": str(place.id), "next": f"/profile/{me.id}"},
+        secure=True,
+    )
+    assert r.status_code in (301, 302)
+    me.refresh_from_db()
+    assert me.headline and "QA Cafe" in (me.headline or "") or place.name in (me.headline or "")
+    assert PlaceCheckin.objects.filter(place=place, social_user=me).exists()
+    ok("status with place")
 
     # cleanup
     Reaction.objects.filter(post=tpost).delete()

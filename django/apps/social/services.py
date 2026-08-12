@@ -759,6 +759,44 @@ def _add_polls(items, blocked, fids, limit):
         })
 
 
+def _add_photo_likes(items, blocked, fids, limit):
+    if not fids:
+        return
+    from apps.social.models.legacy import PhotoReaction
+    qs = (
+        PhotoReaction.objects.filter(social_user_id__in=fids, type="like")
+        .select_related("social_user", "photo", "photo__album")
+        .order_by("-id")
+    )
+    if blocked:
+        qs = qs.exclude(social_user_id__in=blocked)
+    for row in qs[:limit]:
+        items.append({
+            "kind": "photo_like", "at": row.created_at,
+            "actor": row.social_user, "photo": row.photo,
+        })
+
+
+def _add_anniversaries(items, viewer, blocked, fids, limit):
+    """Today's friendship anniversaries among friends (incl. viewer)."""
+    if not viewer:
+        return
+    from apps.social.friendship import upcoming_anniversaries
+    from django.utils import timezone
+    today = timezone.localdate()
+    for day, years, person, since in upcoming_anniversaries(viewer, days=0, limit=limit):
+        if day != today:
+            continue
+        if person.id in (blocked or []):
+            continue
+        # Synthetic "at" noon today for sort
+        at = timezone.now().replace(hour=12, minute=0, second=0, microsecond=0)
+        items.append({
+            "kind": "anniversary", "at": at,
+            "actor": person, "years": years, "since": since,
+        })
+
+
 def bump_news():
     """Invalidate News Feed cache for every viewer (posts/comments change)."""
     from django.core.cache import cache
@@ -833,6 +871,8 @@ def news_items(viewer=None, limit=40):
     _add_likes(items, blocked, fids, limit)
     _add_reviews(items, blocked, fids, limit)
     _add_polls(items, blocked, fids, limit)
+    _add_photo_likes(items, blocked, fids, limit)
+    _add_anniversaries(items, viewer, blocked, fids, limit)
     items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
     items = items[:limit]
     cache.set(key, items, 20)
@@ -915,6 +955,7 @@ def feed_rail(viewer):
         "group_posts": group_updates(viewer),
         "page_posts": page_updates(viewer),
         "birthdays": upcoming_birthdays(viewer),
+        "anniversaries": fr.upcoming_anniversaries(viewer, days=14, limit=6) if viewer else [],
     }
 
 
