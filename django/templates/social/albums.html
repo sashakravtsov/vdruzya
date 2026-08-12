@@ -48,7 +48,11 @@
         <div class="profile-box">
             <h4>Альбомы{% if albums %} ({{ albums|length }}){% endif %}</h4>
             <div class="profile-box-body">
-                {% include "social/_album_index.html" with empty_msg=form|yesno:"Альбомов пока нет.,Нет доступных альбомов." %}
+                {% if form %}
+                {% include "social/_album_index.html" with empty_msg="Альбомов пока нет." %}
+                {% else %}
+                {% include "social/_album_index.html" with empty_msg="Нет доступных альбомов." %}
+                {% endif %}
             </div>
         </div>
     </div>
