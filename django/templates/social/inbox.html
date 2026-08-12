@@ -27,7 +27,7 @@
                 {% for c in conversations %}
                 <div class="msg-thread{% if active and active.id == c.id %} is-active{% endif %}{% if c.unread %} is-unread{% endif %}">
                     <table class="msg-row" cellspacing="0" cellpadding="0"><tr>
-                        <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<span class="avatar-fallback" style="width:32px;height:32px;line-height:32px;text-align:center;background:#3B5998;color:#fff;font-size:11px;display:inline-block">?</span>{% endif %}</td>
+                        <td class="msg-av">{% if c.peer %}{% avatar c.peer 32 %}{% else %}<img class="avatar" src="{% static 'img/nophoto.gif' %}" width="32" height="32" alt="">{% endif %}</td>
                         <td>
                             <a href="?c={{ c.id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
                                 <span class="msg-name">{{ c.display_name }}</span>

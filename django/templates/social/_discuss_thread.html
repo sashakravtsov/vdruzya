@@ -1,12 +1,12 @@
 {# Open discussion thread (FB 2006). Expects: p, group, is_member, is_admin, me, comment_form #}
-{% load vd %}
+{% load static vd %}
 <div class="discuss-open" id="topic-{{ p.id }}">
     <h5 class="discuss-subject">{{ p.title_line }}</h5>
     <div class="discuss-op">
         <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
             <td class="image">
                 {% if p.posted_as_community %}
-                <span class="avatar-fallback group-mark" style="background:{{ group.cover_color|default:'#3B5998' }}">{{ group.name|slice:":1"|upper }}</span>
+                <img class="avatar" src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" width="50" height="50" alt="">
                 {% else %}
                 {% avatar p.social_user 50 %}
                 {% endif %}

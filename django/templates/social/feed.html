@@ -9,11 +9,7 @@
 
         <div class="feed-main">
             {% for item in items %}
-            {% if item.kind == 'wall' %}
-            {% include "social/_wall_post.html" with post=item.post me=me comment_form=comment_form next=request.get_full_path %}
-            {% else %}
             {% include "social/_news_item.html" %}
-            {% endif %}
             {% empty %}
             <p class="muted">Пока тихо. <a href="{% url 'friends' %}">Найдите друзей</a> или напишите на чью-нибудь стену.</p>
             {% endfor %}

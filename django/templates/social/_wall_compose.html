@@ -1,4 +1,4 @@
-{# Classic FB wall poster. simple=1 → profile (text+one photo). Else group (ещё / album / as_community). #}
+{# Classic FB wall poster — flat strip, no cards / details / album multi-pick. #}
 <form method="post" action="{{ action }}" enctype="multipart/form-data" class="wallposter">{% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     {% if wall_to %}<input type="hidden" name="wall_to" value="{{ wall_to }}">{% endif %}
@@ -8,26 +8,9 @@
         <span class="wallposter-go">
             <input type="submit" class="inputsubmit" value="{{ submit|default:'Опубликовать' }}">
         </span>
-        {% if simple %}
         {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }}</p>{% endif %}
-        {% else %}
-        <details class="compose-more">
-            <summary class="linkish">ещё</summary>
-            {% if form.photo %}<p class="wallposter-file">Фото: {{ form.photo }}</p>{% endif %}
-            {% if show_as_community %}
-            <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
-            {% endif %}
-            {% if album_photos %}
-            <div class="album-pick">
-                {% for ph in album_photos %}
-                <label class="album-pick-item">
-                    <input type="checkbox" name="album_photos" value="{{ ph.id }}">
-                    {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<span class="album-photo-fallback"></span>{% endif %}
-                </label>
-                {% endfor %}
-            </div>
-            {% endif %}
-        </details>
+        {% if show_as_community %}
+        <p class="wallposter-vis"><label><input type="checkbox" name="as_community" value="1" checked> от имени группы</label></p>
         {% endif %}
     </div>
     {% if form.body.errors %}<div class="error">{{ form.body.errors }}</div>{% endif %}

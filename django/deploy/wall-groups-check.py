@@ -58,38 +58,44 @@ def main():
         fail(f"personal wall not saved (topic={getattr(wall, 'topic', None)})")
     ok("personal wall post")
 
-    r = get("/feed")
+    r = get(f"/profile/{me.id}")
     body = r.content.decode()
     if f'id="c-{wall.id}"' not in body or "wall-comment-compose" not in body:
-        fail("comment compose missing on feed")
-    # Form is in DOM but hidden until #c-N (classic reveal)
+        fail("comment compose missing on profile wall")
     if f'href="#c-{wall.id}"' not in body:
         fail("comment reveal link missing")
     ok("comment reveal chrome")
 
-    r = post(f"/posts/{wall.id}/comment", {"body": "probe wall comment", "next": "/feed"})
+    r = post(f"/posts/{wall.id}/comment", {"body": "probe wall comment", "next": f"/profile/{me.id}"})
     if r.status_code != 200:
         fail("wall comment")
     if not wall.comments.filter(body="probe wall comment").exists():
         fail("wall comment not saved")
     ok("wall comment")
 
-    # FB-2006: last 2 comments shown; older behind «Показать предыдущие»
-    for i, text in enumerate(("probe c0", "probe c1", "probe c2"), start=1):
-        post(f"/posts/{wall.id}/comment", {"body": text, "next": "/feed"})
+    # FB-2006: feed is news-story rows (not embedded wall cards)
     r = get("/feed")
     body = r.content.decode()
-    if "ico-comment" not in body:
-        fail("comment icon missing on feed")
+    if "ico-comment" not in body and "news-item" not in body:
+        fail("feed news chrome")
     if "ico-thumb" in body or "Нравится" in body or "react-btn" in body:
         fail("likes are not Facebook 2006")
+    if 'class="wallpost"' in body:
+        fail("feed still embeds wallpost cards")
+    ok("comment icons + feed news stories")
+
+    # FB-2006: last 2 comments shown on profile wall; older behind «Показать предыдущие»
+    for i, text in enumerate(("probe c0", "probe c1", "probe c2"), start=1):
+        post(f"/posts/{wall.id}/comment", {"body": text, "next": f"/profile/{me.id}"})
+    r = get(f"/profile/{me.id}")
+    body = r.content.decode()
     if "Показать предыдущие комментарии" not in body:
         fail("many-comments collapse missing")
     if "probe c0" not in body:
         fail("older comment should be in collapsed block")
     if "probe c2" not in body:
         fail("recent comment should be visible")
-    ok("comment icons + many-comments collapse")
+    ok("profile wall comment collapse")
 
     # Profile wall: note attribution + compose
     r = get(f"/profile/{me.id}")

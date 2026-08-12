@@ -1,10 +1,10 @@
 {# Group wall — archive wallpost chrome. Expects: p, group, is_member, is_admin, me, comment_form #}
-{% load vd %}
+{% load static vd %}
 <div class="wallpost" id="topic-{{ p.id }}">
     <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
         <td class="image">
             {% if p.posted_as_community %}
-            <span class="avatar-fallback group-mark" style="background:{{ group.cover_color|default:'#3B5998' }}">{{ group.name|slice:":1"|upper }}</span>
+            <img class="avatar" src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" width="50" height="50" alt="">
             {% else %}
             {% avatar p.social_user 50 %}
             {% endif %}

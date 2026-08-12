@@ -14,7 +14,7 @@ from apps.social.services import now as _now, profile_of
 
 
 # Bump when group.html / rail markup changes (avoids stale 304 HTML in browsers).
-_GROUP_UI = "g9"
+_GROUP_UI = "g10"
 
 
 def _group_etag(request, pk):

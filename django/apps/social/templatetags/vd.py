@@ -66,22 +66,18 @@ def album_vis(value):
 
 @register.simple_tag
 def avatar(profile, size=50):
+    """FB 2005 silhouette — photo or shared nophoto.gif (no letter tiles)."""
+    from django.templatetags.static import static
+
     if not profile:
         return ""
     raw = getattr(profile, "avatar_url", None)
     url = raw() if callable(raw) else raw
-    if url:
-        return mark_safe(
-            f'<img src="{escape(url)}" width="{int(size)}" height="{int(size)}" '
-            f'alt="" style="object-fit:cover;border:1px solid #B3B3B3">'
-        )
-    initial = escape((profile.name or "?")[:1].upper())
-    color = escape(getattr(profile, "avatar_color", None) or "#D8DFEA")
+    if not url:
+        url = static("img/nophoto.gif")
     return mark_safe(
-        f'<span class="avatar-fallback" style="width:{int(size)}px;height:{int(size)}px;'
-        f'font-size:{max(10, int(size)//2)}px;line-height:{int(size)}px;text-align:center;'
-        f'background:{color};display:inline-block">'
-        f"{initial}</span>"
+        f'<img src="{escape(url)}" width="{int(size)}" height="{int(size)}" '
+        f'alt="" class="avatar">'
     )
 
 

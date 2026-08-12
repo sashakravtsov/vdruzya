@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load static vd %}
 {% block title %}{{ group.name }} — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="group-page">
@@ -10,6 +10,104 @@
     <div id="content" class="group-content">
         {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
 
+        <div class="group-rail">
+            <div class="group-picture">
+                <img src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" alt="" width="180" height="180">
+            </div>
+            <div class="group-join-panel profile-action-links">
+                {% if user.is_authenticated %}
+                    {% if is_member %}
+                    <p class="group-join-status"><b>Вы в группе</b><span class="label">Лента, комментарии и события</span></p>
+                    {% elif join_pending %}
+                    <p class="group-join-status"><b>Заявка на рассмотрении</b><span class="label">Администратор скоро ответит</span></p>
+                    {% elif group.join_mode == 'request' or group.privacy == 'closed' %}
+                    <p class="group-join-status"><b>Вступление по заявке</b><span class="label">Администратор подтвердит доступ</span></p>
+                    {% else %}
+                    <p class="group-join-status"><b>Открытая группа</b><span class="label">Вступите, чтобы быть участником</span></p>
+                    {% endif %}
+                {% else %}
+                    <p class="group-join-status"><b>Войдите</b><span class="label">Чтобы вступить или написать группе</span></p>
+                {% endif %}
+                {% if can_view %}
+                <a href="?tab=wall">Стена</a>
+                <a href="?tab=discussion">Доска обсуждений</a>
+                <a href="?tab=members">Участники ({{ n_members }})</a>
+                {% endif %}
+                {% if user.is_authenticated %}
+                    {% if is_member %}
+                        {% if is_admin %}<a href="{% url 'groups.edit' group.id %}">Редактировать группу{% if pending %} ({{ pending|length }}){% endif %}</a>{% endif %}
+                        <form method="post" action="{% url 'groups.leave' group.id %}">{% csrf_token %}
+                            <button type="submit">Выйти из группы</button>
+                        </form>
+                    {% elif join_pending %}
+                        <form method="post" action="{% url 'groups.join.cancel' group.id %}">{% csrf_token %}
+                            <button type="submit">Отозвать заявку</button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'groups.join' group.id %}">{% csrf_token %}
+                            <button type="submit">{% if group.join_mode == 'open' and group.privacy != 'closed' %}Вступить{% else %}Подать заявку{% endif %}</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'login' %}?next={{ request.path }}">Войти</a>
+                {% endif %}
+                <a href="{% url 'contacts' %}?subject=group-{{ group.id }}">Пожаловаться на группу</a>
+            </div>
+
+            {% if is_member and invite_friends %}
+            <div class="profile-box">
+                <h4>Пригласить друзей</h4>
+                <div class="profile-box-body">
+                    {% for f in invite_friends %}
+                    <div>
+                        <a href="{% url 'profile' f.id %}">{{ f.name }}</a>
+                        <form method="post" action="{% url 'groups.invite' group.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="friend_id" value="{{ f.id }}">
+                            <button type="submit" class="linkish">пригласить</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if is_admin and pending %}
+            <div class="profile-box">
+                <h4>Заявки</h4>
+                <div class="profile-box-body">
+                    {% for r in pending %}
+                    <div>
+                        <a href="{% url 'profile' r.social_user.id %}">{{ r.social_user.name }}</a>
+                        <form method="post" action="{% url 'groups.join.accept' group.id r.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">принять</button>
+                        </form>
+                        <form method="post" action="{% url 'groups.join.reject' group.id r.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted">отклонить</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Руководители</h4>
+                <div class="profile-box-body">
+                    {% if officers %}
+                    <ul class="plain">{% for o in officers %}<li><a href="{% url 'profile' o.id %}">{{ o.name }}</a></li>{% endfor %}</ul>
+                    {% else %}<p class="muted">—</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Похожие группы</h4>
+                <div class="profile-box-body">
+                    {% if related %}
+                    <ul class="plain">{% for g in related %}<li><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a> <span class="muted">({{ g.n_members }})</span></li>{% endfor %}</ul>
+                    {% else %}<p class="muted">Нет похожих.</p>{% endif %}
+                </div>
+            </div>
+        </div>
         <div class="group-main">
             {% if not can_view %}
             <div class="profile-box group-locked">
@@ -73,7 +171,7 @@
                 <div class="profile-box-body">
                     {% if can_post %}
                     {% url 'groups.posts' group.id as gpost %}
-                    {% include "social/_wall_compose.html" with form=form action=gpost submit="Написать на стену" show_as_community=is_admin album_photos=album_photos %}
+                    {% include "social/_wall_compose.html" with form=form action=gpost submit="Написать на стену" show_as_community=is_admin %}
                     {% endif %}
                     {% for p in wall_posts %}
                     {% include "social/_group_post.html" with p=p %}
@@ -203,108 +301,6 @@
             {% endif %}
         </div>
 
-        <div class="group-rail">
-            <div class="group-picture">
-                {% if group.cover_url %}
-                    <img src="{{ group.cover_url }}" alt="">
-                {% else %}
-                    <div class="group-cover-fallback" style="background:{{ group.cover_color|default:'#3B5998' }}">{{ group.name|slice:":1"|upper }}</div>
-                {% endif %}
-            </div>
-            <div class="group-join-panel profile-action-links">
-                {% if user.is_authenticated %}
-                    {% if is_member %}
-                    <p class="group-join-status"><b>Вы в группе</b><span class="label">Лента, комментарии и события</span></p>
-                    {% elif join_pending %}
-                    <p class="group-join-status"><b>Заявка на рассмотрении</b><span class="label">Администратор скоро ответит</span></p>
-                    {% elif group.join_mode == 'request' or group.privacy == 'closed' %}
-                    <p class="group-join-status"><b>Вступление по заявке</b><span class="label">Администратор подтвердит доступ</span></p>
-                    {% else %}
-                    <p class="group-join-status"><b>Открытая группа</b><span class="label">Вступите, чтобы быть участником</span></p>
-                    {% endif %}
-                {% else %}
-                    <p class="group-join-status"><b>Войдите</b><span class="label">Чтобы вступить или написать группе</span></p>
-                {% endif %}
-                {% if can_view %}
-                <a href="?tab=wall">Стена</a>
-                <a href="?tab=discussion">Доска обсуждений</a>
-                <a href="?tab=members">Участники ({{ n_members }})</a>
-                {% endif %}
-                {% if user.is_authenticated %}
-                    {% if is_member %}
-                        {% if is_admin %}<a href="{% url 'groups.edit' group.id %}">Редактировать группу{% if pending %} ({{ pending|length }}){% endif %}</a>{% endif %}
-                        <form method="post" action="{% url 'groups.leave' group.id %}">{% csrf_token %}
-                            <button type="submit">Выйти из группы</button>
-                        </form>
-                    {% elif join_pending %}
-                        <form method="post" action="{% url 'groups.join.cancel' group.id %}">{% csrf_token %}
-                            <button type="submit">Отозвать заявку</button>
-                        </form>
-                    {% else %}
-                        <form method="post" action="{% url 'groups.join' group.id %}">{% csrf_token %}
-                            <button type="submit">{% if group.join_mode == 'open' and group.privacy != 'closed' %}Вступить{% else %}Подать заявку{% endif %}</button>
-                        </form>
-                    {% endif %}
-                {% else %}
-                    <a href="{% url 'login' %}?next={{ request.path }}">Войти</a>
-                {% endif %}
-                <a href="{% url 'contacts' %}?subject=group-{{ group.id }}">Пожаловаться на группу</a>
-            </div>
-
-            {% if is_member and invite_friends %}
-            <div class="profile-box">
-                <h4>Пригласить друзей</h4>
-                <div class="profile-box-body">
-                    {% for f in invite_friends %}
-                    <div>
-                        <a href="{% url 'profile' f.id %}">{{ f.name }}</a>
-                        <form method="post" action="{% url 'groups.invite' group.id %}" class="inline">{% csrf_token %}
-                            <input type="hidden" name="friend_id" value="{{ f.id }}">
-                            <button type="submit" class="linkish">пригласить</button>
-                        </form>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if is_admin and pending %}
-            <div class="profile-box">
-                <h4>Заявки</h4>
-                <div class="profile-box-body">
-                    {% for r in pending %}
-                    <div>
-                        <a href="{% url 'profile' r.social_user.id %}">{{ r.social_user.name }}</a>
-                        <form method="post" action="{% url 'groups.join.accept' group.id r.id %}" class="inline">{% csrf_token %}
-                            <button type="submit" class="linkish">принять</button>
-                        </form>
-                        <form method="post" action="{% url 'groups.join.reject' group.id r.id %}" class="inline">{% csrf_token %}
-                            <button type="submit" class="linkish muted">отклонить</button>
-                        </form>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="profile-box">
-                <h4>Руководители</h4>
-                <div class="profile-box-body">
-                    {% if officers %}
-                    <ul class="plain">{% for o in officers %}<li><a href="{% url 'profile' o.id %}">{{ o.name }}</a></li>{% endfor %}</ul>
-                    {% else %}<p class="muted">—</p>{% endif %}
-                </div>
-            </div>
-
-            <div class="profile-box">
-                <h4>Похожие группы</h4>
-                <div class="profile-box-body">
-                    {% if related %}
-                    <ul class="plain">{% for g in related %}<li><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a> <span class="muted">({{ g.n_members }})</span></li>{% endfor %}</ul>
-                    {% else %}<p class="muted">Нет похожих.</p>{% endif %}
-                </div>
-            </div>
-        </div>
         <div class="clear"></div>
     </div>
 </div>

@@ -106,6 +106,7 @@ def main():
     assert "<h4>Новости</h4>".encode() not in r.content
     assert b"news-card" not in r.content
     assert b"page-tabs" not in r.content
+    assert b'class="wallpost"' not in r.content  # stories, not wall cards
     assert "Подмигивания".encode() in r.content
     assert "События".encode() in r.content
     assert "Дни рождения".encode() in r.content

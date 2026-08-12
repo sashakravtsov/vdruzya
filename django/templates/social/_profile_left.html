@@ -1,11 +1,7 @@
-{% load vd %}
+{% load static vd %}
 <div class="profile-picture">
     {% if is_own %}<a href="{% url 'profile.edit' %}?section=picture">{% else %}<a href="?tab=photos">{% endif %}
-    {% if profile.avatar_url %}
-        <img src="{{ profile.avatar_url }}" alt="">
-    {% else %}
-        <div class="avatar-fallback" style="background:{{ profile.avatar_color|default:'#D8DFEA' }}">{{ profile.name|slice:":1"|upper }}</div>
-    {% endif %}
+    <img src="{% if profile.avatar_url %}{{ profile.avatar_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" alt="" width="200" height="200">
     </a>
 </div>
 

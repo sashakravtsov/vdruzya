@@ -144,11 +144,37 @@ if grep -q 'compose_album_photos\|compose/album-photos' "${ROOT}/django/apps/soc
 else
   echo "OK   no compose album-photos route"
 fi
-if grep -EEq 'page-tabs|wall-media-grid|group-tile|display:\s*flex|display:\s*grid' \
+if grep -EEq 'page-tabs|wall-media-grid|group-tile|display:\s*flex|display:\s*grid|@media' \
     "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
-  echo "FAIL classic.css still has flex/grid/page-tabs chrome"; FAIL=1
+  echo "FAIL classic.css still has flex/grid/media/page-tabs chrome"; FAIL=1
 else
-  echo "OK   classic.css float chrome"
+  echo "OK   classic.css float chrome (fixed 760)"
+fi
+if [[ ! -f "${ROOT}/django/static/img/nophoto.gif" ]]; then
+  echo "FAIL nophoto.gif missing"; FAIL=1
+else
+  echo "OK   nophoto.gif silhouette"
+fi
+if grep -RIl 'avatar-fallback' "${ROOT}/django/templates" 2>/dev/null | grep -q .; then
+  echo "FAIL avatar-fallback still in templates"; FAIL=1
+else
+  echo "OK   no letter avatar tiles"
+fi
+if grep -q 'compose-more\|album-pick' "${ROOT}/django/templates/social/_wall_compose.html" 2>/dev/null; then
+  echo "FAIL modern wall compose leftovers"; FAIL=1
+else
+  echo "OK   flat wall compose"
+fi
+if ! grep -q 'class="group-rail"' "${ROOT}/django/templates/social/group.html" 2>/dev/null \
+   || ! awk '/group-rail/{r=NR} /group-main/{m=NR} END{exit !(r && m && r<m)}' "${ROOT}/django/templates/social/group.html"; then
+  echo "FAIL group rail not left of main"; FAIL=1
+else
+  echo "OK   group left rail"
+fi
+if grep -q "_wall_post.html" "${ROOT}/django/templates/social/feed.html" 2>/dev/null; then
+  echo "FAIL feed still embeds wallpost cards"; FAIL=1
+else
+  echo "OK   feed news-story rows"
 fi
 if [[ -f "${ROOT}/django/templates/social/albums_user.html" ]]; then
   echo "FAIL albums_user.html still present"; FAIL=1

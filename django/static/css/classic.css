@@ -12,7 +12,7 @@ img { border: 0; }
 form { margin: 0; padding: 0; }
 label { font-weight: bold; color: gray; }
 
-#book { width: 760px; max-width: 100%; margin: 0 auto; padding: 8px 0 0; text-align: left; }
+#book { width: 760px; margin: 0 auto; padding: 8px 0 0; text-align: left; }
 #pageheader {
   position: relative; width: 760px; height: 33px;
   background: var(--fb) url("../img/pageheaderbg.png") no-repeat left top;
@@ -60,6 +60,7 @@ label { font-weight: bold; color: gray; }
 }
 #snav a.edit:hover, #snav .snav-profile a.edit:hover { color: #fff; }
 #qsearch { width: 120px; margin: 0 0 8px; }
+#qsearch label { display:block; margin:0 0 2px; font-weight:bold; color:gray; font-size:11px; }
 #qsearch .inputtext { width: 115px; }
 #squicklogin { width: 120px; margin: 0 0 10px; padding: 0; }
 #squicklogin label {
@@ -180,6 +181,7 @@ input[type="submit"], input[type="button"] {
 .auth-box { padding: 12px 20px; }
 
 /* Shared boxes / profile chrome (page layouts refine below) */
+img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 .avatar-fallback {
   background: var(--line); display: block; text-align: center; font-size: 64px; color: #555;
 }
@@ -302,8 +304,10 @@ button.linkish .ico { margin-right: 2px; }
 .group-content, .feed-content {
   overflow: hidden; padding: 10px !important;
 }
-.group-main, .feed-main { float: left; width: 430px; }
-.group-rail, .feed-rail { float: right; width: 180px; }
+.group-rail { float: left; width: 180px; margin: 0 10px 0 0; }
+.group-main { float: left; width: 420px; }
+.feed-main { float: left; width: 430px; }
+.feed-rail { float: right; width: 180px; }
 .feed-content::after, .group-content::after, .friends-content::after, .inbox-content::after {
   content: ""; display: block; clear: both; height: 0; overflow: hidden;
 }
@@ -318,8 +322,8 @@ button.linkish .ico { margin-right: 2px; }
 .group-page .profile-box > h4 .edit:hover,
 .feed-page .profile-box > h4 .edit:hover { color: #3B5998; }
 .group-picture { width: 180px; margin: 0 0 8px; }
-.group-picture img, .group-cover-fallback {
-  width: 180px; height: 180px; border: 1px solid #B3B3B3; object-fit: cover; display: block;
+.group-picture img {
+  width: 180px; height: 180px; border: 1px solid #B3B3B3; display: block;
 }
 .group-cover-fallback {
   background: var(--fb); color: #fff; text-align: center;
@@ -384,24 +388,6 @@ button.linkish .ico { margin-right: 2px; }
 .req-row .ico,
 .req-row .news-icon { vertical-align: middle; margin-right: 4px; }
 
-@media (max-width: 780px) {
-  #book { width: 100%; padding: 0 8px; box-sizing: border-box; }
-  #pageheader { width: 100%; }
-  #sidebar { float: none; width: auto; padding: 8px 0; }
-  #pagebody { float: none; width: auto; margin: 8px 0; }
-  #snav { width: auto; }
-  #snav a, #snav a.hasedit, #snav a.edit,
-  #snav .snav-profile, #snav .snav-profile a {
-    float: none; display: inline-block; width: auto;
-  }
-  #snav .snav-profile { border-bottom: 0; margin: 0 4px 4px 0; }
-  #squicklogin, #squicklogin .inputtext { width: 100%; max-width: 280px; }
-  #gnav { position: static; left: auto; width: auto; max-width: none; text-align: right; padding: 4px 8px 0; }
-  .about .leftcolumn, .about .rightcolumn { float: none; width: auto; padding: 0; }
-  .group-main, .feed-main, .group-rail, .feed-rail { float: none; width: auto; }
-  .profile-picture img, .profile-picture .avatar-fallback { width: 100%; max-width: 200px; height: auto; aspect-ratio: 1; }
-  .group-picture, .group-picture img, .group-cover-fallback { width: 100%; max-width: 180px; }
-}
 
 .group-locked .profile-box-body{padding:12px}
 
@@ -448,10 +434,8 @@ button.linkish .ico { margin-right: 2px; }
 .formtable td{padding:4px 0;vertical-align:top}
 .inputfile{font:11px var(--font);max-width:100%}
 .file-hint{margin:2px 0 0;font-size:10px}
-.compose-more{margin:0;display:inline}
-.compose-more summary{cursor:pointer}
 .wallposter{
-  margin:0 0 12px;padding:8px;background:#f7f7f7;border:1px solid #d8dfea;
+  margin:0 0 12px;padding:0 0 10px;background:transparent;border:0;border-bottom:1px solid #D8DFEA;
 }
 .wallposter textarea{
   width:100%;min-height:48px;box-sizing:border-box;font:11px var(--font);
@@ -534,15 +518,6 @@ button.linkish .ico { margin-right: 2px; }
 }
 .photo-caption-form { margin: 12px 0 0; text-align: left; }
 .photo-page .classic-page-lead a { color: var(--fb); }
-@media (max-width:780px){
-  .album-index .album, .album-index .album-cover,
-  .album-index .album-cover img, .album-index .album-cover-fallback { width: 110px; }
-  .album-index .album-cover, .album-index .album-cover img,
-  .album-index .album-cover-fallback { height: 82px; line-height: 82px; }
-  .photo-gallery-item, .photo-gallery-item .photo-thumb,
-  .photo-gallery-item img, .photo-gallery-item .album-photo-fallback { width: 110px; height: 82px; }
-  .photo-nav-back, .photo-nav-owner { float: none; display: block; }
-}
 .photo-upload-form{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #EEEFF3}
 .group-page #content.group-content { padding: 10px; }
 .group-page #content:not(.group-content) { padding: 10px 12px 14px; }
@@ -611,14 +586,13 @@ button.linkish .ico { margin-right: 2px; }
 }
 .classic-person-row:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
 .classic-person-name{
-  display:block;overflow:hidden;max-width:calc(100% - 12rem);
+  display:block;overflow:hidden;max-width:70%;
   color:var(--fb);text-decoration:none;vertical-align:top;
 }
 .classic-person-name:hover b{text-decoration:underline}
 .classic-person-name b{display:block;font-size:11px;color:var(--fb)}
-.classic-person-name .avatar-fallback,
 .classic-person-name img{
-  float:left;width:50px;height:50px;margin-right:8px;border:1px solid #B3B3B3;object-fit:cover;
+  float:left;width:50px;height:50px;margin-right:8px;border:1px solid #B3B3B3;
 }
 .classic-person-name > span{display:block;overflow:hidden}
 .classic-person-sub{display:block;color:#777;font-size:10px;font-weight:normal;margin-top:1px}
@@ -669,11 +643,6 @@ button.linkish .ico { margin-right: 2px; }
 .classic-inline-actions-stack{float:none;display:block;margin:4px 0 0 40px;text-align:left}
 .classic-inline-actions-stack form{display:inline;margin:0 6px 0 0}
 .friends-side-foot{margin:6px 0 0;font:11px var(--font)}
-@media (max-width:560px){
-  .friends-main,.friends-side{float:none;width:auto}
-  .classic-person-name{max-width:100%}
-  .classic-inline-actions{float:none;display:block;margin:4px 0 0 58px;text-align:left}
-}
 
 
 /* ===== Profile FB Dec 2005 (profile.css) ===== */
@@ -698,12 +667,10 @@ button.linkish .ico { margin-right: 2px; }
   width: 200px;
   text-align: center;
 }
-.profile-picture img,
-.profile-picture .avatar-fallback {
+.profile-picture img {
   width: 200px;
   height: 200px;
   border: 1px solid #B3B3B3;
-  object-fit: cover;
   display: block;
   margin: 0 auto;
 }
@@ -837,13 +804,6 @@ button.linkish .ico { margin-right: 2px; }
 .about .halfwidth p { line-height: 16px; margin: 10px 0; }
 .legal-content, .profile-box { /* noop legacy */ }
 
-@media (max-width: 780px) {
-  .profile-left, .profile-right { float: none; width: auto; margin: 0 0 12px; }
-  .profile-picture, .profile-picture img, .profile-picture .avatar-fallback {
-    width: 100%; max-width: 200px; height: auto; aspect-ratio: 1;
-  }
-  .profile-edit-nav, .profile-edit-main { float: none; width: auto; margin: 0 0 12px; }
-}
 
 /* ===== Profile polish FB2005 wall ===== */
 .profile .profile-subsection h5 {
@@ -1055,9 +1015,6 @@ button.linkish .ico { margin-right: 2px; }
 .events-page .event-side { float: right; width: 180px; }
 .events-page .event-rsvp { margin-top: 10px; }
 .events-page .event-rsvp form.inline { margin-right: 4px; }
-@media (max-width: 560px) {
-  .events-page .event-main, .events-page .event-side { float: none; width: auto; }
-}
 .pokes-page .notify-row {
   overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
@@ -1108,15 +1065,10 @@ button.linkish .ico { margin-right: 2px; }
   width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
 .account-page .infotable .inputtext { width: 100%; max-width: 360px; }
-@media (max-width: 780px) {
-  .inbox-list, .inbox-thread { float: none; width: auto; }
-}
 
 .group-page #content:not(.group-content) {
   padding: 10px;
 }
-.feed-page .wall-box > .profile-box-body { background: #f7f7f7; padding: 10px; }
-
 .group-page .event-row {
   margin: 8px 0 0; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
 }
