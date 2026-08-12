@@ -1,6 +1,6 @@
 """Pages (Страницы) — classic FB Pages on companies schema."""
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -41,6 +41,7 @@ def _page_posts(page, limit=30):
     )
 
 
+@login_not_required
 @require_http_methods(["GET", "POST"])
 def pages_home(request):
     """Directory + create Page."""
@@ -103,6 +104,7 @@ def pages_home(request):
     })
 
 
+@login_not_required
 @require_http_methods(["GET", "HEAD"])
 def page_show(request, pk):
     page = get_object_or_404(
@@ -216,6 +218,7 @@ def page_post(request, pk):
     return redirect(page)
 
 
+@login_not_required
 @require_http_methods(["GET", "HEAD"])
 def page_slug_redirect(request, slug):
     page = get_object_or_404(Company, slug=slug)
