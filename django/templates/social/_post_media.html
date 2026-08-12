@@ -1,10 +1,10 @@
-{# Floated wall/group media thumbs. Expects `post` (or set media_owner). #}
+{# Floated wall/group media. Click opens full image (FB 2006: no lightbox). #}
 {% with extras=post.media.all %}
 {% if extras %}
 <div class="wall-media">
-    {% for m in extras %}{% if m.url %}<img src="{{ m.url }}" alt="">{% endif %}{% endfor %}
+    {% for m in extras %}{% if m.url %}<a href="{{ m.url }}" target="_blank" rel="noopener"><img src="{{ m.url }}" alt=""></a>{% endif %}{% endfor %}
 </div>
 {% elif post.media_url %}
-<p><img src="{{ post.media_url }}" alt="" class="news-photo"></p>
+<p><a href="{{ post.media_url }}" target="_blank" rel="noopener"><img src="{{ post.media_url }}" alt="" class="news-photo"></a></p>
 {% endif %}
 {% endwith %}

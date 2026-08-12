@@ -24,9 +24,12 @@
             <h4>{{ photo.title|default:"Фото" }}</h4>
             <div class="profile-box-body photo-view">
                 {% if photo.url %}
+                <div class="photo-view-stage">
                   {% if next_id %}<a href="{% url 'albums.photos.show' album.id next_id %}">{% endif %}
                     <img class="photo-view-img" src="{{ photo.url }}" alt="{{ photo.title }}">
                   {% if next_id %}</a>{% endif %}
+                </div>
+                <p class="photo-view-full"><a href="{{ photo.url }}" target="_blank" rel="noopener">полный размер</a></p>
                 {% else %}
                 <div class="photo-view-fallback" style="background:{{ photo.color|default:'#3B5998' }}">{{ photo.title|slice:":1"|upper }}</div>
                 {% endif %}

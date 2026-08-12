@@ -97,7 +97,9 @@ def main():
     r = c.get(f"/albums/{a.id}/photos/{ph.id}", secure=True)
     assert r.status_code == 200 and "Красиво".encode() in r.content
     assert "Комментарии".encode() in r.content
-    ok("photo show")
+    assert "полный размер".encode() in r.content
+    assert b"max-height: 520px" not in r.content
+    ok("photo show (full size chrome)")
 
     r = c.post(f"/albums/{a.id}/photos/{ph.id}/comment", {"body": "Классное фото"}, secure=True, follow=True)
     assert r.status_code == 200

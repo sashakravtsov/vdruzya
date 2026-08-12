@@ -420,6 +420,7 @@ button.linkish .ico { margin-right: 2px; }
   float: left; width: 72px; height: 72px; margin: 0 4px 4px 0;
   object-fit: cover; border: 1px solid #B3B3B3; display: block;
 }
+.wall-media a { float: left; }
 .discuss-table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; }
 .discuss-table th {
   text-align: left; color: #777; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif;
@@ -588,9 +589,17 @@ button.linkish .ico { margin-right: 2px; }
 .photo-nav-mid { text-align: center; }
 .photo-nav-pos { margin: 0 10px; color: #555; font-weight: normal; }
 .photo-view { text-align: center; }
+.photo-view-stage {
+  margin: 0 auto 8px; padding: 8px; background: #fff;
+  border: solid 1px #ccc;
+}
 .photo-view-img {
-  max-width: 100%; max-height: 520px; border: 1px solid #B3B3B3; display: inline-block;
+  max-width: 100%; width: auto; height: auto;
+  border: 1px solid #B3B3B3; display: inline-block; vertical-align: middle;
   background: #eee;
+}
+.photo-view-full {
+  margin: 6px 0 0; font-size: 11px;
 }
 .photo-view-fallback {
   width: 320px; height: 240px; margin: 0 auto; display: block; text-align: center;

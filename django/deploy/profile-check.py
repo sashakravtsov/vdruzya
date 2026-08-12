@@ -271,7 +271,7 @@ def main():
     assert r.status_code == 200
     assert b"__edu_check__" in r.content
     assert b"2004" in r.content and b"2008" in r.content  # years in list
-    assert b"Сохранить" in r.content
+    assert "Сохранить".encode() in r.content
     assert b"_profile_edit_education" not in r.content
     r = c.post(f"/profile/education/{edu.id}", {
         "institution": "__edu_check_edited__",

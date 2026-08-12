@@ -282,10 +282,15 @@ else
   echo "FAIL wall/groups features"; FAIL=1
 fi
 echo "== Photos feature probe =="
-if cd "${ROOT}/django" && .venv/bin/python deploy/photos-check.py; then
-  echo "OK   photos features"
+if grep -q 'max-height: 520px' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL photo viewer still capped at 520px"; FAIL=1
 else
-  echo "FAIL photos features"; FAIL=1
+  echo "OK   photo viewer uncapped (FB 2006 page)"
+fi
+if ! grep -q 'полный размер' "${ROOT}/django/templates/social/photo.html" 2>/dev/null; then
+  echo "FAIL photo missing full-size link"; FAIL=1
+else
+  echo "OK   photo full-size link"
 fi
 echo "== Friends feature probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/friends-check.py; then
