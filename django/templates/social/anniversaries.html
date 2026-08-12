@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Годовщины дружбы — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="birthdays-page">
+    <div id="header" class="withsubtitle">
+        <h1>Годовщины дружбы</h1>
+        <div class="subtitle">Ближайшие 60 дней · <a href="{% url 'birthdays' %}">дни рождения</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Скоро</h4>
+            <div class="profile-box-body">
+                {% for day, years, person, since in items %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <a class="classic-person-name" href="{% url 'profile' person.id %}">
+                        {% avatar person 50 %}
+                        <span>
+                            <b>{{ person.name }}</b>
+                            <span class="classic-person-sub">
+                                {{ day|date:"j E" }} · {{ years }} {% if years == 1 %}год{% elif years >= 2 and years <= 4 %}года{% else %}лет{% endif %} дружбы
+                                {% if day.month == today.month and day.day == today.day %} · сегодня{% endif %}
+                            </span>
+                        </span>
+                    </a>
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <a href="{% url 'profile.friendship' person.id %}">дружба</a>
+                        ·
+                        <a href="{% url 'profile.walltowall' person.id %}">стена</a>
+                    </span>
+                </div>
+                {% empty %}
+                <p class="muted">Скоро нет годовщин. Добавляйте друзей — здесь появятся даты.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

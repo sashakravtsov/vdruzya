@@ -1,0 +1,28 @@
+{# Classic FB discussion compose: subject + message (no wall album chrome). #}
+<form method="post" action="{{ action }}" class="discuss-compose" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.board }}
+    <table class="formtable" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="label">Тема:</td>
+            <td>{{ form.subject }}</td>
+        </tr>
+        <tr>
+            <td class="label">Сообщение:</td>
+            <td>{{ form.body }}</td>
+        </tr>
+        <tr>
+            <td class="label">Фото:</td>
+            <td>{{ form.photo }}</td>
+        </tr>
+        {% if show_as_community %}
+        <tr>
+            <td></td>
+            <td><label><input type="checkbox" name="as_community" value="1"> от имени группы</label></td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td></td>
+            <td><input type="submit" class="inputsubmit" value="{{ submit|default:'Начать тему' }}"></td>
+        </tr>
+    </table>
+</form>

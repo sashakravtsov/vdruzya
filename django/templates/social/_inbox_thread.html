@@ -1,0 +1,20 @@
+{% load vd %}
+{# Classic FB Inbox thread — HTTP reply form, 1:1. #}
+{% if active.peer %}
+<p class="msg-members muted">{% if folder == 'sent' %}Кому{% else %}Переписка с{% endif %}: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a></p>
+{% endif %}
+{% if has_older and not show_all %}
+<p class="msg-older"><a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
+{% endif %}
+<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}">
+    {% for m in thread_messages %}
+    {% include "social/_inbox_line.html" %}
+    {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}
+</div>
+<form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.reply_to }}
+    {{ form.body }}
+    <p class="wallposter-file">Фото: {{ form.photo }}</p>
+    {% if form.sticker %}<p class="wallposter-file">Стикер: {{ form.sticker }}</p>{% endif %}
+    <input type="submit" class="inputsubmit" value="Отправить">
+</form>
