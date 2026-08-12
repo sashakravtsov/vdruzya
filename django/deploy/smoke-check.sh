@@ -625,6 +625,16 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-classic-modules.py \
 else
   echo "FAIL classic modules features"; FAIL=1
 fi
+if ! grep -q 'name="og"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'profile.follow' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'profile.milestones' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL 2011 Subscribe/Timeline/OG routes missing"; FAIL=1
+else
+  echo "OK   2011 Subscribe + Timeline + OG routes"
+fi
+if grep -q 'consumers.py\|static/js/messenger.js' "${ROOT}/django/apps/social/urls.py" 2>/dev/null; then
+  echo "FAIL messenger WS product reintroduced"; FAIL=1
+fi
 echo "== FB 2009-10 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2010-modules.py \
   && .venv/bin/python deploy/era2010-check.py; then

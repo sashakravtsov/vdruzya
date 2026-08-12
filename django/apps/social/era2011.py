@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from django.db.models import Q
 
-from apps.social.models import ProfileFollow, TimelineMilestone, OgStory, SocialProfile, profile_related
+from apps.social.models import ProfileFollow, TimelineMilestone, OgStory, profile_related
 from apps.social.services import bump_news, friend_ids, now
 
 OG_VERBS = frozenset({"listening", "reading", "watching"})
@@ -172,9 +172,9 @@ def _add_milestones(items, blocked, fids, limit):
     if blocked:
         qs = qs.exclude(social_user_id__in=blocked)
     for row in qs[:limit]:
-        at = datetime.combine(row.occurred_on, datetime.min.time())
         items.append({
-            "kind": "milestone", "at": at, "actor": row.social_user, "milestone": row,
+            "kind": "milestone", "at": row.created_at or row.occurred_on,
+            "actor": row.social_user, "milestone": row,
         })
 
 
