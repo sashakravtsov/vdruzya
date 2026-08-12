@@ -76,6 +76,7 @@ urlpatterns = [
     path("groups/<int:pk>/posts/<int:post_id>/edit", gops.group_post_edit, name="groups.posts.edit"),
     path("groups/<int:pk>/posts/<int:post_id>/comment", gops.group_comment, name="groups.comment"),
     path("groups/<int:pk>/posts/<int:post_id>/delete", gops.group_post_delete, name="groups.posts.delete"),
+    path("groups/<int:pk>/posts/<int:post_id>/like", gops.group_post_like, name="groups.posts.like"),
     path("groups/<int:pk>/comments/<int:comment_id>/delete", gops.group_comment_delete, name="groups.comments.delete"),
     path("groups/<int:pk>/comments/<int:comment_id>/like", gops.group_comment_like, name="groups.comments.like"),
     path("groups/<int:pk>/docs", gops.group_docs, name="groups.docs"),

@@ -35,7 +35,8 @@ def main():
             "questions", "question_answers", "question_votes",
             "classic_polls", "classic_poll_options", "classic_poll_votes",
             "photo_reactions", "comment_reactions", "post_tags", "classic_group_docs",
-            "photo_comment_reactions", "group_comment_reactions", "relationship_requests",
+            "photo_comment_reactions", "group_comment_reactions", "group_post_reactions",
+            "relationship_requests",
         ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]

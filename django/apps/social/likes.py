@@ -211,3 +211,46 @@ def toggle_group_comment_like(me, comment) -> str:
     )
     bump_news()
     return "liked"
+
+
+def attach_group_post_likes(posts, viewer=None):
+    from apps.social.models.legacy import GroupPostReaction
+    posts = list(posts or [])
+    ids = [p.id for p in posts if getattr(p, "id", None)]
+    counts = {p.id: 0 for p in posts}
+    mine = set()
+    if ids:
+        for row in (
+            GroupPostReaction.objects.filter(post_id__in=ids, type="like")
+            .values("post_id")
+            .annotate(n=Count("id"))
+        ):
+            counts[row["post_id"]] = row["n"]
+        if viewer:
+            mine = set(
+                GroupPostReaction.objects.filter(
+                    post_id__in=ids, social_user=viewer, type="like",
+                ).values_list("post_id", flat=True)
+            )
+    for p in posts:
+        p.n_likes = counts.get(p.id, 0)
+        p.liked_by_me = p.id in mine
+    return posts
+
+
+def toggle_group_post_like(me, post) -> str:
+    from apps.social.models.legacy import GroupPostReaction
+    if not me or not post:
+        return ""
+    existing = GroupPostReaction.objects.filter(
+        post=post, social_user=me, type="like",
+    ).first()
+    if existing:
+        existing.delete()
+        bump_news()
+        return "unliked"
+    GroupPostReaction.objects.create(
+        post=post, social_user=me, type="like", created_at=now(),
+    )
+    bump_news()
+    return "liked"

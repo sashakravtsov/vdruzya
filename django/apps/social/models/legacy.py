@@ -4,7 +4,7 @@ from __future__ import annotations
 from django.db import models
 
 from .feed import Comment, Post
-from .groups import Community, CommunityPostComment
+from .groups import Community, CommunityPost, CommunityPostComment
 from .more import Photo, PhotoComment
 from .people import SocialProfile
 
@@ -72,6 +72,19 @@ class GroupCommentReaction(models.Model):
     class Meta:
         managed = False
         db_table = "group_comment_reactions"
+
+
+class GroupPostReaction(models.Model):
+    """Like on group wall/discussion posts."""
+    id = models.BigAutoField(primary_key=True)
+    post = models.ForeignKey(CommunityPost, models.DO_NOTHING, related_name="+")
+    social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="+")
+    type = models.CharField(max_length=255, default="like")
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "group_post_reactions"
 
 
 class PostTag(models.Model):

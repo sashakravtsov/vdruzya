@@ -223,6 +223,12 @@ if ! grep -q 'albums.photos.comment.like' "${ROOT}/django/apps/social/urls.py" 2
 else
   echo "OK   photo/group comment Like + relationship confirm routes"
 fi
+if ! grep -q 'groups.posts.like' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'Мне нравится' "${ROOT}/django/templates/social/_group_post.html" 2>/dev/null; then
+  echo "FAIL group post Like missing"; FAIL=1
+else
+  echo "OK   group wall Like (FB 2009)"
+fi
 if ! grep -q 'wall-filters' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null \
   || ! grep -q 'filter=photos' "${ROOT}/django/templates/social/_profile_wall.html" 2>/dev/null; then
   echo "FAIL wall filters missing"; FAIL=1

@@ -87,6 +87,11 @@ def group_post_delete(request, pk, post_id):
     if not me or (post.social_user_id != me.id and not is_group_admin(me, group)):
         messages.error(request, "Нельзя удалить.")
         return redirect("groups.show", pk=pk)
+    from apps.social.models.legacy import GroupCommentReaction, GroupPostReaction
+    cids = list(CommunityPostComment.objects.filter(post=post).values_list("id", flat=True))
+    if cids:
+        GroupCommentReaction.objects.filter(comment_id__in=cids).delete()
+    GroupPostReaction.objects.filter(post=post).delete()
     CommunityPostComment.objects.filter(post=post).delete()
     post.delete()
     bump_news()
@@ -131,6 +136,24 @@ def group_comment_like(request, pk, comment_id):
     elif out == "unliked":
         messages.info(request, "Отметка снята.")
     return _post_redirect(pk, c.post)
+
+
+@login_required
+@require_POST
+def group_post_like(request, pk, post_id):
+    from apps.social.likes import toggle_group_post_like
+
+    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
+    if not _member(me, group) and group.privacy == "closed":
+        messages.error(request, "Группа закрыта.")
+        return redirect("groups.show", pk=pk)
+    post = get_object_or_404(CommunityPost, pk=post_id, community=group)
+    out = toggle_group_post_like(me, post)
+    if out == "liked":
+        messages.success(request, "Вам это нравится.")
+    elif out == "unliked":
+        messages.info(request, "Отметка снята.")
+    return _post_redirect(pk, post)
 
 
 @login_required

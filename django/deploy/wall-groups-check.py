@@ -186,10 +186,20 @@ def main():
     r = post(f"/groups/{g.id}/comments/{cm.id}/like", {})
     if r.status_code != 200:
         fail(f"group comment like {r.status_code}")
-    from apps.social.models.legacy import GroupCommentReaction
+    from apps.social.models.legacy import GroupCommentReaction, GroupPostReaction
     if not GroupCommentReaction.objects.filter(comment=cm, social_user=me, type="like").exists():
         fail("group comment like not saved")
     ok("group comment like")
+
+    r = post(f"/groups/{g.id}/posts/{post_row.id}/like", {})
+    if r.status_code != 200:
+        fail(f"group post like {r.status_code}")
+    if not GroupPostReaction.objects.filter(post=post_row, social_user=me, type="like").exists():
+        fail("group post like not saved")
+    r = get(f"/groups/{g.id}?tab=wall")
+    if "Мне нравится".encode() not in r.content and "Не нравится".encode() not in r.content:
+        fail("group wall like chrome missing")
+    ok("group post like")
 
     r = post(
         f"/groups/{g.id}/posts",

@@ -205,6 +205,19 @@ def main():
     assert "<h4>Общие друзья".encode() not in right
     ok("friend profile: friends tab lists friends")
 
+    # Reset partner confirmation state so edit creates a fresh pending request
+    from apps.social.models.legacy import RelationshipRequest
+    RelationshipRequest.objects.filter(
+        requester__in=(me, other), partner__in=(me, other),
+    ).delete()
+    if other.relationship_with_id == me.id:
+        other.relationship_with = None
+        other.relationship_status = ""
+        other.save(update_fields=["relationship_with", "relationship_status"])
+    me.relationship_with = None
+    me.relationship_status = ""
+    me.save(update_fields=["relationship_with", "relationship_status"])
+
     bday = me.birthday
     basic = {
         "name": me.name,

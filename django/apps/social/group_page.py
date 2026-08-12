@@ -94,21 +94,31 @@ def page_ctx(request, group, me):
 
     if tab == "wall":
         ctx["form"] = CommunityPostForm(auto_id="id_w_%s", initial={"board": "wall"})
-        ctx["wall_posts"] = list(qs.filter(topic="wall")[:20])
+        wall = list(qs.filter(topic="wall")[:20])
+        from apps.social.likes import attach_group_post_likes
+        ctx["wall_posts"] = attach_group_post_likes(wall, me)
     elif tab == "discussion":
         discuss = qs.exclude(topic="wall").order_by(F("updated_at").desc(nulls_last=True), "-id")
         ctx["n_topics"] = discuss.count()
-        ctx["posts"] = list(discuss[:40] if request.GET.get("all") else discuss[:5])
+        posts = list(discuss[:40] if request.GET.get("all") else discuss[:5])
+        from apps.social.likes import attach_group_post_likes
+        ctx["posts"] = attach_group_post_likes(posts, me)
         ctx["board_form"] = CommunityPostForm(auto_id="id_b_%s", initial={"board": "discussion"})
         tid = request.GET.get("topic")
         if tid and str(tid).isdigit():
-            ctx["open_topic"] = (
+            open_topic = (
                 next((p for p in ctx["posts"] if p.id == int(tid)), None)
                 or discuss.filter(pk=tid).first()
             )
+            if open_topic and not hasattr(open_topic, "n_likes"):
+                from apps.social.likes import attach_group_post_likes
+                attach_group_post_likes([open_topic], me)
+            ctx["open_topic"] = open_topic
     elif tab == "photos":
         ctx["photo_form"] = CommunityPostForm(auto_id="id_ph_%s", initial={"board": "wall"})
-        ctx["photos"] = list(qs.exclude(media_path__isnull=True).exclude(media_path="")[:24])
+        photos = list(qs.exclude(media_path__isnull=True).exclude(media_path="")[:24])
+        from apps.social.likes import attach_group_post_likes
+        ctx["photos"] = attach_group_post_likes(photos, me)
     elif tab == "docs":
         from apps.social import group_docs as gdocs
         from apps.social.forms import GroupDocForm
