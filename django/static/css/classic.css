@@ -302,8 +302,9 @@ button.linkish .ico { margin-right: 2px; }
   overflow: hidden; padding: 10px !important;
 }
 .group-rail { float: left; width: 180px; margin: 0 10px 0 0; }
-.group-main { float: left; width: 420px; }
-.feed-main { float: left; width: 430px; }
+.group-main { float: left; width: 400px; }
+/* #content ≈ 606px inner — keep main+rail ≤ that */
+.feed-main { float: left; width: 410px; }
 .feed-rail { float: right; width: 180px; }
 .feed-content::after, .group-content::after, .friends-content::after, .inbox-content::after {
   content: ""; display: block; clear: both; height: 0; overflow: hidden;
