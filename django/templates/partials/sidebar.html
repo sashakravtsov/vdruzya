@@ -1,0 +1,57 @@
+{% load cache %}
+{% if user.is_authenticated and me %}
+<div id="sidebar">
+    <div id="qsearch">
+        <form method="get" action="{% url 'search' %}">
+            <label for="qsearch_q">поиск:</label>
+            <input class="inputtext" type="text" name="q" id="qsearch_q" size="15" autocomplete="off">
+        </form>
+    </div>
+    {% cache 30 snav me.id unread_messages nav %}
+    <div id="snav" data-rt="{% url 'realtime.stream' %}">
+        <span class="snav-profile">
+            <a class="hasedit" href="{% url 'profile' me.id %}">Мой профиль</a><a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>
+        </span>
+        <a id="nav-friends" href="{% url 'friends' %}"{% if nav == 'friends' %} class="is-on"{% endif %}>Мои друзья</a>
+        <a href="{% url 'people' %}?tab=search"{% if nav == 'people' %} class="is-on"{% endif %}>Найти друзей</a>
+        <a href="{% url 'albums' %}"{% if nav == 'albums' or nav == 'albums.show' %} class="is-on"{% endif %}>Мои фото</a>
+        <a href="{% url 'groups' %}?mine=1"{% if nav == 'groups' or nav == 'groups.show' %} class="is-on"{% endif %}>Мои группы</a>
+        <a href="{% url 'pages' %}?mine=1"{% if nav == 'pages' or nav == 'pages.show' or nav == 'pages.edit' %} class="is-on"{% endif %}>Мои страницы</a>
+        <a href="{% url 'events' %}"{% if nav == 'events' %} class="is-on"{% endif %}>Мои события</a>
+        <a href="{% url 'notes' %}"{% if nav == 'notes' %} class="is-on"{% endif %}>Заметки</a>
+        <a href="{% url 'links' %}"{% if nav == 'links' %} class="is-on"{% endif %}>Ссылки</a>
+        <a href="{% url 'videos' %}"{% if nav == 'videos' %} class="is-on"{% endif %}>Видео</a>
+        <a href="{% url 'marketplace' %}"{% if nav == 'marketplace' %} class="is-on"{% endif %}>Барахолка</a>
+        <a href="{% url 'places' %}"{% if nav == 'places' %} class="is-on"{% endif %}>Места</a>
+        <a href="{% url 'questions' %}"{% if nav == 'questions' %} class="is-on"{% endif %}>Вопросы</a>
+        <a href="{% url 'polls' %}"{% if nav == 'polls' %} class="is-on"{% endif %}>Опросы</a>
+        <a href="{% url 'og' %}"{% if nav == 'og' %} class="is-on"{% endif %}>Open Graph</a>
+        <a href="{% url 'networks' %}"{% if nav == 'networks' %} class="is-on"{% endif %}>Сети</a>
+        <a href="{% url 'gifts' %}"{% if nav == 'gifts' %} class="is-on"{% endif %}>Подарки</a>
+        <a href="{% url 'birthdays' %}"{% if nav == 'birthdays' %} class="is-on"{% endif %}>Дни рождения</a>
+        <a href="{% url 'anniversaries' %}"{% if nav == 'anniversaries' %} class="is-on"{% endif %}>Годовщины</a>
+        <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
+        <a href="{% url 'apps' %}"{% if nav == 'apps' %} class="is-on"{% endif %}>Приложения</a>
+        <a id="nav-inbox" href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
+        <a id="nav-notifications" href="{% url 'notifications' %}"{% if nav == 'notifications' %} class="is-on"{% endif %}>Уведомления</a>
+        <a id="nav-pokes" href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>
+        <a href="{% url 'account' %}"{% if nav == 'account' %} class="is-on"{% endif %}>Мой аккаунт</a>
+    </div>
+    {% endcache %}
+</div>
+{% else %}
+<div id="sidebar">
+    <div id="squicklogin">
+        <form method="post" name="loginform" action="{% url 'login' %}">{% csrf_token %}
+            <label for="side_email">E-mail:</label>
+            <input class="inputtext" type="text" name="email" id="side_email" size="20" autocomplete="username">
+            <label for="side_pass">Пароль:</label>
+            <input class="inputtext" type="password" name="password" id="side_pass" size="20" autocomplete="current-password">
+            <div class="buttons">
+                <input type="submit" class="inputsubmit" value="Войти">
+            </div>
+            <p class="file-hint muted">Регистрация — по приглашению</p>
+        </form>
+    </div>
+</div>
+{% endif %}
