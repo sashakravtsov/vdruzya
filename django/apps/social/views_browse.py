@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_not_required, login_required
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-from django.views.decorators.http import condition, require_http_methods, require_POST
+from django.views.decorators.http import condition, require_http_methods
 
 from apps.social.forms import CreateGroupForm
 from apps.social.models import (

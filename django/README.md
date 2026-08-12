@@ -1,15 +1,17 @@
-# ВДрузья — копия Facebook.com (~2006)
+# ВДрузья — копия Facebook.com (~2006 chrome)
 
 Прод: https://vdruzya.ru → nginx → Daphne `127.0.0.1:18081` (`vdruzya-django.service`).
 
-## Facebook 2006 core + expansion
+## Facebook 2006 core + era expansion
 Профиль, Стена, Mini-Feed, Notes, Лента, друзья, Find Friends, фото/альбомы, группы, Inbox, подмигивания, поиск (люди|группы|страницы), события, Wall-to-Wall, Мой аккаунт.
-**Масштаб под chrome 2006:** Страницы (`/pages`, схема `companies`), каталог Приложений (`/apps`).
-Chrome — float + классические `#tabs`. Без лайков/Messenger/WS/PYMK/опросов/PWA.
+
+**Под chrome 2006 (float / `#tabs` / formtable):** Страницы, App Center, Likes, Places, Questions, classic Polls, Share, Open Graph, Timeline milestones, Collections, Graph Search, Hashtags, Nearby Friends, Trending, Save, Safety Check. Inbox — классический Message Center (ответы/стикеры), без live Messenger.
+
+**Soft bans (не возвращать):** WebSocket Messenger / `consumers.py` / `CHANNEL_LAYERS` / `static/js/messenger.js`, PYMK, Ads/Flyers/Beacon/Connect, third-party app platform, real video CDN, Facebook Home, blue Timeline redesign (`page-tabs` / flex-hero), `models/polls.py` (использовать только `ClassicPoll`).
 
 ## Стек
 - Django 6, Daphne, WhiteNoise, Postgres FTS
-- Модели `managed=False` на живой схеме
+- Модели `managed=False` на живой схеме; `deploy/ensure-*-modules.py` для новых таблиц
 - `BcryptBackend`, `ModelForm`, `Prefetch`, Redis cache
 - Медиа: Beget S3 через `django-storages` (`MEDIA_DISK=s3`)
 - Секреты: `.env`

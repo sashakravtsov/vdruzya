@@ -695,4 +695,10 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2014-modules.py \
 else
   echo "FAIL 2014 classic modules features"; FAIL=1
 fi
+echo "== Cross-era techdebt probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/techdebt-check.py; then
+  echo "OK   techdebt probes"
+else
+  echo "FAIL techdebt probes"; FAIL=1
+fi
 exit "$FAIL"

@@ -22,47 +22,102 @@ def hidden_story_keys(me) -> set[str]:
 
 
 def story_key_for(item: dict) -> str | None:
-    kind = item.get("kind") or ""
-    post = item.get("post")
-    if post is not None and getattr(post, "id", None):
-        return f"{kind}:{post.id}"
-    photo = item.get("photo")
-    if photo is not None and getattr(photo, "id", None):
-        return f"{kind}:photo:{photo.id}"
-    poll = item.get("poll")
-    if poll is not None and getattr(poll, "id", None):
-        return f"{kind}:poll:{poll.id}"
-    question = item.get("question")
-    if question is not None and getattr(question, "id", None):
-        return f"{kind}:q:{question.id}"
-    place = item.get("place")
-    if place is not None and getattr(place, "id", None):
-        return f"{kind}:place:{place.id}"
-    event = item.get("event")
-    if event is not None and getattr(event, "id", None):
-        return f"{kind}:event:{event.id}"
-    other = item.get("other")
+    """Stable per-story hide key. Kind-specific branches run before generic post/place/event."""
+    kind = (item.get("kind") or "").strip()
     actor = item.get("actor")
-    if kind in ("friend", "relationship") and actor and other:
-        a, b = sorted((actor.id, other.id))
-        return f"{kind}:{a}:{b}"
+
+    if kind == "hashtag":
+        tag, post = item.get("tag"), item.get("post")
+        if tag is not None and post is not None and getattr(tag, "id", None) and getattr(post, "id", None):
+            return f"hashtag:{tag.id}:{post.id}"
+
+    if kind == "safety":
+        checkin = item.get("checkin")
+        if checkin is not None and getattr(checkin, "id", None):
+            return f"safety:{checkin.id}"
+
+    if kind == "checkin":
+        row = item.get("checkin")
+        if row is not None and getattr(row, "id", None):
+            return f"checkin:{row.id}"
+
+    if kind == "review":
+        row = item.get("review")
+        if row is not None and getattr(row, "id", None):
+            return f"review:{row.id}"
+
+    if kind == "joined":
+        group = item.get("group")
+        if group is not None and actor is not None and getattr(group, "id", None) and getattr(actor, "id", None):
+            return f"joined:{group.id}:{actor.id}"
+
+    if kind == "created":
+        group = item.get("group")
+        if group is not None and actor is not None and getattr(group, "id", None) and getattr(actor, "id", None):
+            return f"created:{group.id}:{actor.id}"
+
+    if kind == "fan":
+        page = item.get("page")
+        if page is not None and actor is not None and getattr(page, "id", None) and getattr(actor, "id", None):
+            return f"fan:{page.id}:{actor.id}"
+
+    if kind == "market":
+        listing = item.get("listing")
+        if listing is not None and getattr(listing, "id", None):
+            return f"market:{listing.id}"
+
+    if kind == "anniversary" and actor is not None and getattr(actor, "id", None):
+        years = item.get("years")
+        return f"anniversary:{actor.id}:{years if years is not None else 0}"
+
+    if kind == "group_doc":
+        doc = item.get("doc")
+        if doc is not None and getattr(doc, "id", None):
+            return f"group_doc:{doc.id}"
+
+    if kind in ("friend", "relationship"):
+        other = item.get("other")
+        if actor is not None and other is not None and getattr(actor, "id", None) and getattr(other, "id", None):
+            a, b = sorted((actor.id, other.id))
+            return f"{kind}:{a}:{b}"
+
     og = item.get("og")
     if og is not None and getattr(og, "id", None):
         return f"og:{og.id}"
+
     milestone = item.get("milestone")
     if milestone is not None and getattr(milestone, "id", None):
         prefix = "page_milestone" if kind == "page_milestone" else "milestone"
         return f"{prefix}:{milestone.id}"
+
     col = item.get("collection")
     if col is not None and getattr(col, "id", None):
         return f"collection:{col.id}"
-    tag = item.get("tag")
+
     post = item.get("post")
-    if kind == "hashtag" and tag is not None and post is not None:
-        return f"hashtag:{tag.id}:{post.id}"
-    checkin = item.get("checkin")
-    if kind == "safety" and checkin is not None and getattr(checkin, "id", None):
-        return f"safety:{checkin.id}"
+    if post is not None and getattr(post, "id", None):
+        return f"{kind}:{post.id}"
+
+    photo = item.get("photo")
+    if photo is not None and getattr(photo, "id", None):
+        return f"{kind}:photo:{photo.id}"
+
+    poll = item.get("poll")
+    if poll is not None and getattr(poll, "id", None):
+        return f"{kind}:poll:{poll.id}"
+
+    question = item.get("question")
+    if question is not None and getattr(question, "id", None):
+        return f"{kind}:q:{question.id}"
+
+    place = item.get("place")
+    if place is not None and getattr(place, "id", None):
+        return f"{kind}:place:{place.id}"
+
+    event = item.get("event")
+    if event is not None and getattr(event, "id", None):
+        return f"{kind}:event:{event.id}"
+
     return None
 
 

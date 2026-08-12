@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from django.db import models
 
+from .era2010 import Place
 from .feed import Post
 from .more import Event
 from .pages import Company
@@ -16,7 +17,7 @@ class SavedItem(models.Model):
     post = models.ForeignKey(Post, models.DO_NOTHING, null=True, blank=True, related_name="+")
     company = models.ForeignKey(Company, models.DO_NOTHING, null=True, blank=True, related_name="+")
     event = models.ForeignKey(Event, models.DO_NOTHING, null=True, blank=True, related_name="+")
-    place_id = models.BigIntegerField(null=True, blank=True)
+    place = models.ForeignKey(Place, models.DO_NOTHING, null=True, blank=True, related_name="+")
     url = models.CharField(max_length=500, blank=True, default="")
     title = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(null=True, blank=True)

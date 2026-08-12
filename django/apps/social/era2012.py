@@ -1,7 +1,7 @@
 """FB 2012 helpers — Page Timeline, Collections, App Center catalog."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 from django.db.models import Q
 
@@ -83,7 +83,7 @@ APP_CENTER = (
     {"slug": "nearby", "name": "Друзья рядом", "category": "places", "featured": True,
      "blurb": "Друзья в вашем городе.", "detail": "Nearby Friends без GPS: совпадение по городу в профиле.", "url_name": "nearby"},
     {"slug": "hashtags", "name": "Хэштеги", "category": "social", "featured": False,
-     "blurb": "Посты по #тегам.", "detail": "Хэштеги из статусов и стены — лента, тренды и Graph Search.", "url_name": "trending"},
+     "blurb": "Посты по #тегам.", "detail": "Каталог трендовых хэштегов (/trending) и страницы /hashtag/<имя> — из статусов и стены.", "url_name": "trending"},
     {"slug": "saves", "name": "Сохранённое", "category": "tools", "featured": True,
      "blurb": "Отложите на потом.", "detail": "FB Save 2014: сохраняйте посты, ссылки, места и страницы — список только для вас.", "url_name": "saves"},
     {"slug": "safety", "name": "Safety Check", "category": "tools", "featured": True,
@@ -177,7 +177,8 @@ def _add_page_milestones(items, viewer, page_ids, blocked, limit):
     )
     for row in qs[:limit]:
         items.append({
-            "kind": "page_milestone", "at": row.created_at or row.occurred_on,
+            "kind": "page_milestone",
+            "at": row.created_at or datetime.combine(row.occurred_on, datetime.min.time()),
             "page": row.company, "milestone": row,
             "actor": None,
         })

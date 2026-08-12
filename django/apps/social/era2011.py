@@ -173,7 +173,8 @@ def _add_milestones(items, blocked, fids, limit):
         qs = qs.exclude(social_user_id__in=blocked)
     for row in qs[:limit]:
         items.append({
-            "kind": "milestone", "at": row.created_at or row.occurred_on,
+            "kind": "milestone",
+            "at": row.created_at or datetime.combine(row.occurred_on, datetime.min.time()),
             "actor": row.social_user, "milestone": row,
         })
 

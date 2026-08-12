@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
@@ -13,6 +13,17 @@ from apps.social.models import (
 def now():
     t = timezone.now()
     return timezone.make_naive(t) if timezone.is_aware(t) else t
+
+
+def _feed_at(value):
+    """Normalize feed story timestamps so date/datetime mix never breaks sort."""
+    if value is None:
+        return datetime.min
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if value.tzinfo else value
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time())
+    return datetime.min
 
 
 def profile_of(user) -> SocialProfile | None:
@@ -956,7 +967,8 @@ def news_items(viewer=None, limit=40):
         .exclude(topic__startswith="page:")
         .exclude(topic__startswith="event:")
         .exclude(topic__startswith="gift:")
-        .exclude(kind="gift")[:limit]
+        .exclude(topic__startswith="place:")
+        .exclude(kind__in=("gift", "checkin"))[:limit]
     ) if fids else []
     attach_wall_notes(posts)
     for p in posts:
@@ -1010,7 +1022,7 @@ def news_items(viewer=None, limit=40):
     e13._add_hashtag_stories(items, blocked, fids, limit)
     from apps.social import era2014 as e14
     e14._add_safety_stories(items, blocked, fids, limit)
-    items.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
+    items.sort(key=lambda x: _feed_at(x.get("at")), reverse=True)
     items = items[: limit * 2]
     if viewer:
         from apps.social import feed_hide as fh

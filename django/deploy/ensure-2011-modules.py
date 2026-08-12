@@ -51,6 +51,11 @@ CREATE INDEX IF NOT EXISTS og_stories_created_idx ON og_stories (created_at DESC
 CREATE INDEX IF NOT EXISTS og_stories_verb_idx ON og_stories (verb);
 
 ALTER TABLE social_users ADD COLUMN IF NOT EXISTS cover_path varchar(255);
+
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_id bigint;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS sticker_id bigint;
+CREATE INDEX IF NOT EXISTS messages_reply_to_idx ON messages (reply_to_id);
+CREATE INDEX IF NOT EXISTS messages_sticker_idx ON messages (sticker_id);
 """
 
 
@@ -67,6 +72,12 @@ def main():
             "WHERE table_name='social_users' AND column_name='cover_path'"
         )
         assert cur.fetchone(), "missing social_users.cover_path"
+        for col in ("reply_to_id", "sticker_id"):
+            cur.execute(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name='messages' AND column_name=%s", [col]
+            )
+            assert cur.fetchone(), f"missing messages.{col}"
     print("OK   2011 modules schema")
 
 

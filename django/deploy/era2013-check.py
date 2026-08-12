@@ -78,7 +78,14 @@ def main():
     r = c.get("/graph", {"q": f"кто любит #{tag}"}, secure=True)
     assert r.status_code == 200
     assert me.name.encode() in r.content or "Результаты".encode() in r.content
+    assert b"placeholder=" not in r.content
     ok("graph search by hashtag")
+
+    city = (me.city or "").strip() or "Москва"
+    r = c.get("/graph", {"q": f"друзья в {city}"}, secure=True)
+    assert r.status_code == 200
+    assert b"Graph Search" in r.content
+    ok("graph search by city")
 
     topics = e13.trending_topics(me, 30, hours=24 * 30)
     assert any(x.get("name") == tag for x in topics), "tag missing from trending"

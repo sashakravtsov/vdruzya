@@ -1,11 +1,11 @@
 """Columns to defer on hot paths — JSON blobs + post-2006 leftovers still in the live schema."""
 
+# Info-tab fields (looking_for / interested_in / languages) stay undeferred — profile_page reads them.
 PROFILE_DEFER = (
-    "looking_for", "interested_in", "languages",
     "pronouns", "life_goals", "family_status", "district", "verified",
 )
-# mood/emoji/sticker/share = post-2006 leftovers still in live DB columns
-# mood / emoji / sticker — schema leftovers; shared_post used for classic Share (2009+)
+# mood/emoji/sticker — schema leftovers (gifts undefer sticker on their query path);
+# shared_post powers classic Share (2009+)
 POST_DEFER = ("mood", "emoji", "sticker", "search_vector")
 GROUP_POST_DEFER = ("mood", "emoji", "sticker")
 

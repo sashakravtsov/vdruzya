@@ -60,7 +60,13 @@ def main():
     r = c.get("/saves", secure=True)
     assert r.status_code == 200
     assert post.body.split()[0].encode() in r.content or b"QA save" in r.content
-    ok("save post")
+    r = c.post(f"/posts/{post.id}/save", {"next": "/saves"}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not SavedItem.objects.filter(social_user=me, post=post).exists()
+    r = c.post(f"/posts/{post.id}/save", {"next": "/saves"}, secure=True)
+    assert r.status_code in (301, 302)
+    assert SavedItem.objects.filter(social_user=me, post=post).exists()
+    ok("save post toggle")
 
     event = e14.ensure_demo_event()
     assert event
@@ -72,10 +78,12 @@ def main():
     assert SafetyCheckin.objects.filter(event=event, social_user=me, status="safe").exists()
     bump_news()
     feed = news_items(me, limit=80)
-    assert any(
-        i.get("kind") == "safety" and i.get("event") and i["event"].id == event.id
-        for i in feed
-    ), "safety story missing from feed"
+    safety_items = [
+        i for i in feed
+        if i.get("kind") == "safety" and i.get("event") and i["event"].id == event.id
+    ]
+    assert safety_items, "safety story missing from feed"
+    assert safety_items[0].get("story_key", "").startswith("safety:"), safety_items[0].get("story_key")
     ok("safety checkin + feed")
 
     r = c.get("/apps/saves", secure=True)

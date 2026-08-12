@@ -18,17 +18,12 @@ def list_saves(me, *, kind="", limit=60):
         return []
     qs = (
         SavedItem.objects.filter(social_user=me)
-        .select_related("post", "post__social_user", "company", "event")
+        .select_related("post", "post__social_user", "company", "event", "place")
         .order_by("-id")
     )
     if kind in SAVE_KINDS:
         qs = qs.filter(kind=kind)
-    rows = list(qs[:limit])
-    place_ids = [r.place_id for r in rows if r.place_id]
-    places = Place.objects.in_bulk(place_ids) if place_ids else {}
-    for r in rows:
-        r.place = places.get(r.place_id) if r.place_id else None
-    return rows
+    return list(qs[:limit])
 
 
 def is_saved_post(me, post_id) -> bool:
@@ -105,7 +100,7 @@ def save_target(me, *, kind, target_id=None, url="", title="") -> SavedItem | No
         if not place:
             return None
         row, _ = SavedItem.objects.get_or_create(
-            social_user=me, place_id=place.id,
+            social_user=me, place=place,
             defaults={"kind": "place", "title": title or place.name, "created_at": t},
         )
         return row
@@ -239,9 +234,8 @@ def _add_safety_stories(items, blocked, fids, limit):
     if blocked:
         qs = qs.exclude(social_user_id__in=blocked)
     for row in qs[:limit]:
-        if not row.event_id or not row.event.is_active:
-            # still show recent checkins for closed events briefly
-            pass
+        if not row.event_id or not getattr(row.event, "is_active", False):
+            continue
         items.append({
             "kind": "safety", "at": row.updated_at or row.created_at,
             "actor": row.social_user, "event": row.event, "checkin": row,
