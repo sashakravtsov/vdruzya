@@ -1,0 +1,23 @@
+{# Classic editprofile field table. Expects: form, me (optional for email). #}
+<table class="formtable editor" cellpadding="0" cellspacing="0">
+{% for field in form %}
+{% if field.name == 'birthday_visibility' or field.name == 'show_phone' %}
+{% elif field.name == 'show_email' %}
+<tr>
+    <td class="label">Email:</td>
+    <td><label class="inline">{{ field }} показывать{% if me %} ({{ me.user.email }}){% endif %}</label></td>
+</tr>
+{% else %}
+<tr>
+    <td class="label">{{ field.label }}:</td>
+    <td{% if field.name == 'birthday' %} class="bday"{% elif field.name == 'looking_for_choices' or field.name == 'interested_in_choices' %} class="checkgrid"{% endif %}>
+        {{ field }}
+        {% if field.name == 'birthday' %}{{ form.birthday_visibility }}{% endif %}
+        {% if field.name == 'phone' %} · <label class="inline">{{ form.show_phone }} показывать</label>{% endif %}
+        {% if field.help_text %}<div class="file-hint muted">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="error">{{ field.errors }}</div>{% endif %}
+    </td>
+</tr>
+{% endif %}
+{% endfor %}
+</table>

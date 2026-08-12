@@ -13,7 +13,7 @@
         <div id="editprofile">
             <ul id="editnav">
                 {% for key, label in edit_nav %}
-                <li class="{% if section == key %}is-on{% endif %}">
+                <li{% if section == key %} class="is-on"{% endif %}>
                     {% if section == key %}<b>{{ label }}</b>{% else %}<a href="?section={{ key }}">{{ label }}</a>{% endif %}
                 </li>
                 {% endfor %}
@@ -23,35 +23,32 @@
                 {% if section == 'picture' %}
                 {% include "social/_profile_edit_avatar.html" %}
                 {% elif section == 'eduwork' %}
-                <form method="post" action="?section=eduwork">{% csrf_token %}
-                    <div class="profile-box">
-                        <h4>Кратко</h4>
-                        <div class="profile-box-body">
-                            <table class="formtable editor" cellpadding="0" cellspacing="0">
-                                <tr><td class="label">Место работы:</td><td>{{ form.workplace }}</td></tr>
-                                <tr><td class="label">Образование:</td><td>{{ form.education_note }}</td></tr>
-                                <tr><td class="label"></td><td class="buttons">
-                                    <input type="submit" class="inputsubmit" value="Сохранить">
-                                    · <a href="{% url 'profile' me.id %}">Отмена</a>
-                                </td></tr>
-                            </table>
-                        </div>
-                    </div>
-                </form>
+                <div id="infoarea">
+                    <h4>{{ section_title }}</h4>
+                    <form method="post" action="?section=eduwork">{% csrf_token %}
+                        {% include "social/_editor_fields.html" with form=form me=me %}
+                        <p class="editor-buttons">
+                            <input type="submit" class="inputsubmit" value="Сохранить изменения">
+                            · <a href="{% url 'profile' me.id %}">Отмена</a>
+                        </p>
+                    </form>
+                </div>
                 {% include "social/_profile_edit_education.html" %}
                 {% include "social/_profile_edit_experience.html" %}
                 {% else %}
-                <form method="post" action="?section={{ section }}">{% csrf_token %}
-                    {% if section == 'basic' %}{% include "social/_profile_edit_basic.html" %}
-                    {% elif section == 'contact' %}{% include "social/_profile_edit_contact.html" %}
-                    {% elif section == 'personal' %}{% include "social/_profile_edit_personal.html" %}
-                    {% elif section == 'privacy' %}{% include "social/_profile_edit_privacy.html" %}
+                <div id="infoarea">
+                    <h4>{{ section_title }}</h4>
+                    {% if section == 'privacy' %}
+                    <p class="profile_note">Ограниченный профиль скрывает стену и подробности от тех, кто не в друзьях. Пароль и email — в <a href="{% url 'account' %}">Мой аккаунт</a>.</p>
                     {% endif %}
-                    <p class="editor-buttons">
-                        <input type="submit" class="inputsubmit" value="Сохранить изменения">
-                        · <a href="{% url 'profile' me.id %}">Отмена</a>
-                    </p>
-                </form>
+                    <form method="post" action="?section={{ section }}">{% csrf_token %}
+                        {% include "social/_editor_fields.html" with form=form me=me %}
+                        <p class="editor-buttons">
+                            <input type="submit" class="inputsubmit" value="Сохранить изменения">
+                            · <a href="{% url 'profile' me.id %}">Отмена</a>
+                        </p>
+                    </form>
+                </div>
                 {% endif %}
             </div>
             <div class="clear"></div>

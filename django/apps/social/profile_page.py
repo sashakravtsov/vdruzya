@@ -276,10 +276,15 @@ def build_edit_context(me, request):
     elif section not in EDIT_SECTIONS:
         section = "basic"
     form = ProfileForm(request.POST or None, instance=me, section=section)
+    if "slug" in form.fields:
+        form.fields["slug"].help_text = f"страница: /u/{me.slug}"
+    if "telegram_username" in form.fields:
+        form.fields["telegram_username"].help_text = "как AIM / ICQ screen name"
     return {
         "form": form,
         "me": me,
         "section": section,
+        "section_title": dict(EDIT_NAV).get(section, "Основное"),
         "edit_nav": EDIT_NAV,
         "edu_form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
         "exp_form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),

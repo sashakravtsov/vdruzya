@@ -244,11 +244,18 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
 .editprofile table.editor td { padding: 3px 0; vertical-align: top; }
 .editprofile .editor-buttons,
 .editprofile td.buttons {
-  text-align: left; padding-left: 0; margin: 8px 0 12px 165px;
+  text-align: left; padding-left: 0; margin: 10px 0 4px 165px;
 }
 .editprofile .profile_note {
   background: #fff; padding: 10px; margin: 0 0 10px;
   border: 1px solid #bdc7d8; color: #444; font-size: 11px; line-height: 14px;
+}
+.editprofile #infoarea { margin: 0 0 12px; }
+.editprofile #infoarea > h4 {
+  border-bottom: solid 1px #D8DFEA;
+  margin: 0 0 10px; padding: 0 0 2px;
+  font: bold 13px var(--font); color: #000;
+  background: transparent; border-top: 0;
 }
 .editprofile .checkgrid ul {
   list-style: none; margin: 0; padding: 0;
