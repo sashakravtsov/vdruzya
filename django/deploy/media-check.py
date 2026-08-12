@@ -50,15 +50,16 @@ def main():
         social_user=me, title=f"QA Media {uuid.uuid4().hex[:5]}",
         description="", visibility="public", created_at=t, updated_at=t,
     )
-    files = MultiValueDict({
+    # Django test Client has no files= kwarg — put uploads in data (MultiValueDict).
+    data = MultiValueDict({
+        "title": ["Batch"],
         "photo": [
             SimpleUploadedFile("a.png", PNG, content_type="image/png"),
             SimpleUploadedFile("b.png", PNG, content_type="image/png"),
         ],
     })
     r = c.post(
-        f"/albums/{album.id}/photos", {"title": "Batch"},
-        files=files, secure=True, follow=True,
+        f"/albums/{album.id}/photos", data, secure=True, follow=True,
     )
     assert r.status_code == 200
     n = Photo.objects.filter(album=album, title="Batch").count()
