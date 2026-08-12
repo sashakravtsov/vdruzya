@@ -128,9 +128,11 @@ def main():
 
     r = c.get("/search?q=а", secure=True)
     assert r.status_code == 200
-    assert "Поиск по сайту".encode() in r.content
+    assert b'id="tabs"' in r.content
+    assert "Люди".encode() in r.content and "Группы".encode() in r.content
     assert "Расширенный поиск людей".encode() in r.content
     assert b'name="city"' not in r.content
+    assert b"placeholder=" not in r.content
     ok("global search")
 
     r = c.get("/profile/edit", secure=True)
