@@ -1,5 +1,5 @@
 <div class="profile-box">
-    <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">[ред.]</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все альбомы</a>{% endif %}</h4>
+    <h4>Фото{% if is_own %} <a class="edit" href="{% url 'albums' %}">ред.</a>{% else %} <a class="edit" href="{% url 'profile.albums' profile.id %}">все</a>{% endif %}</h4>
     <div class="profile-box-body" id="photos">
         <div class="subtabs">
             <div class="{% if photos_view != 'of' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Альбомы</a></div>

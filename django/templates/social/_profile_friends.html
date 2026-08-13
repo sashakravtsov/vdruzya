@@ -1,5 +1,5 @@
 <div class="profile-box">
-    <h4>Друзья ({{ stats.friends }}){% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
+    <h4>Друзья <span class="tl-count">{{ stats.friends }}</span>{% if is_own %} <a class="edit" href="{% url 'friends' %}">ред.</a>{% endif %}</h4>
     <div class="profile-box-body">
         {% if mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
         {% include "social/_profile_friend_grid.html" with friends=friends_tab %}

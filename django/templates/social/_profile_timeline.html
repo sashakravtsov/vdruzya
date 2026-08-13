@@ -3,14 +3,16 @@
 <div class="profile-box">
     <h4>Лента жизни</h4>
     <div class="profile-box-body">
-        <div class="subtabs">
+        {% if timeline_years %}
+        <div class="subtabs" role="tablist" aria-label="Годы">
             {% for y in timeline_years %}
             <div class="{% if y == timeline_year %}activetab{% else %}inactivetab{% endif %}">
                 <a href="?tab=timeline&amp;y={{ y }}">{{ y }}</a>
             </div>
             {% endfor %}
         </div>
-        <p class="muted">Год: {{ timeline_year }} · подписчиков: {{ stats.followers }}</p>
+        {% endif %}
+        <p class="muted">Год {{ timeline_year }} · подписчиков {{ stats.followers }}</p>
     </div>
 </div>
 
