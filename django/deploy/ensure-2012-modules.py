@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS collections (
   updated_at timestamp without time zone
 );
 CREATE INDEX IF NOT EXISTS collections_user_idx ON collections (social_user_id);
+ALTER TABLE collections ADD COLUMN IF NOT EXISTS cover_path varchar(255);
 
 CREATE TABLE IF NOT EXISTS collection_items (
   id bigserial PRIMARY KEY,
@@ -66,11 +67,13 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), f"missing {t}"
-        cur.execute(
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name='companies' AND column_name='cover_path'"
-        )
-        assert cur.fetchone(), "missing companies.cover_path"
+        for table, col in (("companies", "cover_path"), ("collections", "cover_path")):
+            cur.execute(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name=%s AND column_name=%s",
+                [table, col],
+            )
+            assert cur.fetchone(), f"missing {table}.{col}"
     print("OK   2012 modules schema")
 
 

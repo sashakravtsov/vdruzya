@@ -11,7 +11,7 @@
         <div class="profile-box">
             <h4>Новая коллекция</h4>
             <div class="profile-box-body">
-                <form method="post">{% csrf_token %}
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
                     <table class="formtable" cellspacing="0">
                         <tr><td class="label">Название:</td><td><input class="inputtext" type="text" name="title" size="40" maxlength="160"></td></tr>
                         <tr><td class="label">Описание:</td><td><input class="inputtext" type="text" name="description" size="40" maxlength="500"></td></tr>
@@ -22,6 +22,7 @@
                                 <option value="private">Только я</option>
                             </select>
                         </td></tr>
+                        <tr><td class="label">Обложка:</td><td><input type="file" name="cover" accept="image/jpeg,image/png,image/gif"></td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
                     </table>
                 </form>
@@ -33,6 +34,7 @@
             <div class="profile-box-body">
                 {% for c in mine %}
                 <div class="classic-person-row">
+                    {% include "social/_list_thumb.html" with url=c.cover_url href=c.get_absolute_url %}
                     <a href="{% url 'collections.show' c.id %}"><b>{{ c.title }}</b></a>
                     <span class="muted"> · {{ c.visibility }}</span>
                     <form method="post" action="{% url 'collections.delete' c.id %}" class="inline">{% csrf_token %}
@@ -49,6 +51,7 @@
             <div class="profile-box-body">
                 {% for c in browse %}
                 <div class="classic-person-row">
+                    {% include "social/_list_thumb.html" with url=c.cover_url href=c.get_absolute_url %}
                     <a href="{% url 'collections.show' c.id %}"><b>{{ c.title }}</b></a>
                     {% if c.social_user %} · <a href="{% url 'profile' c.social_user.id %}">{{ c.social_user.name }}</a>{% endif %}
                 </div>

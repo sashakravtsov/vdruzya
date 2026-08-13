@@ -12,6 +12,7 @@ import django
 
 django.setup()
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
 from apps.accounts.models import User
@@ -20,6 +21,11 @@ from apps.social.models import (
     Collection, CollectionItem, Company, CompanyAdmin, PageTimelineMilestone,
 )
 from apps.social.services import bump_news, news_items, now, profile_of
+
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+)
 
 
 def ok(label):
@@ -34,11 +40,13 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), f"missing {t}"
-        cur.execute(
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name='companies' AND column_name='cover_path'"
-        )
-        assert cur.fetchone(), "missing companies.cover_path"
+        for table, col in (("companies", "cover_path"), ("collections", "cover_path")):
+            cur.execute(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name=%s AND column_name=%s",
+                [table, col],
+            )
+            assert cur.fetchone(), f"missing {table}.{col}"
     ok("schema 2012")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
@@ -64,13 +72,18 @@ def main():
     r = c.get("/collections", secure=True)
     assert r.status_code == 200
     assert "Коллекции".encode() in r.content
+    assert "Обложка".encode() in r.content
     title = f"QA Col {uuid.uuid4().hex[:6]}"
     r = c.post("/collections", {
         "title": title, "description": "probe", "visibility": "public",
+        "cover": SimpleUploadedFile("col.png", PNG, content_type="image/png"),
     }, secure=True)
     assert r.status_code in (301, 302)
     col = Collection.objects.filter(social_user=me, title=title).first()
     assert col
+    assert col.cover_path and col.cover_path.startswith("collections/"), col.cover_path
+    r = c.get("/collections", secure=True)
+    assert r.status_code == 200 and b"list-thumb" in r.content
     r = c.post(f"/collections/{col.id}/items", {
         "kind": "link", "url": "https://example.com/qa", "title": "QA Link",
     }, secure=True)
@@ -90,11 +103,16 @@ def main():
     assert "коллекция" in (item.title or "") or "Col Clip" in (item.title or "")
     r = c.get(f"/collections/{col.id}", secure=True)
     assert r.status_code == 200 and b"storage:" not in r.content
+    assert b"<img" in r.content and col.cover_url.encode() in r.content
+    r = c.post(f"/collections/{col.id}/cover/clear", {}, secure=True)
+    assert r.status_code in (301, 302)
+    col.refresh_from_db()
+    assert not col.cover_path
     vpost.delete()
     bump_news()
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "collection" and i.get("collection") and i["collection"].id == col.id for i in feed)
-    ok("collections + feed")
+    ok("collections + cover + feed")
 
     page = Company.objects.filter(admins__social_user=me).order_by("id").first()
     if not page:

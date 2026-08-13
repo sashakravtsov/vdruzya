@@ -32,6 +32,7 @@ class Collection(models.Model):
     title = models.CharField(max_length=160)
     description = models.CharField(max_length=500, blank=True, default="")
     visibility = models.CharField(max_length=20, default="friends")
+    cover_path = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
@@ -42,6 +43,11 @@ class Collection(models.Model):
 
     def get_absolute_url(self):
         return f"/collections/{self.pk}"
+
+    @property
+    def cover_url(self) -> str | None:
+        from apps.social.media import media_url
+        return media_url(self.cover_path)
 
 
 class CollectionItem(models.Model):

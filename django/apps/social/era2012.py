@@ -216,7 +216,8 @@ def visible_collections(viewer, limit=40):
     )
 
 
-def create_collection(me, *, title, description="", visibility="friends") -> Collection | None:
+def create_collection(me, *, title, description="", visibility="friends", cover=None) -> Collection | None:
+    from apps.social.media import try_save_image
     title = (title or "").strip()[:160]
     if not me or not title:
         return None
@@ -224,10 +225,35 @@ def create_collection(me, *, title, description="", visibility="friends") -> Col
     t = now()
     row = Collection.objects.create(
         social_user=me, title=title, description=(description or "")[:500],
-        visibility=vis, created_at=t, updated_at=t,
+        visibility=vis, cover_path=try_save_image(cover, "collections"),
+        created_at=t, updated_at=t,
     )
     bump_news()
     return row
+
+
+def set_collection_cover(me, col, cover) -> bool:
+    from apps.social.media import try_save_image
+    if not me or not col or col.social_user_id != me.id:
+        return False
+    path = try_save_image(cover, "collections")
+    if not path:
+        return False
+    col.cover_path = path
+    col.updated_at = now()
+    col.save(update_fields=["cover_path", "updated_at"])
+    bump_news()
+    return True
+
+
+def clear_collection_cover(me, col) -> bool:
+    if not me or not col or col.social_user_id != me.id or not col.cover_path:
+        return False
+    col.cover_path = None
+    col.updated_at = now()
+    col.save(update_fields=["cover_path", "updated_at"])
+    bump_news()
+    return True
 
 
 def delete_collection(me, collection_id) -> bool:

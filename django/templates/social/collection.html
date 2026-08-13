@@ -16,8 +16,27 @@
         {% if col.description %}
         <p class="classic-page-lead">{{ col.description }}</p>
         {% endif %}
+        {% if col.cover_url %}
+        <p class="event-cover"><img src="{{ col.cover_url }}" alt="" class="news-photo"></p>
+        {% endif %}
 
         {% if is_own %}
+        <div class="profile-box">
+            <h4>Обложка</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'collections.cover' col.id %}" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Файл:</td><td><input type="file" name="cover" accept="image/jpeg,image/png,image/gif"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Загрузить"></td></tr>
+                    </table>
+                </form>
+                {% if col.cover_url %}
+                <form method="post" action="{% url 'collections.cover.clear' col.id %}" style="margin-top:6px">{% csrf_token %}
+                    <input type="submit" class="inputsubmit" value="Удалить обложку">
+                </form>
+                {% endif %}
+            </div>
+        </div>
         <div class="profile-box">
             <h4>Добавить</h4>
             <div class="profile-box-body">

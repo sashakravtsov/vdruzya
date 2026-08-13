@@ -104,6 +104,7 @@ def collections_home(request):
             title=request.POST.get("title") or "",
             description=request.POST.get("description") or "",
             visibility=request.POST.get("visibility") or "friends",
+            cover=request.FILES.get("cover"),
         )
         if row:
             messages.success(request, "Коллекция создана.")
@@ -138,6 +139,28 @@ def collection_delete(request, pk):
     if e12.delete_collection(me, pk):
         messages.info(request, "Коллекция удалена.")
     return redirect("collections")
+
+
+@login_required
+@require_POST
+def collection_cover_upload(request, pk):
+    me = profile_of(request.user)
+    col = get_object_or_404(Collection, pk=pk, social_user=me)
+    if e12.set_collection_cover(me, col, request.FILES.get("cover")):
+        messages.success(request, "Обложка обновлена.")
+    else:
+        messages.error(request, "Не удалось сохранить обложку.")
+    return redirect(col)
+
+
+@login_required
+@require_POST
+def collection_cover_clear(request, pk):
+    me = profile_of(request.user)
+    col = get_object_or_404(Collection, pk=pk, social_user=me)
+    if e12.clear_collection_cover(me, col):
+        messages.info(request, "Обложка удалена.")
+    return redirect(col)
 
 
 @login_required
