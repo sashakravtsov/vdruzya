@@ -99,7 +99,7 @@ def main():
     post.delete()
     SafetyCheckin.objects.filter(event=event, social_user=me).delete()
     # keep demo event if title is the seed one and no other checkins
-    if event.title == "Проверка безопасности" and not SafetyCheckin.objects.filter(event=event).exists():
+    if event.title == "Safety Check" and not SafetyCheckin.objects.filter(event=event).exists():
         SafetyEvent.objects.filter(pk=event.id).delete()
     ok("cleanup")
     print("ALL 2014 classic modules probes passed")

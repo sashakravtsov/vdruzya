@@ -85,7 +85,7 @@ def main():
     assert ms
     r = c.get(f"/profile/{me.id}?tab=timeline&y={ms.occurred_on.year}", secure=True)
     assert r.status_code == 200
-    assert b"ÐÐµÐ½ÑÐ° Ð¶Ð¸Ð·Ð½Ð¸" in r.content or "Лента жизни".encode() in r.content
+    assert "Лента жизни".encode() in r.content
     assert ms.title.encode() in r.content
     assert b"page-tabs" not in r.content
     feed = news_items(me, limit=80)

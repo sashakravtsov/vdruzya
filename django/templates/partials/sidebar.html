@@ -25,8 +25,8 @@
         <a href="{% url 'places' %}"{% if nav == 'places' %} class="is-on"{% endif %}>Места</a>
         <a href="{% url 'questions' %}"{% if nav == 'questions' %} class="is-on"{% endif %}>Вопросы</a>
         <a href="{% url 'polls' %}"{% if nav == 'polls' %} class="is-on"{% endif %}>Опросы</a>
-        <a href="{% url 'og' %}"{% if nav == 'og' %} class="is-on"{% endif %}>Open Graph</a>
-        <a href="{% url 'graph' %}"{% if nav == 'graph' %} class="is-on"{% endif %}>Поиск по сети</a>
+        <a href="{% url 'og' %}"{% if nav == 'og' %} class="is-on"{% endif %}>Активность</a>
+        <a href="{% url 'graph' %}"{% if nav == 'graph' %} class="is-on"{% endif %}>Поиск по графу</a>
         <a href="{% url 'trending' %}"{% if nav == 'trending' or nav == 'hashtag' %} class="is-on"{% endif %}>В тренде</a>
         <a href="{% url 'nearby' %}"{% if nav == 'nearby' %} class="is-on"{% endif %}>Рядом</a>
         <a href="{% url 'saves' %}"{% if nav == 'saves' %} class="is-on"{% endif %}>Сохранённое</a>
