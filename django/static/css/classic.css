@@ -1735,3 +1735,148 @@ body.fb-dialog-open { overflow: hidden; }
   border-bottom: 1px solid #eee;
 }
 .osm-suggest-item:hover { background: #D8DFEA; }
+
+/* —— Ферма —— */
+.farm-app {
+  --fm-soil: #6b4a2e;
+  --fm-leaf: #2f7a45;
+  --fm-sun: #e6b422;
+  --fm-sky: #e7f0e8;
+}
+.farm-app .farm-mark { color: var(--fm-leaf); margin-left: 4px; }
+.farm-app .farm-lead { margin: 0 0 8px; color: #445; }
+.farm-app .farm-strip {
+  margin: 0 0 10px; padding: 7px 9px;
+  background: linear-gradient(180deg, #f4faf4, var(--fm-sky));
+  border: 1px solid #b7cbb8; font: 11px/15px var(--font);
+}
+.farm-app .farm-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: var(--fm-leaf); color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.farm-app .farm-bankrupt { color: #a40; font-weight: bold; }
+.farm-app .farm-bankrupt-banner {
+  margin: 0 0 10px; padding: 8px 10px; border: 1px solid #e0c48a; background: #fff8e1;
+  font: 11px/15px var(--font);
+}
+.farm-app .farm-path {
+  margin: 0 0 12px; padding: 7px 9px; background: #f5f7fb; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.farm-app .farm-meter {
+  height: 8px; margin: 5px 0 6px; background: #dce6dd; border: 1px solid #b7cbb8; overflow: hidden;
+}
+.farm-app .farm-meter.thin { height: 6px; }
+.farm-app .farm-meter span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #6aa86a, var(--fm-leaf));
+}
+.farm-app .farm-list { margin: 0; padding-left: 16px; }
+.farm-app .farm-done { color: var(--fm-leaf); font-weight: bold; }
+
+.farm-app .farm-field-layout { display: table; width: 100%; }
+.farm-app .farm-field,
+.farm-app .farm-side { display: table-cell; vertical-align: top; }
+.farm-app .farm-field { width: 68%; padding-right: 12px; }
+.farm-app .farm-field {
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.farm-app .farm-field.is-in { opacity: 1; transform: none; }
+.farm-app .farm-plot {
+  display: inline-block; width: 31%; min-width: 140px; margin: 0 1% 10px 0;
+  vertical-align: top; border: 1px solid #8a6a45;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12), transparent 40%),
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.08), transparent 50%),
+    #5a3d24;
+  color: #f4ffe8; font: 11px/14px var(--font);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.12);
+}
+.farm-app .farm-plot.state-growing { background-color: #4a6b35; border-color: #3d5c2c; }
+.farm-app .farm-plot.state-ready {
+  background: linear-gradient(180deg, #7aa84a, #4f7a32);
+  border-color: var(--fm-sun);
+  animation: farm-ready 1.5s ease-in-out infinite;
+}
+.farm-app .farm-plot.state-withered { background: #5a5348; opacity: .85; }
+.farm-app .farm-plot.is-watered .farm-plot-inner { box-shadow: inset 0 -3px 0 rgba(90,160,220,.35); }
+.farm-app .farm-plot.is-due { outline: 2px solid var(--fm-sun); }
+@keyframes farm-ready {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(0,0,0,.12); }
+  50% { box-shadow: inset 0 0 0 2px rgba(230,180,34,.45), 0 0 0 2px rgba(230,180,34,.25); }
+}
+.farm-app .farm-plot-inner { padding: 8px 8px 4px; min-height: 58px; position: relative; }
+.farm-app .farm-plot-inner::before {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: 4px; height: 6px;
+  border-radius: 2px; background: var(--crop, transparent); opacity: .85;
+}
+.farm-app .farm-plot-idx { float: right; opacity: .7; font-size: 10px; }
+.farm-app .farm-plot-title { display: block; margin: 0 0 2px; }
+.farm-app .farm-plot-timer { display: block; color: #ffe9a8; font-weight: bold; }
+.farm-app .farm-plot-hint { display: block; font-size: 10px; color: #dcefdc; }
+.farm-app .farm-plot-acts { padding: 0 8px 8px; background: rgba(0,0,0,.15); }
+.farm-app .farm-plot-acts .inputsubmit,
+.farm-app .farm-plot-acts .inputbutton { margin: 2px 2px 0 0; }
+.farm-app .farm-plant-form select { width: 100%; margin: 0 0 4px; font-size: 11px; }
+.farm-app .farm-btn-harvest {
+  background: linear-gradient(180deg, #ffe08a, #e6b422) !important;
+  border-color: #a88410 !important; color: #3a2e08 !important;
+}
+
+.farm-app .farm-side { font: 11px/15px var(--font); }
+.farm-app .farm-crop-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.farm-app .farm-crop-list li { margin: 0 0 5px; }
+.farm-app .farm-crop-list li.is-locked { opacity: .55; }
+.farm-app .farm-crop-list i {
+  display: inline-block; width: 10px; height: 10px; margin-right: 4px;
+  border: 1px solid #333; vertical-align: middle;
+}
+.farm-app .farm-tag {
+  display: inline-block; margin-left: 4px; padding: 0 4px;
+  border: 1px solid #c3cde0; background: #edf2f8; color: #567; font-size: 10px;
+}
+.farm-app .farm-xp { margin-top: 10px; padding-top: 8px; border-top: 1px solid #c3cde0; }
+
+.farm-app .farm-barn .farm-animal {
+  display: inline-block; width: 46%; margin: 0 2% 10px 0; padding: 8px;
+  border: 1px solid #c3cde0; background: #fffaf3; vertical-align: top;
+}
+.farm-app .farm-shop { list-style: none; margin: 0; padding: 0; }
+.farm-app .farm-shop li {
+  margin: 0 0 10px; padding: 8px; border: 1px solid #c3cde0; background: #f7faf7;
+}
+.farm-app .farm-people { list-style: none; margin: 0; padding: 0; }
+.farm-app .farm-people li {
+  margin: 0 0 8px; padding: 7px; border: 1px solid #d7dee8; background: #fff;
+}
+.farm-app .farm-people .inputsubmit { margin-left: 6px; }
+
+.farm-app .farm-learn { display: table; width: 100%; }
+.farm-app .farm-learn-nav,
+.farm-app .farm-lesson { display: table-cell; vertical-align: top; }
+.farm-app .farm-learn-nav { width: 34%; padding-right: 12px; }
+.farm-app .farm-lesson {
+  padding: 8px 10px; border: 1px solid #c3cde0; background: #f8faf8;
+}
+.farm-app .farm-quiz { list-style: none; margin: 0 0 8px; padding: 0; }
+.farm-app .farm-badges { margin: 8px 0; }
+.farm-app .farm-badge-pill {
+  display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px;
+  border: 1px solid #c3cde0; background: #edf2f8; color: #789; font: 10px/14px var(--font);
+}
+.farm-app .farm-badge-pill.on {
+  border-color: #2f7a45; background: #e7f5ea; color: #1e4d2b; font-weight: bold;
+}
+.farm-app .farm-reset { margin: 10px 0; padding: 8px; border: 1px solid #e0c48a; background: #fff8e1; }
+.farm-app .farm-foot { margin-top: 14px; }
+
+@media (max-width: 720px) {
+  .farm-app .farm-field-layout,
+  .farm-app .farm-field,
+  .farm-app .farm-side,
+  .farm-app .farm-learn,
+  .farm-app .farm-learn-nav,
+  .farm-app .farm-lesson { display: block; width: auto; }
+  .farm-app .farm-plot { width: 48%; }
+}
