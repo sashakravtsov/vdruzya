@@ -542,6 +542,12 @@ if grep -q 'object-fit' "${ROOT}/django/static/css/classic.css" 2>/dev/null; the
 else
   echo "OK   no object-fit in classic.css"
 fi
+if ! grep -q '\.list-thumb' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+  || grep -Eq '\.(market|note|event|place)-thumb' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL list-thumb not unified"; FAIL=1
+else
+  echo "OK   list-thumb unified"
+fi
 if grep -q '("everyone"' "${ROOT}/django/apps/social/forms.py" 2>/dev/null; then
   echo "FAIL posting_policy everyone still in GroupForm"; FAIL=1
 else
