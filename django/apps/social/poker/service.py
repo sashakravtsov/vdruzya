@@ -670,9 +670,11 @@ def engagement_strip(user: SocialProfile) -> dict:
         .exclude(status="closed")
         .order_by("-updated_at")[:8]
     )
+    chips = int(p.chips or 0)
     return {
         **hub,
-        "chips": int(p.chips or 0),
+        "chips": chips,
+        "chips_fmt": engine.format_chips(chips),
         "wins": int(p.wins or 0),
         "games": int(p.games or 0),
         "rating": int(p.rating or 1200),
@@ -686,9 +688,13 @@ def engagement_strip(user: SocialProfile) -> dict:
         ),
         "reset_count": int(p.reset_count or 0),
         "starting_chips": STARTING_CHIPS,
+        "starting_chips_fmt": engine.format_chips(STARTING_CHIPS),
         "champ": champ,
         "my_rooms": my_rooms,
         "my_rooms_n": len(my_rooms),
+        "win_rate": (
+            int(round(100 * int(p.wins or 0) / int(p.games))) if int(p.games or 0) else 0
+        ),
     }
 
 
@@ -709,11 +715,49 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
     legal = []
     if seat and game.status == "active" and seat == game.to_act:
         legal = engine.legal_actions(to_call, my_stack, my_bet, to_call == 0)
+    min_raise_to = max(opp_bet + game.big_blind, game.big_blind)
+    pot = int(game.pot or 0)
+    half_pot = max(min_raise_to, my_bet + max(to_call, pot // 2))
+    pot_raise = max(min_raise_to, my_bet + max(to_call, pot))
+    max_raise = my_bet + my_stack
+    half_pot = min(half_pot, max_raise) if max_raise else half_pot
+    pot_raise = min(pot_raise, max_raise) if max_raise else pot_raise
+
+    hand_strength = ""
+    if my_hole and len(board) >= 3:
+        hand_strength = engine.hand_name(engine.best_hand(my_hole, board))
+    elif my_hole and len(my_hole) == 2:
+        # light preflop hint
+        r1, r2 = my_hole[0][0], my_hole[1][0]
+        suited = my_hole[0][1] == my_hole[1][1]
+        if r1 == r2:
+            hand_strength = "пара на руках"
+        elif suited:
+            hand_strength = "suited"
+        else:
+            hand_strength = "offsuit"
+
+    street = game.street or "preflop"
+    streets = ["preflop", "flop", "turn", "river"]
+    street_idx = streets.index(street) if street in streets else (
+        4 if street in ("showdown", "done") else 0
+    )
+    opp_seat = 2 if seat == 1 else (1 if seat == 2 else 0)
+    i_am_dealer = bool(seat and seat == game.button)
+    opp_is_dealer = bool(opp_seat and opp_seat == game.button)
+    waiting = bool(
+        game.status == "active" and seat and not legal and game.to_act and game.to_act != seat
+    )
+    board_slots = [engine.card_view(c) for c in board]
+    while len(board_slots) < 5:
+        board_slots.append(None)
+
     return {
         "seat": seat,
         "board": board,
         "board_labels": [engine.card_label(c) for c in board],
         "board_cards": [engine.card_view(c) for c in board],
+        "board_slots": board_slots,
         "my_hole": my_hole,
         "my_labels": [engine.card_label(c) for c in my_hole],
         "my_cards": [engine.card_view(c) for c in my_hole],
@@ -724,13 +768,40 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
         "opp_stack": opp_stack,
         "my_bet": my_bet,
         "opp_bet": opp_bet,
+        "my_stack_fmt": engine.format_chips(my_stack),
+        "opp_stack_fmt": engine.format_chips(opp_stack),
+        "my_bet_fmt": engine.format_chips(my_bet),
+        "opp_bet_fmt": engine.format_chips(opp_bet),
         "to_call": to_call,
+        "to_call_fmt": engine.format_chips(to_call),
         "legal": legal,
-        "pot": game.pot,
-        "street": game.street,
+        "pot": pot,
+        "pot_fmt": engine.format_chips(pot),
+        "street": street,
+        "street_label": engine.street_label(street),
+        "street_idx": street_idx,
+        "streets": [
+            {"key": s, "label": engine.street_label(s), "on": i <= street_idx}
+            for i, s in enumerate(streets)
+        ],
         "can_act": bool(legal),
-        "min_raise_to": max(opp_bet + game.big_blind, game.big_blind),
+        "waiting": waiting,
+        "min_raise_to": min_raise_to,
+        "min_raise_fmt": engine.format_chips(min_raise_to),
+        "half_pot_to": half_pot,
+        "pot_raise_to": pot_raise,
+        "max_raise_to": max_raise,
+        "hand_strength": hand_strength,
+        "i_am_dealer": i_am_dealer,
+        "opp_is_dealer": opp_is_dealer,
         "room_id": game.room_id,
+        "sb_fmt": engine.format_chips(game.small_blind),
+        "bb_fmt": engine.format_chips(game.big_blind),
+        "buy_in_fmt": engine.format_chips(game.buy_in),
+        "opp_name": (
+            (game.p2.name if seat == 1 else game.p1.name) if seat
+            else game.p2.name
+        ),
     }
 
 

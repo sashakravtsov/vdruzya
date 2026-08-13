@@ -29,19 +29,75 @@ def card_label(card: str) -> str:
     return f"{card[0].replace('T', '10')}{SUIT_GLYPH.get(card[1], card[1])}"
 
 
+SUIT_NAME = {"c": "clubs", "d": "diamonds", "h": "hearts", "s": "spades"}
+
+
 def card_view(card: str) -> dict:
-    """UI-friendly card: rank, suit glyph, red/black."""
+    """UI-friendly card: rank, suit glyph, red/black, CSS suit name."""
     if not card or len(card) < 2:
-        return {"raw": card or "", "rank": "?", "suit": "?", "red": False, "label": "?"}
+        return {
+            "raw": card or "", "rank": "?", "suit": "?", "suit_key": "",
+            "suit_name": "", "red": False, "label": "?",
+        }
     rank = card[0].replace("T", "10")
     suit = card[1]
     return {
         "raw": card,
         "rank": rank,
         "suit": SUIT_GLYPH.get(suit, suit),
+        "suit_key": suit,
+        "suit_name": SUIT_NAME.get(suit, ""),
         "red": suit in ("h", "d"),
         "label": f"{rank}{SUIT_GLYPH.get(suit, suit)}",
     }
+
+
+def street_label(street: str) -> str:
+    return {
+        "preflop": "Префлоп",
+        "flop": "Флоп",
+        "turn": "Тёрн",
+        "river": "Ривер",
+        "showdown": "Шоудаун",
+        "done": "Итог",
+    }.get(street or "", street or "")
+
+
+def format_chips(n: int | None) -> str:
+    try:
+        v = int(n or 0)
+    except (TypeError, ValueError):
+        v = 0
+    return f"{v:,}".replace(",", " ")
+
+
+def chip_layers(amount: int, limit: int = 8) -> list[dict]:
+    """Visual chip stack layers for pot/bets (largest denoms first)."""
+    left = max(0, int(amount or 0))
+    denoms = (
+        (1_000_000, "pink"),
+        (500_000, "orange"),
+        (100_000, "yellow"),
+        (25_000, "black"),
+        (5_000, "purple"),
+        (1_000, "blue"),
+        (500, "green"),
+        (100, "red"),
+        (25, "gray"),
+    )
+    layers: list[dict] = []
+    for denom, color in denoms:
+        if left < denom:
+            continue
+        count = min(left // denom, 4)
+        left -= count * denom
+        for _ in range(count):
+            layers.append({"denom": denom, "color": color, "label": format_chips(denom)})
+            if len(layers) >= limit:
+                return layers
+    if not layers and amount:
+        layers.append({"denom": int(amount), "color": "red", "label": format_chips(amount)})
+    return layers
 
 
 def new_deck(seed: str | None = None) -> list[str]:

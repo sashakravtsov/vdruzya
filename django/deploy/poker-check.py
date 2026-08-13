@@ -41,7 +41,9 @@ def main():
     board = ["2c", "2d", "2h", "9s", "Td"]
     assert engine.best_hand(hole, board)[0] == 6  # full house
     cv = engine.card_view("Ah")
-    assert cv["red"] and cv["rank"] == "A"
+    assert cv["red"] and cv["rank"] == "A" and cv["suit_name"] == "hearts"
+    assert engine.format_chips(1_000_000) == "1 000 000"
+    assert engine.chip_layers(12500)
     ok("engine hand evaluation")
 
     dealt = engine.deal_hand("seed-1")
@@ -89,7 +91,9 @@ def main():
         assert g.status == "active" and g.room_id == room.id
         assert g.championship_id
         view = poker.table_view(g, me)
-        assert "my_cards" in view and "board_cards" in view
+        assert "my_cards" in view and "board_slots" in view
+        assert len(view["board_slots"]) == 5
+        assert "street_label" in view and view["pot_fmt"] is not None
         ok("private room + deal")
     else:
         ok("private room create (single user)")
@@ -109,6 +113,8 @@ def main():
     rooms = c.get("/apps/poker/canvas?tab=rooms", secure=True).content
     assert "Создать комнату".encode() in rooms
     assert "Войти по коду".encode() in rooms
+    assert "Лобби столов".encode() in rooms
+    assert b"poker-table.js" in rooms or b"poker-mini-felt" in rooms
     ratings = c.get("/apps/poker/canvas?tab=ratings", secure=True).content
     assert "Рейтинг Elo".encode() in ratings
     champs = c.get("/apps/poker/canvas?tab=champs", secure=True).content

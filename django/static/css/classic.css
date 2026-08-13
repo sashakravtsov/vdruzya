@@ -1447,22 +1447,19 @@ body.fb-dialog-open { overflow: hidden; }
 .photo-modal-comments { margin-top: 8px; max-height: 280px; overflow: auto; }
 .photo-modal-full { margin-top: 8px; }
 .photo-modal-like { margin-bottom: 4px; }
-.poker-card {
-  display: inline-block; border: 1px solid #2a3f6a; background: #fff;
-  padding: 5px 7px; margin: 0 3px 3px 0; font-weight: bold; color: #111;
-  min-width: 1.8em; text-align: center; font: bold 13px/16px Georgia, "Times New Roman", serif;
-  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+/* —— Poker pro UI (felt, cards, chips) —— */
+.poker-app {
+  --pk-felt: #1f6b3a;
+  --pk-felt-deep: #145028;
+  --pk-rail: #6b3e22;
+  --pk-rail-hi: #8a5430;
+  --pk-gold: #f0d78c;
 }
-.poker-card.red { color: #b11; border-color: #a33; }
-.poker-card.back {
-  background: repeating-linear-gradient(-45deg, #3B5998, #3B5998 3px, #4a6aa8 3px, #4a6aa8 6px);
-  color: #fff; border-color: #2a3f6a;
-}
-.poker-card.mine { background: #fffdf5; }
 .poker-app .poker-lead { margin: 0 0 6px; }
 .poker-app .poker-strip {
-  margin: 0 0 10px; padding: 5px 8px; background: #edf2f8; border: 1px solid #c3cde0;
-  font: 11px/15px var(--font);
+  margin: 0 0 10px; padding: 6px 9px;
+  background: linear-gradient(180deg, #f4f7fc, #e8eef8);
+  border: 1px solid #c3cde0; font: 11px/15px var(--font);
 }
 .poker-app .poker-badge {
   display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
@@ -1475,40 +1472,201 @@ body.fb-dialog-open { overflow: hidden; }
   font: 11px/15px var(--font);
 }
 .poker-app .poker-turn-banner {
-  margin: 0 0 10px; padding: 7px 9px; border: 1px solid #c3cde0; background: #f5f7fb;
+  margin: 0 0 10px; padding: 8px 10px; border: 1px solid #c3cde0; background: #f5f7fb;
   font: bold 11px/15px var(--font);
 }
 .poker-app .poker-turn-banner.yours {
-  background: #e8f5e9; border-color: #8cbc8c;
+  background: linear-gradient(180deg, #eef9ef, #dcefdc); border-color: #7aad7a;
+  animation: pk-pulse 1.6s ease-in-out infinite;
 }
 .poker-app .poker-turn-banner.pending { background: #fff8e1; border-color: #e6d9a8; }
 .poker-app .poker-turn-banner.done { background: #edf2f8; }
-.poker-app .poker-table,
-.poker-app .poker-felt {
-  margin: 0 0 12px; padding: 14px 12px 16px; border: 2px solid #2f5d3a;
+@keyframes pk-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(80,160,90,.0); }
+  50% { box-shadow: 0 0 0 3px rgba(80,160,90,.22); }
+}
+.poker-app .poker-mute {
+  float: right; font: 10px/14px var(--font); color: #567; cursor: pointer; text-decoration: none;
+}
+.poker-app .poker-mute.is-off { color: #999; }
+
+/* Oval casino table */
+.poker-app .poker-arena {
+  margin: 0 0 14px; padding: 14px 12px 16px;
   background:
-    radial-gradient(ellipse at center, #3f8a52 0%, #2f6b3f 55%, #255533 100%);
+    radial-gradient(ellipse at 50% 30%, #3a2a1c 0%, #1a120c 70%),
+    #1a120c;
+  border: 1px solid #2a1c12;
+}
+.poker-app .poker-oval {
+  position: relative; margin: 0 auto; max-width: 640px; min-height: 320px;
+  padding: 18px 22px 22px;
+  border-radius: 50% / 42%;
+  background:
+    radial-gradient(ellipse at 50% 40%, #2f8f4d 0%, var(--pk-felt) 42%, var(--pk-felt-deep) 78%),
+    var(--pk-felt-deep);
+  box-shadow:
+    inset 0 0 0 10px var(--pk-rail),
+    inset 0 0 0 13px var(--pk-rail-hi),
+    inset 0 0 0 16px #4a2a14,
+    inset 0 0 40px rgba(0,0,0,.35),
+    0 8px 18px rgba(0,0,0,.35);
   color: #f4fff6;
 }
+.poker-app .poker-oval::before {
+  content: ""; position: absolute; inset: 22px;
+  border-radius: 50% / 42%;
+  border: 1px dashed rgba(255,255,255,.12);
+  pointer-events: none;
+}
 .poker-app .poker-felt-rail {
-  margin: 0 0 10px; font: 10px/14px var(--font); color: #d7f0dd; text-align: center;
+  position: relative; z-index: 2; text-align: center;
+  margin: 0 0 8px; font: 10px/14px var(--font); color: #d7f0dd;
 }
 .poker-app .poker-felt-rail span {
-  display: inline-block; margin: 0 4px; padding: 1px 6px;
-  border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.12);
+  display: inline-block; margin: 0 3px; padding: 1px 7px;
+  border: 1px solid rgba(255,255,255,.22); background: rgba(0,0,0,.18);
+  border-radius: 2px;
 }
-.poker-app .poker-seat { margin: 0 0 8px; font: 11px/16px var(--font); }
-.poker-app .poker-felt .poker-seat b { color: #fff; }
-.poker-app .poker-felt .muted { color: #d2e8d7; }
-.poker-app .poker-hole { margin-top: 4px; }
-.poker-app .poker-board-wrap { text-align: center; margin: 12px 0; }
+.poker-app .poker-streets {
+  position: relative; z-index: 2; text-align: center; margin: 0 0 10px;
+  font: 10px/14px var(--font); color: #c5e0cc;
+}
+.poker-app .poker-streets i {
+  display: inline-block; margin: 0 2px; padding: 1px 6px;
+  border: 1px solid rgba(255,255,255,.15); opacity: .45; font-style: normal;
+}
+.poker-app .poker-streets i.on {
+  opacity: 1; background: rgba(255,255,255,.12); color: var(--pk-gold); border-color: rgba(240,215,140,.45);
+}
+
+.poker-app .poker-seat {
+  position: relative; z-index: 2; text-align: center; margin: 0 auto 6px;
+  font: 11px/16px var(--font); max-width: 280px;
+}
+.poker-app .poker-seat.top { margin-top: 2px; }
+.poker-app .poker-seat.bot { margin-top: 8px; }
+.poker-app .poker-seat .poker-nameplate {
+  display: inline-block; padding: 3px 10px 4px;
+  background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 3px; color: #fff; min-width: 120px;
+}
+.poker-app .poker-seat.to-act .poker-nameplate {
+  border-color: var(--pk-gold);
+  box-shadow: 0 0 0 1px rgba(240,215,140,.35);
+}
+.poker-app .poker-seat .poker-stack-line { color: #d2e8d7; font-size: 10px; }
+.poker-app .poker-dealer {
+  display: inline-block; width: 18px; height: 18px; margin-left: 4px;
+  border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ddd 55%, #aaa);
+  color: #222; font: bold 10px/18px var(--font); text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,.4); vertical-align: middle;
+}
+.poker-app .poker-bet-line {
+  margin: 4px 0 2px; min-height: 22px; color: var(--pk-gold); font: bold 10px/14px var(--font);
+}
+.poker-app .poker-hole { margin-top: 5px; white-space: nowrap; }
+.poker-app .poker-board-wrap { position: relative; z-index: 2; text-align: center; margin: 8px 0 4px; }
 .poker-app .poker-pot {
-  margin: 0 0 8px; font: bold 12px/16px var(--font); color: #fff8c8;
-  text-shadow: 0 1px 0 rgba(0,0,0,.25);
+  margin: 0 0 6px; font: bold 12px/16px Georgia, "Times New Roman", serif; color: var(--pk-gold);
+  text-shadow: 0 1px 2px rgba(0,0,0,.45);
 }
-.poker-app .poker-actions { margin: 8px 0; }
+.poker-app .poker-pot .pk-chip-stack { margin-right: 6px; vertical-align: middle; }
+.poker-app .poker-board { min-height: 72px; }
+.poker-app .poker-board .pk-card,
+.poker-app .poker-hole .pk-card { margin: 0 3px; }
+.poker-app .pk-slot {
+  display: inline-block; width: 44px; height: 62px; margin: 0 3px;
+  border: 1px dashed rgba(255,255,255,.18); border-radius: 5px;
+  background: rgba(0,0,0,.12); vertical-align: top;
+}
+.poker-app .poker-hand-hint {
+  margin: 4px 0 0; font: 10px/14px var(--font); color: #cfe8d4;
+}
+
+/* Playing cards */
+.poker-app .pk-card,
+.pk-card {
+  --deal: 0;
+  position: relative; display: inline-block; width: 44px; height: 62px;
+  vertical-align: top; border-radius: 5px;
+  background: linear-gradient(165deg, #fff 0%, #f7f7f4 55%, #eee 100%);
+  border: 1px solid #2a2a2a;
+  box-shadow: 0 2px 3px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.65);
+  color: #151515;
+  font: 700 11px/1.05 Georgia, "Times New Roman", serif;
+  animation: pk-deal .38s ease both;
+  animation-delay: calc(var(--deal) * 60ms);
+  transform-origin: 50% 120%;
+}
+@keyframes pk-deal {
+  from { opacity: 0; transform: translateY(-14px) rotate(-8deg) scale(.92); }
+  to { opacity: 1; transform: none; }
+}
+.poker-app .pk-card.red { color: #c11818; }
+.poker-app .pk-card .pk-corner {
+  position: absolute; display: block; text-align: center; line-height: 1.05;
+}
+.poker-app .pk-card .pk-corner.tl { top: 3px; left: 4px; }
+.poker-app .pk-card .pk-corner.br {
+  right: 4px; bottom: 3px; transform: rotate(180deg);
+}
+.poker-app .pk-card .pk-corner i { display: block; font-style: normal; font-size: 12px; }
+.poker-app .pk-card .pk-corner u { display: block; text-decoration: none; font-size: 11px; }
+.poker-app .pk-card .pk-pip {
+  position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  text-align: center; font-size: 22px; line-height: 1;
+}
+.poker-app .pk-card.mine {
+  box-shadow: 0 2px 4px rgba(0,0,0,.32), 0 0 0 1px #d4b44a, inset 0 0 0 1px #fff;
+}
+.poker-app .pk-card.back {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.08), transparent 40%),
+    repeating-linear-gradient(45deg, #1e3a6e 0 3px, #274a86 3px 6px);
+  border-color: #14284a; color: #fff;
+}
+.poker-app .pk-card.back .pk-back-pattern {
+  position: absolute; inset: 5px; border: 1px solid rgba(255,255,255,.28);
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,220,140,.35), transparent 55%),
+    repeating-linear-gradient(-45deg, transparent 0 4px, rgba(255,255,255,.08) 4px 5px);
+}
+.poker-app .pk-card.lg { width: 52px; height: 74px; }
+.poker-app .pk-card.lg .pk-pip { font-size: 26px; }
+.poker-app .pk-card.lg .pk-corner i { font-size: 13px; }
+
+/* Chips */
+.poker-app .pk-chip-stack {
+  position: relative; display: inline-block; width: 28px; height: 22px; vertical-align: middle;
+}
+.poker-app .pk-chip {
+  position: absolute; left: 4px; width: 20px; height: 20px; border-radius: 50%;
+  bottom: calc(var(--n) * 2px); border: 2px dashed rgba(255,255,255,.55);
+  box-shadow: 0 1px 1px rgba(0,0,0,.45), inset 0 0 0 2px rgba(0,0,0,.15);
+}
+.poker-app .pk-chip.red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #c62828); }
+.poker-app .pk-chip.blue { background: radial-gradient(circle at 35% 30%, #64b5f6, #1565c0); }
+.poker-app .pk-chip.green { background: radial-gradient(circle at 35% 30%, #81c784, #2e7d32); }
+.poker-app .pk-chip.black { background: radial-gradient(circle at 35% 30%, #777, #222); }
+.poker-app .pk-chip.purple { background: radial-gradient(circle at 35% 30%, #ba68c8, #6a1b9a); }
+.poker-app .pk-chip.yellow { background: radial-gradient(circle at 35% 30%, #ffe082, #f9a825); }
+.poker-app .pk-chip.orange { background: radial-gradient(circle at 35% 30%, #ffb74d, #ef6c00); }
+.poker-app .pk-chip.pink { background: radial-gradient(circle at 35% 30%, #f48fb1, #ad1457); }
+.poker-app .pk-chip.gray { background: radial-gradient(circle at 35% 30%, #eee, #9e9e9e); }
+
+.poker-app .poker-actions {
+  margin: 8px 0; padding: 8px; background: #f4f7fc; border: 1px solid #c3cde0;
+}
 .poker-app .poker-actions form.inline { display: inline; margin-right: 6px; }
+.poker-app .poker-actions .inputsubmit { min-width: 72px; }
 .poker-app .poker-raise-form { margin: 6px 0 10px; }
+.poker-app .poker-raise-presets { margin: 0 0 6px; }
+.poker-app .poker-raise-presets button {
+  margin-right: 4px; margin-bottom: 3px;
+}
 .poker-app .poker-simple-list { list-style: none; margin: 0; padding: 0; }
 .poker-app .poker-simple-list li {
   margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
@@ -1539,10 +1697,12 @@ body.fb-dialog-open { overflow: hidden; }
 }
 .poker-app .poker-lobby-col {
   display: table-cell; width: 50%; vertical-align: top;
-  padding: 8px 10px; border: 1px solid #c3cde0; background: #f7f9fc;
+  padding: 8px 10px; border: 1px solid #c3cde0;
+  background: linear-gradient(180deg, #fbfcfe, #f0f4fa);
 }
 .poker-app .poker-room-panel {
-  margin: 0 0 12px; padding: 10px 12px; border: 1px solid #c3cde0; background: #f7f9fc;
+  margin: 0 0 12px; padding: 10px 12px; border: 1px solid #c3cde0;
+  background: linear-gradient(180deg, #fbfcfe, #f0f4fa);
 }
 .poker-app .poker-code-box {
   margin: 6px 0 10px; padding: 6px 8px; background: #fff8e1; border: 1px dashed #c9b66b;
@@ -1559,11 +1719,27 @@ body.fb-dialog-open { overflow: hidden; }
   font: 11px/15px var(--font);
 }
 .poker-app .poker-seat-slot.me { border-color: #3B5998; background: #edf2f8; }
+.poker-app .poker-mini-felt {
+  margin: 0 0 12px; padding: 10px; border-radius: 8px;
+  background: radial-gradient(ellipse at center, #2f8f4d, #145028);
+  color: #e8ffe8; text-align: center; font: 11px/15px var(--font);
+}
 @media (max-width: 640px) {
   .poker-app .poker-lobby-grid,
   .poker-app .poker-lobby-col { display: block; width: auto; }
   .poker-app .poker-lobby-col { margin-bottom: 8px; }
   .poker-app .poker-seat-slot { display: block; width: auto; margin: 0 0 6px; }
+  .poker-app .poker-oval {
+    border-radius: 28px; min-height: 360px; padding: 14px 10px;
+    box-shadow:
+      inset 0 0 0 8px var(--pk-rail),
+      inset 0 0 0 11px var(--pk-rail-hi),
+      inset 0 0 0 14px #4a2a14,
+      0 6px 14px rgba(0,0,0,.3);
+  }
+  .poker-app .poker-oval::before { inset: 16px; border-radius: 20px; }
+  .poker-app .pk-card { width: 40px; height: 56px; }
+  .poker-app .pk-slot { width: 40px; height: 56px; }
 }
 #snav .snav-apps-label {
   display: block; margin-top: 8px; padding: 2px 0 1px;
