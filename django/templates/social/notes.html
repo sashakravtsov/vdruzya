@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Заметки — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="notes-page">
+    <div id="header"><h1>Заметки</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div id="tabs">
+            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'notes' %}">Друзья</a></div>
+            <div class="{% if mine %}activetab{% else %}inactivetab{% endif %}"><a href="?mine=1">Мои</a></div>
+        </div>
+        <div class="profile-box">
+            <h4>Новая заметка</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <input type="hidden" name="next" value="/notes?mine=1">
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Заголовок:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Текст:</td><td>{{ form.body }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
+                        <tr><td class="label">Кому:</td><td>{{ form.visibility }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Опубликовать"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>{% if mine %}Мои заметки{% else %}Заметки друзей{% endif %}</h4>
+            <div class="profile-box-body">
+                {% for p in items %}
+                <div class="event-list-row note-row">
+                    {% include "social/_list_thumb.html" with url=p.media_url href=p.get_absolute_url %}
+                    <div class="list-row-body">
+                        <b><a href="{% url 'posts.show' p.id %}">{{ p.media_label|default:"Заметка" }}</a></b>
+                        <div class="muted">
+                            <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
+                            {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
+                        </div>
+                        {% if p.body %}<div>{{ p.body|truncatewords:40 }}</div>{% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока нет заметок.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

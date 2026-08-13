@@ -1,0 +1,37 @@
+{# Education / work row boxes. Expects: row_editors from build_edit_context. #}
+{% for box in row_editors %}
+<div class="profile-box">
+    <h4>{{ box.title }}</h4>
+    <div class="profile-box-body">
+        <ul class="plain">
+            {% for e in box.rows %}
+            <li>
+                {% if box.kind == 'edu' %}
+                {{ e.institution }}{% if e.degree %} — {{ e.degree }}{% endif %}{% if e.field %}, {{ e.field }}{% endif %}
+                {% if e.start_year or e.end_year %}
+                <span class="muted"> · {% if e.start_year %}{{ e.start_year }}{% endif %}{% if e.start_year and e.end_year %}–{% endif %}{% if e.end_year %}{{ e.end_year }}{% endif %}</span>
+                {% endif %}
+                {% else %}
+                <b>{{ e.position }}</b> · {{ e.company_name }}{% if e.period %} <span class="muted">{{ e.period }}</span>{% endif %}
+                {% endif %}
+                <a class="muted" href="?section=eduwork&amp;{{ box.param }}={{ e.id }}">ред.</a>
+                <form method="post" action="{% url box.delete_name e.id %}" class="inline">{% csrf_token %}
+                    <button type="submit" class="linkish muted">удалить</button>
+                </form>
+            </li>
+            {% empty %}<li class="muted">Пока пусто</li>{% endfor %}
+        </ul>
+        <form method="post" action="{{ box.action }}">{% csrf_token %}
+            <table class="formtable editor" cellpadding="0" cellspacing="0">
+                {% for field in box.form %}
+                <tr><td class="label">{{ field.label }}:</td><td>{{ field }}</td></tr>
+                {% endfor %}
+                <tr><td class="label"></td><td class="buttons">
+                    <input type="submit" class="inputsubmit" value="{% if box.edit_row %}Сохранить{% else %}Добавить{% endif %}">
+                    {% if box.edit_row %} · <a href="?section=eduwork">Отмена</a>{% endif %}
+                </td></tr>
+            </table>
+        </form>
+    </div>
+</div>
+{% endfor %}
