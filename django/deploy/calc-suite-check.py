@@ -39,8 +39,8 @@ def main():
         assert "ok" in out
     ok("50 tools + formula spot-checks")
 
-    user = User.objects.filter(is_superuser=True).first() or User.objects.order_by("id").first()
-    assert user
+    user = User.objects.order_by("id").first()
+    assert user, "need at least one user"
     me = profile_of(user)
     c = Client()
     c.force_login(user)
