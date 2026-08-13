@@ -265,18 +265,19 @@ def main():
     prow.delete()
     ok("place + checkin photos")
 
-    # Shared video permalink never dumps storage:
-    from apps.social.shares import share_to_wall
-    vtitle = f"QA ShareVid {uuid.uuid4().hex[:5]}"
-    vid = SimpleUploadedFile("share.mp4", _tiny_mp4(), content_type="video/mp4")
-    r = c.post("/videos", {
-        "title": vtitle, "url": "", "blurb": "share blurb", "visibility": "friends", "video": vid,
-    }, secure=True)
-    assert r.status_code in (301, 302)
-    vsrc = Post.objects.filter(social_user=me, kind="video", media_label=vtitle).order_by("-id").first()
-    assert vsrc
-    shared = share_to_wall(me, vsrc, blurb="перепост")
-    assert shared
+    # Shared video permalink never dumps storage: (ORM share — can_share blocks own posts)
+    t = now()
+    vsrc = Post.objects.create(
+        social_user=me, kind="video", topic="video",
+        body="storage:videos/qa-share.mp4\n\nshare blurb",
+        media_label="QA ShareVid", visibility="public",
+        created_at=t, updated_at=t,
+    )
+    shared = Post.objects.create(
+        social_user=me, body="перепост", kind="share", topic=f"wall:{me.id}",
+        visibility="friends", shared_post=vsrc, media_label=vsrc.media_label,
+        created_at=t, updated_at=t,
+    )
     r = c.get(f"/posts/{shared.id}", secure=True)
     assert r.status_code == 200
     assert b"storage:" not in r.content
