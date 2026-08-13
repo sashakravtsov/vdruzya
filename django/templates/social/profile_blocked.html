@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Профиль недоступен — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header"><h1>Профиль недоступен</h1></div>
+    <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Ограничение</h4>
+            <div class="profile-box-body">
+                <p>Взаимодействие с этим пользователем недоступно.</p>
+                <p class="people-top-links"><a href="{% url 'people' %}?tab=search">К людям</a> · <a href="{% url 'feed' %}">К ленте</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

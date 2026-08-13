@@ -1,0 +1,23 @@
+{% extends "legal/base.html" %}
+{% block legal_body %}
+<div class="clearfix">
+    <div class="leftcolumn">
+        <div class="halfwidth">
+            <h4>Оператор</h4>
+            <p><strong>{{ legal.operator_name|default:legal.operator_short }}</strong></p>
+            {% if legal.inn %}<p>ИНН {{ legal.inn }}{% if legal.kpp %} · КПП {{ legal.kpp }}{% endif %}{% if legal.ogrn %} · ОГРН {{ legal.ogrn }}{% endif %}</p>{% endif %}
+            {% if legal.address %}<p>{{ legal.address }}</p>{% endif %}
+        </div>
+    </div>
+    <div class="rightcolumn">
+        <div class="halfwidth">
+            <h4>Связь</h4>
+            <table cellspacing="0" cellpadding="0" border="0">
+                <tr><td><a href="mailto:{{ legal.email }}">{{ legal.email }}</a></td><td class="title">Поддержка</td></tr>
+                {% if legal.phone %}<tr><td>{{ legal.phone }}</td><td class="title">Телефон</td></tr>{% endif %}
+            </table>
+            <p style="margin-top:10px">По вопросам аккаунта, безопасности и модерации пишите на <a href="mailto:{{ legal.email }}">{{ legal.email }}</a>.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
