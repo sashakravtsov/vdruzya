@@ -1,7 +1,7 @@
 {% load vd %}
 {# Classic FB Inbox thread — HTTP reply form, 1:1. #}
 {% if active.peer %}
-<p class="msg-members muted">{% if folder == 'sent' %}Кому{% else %}Переписка с{% endif %}: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a></p>
+<p class="msg-members muted">{% if folder == 'sent' %}Кому{% else %}Переписка с{% endif %}: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a>{% if active.peer_read_at %} · был(а) в переписке {{ active.peer_read_at|fb_when }}{% endif %}</p>
 {% endif %}
 <form method="get" class="msg-thread-filter" action="{% url 'inbox' %}">
     <input type="hidden" name="c" value="{{ active.id }}">
@@ -35,10 +35,18 @@
     {{ form.body }}
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
     {% if form.sticker %}<p class="wallposter-file">Стикер: {{ form.sticker }}</p>{% endif %}
+    {{ form.waveform }}
+    {{ form.duration_ms }}
     <p class="wallposter-file msg-voice-row">
         {{ form.voice }}
         <button type="button" class="linkish" id="inbox-voice-btn">● Голосовое</button>
-        <span class="file-hint muted" id="inbox-voice-hint">запись в браузере · до 8 МБ</span>
+        <button type="button" class="linkish muted" id="inbox-voice-cancel" hidden>отмена</button>
+        <span class="file-hint muted" id="inbox-voice-hint">запись в браузере · до 8 МБ · с дорожкой</span>
     </p>
+    <div class="msg-voice-live" id="inbox-voice-live" hidden aria-hidden="true">
+        <span class="msg-voice-live-lab muted">запись</span>
+        <div class="msg-wave is-live" id="inbox-voice-live-wave"></div>
+        <span class="msg-voice-dur" id="inbox-voice-live-dur">0:00</span>
+    </div>
     <input type="submit" class="inputsubmit" value="Отправить">
 </form>

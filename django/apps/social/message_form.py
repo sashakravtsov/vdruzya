@@ -17,6 +17,8 @@ class MessageForm(ClassicForm, forms.ModelForm):
             "id": "id_voice_file",
         }),
     )
+    waveform = forms.CharField(required=False, max_length=512, widget=forms.HiddenInput(attrs={"id": "id_voice_wave"}))
+    duration_ms = forms.IntegerField(required=False, widget=forms.HiddenInput(attrs={"id": "id_voice_ms"}))
     reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
     sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
 

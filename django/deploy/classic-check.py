@@ -46,7 +46,17 @@ def main():
             "WHERE table_name='conversation_members' AND column_name='muted_at'"
         )
         assert cur.fetchone(), "conversation_members.muted_at — run ensure-classic-modules.py"
-    ok("schema lists+market+tags+mute")
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='messages' AND column_name='waveform'"
+        )
+        assert cur.fetchone(), "messages.waveform — run ensure-classic-modules.py"
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='messages' AND column_name='duration_ms'"
+        )
+        assert cur.fetchone(), "messages.duration_ms — run ensure-classic-modules.py"
+    ok("schema lists+market+tags+mute+voicewave")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
     assert u

@@ -45,6 +45,9 @@ class Message(models.Model):
     attachment_disk = models.CharField(max_length=255, null=True, blank=True)
     attachment_name = models.CharField(max_length=255, null=True, blank=True)
     attachment_mime = models.CharField(max_length=255, null=True, blank=True)
+    # Telegram-style voice waveform peaks ("12,40,88,...") + duration for classic player
+    waveform = models.CharField(max_length=512, null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
     read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
@@ -70,6 +73,20 @@ class Message(models.Model):
         if (self.message_type or "") == "voice":
             return True
         return (self.attachment_mime or "").lower().startswith("audio/")
+
+    @property
+    def waveform_bars(self) -> list[int]:
+        from apps.social.media import parse_waveform_peaks
+        peaks = parse_waveform_peaks(self.waveform)
+        if peaks:
+            return peaks
+        # Soft placeholder so older voice notes still read as a track
+        return [18 + ((i * 17 + (self.id or 0) * 3) % 62) for i in range(40)]
+
+    @property
+    def duration_label(self) -> str:
+        from apps.social.media import format_duration_ms
+        return format_duration_ms(self.duration_ms)
 
 
 class Notification(models.Model):

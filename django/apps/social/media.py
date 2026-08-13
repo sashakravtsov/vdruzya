@@ -146,8 +146,112 @@ def save_video(upload, folder: str = "videos") -> tuple[str, str | None]:
     return video_path, poster_path
 
 
-def save_audio(upload, folder: str = "messages") -> str:
-    """Store classic Inbox voice note on the same media disk as photos/videos."""
+WAVEFORM_BARS = 40
+
+
+def format_duration_ms(ms) -> str:
+    try:
+        ms = int(ms or 0)
+    except (TypeError, ValueError):
+        ms = 0
+    if ms <= 0:
+        return "0:00"
+    sec = max(0, ms // 1000)
+    return f"{sec // 60}:{sec % 60:02d}"
+
+
+def parse_waveform_peaks(raw, *, bars: int = WAVEFORM_BARS) -> list[int] | None:
+    """Validate client/server peak CSV → list of 1..100 ints (fixed bar count)."""
+    if not raw:
+        return None
+    parts = [p.strip() for p in str(raw).replace(";", ",").split(",") if p.strip()]
+    if len(parts) < 8:
+        return None
+    vals: list[int] = []
+    for p in parts[:96]:
+        try:
+            n = int(float(p))
+        except (TypeError, ValueError):
+            continue
+        vals.append(max(1, min(100, n)))
+    if len(vals) < 8:
+        return None
+    if len(vals) == bars:
+        return vals
+    # Resample to fixed bar count
+    out = []
+    for i in range(bars):
+        idx = int(i * (len(vals) - 1) / max(1, bars - 1))
+        out.append(vals[idx])
+    return out
+
+
+def serialize_waveform_peaks(peaks: list[int] | None) -> str | None:
+    clean = parse_waveform_peaks(",".join(str(int(x)) for x in (peaks or [])), bars=WAVEFORM_BARS)
+    if not clean:
+        return None
+    return ",".join(str(x) for x in clean)
+
+
+def parse_duration_ms(raw) -> int | None:
+    try:
+        ms = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if ms < 200 or ms > 15 * 60 * 1000:
+        return None
+    return ms
+
+
+def waveform_from_bytes(raw: bytes, *, bars: int = WAVEFORM_BARS) -> tuple[str | None, int | None]:
+    """Django+ffmpeg strength: decode any voice container → peaks + duration_ms."""
+    if not raw or len(raw) < 64:
+        return None, None
+    ffmpeg = getattr(settings, "FFMPEG_BIN", "ffmpeg")
+    try:
+        import struct
+        with tempfile.TemporaryDirectory(prefix="vdvoice_") as tmp:
+            src = Path(tmp) / "in.bin"
+            src.write_bytes(raw)
+            cmd = [
+                ffmpeg, "-y", "-loglevel", "error",
+                "-i", str(src),
+                "-ac", "1", "-ar", "8000", "-f", "f32le",
+                "pipe:1",
+            ]
+            proc = subprocess.run(cmd, check=True, timeout=45, capture_output=True)
+        pcm = proc.stdout or b""
+        if len(pcm) < 16:
+            return None, None
+        n = len(pcm) // 4
+        duration_ms = int(n * 1000 / 8000)
+        # Sample absolute peaks per bucket
+        bucket = max(1, n // bars)
+        peaks = []
+        for i in range(bars):
+            start = i * bucket
+            chunk = pcm[start * 4:(start + bucket) * 4]
+            if not chunk:
+                peaks.append(8)
+                continue
+            # mean abs of up to ~bucket floats
+            step = max(4, len(chunk) // 64 * 4) or 4
+            acc = 0.0
+            cnt = 0
+            for off in range(0, len(chunk) - 3, step):
+                acc += abs(struct.unpack_from("<f", chunk, off)[0])
+                cnt += 1
+            peaks.append(acc / cnt if cnt else 0.0)
+        peak = max(peaks) or 1.0
+        scaled = [max(4, min(100, int(round((v / peak) * 100)))) for v in peaks]
+        return serialize_waveform_peaks(scaled), duration_ms if duration_ms >= 200 else None
+    except Exception as exc:
+        log.warning("voice waveform skipped: %s", exc)
+        return None, None
+
+
+def save_audio(upload, folder: str = "messages") -> tuple[str, bytes]:
+    """Store classic Inbox voice note; return (path, raw bytes for waveform analysis)."""
     name = getattr(upload, "name", "") or "voice.webm"
     ext = Path(name).suffix.lower()
     ctype = (getattr(upload, "content_type", "") or "").lower()
@@ -171,14 +275,15 @@ def save_audio(upload, folder: str = "messages") -> str:
     if len(raw) < 32:
         raise ValueError("Пустая запись")
     path = f"{folder}/{uuid.uuid4().hex}{ext}"
-    return default_storage.save(path, ContentFile(raw))
+    return default_storage.save(path, ContentFile(raw)), raw
 
 
 def try_save_audio(upload, folder: str = "messages") -> str | None:
     if not upload:
         return None
     try:
-        return save_audio(upload, folder)
+        path, _raw = save_audio(upload, folder)
+        return path
     except Exception:
         return None
 

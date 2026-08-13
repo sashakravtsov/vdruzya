@@ -110,20 +110,35 @@ def main():
     assert "MediaRecorder" in js and "uploadVoice" in js
     ok("realtime SSE + inbox since + typing")
 
-    # Voice note upload (tiny fake ogg/webm payload)
+    # Voice note upload + Telegram-style waveform peaks
     from django.core.files.uploadedfile import SimpleUploadedFile
     voice_blob = b"OggS" + b"\x00" * 200
+    peaks = ",".join(str(10 + (i * 7) % 90) for i in range(40))
     r = c.post(
         f"/inbox/{conv.id}/message",
-        {"body": "", "voice": SimpleUploadedFile("voice.ogg", voice_blob, content_type="audio/ogg")},
+        {
+            "body": "",
+            "voice": SimpleUploadedFile("voice.ogg", voice_blob, content_type="audio/ogg"),
+            "waveform": peaks,
+            "duration_ms": "3200",
+        },
         secure=True,
     )
     assert r.status_code in (301, 302)
     vm = Message.objects.filter(conversation=conv, message_type="voice").order_by("-id").first()
     assert vm and vm.attachment_path and vm.attachment_path.startswith("messages/")
+    assert vm.waveform and len(vm.waveform.split(",")) >= 8
+    assert vm.duration_ms == 3200
+    assert vm.duration_label == "0:03"
     r = c.get(f"/inbox?c={conv.id}", secure=True)
-    assert r.status_code == 200 and b"<audio" in r.content
-    ok("voice message upload")
+    assert r.status_code == 200
+    assert b"msg-wave" in r.content and b"msg-voice-play" in r.content
+    assert b"<audio" in r.content
+    js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
+    assert "extractWaveform" in js and "wireVoicePlayers" in js and "paintLiveWave" in js
+    css = (root / "static/css/classic.css").read_text(encoding="utf-8")
+    assert ".msg-wave" in css and ".msg-voice-play" in css
+    ok("voice message upload + waveform")
 
     # Archive folder + restore
     r = c.post(f"/inbox/{conv.id}/leave", {}, secure=True)
@@ -178,14 +193,13 @@ def main():
     ch.post_message(other, conv, marker2)
     r = c.get(f"/inbox?c={conv.id}", secure=True)
     assert r.status_code == 200
-    assert b"непрочитанное" in r.content or "непрочитанное".encode() in r.content
-    assert b"спам" in r.content or "спам".encode() in r.content
-    assert b"переслать" in r.content or "переслать".encode() in r.content
+    assert "непрочитанное".encode() in r.content
+    assert "спам".encode() in r.content
+    assert "переслать".encode() in r.content
     assert b'name="tq"' in r.content
-    assert b"inbox-reply-chip" not in r.content or True
     r = c.post(f"/inbox/{conv.id}/unread", {}, secure=True)
     assert r.status_code in (301, 302)
-    assert "c=" not in (r.url or "") or r.url.endswith("/inbox") or "/inbox" in (r.url or "")
+    assert "c=" not in (r.headers.get("Location") or "")
     r = c.get("/inbox?unread=1", secure=True)
     assert r.status_code == 200
     # reopen marks read again
@@ -225,6 +239,26 @@ def main():
 
     Message.objects.filter(conversation=conv, body__startswith=marker).delete()
     Message.objects.filter(conversation=conv, message_type="voice").delete()
+    from apps.social.media import parse_waveform_peaks, serialize_waveform_peaks, waveform_from_bytes
+    assert serialize_waveform_peaks(parse_waveform_peaks(peaks))
+    # ffmpeg path (optional): tiny silence wav should yield peaks when ffmpeg present
+    import struct
+    import wave
+    from io import BytesIO
+    bio = BytesIO()
+    with wave.open(bio, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        frames = b"".join(struct.pack("<h", int(1000 * ((i % 20) - 10))) for i in range(8000))
+        w.writeframes(frames)
+    fw, fms = waveform_from_bytes(bio.getvalue())
+    if fw:
+        assert len(fw.split(",")) >= 8
+        assert fms and fms >= 200
+        ok("ffmpeg waveform analyze")
+    else:
+        ok("ffmpeg waveform skipped (no decode)")
     ok("cleanup")
     print("ALL inbox/flash/birthdays probes passed")
 

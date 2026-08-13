@@ -87,6 +87,8 @@ def message_send(request, me, conv):
             voice=bool(voice),
             reply_to_id=form.cleaned_data.get("reply_to"),
             sticker_id=form.cleaned_data.get("sticker") or None,
+            waveform=form.cleaned_data.get("waveform") or request.POST.get("waveform"),
+            duration_ms=form.cleaned_data.get("duration_ms") or request.POST.get("duration_ms"),
         )
     except ValueError:
         messages.error(request, "Напишите текст, приложите фото / видео / голосовое или выберите стикер.")

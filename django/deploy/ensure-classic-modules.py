@@ -66,6 +66,8 @@ UPDATE photo_tags SET status = 'approved' WHERE status IS NULL OR status = '';
 CREATE INDEX IF NOT EXISTS photo_tags_pending_idx ON photo_tags (social_user_id, status);
 ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
 ALTER TABLE conversation_members ADD COLUMN IF NOT EXISTS muted_at timestamp without time zone NULL;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS waveform varchar(512) NULL;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS duration_ms integer NULL;
 """
 
 
@@ -93,7 +95,17 @@ def main():
             "WHERE table_name='conversation_members' AND column_name='muted_at'"
         )
         assert cur.fetchone(), "conversation_members.muted_at"
-    print("OK   friend_lists + marketplace + photo_tags + inbox mute")
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='messages' AND column_name='waveform'"
+        )
+        assert cur.fetchone(), "messages.waveform"
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='messages' AND column_name='duration_ms'"
+        )
+        assert cur.fetchone(), "messages.duration_ms"
+    print("OK   friend_lists + marketplace + photo_tags + inbox mute/voicewave")
 
 
 if __name__ == "__main__":
