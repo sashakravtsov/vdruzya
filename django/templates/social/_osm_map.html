@@ -1,0 +1,21 @@
+{% load static %}
+{# Classic OSM map box — Leaflet + OSM tiles; pass map= from osm.map_context #}
+{% if map %}
+<div class="profile-box osm-box">
+    <h4>Карта{% if map.title %}<a class="edit" href="{{ map.osm_link }}" target="_blank" rel="noopener noreferrer">OSM</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        <div class="osm-map"
+             data-lat="{{ map.lat }}"
+             data-lon="{{ map.lon }}"
+             data-zoom="{{ map.zoom }}"
+             data-markers="{{ map.markers_json|escape }}"></div>
+        <p class="muted stack-xs">
+            <a href="{{ map.osm_link }}" target="_blank" rel="noopener noreferrer">Открыть в OpenStreetMap</a>
+            · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OSM</a>
+        </p>
+    </div>
+</div>
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+<script src="{% static 'vendor/leaflet/leaflet.js' %}" defer></script>
+<script src="{% static 'js/osm-map.js' %}" defer></script>
+{% endif %}

@@ -1,0 +1,74 @@
+{% load vd %}
+{# Classic FB Inbox thread — HTTP reply form, 1:1. #}
+{% if active.peer %}
+<p class="msg-members muted">{% if folder == 'sent' %}Кому{% else %}Переписка с{% endif %}: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a>{% if active.peer_read_at %} · был(а) в переписке {{ active.peer_read_at|fb_when }}{% endif %}</p>
+{% endif %}
+<form method="get" class="msg-thread-filter" action="{% url 'inbox' %}">
+    <input type="hidden" name="c" value="{{ active.id }}">
+    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+    <label class="muted">В переписке:</label>
+    <input class="inputtext" type="text" name="tq" value="{{ tq }}" autocomplete="off">
+    <input type="submit" class="inputbutton" value="Найти">
+    {% if tq %}<a class="muted" href="?c={{ active.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">сбросить</a>{% endif %}
+</form>
+{% if has_older and not show_all %}
+<p class="msg-older">
+    <a href="#" id="inbox-older-link" data-older-url="{% url 'inbox.older' active.id %}" data-before="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-tq="{{ tq }}">← более ранние сообщения</a>
+    ·
+    <a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">загрузить все</a>
+</p>
+{% endif %}
+<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}" data-message-url="{% url 'inbox.message' active.id %}" data-peer-read="{% if active.peer_read_at %}{{ active.peer_read_at|date:'c' }}{% endif %}" data-first="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-voice-bars="{{ voice_bars|default:40 }}" data-voice-max-ms="{{ voice_max_ms|default:300000 }}">
+    {% for m in thread_messages %}
+    {% ifchanged m.created_at|date:"Ymd" %}
+    {% include "social/_inbox_line.html" with show_day=1 %}
+    {% else %}
+    {% include "social/_inbox_line.html" with show_day=0 %}
+    {% endifchanged %}
+    {% empty %}<p class="muted">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
+</div>
+<p class="msg-typing muted" id="inbox-typing" aria-live="polite" hidden></p>
+{% if reply_preview %}
+<p class="msg-reply-chip muted" id="inbox-reply-chip">
+    Ответ на <b>{{ reply_preview.social_user.name }}</b>: {{ reply_preview.body|truncatewords:16 }}
+    · <a href="?c={{ active.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">отменить</a>
+</p>
+{% endif %}
+<form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" id="inbox-compose" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.reply_to }}
+    {{ form.sticker }}
+    <div class="msg-md-shell">
+        {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" from_album=0 %}
+        {% include "social/_inbox_md_stage.html" with body_field=form.body %}
+    </div>
+    <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
+    {{ form.waveform }}
+    {{ form.duration_ms }}
+    <div class="msg-voice-compose">
+        <p class="wallposter-file msg-voice-row">
+            {{ form.voice }}
+            <button type="button" class="linkish" id="inbox-voice-btn">● Голосовое</button>
+            <button type="button" class="linkish muted" id="inbox-voice-cancel" hidden>отмена</button>
+            <span class="file-hint muted" id="inbox-voice-hint">запись · прослушать · отправить · до 5 мин</span>
+        </p>
+        <div class="msg-voice-live" id="inbox-voice-live" hidden aria-hidden="true">
+            <span class="msg-voice-live-dot" aria-hidden="true"></span>
+            <span class="msg-voice-live-lab muted">запись</span>
+            <div class="msg-wave is-live" id="inbox-voice-live-wave"></div>
+            <span class="msg-voice-dur" id="inbox-voice-live-dur">0:00</span>
+            <span class="msg-voice-max muted">/ 5:00</span>
+        </div>
+        <div class="msg-voice-draft" id="inbox-voice-draft" hidden>
+            <div class="msg-voice is-draft">
+                <button type="button" class="msg-voice-play" id="inbox-voice-draft-play" aria-label="Прослушать">▶</button>
+                <div class="msg-wave" id="inbox-voice-draft-wave" role="slider" aria-label="Черновик голосового" tabindex="0"></div>
+                <span class="msg-voice-dur" id="inbox-voice-draft-dur">0:00</span>
+            </div>
+            <p class="msg-voice-draft-actions">
+                <button type="button" class="inputsubmit" id="inbox-voice-send">Отправить</button>
+                · <button type="button" class="linkish muted" id="inbox-voice-discard">сбросить</button>
+            </p>
+        </div>
+    </div>
+    <input type="submit" class="inputsubmit" value="Отправить">
+</form>

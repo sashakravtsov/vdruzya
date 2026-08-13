@@ -1,0 +1,21 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Тетрис</h4>
+    <div class="profile-box-body">
+        <p class="muted">Введите число собранных линий за раунд (демо-счёт).</p>
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Линии:</td>
+                    <td>
+                        <input class="inputtext" name="lines" value="4" size="4" maxlength="2">
+                        <input type="submit" class="inputsubmit" value="Засчитать">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        {% if score is not None %}<p>Счёт: <b>{{ score }}</b></p>{% endif %}
+    </div>
+</div>
+{% endblock %}

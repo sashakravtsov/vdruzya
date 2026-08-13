@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ event.title }} — Проверка безопасности{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="safety-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ event.title }}</h1>
+        <div class="subtitle"><a href="{% url 'safety' %}">← проверка безопасности</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        {% if event.city %}<p class="muted">Зона: {{ event.city }}{% if event.radius_km %} · ~{{ event.radius_km|floatformat:0 }} км{% endif %}</p>{% endif %}
+        {% include "social/_osm_map.html" with map=map %}
+        {% if event.body %}<p>{{ event.body }}</p>{% endif %}
+
+        <div class="profile-box">
+            <h4>Ваш статус</h4>
+            <div class="profile-box-body">
+                {% if mine %}
+                <p>
+                    Сейчас:
+                    {% if mine.status == 'safe' %}<b>в безопасности</b>{% else %}<b>не в зоне</b>{% endif %}
+                    {% if mine.updated_at %}<span class="muted"> · {{ mine.updated_at|fb_when }}</span>{% endif %}
+                </p>
+                {% endif %}
+                {% if event.is_active %}
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="status" value="safe">
+                    <input type="submit" class="inputsubmit" value="Я в безопасности">
+                </form>
+                <form method="post" class="inline inline-gap">{% csrf_token %}
+                    <input type="hidden" name="status" value="out_of_area">
+                    <input type="submit" class="inputbutton" value="Меня нет в зоне">
+                </form>
+                {% else %}
+                <p class="muted">Событие закрыто.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Друзья в безопасности</h4>
+            <div class="profile-box-body">
+                {% for row in friends_safe %}
+                    {% include "social/_person_row.html" with person=row.social_user %}
+                {% empty %}
+                <p class="muted">Пока никто из друзей не отметился.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if needing and event.is_active %}
+        <div class="profile-box">
+            <h4>Отметить друга</h4>
+            <div class="profile-box-body">
+                {% for person in needing %}
+                <div class="classic-person-row">
+                    <span class="classic-inline-actions">
+                        <form method="post" class="inline">{% csrf_token %}
+                            <input type="hidden" name="status" value="safe">
+                            <input type="hidden" name="friend_id" value="{{ person.id }}">
+                            <button type="submit" class="linkish">отметить в безопасности</button>
+                        </form>
+                    </span>
+                    <a class="classic-person-name" href="{% url 'profile' person.id %}">
+                        {% avatar person 50 %}
+                        <span><b>{{ person.name }}</b></span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

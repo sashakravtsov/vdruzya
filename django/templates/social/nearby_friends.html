@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Друзья рядом — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header"><h1>Друзья рядом</h1></div>
+    <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Друзья рядом по городу и карте OpenStreetMap — без GPS и постоянного трекинга.</p>
+        <p class="people-top-links muted">
+            <a href="{% url 'friends' %}">Друзья</a>
+            · <a href="{% url 'graph' %}">Поиск по графу</a>
+            · <a href="{% url 'profile.edit' %}">Указать город</a>
+        </p>
+
+        {% include "social/_osm_map.html" with map=map %}
+
+        <div class="profile-box">
+            <h4>{% if city %}В городе «{{ city }}»{% else %}Рядом{% endif %}</h4>
+            <div class="profile-box-body">
+                {% if city %}
+                    {% for person in people %}
+                        {% include "social/_person_row.html" with person=person %}
+                    {% empty %}
+                        <p class="muted">Среди друзей пока никого рядом с «{{ city }}».</p>
+                    {% endfor %}
+                {% else %}
+                    <p class="muted">Укажите город в <a href="{% url 'profile.edit' %}">профиле</a>, чтобы видеть друзей рядом.</p>
+                    {% if people %}
+                    <p class="muted">Друзья с указанным городом:</p>
+                    {% for person in people %}
+                        {% include "social/_person_row.html" with person=person %}
+                    {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

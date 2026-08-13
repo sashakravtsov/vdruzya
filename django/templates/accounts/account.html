@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}Аккаунт — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="account-page">
+    <div id="header"><h1>Мой аккаунт</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Аккаунт</h4>
+            <div class="profile-box-body">
+                <table class="infotable">
+                    <tr><td class="label">E-mail:</td><td><b>{{ user_obj.email }}</b></td></tr>
+                    {% if me %}
+                    <tr><td class="label">Профиль:</td><td><a href="{% url 'profile' me.id %}">{{ me.name }}</a> · <a href="{% url 'profile.edit' %}">редактировать профиль</a></td></tr>
+                    <tr><td class="label">Приватность:</td><td><a href="{% url 'profile.edit' %}?section=privacy">настройки профиля</a> · <a href="{% url 'blocked' %}">чёрный список</a></td></tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        {% if me and invite_url %}
+        <div class="profile-box">
+            <h4>Пригласить друга</h4>
+            <div class="profile-box-body">
+                <table class="infotable">
+                    <tr><td class="label">Код:</td><td><b>{{ invite_code }}</b> · <a href="{% url 'invite.mine' %}">страница приглашения</a></td></tr>
+                    <tr><td class="label">Ссылка:</td><td><input class="inputtext" readonly value="{{ invite_url }}" onclick="this.select()"></td></tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        <div class="profile-box">
+            <h4>Смена пароля</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        {% for field in form %}
+                        <tr>
+                            <td class="label">{{ field.label }}:</td>
+                            <td>{{ field }}{% if field.errors %}<div class="error">{{ field.errors }}</div>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить пароль"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

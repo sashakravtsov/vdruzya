@@ -1,0 +1,35 @@
+{% load vd %}
+{% if not info_boxes %}
+<div class="profile-box">
+    <h4>Информация{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        <p class="muted">{% if is_own %}Заполните <a href="{% url 'profile.edit' %}">профиль</a>.{% else %}Информация пока не заполнена.{% endif %}</p>
+    </div>
+</div>
+{% else %}
+{% for box in info_boxes %}
+<div class="profile-box">
+    <h4>{{ box.title }}{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}?section={{ box.section }}">[ред.]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        {% if box.subsections %}
+        {% for sub in box.subsections %}
+        <div class="profile-subsection">
+            <h5>{{ sub.h5 }}</h5>
+            {% if sub.note %}<p>{{ sub.note }}</p>{% endif %}
+            {% if sub.items %}<ul class="plain">{% for item in sub.items %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <table class="infotable">
+            {% for label, value, is_date in box.rows %}
+            <tr>
+                <td class="label">{{ label }}:</td>
+                <td>{% if is_date %}{{ value|date:"j E Y" }}{% else %}{{ value }}{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}

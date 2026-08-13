@@ -1,0 +1,64 @@
+{% load vd %}
+{# Classic FB Inbox line — avatar column + head/body aligned (no sunk text). #}
+{% if show_day %}
+<div class="msg-day"><span>{{ m.created_at|date:"j E Y" }}</span></div>
+{% endif %}
+<div class="msg-line{% if m.social_user_id == me.id %} is-mine{% endif %}{% if m.social_user_id == me.id and m.read_at %} is-read{% endif %}" id="m-{{ m.id }}"{% if m.created_at %} data-created="{{ m.created_at|date:'c' }}"{% endif %}>
+    <a class="msg-av" href="{% url 'profile' m.social_user.id %}">{% avatar m.social_user 32 %}</a>
+    <div class="msg-main">
+        <div class="msg-head">
+            {% if m.social_user_id == me.id %}
+            <form method="post" action="{% url 'messages.delete' m.id %}" class="inline msg-del">{% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'inbox' %}?c={{ active.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
+                <button type="submit" class="linkish muted">удалить</button>
+            </form>
+            {% endif %}
+            <a class="linkish muted" href="{% url 'inbox' %}?c={{ active.id }}&amp;reply={{ m.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">ответ</a>
+            {% if friends %}
+            <details class="msg-fwd">
+                <summary class="linkish muted">переслать</summary>
+                <form method="post" action="{% url 'messages.forward' m.id %}" class="msg-fwd-form">{% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'inbox' %}?c={{ active.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
+                    <select name="to" class="inputtext">
+                        <option value="">— другу —</option>
+                        {% for f in friends %}
+                        <option value="{{ f.id }}">{{ f.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" class="inputbutton" value="OK">
+                </form>
+            </details>
+            {% endif %}
+            <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
+            {% if m.created_at %}<span class="muted msg-time"> · {{ m.created_at|fb_when }}</span>{% endif %}
+            {% if m.social_user_id == me.id %}
+            <span class="muted msg-receipt">{% if m.read_at %} · прочитано{% else %} · отправлено{% endif %}</span>
+            {% endif %}
+        </div>
+        <div class="msg-body">
+            {% if m.reply_to %}
+            <div class="msg-reply muted">в ответ на
+                <a href="#m-{{ m.reply_to.id }}">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatewords:12 }}</a>
+            </div>
+            {% endif %}
+            {% if m.sticker %}{% include "social/_gift_tile.html" with sticker=m.sticker sm=1 %}{% endif %}
+            {% if m.body_visible %}<div class="msg-text msg-md">{{ m.body|msg_md }}</div>{% endif %}
+            {% if m.attachment_url %}
+                {% if m.attachment_is_audio %}
+                <div class="msg-voice" data-ms="{{ m.duration_ms|default:0 }}">
+                    <button type="button" class="msg-voice-play" aria-label="Слушать">▶</button>
+                    <div class="msg-wave" role="slider" aria-label="Дорожка голосового" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+                        {% for h in m.waveform_bars %}<i style="height:{{ h }}%"></i>{% endfor %}
+                    </div>
+                    <span class="msg-voice-dur">{{ m.duration_label }}</span>
+                    <audio preload="metadata" class="msg-audio-el" playsinline><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'audio/webm' }}"></audio>
+                </div>
+                {% elif m.attachment_is_video %}
+                <div class="msg-video"><video controls preload="metadata" class="msg-photo"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'video/mp4' }}"></video></div>
+                {% else %}
+                <p><img src="{{ m.attachment_url }}" alt="" class="msg-photo"></p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>

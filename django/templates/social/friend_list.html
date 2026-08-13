@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ flist.name }} — Списки — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="lists-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ flist.name }}</h1>
+        <div class="subtitle"><a href="{% url 'friends.lists' %}">← списки</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Переименовать</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="rename">
+                    <table class="formtable" cellspacing="0">
+                        <tr>
+                            <td class="label">Название:</td>
+                            <td><input class="inputtext" type="text" name="name" size="40" maxlength="120" value="{{ flist.name }}"></td>
+                        </tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Участники</h4>
+            <div class="profile-box-body">
+                {% for p in members %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post">{% csrf_token %}
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="friend_id" value="{{ p.id }}">
+                            <button type="submit" class="linkish muted">убрать</button>
+                        </form>
+                    </span>
+                    <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                        {% avatar p 50 %}
+                        <span><b>{{ p.name }}</b></span>
+                    </a>
+                </div>
+                {% empty %}<p class="muted">Список пуст — добавьте друзей ниже.</p>{% endfor %}
+            </div>
+        </div>
+        {% if candidates %}
+        <div class="profile-box">
+            <h4>Добавить друзей</h4>
+            <div class="profile-box-body">
+                {% for p in candidates %}
+                <div class="classic-person-row classic-person-row-friend">
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post">{% csrf_token %}
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="friend_id" value="{{ p.id }}">
+                            <button type="submit" class="linkish">добавить</button>
+                        </form>
+                    </span>
+                    <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                        {% avatar p 50 %}
+                        <span><b>{{ p.name }}</b></span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <form method="post" action="{% url 'friends.lists.delete' flist.id %}" class="stack-md">{% csrf_token %}
+            <button type="submit" class="linkish muted" onclick="return confirm('Удалить список?');">удалить список</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

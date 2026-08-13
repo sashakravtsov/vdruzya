@@ -1,0 +1,169 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}{% if compose_mode %}Новое сообщение{% elif active %}{{ active.display_name|default:"Сообщение" }}{% elif folder == 'sent' %}Отправленные{% elif folder == 'archive' %}Архив{% elif unread_only %}Непрочитанные{% else %}Входящие{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+{# FB 2005–06 Message Center: list OR thread OR compose — not a split Gmail pane #}
+<div id="pagebody" class="inbox-page">
+    <div id="header" class="withsubtitle">
+        <h1>{% if compose_mode %}Новое сообщение{% elif active %}Сообщение{% elif folder == 'sent' %}Отправленные{% elif folder == 'archive' %}Архив{% elif unread_only %}Непрочитанные{% else %}Входящие{% endif %}</h1>
+        <div class="subtitle">
+            {% if active or compose_mode %}
+            <a href="{% url 'inbox' %}{% if folder != 'inbox' %}?folder={{ folder }}{% elif unread_only %}?unread=1{% endif %}">← {% if folder == 'sent' %}отправленные{% elif folder == 'archive' %}архив{% else %}входящие{% endif %}</a>
+            {% else %}
+            <a href="{% url 'inbox' %}?compose=1">Написать сообщение</a>
+            {% endif %}
+        </div>
+    </div>
+    <div id="content" class="inbox-content{% if active or compose_mode %} is-thread{% else %} is-list{% endif %}">
+        {% include "partials/flash.html" %}
+
+        {% if compose_mode %}
+        <div class="profile-box inbox-pane">
+            {% include "social/_inbox_compose.html" %}
+        </div>
+
+        {% elif active %}
+        <div class="profile-box inbox-pane">
+            <h4>
+                {% if active.title %}<span class="msg-subj-h">{{ active.title }}</span> · {% endif %}
+                {% if active.peer %}
+                <a href="{% url 'profile' active.peer.id %}">{{ active.display_name|default:active.peer.name }}</a>
+                {% else %}
+                {{ active.display_name|default:"Сообщение" }}
+                {% endif %}
+                <span class="edit msg-actions">
+                    <form method="post" action="{% url 'inbox.unread' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted">непрочитанное</button>
+                    </form>
+                    ·
+                    {% if active.is_muted %}
+                    <form method="post" action="{% url 'inbox.unmute' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">вкл. уведомления</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'inbox.mute' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted">без уведомлений</button>
+                    </form>
+                    {% endif %}
+                    ·
+                    {% if active.is_archived %}
+                    <form method="post" action="{% url 'inbox.unarchive' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">вернуть во входящие</button>
+                    </form>
+                    ·
+                    <form method="post" action="{% url 'inbox.purge' active.id %}" class="inline" onsubmit="return confirm('Удалить переписку из вашего ящика навсегда?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'inbox.leave' active.id %}" class="inline" onsubmit="return confirm('Перенести переписку в архив?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">в архив</button>
+                    </form>
+                    ·
+                    <form method="post" action="{% url 'inbox.spam' active.id %}" class="inline" onsubmit="return confirm('Пометить как спам и убрать в архив?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">спам</button>
+                    </form>
+                    {% if active.peer %}
+                    ·
+                    <form method="post" action="{% url 'inbox.spam' active.id %}" class="inline" onsubmit="return confirm('Спам и заблокировать {{ active.peer.name }}?');">{% csrf_token %}
+                        <input type="hidden" name="block" value="1">
+                        <button type="submit" class="linkish muted">спам+блок</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </span>
+            </h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'inbox.title' active.id %}" class="msg-title-edit">{% csrf_token %}
+                    <label class="muted">Тема:</label>
+                    <input class="inputtext" type="text" name="title" value="{{ active.title|default:'' }}" maxlength="160" placeholder="(без темы)">
+                    <input type="submit" class="inputbutton" value="Сохранить">
+                </form>
+                {% include "social/_inbox_thread.html" %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="profile-box inbox-pane">
+            <h4>{% if folder == 'sent' %}Отправленные{% elif folder == 'archive' %}Архив{% elif unread_only %}Непрочитанные{% else %}Входящие{% endif %}</h4>
+            <div class="profile-box-body">
+                <form method="get" class="msg-filter" action="{% url 'inbox' %}">
+                    <label class="muted">Поиск:</label>
+                    <input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off">
+                    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+                    {% if unread_only %}<input type="hidden" name="unread" value="1">{% endif %}
+                    <input type="submit" class="inputbutton" value="Найти">
+                </form>
+                <p class="msg-tabs muted">
+                    <a href="{% url 'inbox' %}{% if q %}?q={{ q|urlencode }}{% endif %}"{% if folder == 'inbox' and not unread_only %} class="is-on"{% endif %}>входящие</a>
+                    ·
+                    <a href="{% url 'inbox' %}?unread=1{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if unread_only %} class="is-on"{% endif %}>непрочитанные</a>
+                    ·
+                    <a href="{% url 'inbox' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
+                    ·
+                    <a href="{% url 'inbox' %}?folder=archive{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'archive' %} class="is-on"{% endif %}>архив</a>
+                    {% if folder == 'inbox' %}
+                    ·
+                    <form method="post" action="{% url 'inbox.read_all' %}" class="inline msg-read-all">{% csrf_token %}
+                        <button type="submit" class="linkish">прочитать всё</button>
+                    </form>
+                    {% endif %}
+                </p>
+                <form method="post" action="{% url 'inbox.bulk' %}" id="inbox-bulk">
+                    {% csrf_token %}
+                    {% if conversations %}
+                    <p class="msg-bulk muted">
+                        {% if folder == 'archive' %}
+                        <button type="submit" name="action" value="restore" class="linkish">вернуть выбранные</button>
+                        ·
+                        <button type="submit" name="action" value="purge" class="linkish muted" onclick="return confirm('Удалить выбранные из ящика?');">удалить выбранные</button>
+                        {% else %}
+                        <button type="submit" name="action" value="archive" class="linkish muted">в архив</button>
+                        ·
+                        <button type="submit" name="action" value="unread" class="linkish muted">непрочитанные</button>
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                <table class="inbox-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-check"><input type="checkbox" id="inbox-check-all" title="Выбрать все"></th>
+                            <th class="col-from">{% if folder == 'sent' %}Кому{% else %}От{% endif %}</th>
+                            <th class="col-subj">Тема</th>
+                            <th class="col-when">Когда</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in conversations %}
+                        <tr class="msg-thread{% if c.unread %} is-unread{% endif %}">
+                            <td class="col-check"><input type="checkbox" name="ids" value="{{ c.id }}" class="inbox-check"></td>
+                            <td class="col-from">
+                                <a href="?c={{ c.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% elif unread_only %}&amp;unread=1{% endif %}">
+                                    {% if c.peer %}{% avatar c.peer 32 %}{% else %}<img class="avatar" src="{% static 'img/nophoto.gif' %}" width="32" height="32" alt="">{% endif %}
+                                    <b>{{ c.display_name }}</b>
+                                </a>
+                            </td>
+                            <td class="col-subj">
+                                <a href="?c={{ c.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% elif unread_only %}&amp;unread=1{% endif %}">
+                                    {% if c.title %}{{ c.title|truncatechars:48 }}{% elif c.snippet %}{{ c.snippet|truncatechars:48 }}{% else %}(без темы){% endif %}
+                                </a>
+                            </td>
+                            <td class="col-when muted">{% if c.last_at %}{{ c.last_at|date:"j E, H:i" }}{% else %}—{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="muted">{% if q or folder != 'inbox' or unread_only %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </form>
+                {% if has_more or page > 1 %}
+                <p class="msg-pager muted">
+                    {% if page > 1 %}<a href="?page={{ page|add:'-1' }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if unread_only %}&amp;unread=1{% endif %}">← новее</a>{% endif %}
+                    {% if has_more %}{% if page > 1 %} · {% endif %}<a href="?page={{ page|add:1 }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if unread_only %}&amp;unread=1{% endif %}">старее →</a>{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

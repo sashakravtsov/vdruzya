@@ -1,0 +1,78 @@
+{# Shared Markdown compose chrome: toolbar + hover/click popovers (inbox / wall / group). #}
+<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'compose.preview' %}" data-md-limit="4000"{% if sticker_input_id %} data-sticker-input="{{ sticker_input_id }}"{% endif %}{% if from_album %} data-from-album-url="{% url 'compose.albums' %}"{% endif %}>
+    <div class="msg-md-bar">
+        <span class="msg-md-tools" role="toolbar" aria-label="Markdown">
+            <button type="button" class="msg-md-btn" data-md="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button>
+            <button type="button" class="msg-md-btn" data-md="italic" title="Курсив (Ctrl+I)"><i>К</i></button>
+            <button type="button" class="msg-md-btn" data-md="strike" title="Зачёркнутый">Ч</button>
+            <span class="msg-md-sep" aria-hidden="true"></span>
+            <button type="button" class="msg-md-btn" data-md="code" title="Код (Ctrl+E)">код</button>
+            <button type="button" class="msg-md-btn" data-md="codeblock" title="Блок кода">```</button>
+            <button type="button" class="msg-md-btn" data-md="link" title="Ссылка (Ctrl+K)">ссылка</button>
+            <span class="msg-md-sep" aria-hidden="true"></span>
+            <button type="button" class="msg-md-btn" data-md="h3" title="Заголовок">H</button>
+            <button type="button" class="msg-md-btn" data-md="ul" title="Список">•</button>
+            <button type="button" class="msg-md-btn" data-md="ol" title="Нумерованный">1.</button>
+            <button type="button" class="msg-md-btn" data-md="quote" title="Цитата">«»</button>
+            <button type="button" class="msg-md-btn" data-md="hr" title="Разделитель">―</button>
+            <span class="msg-md-sep" aria-hidden="true"></span>
+            <span class="msg-pop-wrap">
+                <button type="button" class="msg-md-btn msg-pop-btn" data-pop="emoji" title="Смайлы" aria-haspopup="true">☺</button>
+                <div class="msg-pop" data-pop-panel="emoji" hidden>
+                    <div class="msg-emoji-grid" role="listbox" aria-label="Смайлы">
+                        {% for e in emojis %}
+                        <button type="button" class="msg-emoji-btn" data-emoji="{{ e }}" title="{{ e }}">{{ e }}</button>
+                        {% endfor %}
+                    </div>
+                    <p class="msg-emoji-text muted">
+                        текст:
+                        {% for e in text_emotes %}
+                        <button type="button" class="linkish msg-emoji-btn" data-emoji="{{ e }}">{{ e }}</button>
+                        {% endfor %}
+                    </p>
+                </div>
+            </span>
+            {% if stickers and sticker_input_id %}
+            <span class="msg-pop-wrap">
+                <button type="button" class="msg-md-btn msg-pop-btn" data-pop="stickers" title="Стикеры" aria-haspopup="true">стикеры</button>
+                <div class="msg-pop msg-pop-stickers" data-pop-panel="stickers" hidden>
+                    <div class="msg-sticker-grid" data-sticker-input="{{ sticker_input_id }}">
+                        {% for s in stickers %}
+                        <button type="button" class="msg-sticker-btn gift-tile gift-tile-sm" data-sticker-id="{{ s.id }}" title="{{ s.title }}" style="--gift-bg:{{ s.bg }};--gift-fg:{{ s.fg }}">
+                            {% if s.image_url %}<img src="{{ s.image_url }}" alt="{{ s.title }}">{% else %}<span class="gift-tile-title">{{ s.title }}</span>{% endif %}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <p class="file-hint muted">
+                        Twemoji
+                        <span class="msg-sticker-clear" hidden>
+                            · <button type="button" class="linkish muted" data-sticker-clear="1">убрать</button>
+                        </span>
+                    </p>
+                </div>
+            </span>
+            {% endif %}
+            {% if from_album %}
+            <button type="button" class="msg-md-btn" data-from-album-open="1" title="Фото из альбома">альбом</button>
+            {% endif %}
+            <span class="msg-pop-wrap">
+                <button type="button" class="msg-md-btn msg-pop-btn" data-pop="help" title="Справка Markdown" aria-haspopup="true">?</button>
+                <div class="msg-pop msg-pop-help" data-pop-panel="help" hidden>
+                    <p class="msg-md-help">
+                        <code>**жирный**</code> · <code>*курсив*</code> · <code>~~зачёркнутый~~</code> ·
+                        <code>`код`</code> · <code>[текст](https://…)</code> ·
+                        список <code>-</code>/<code>1.</code> · цитата <code>&gt;</code>
+                        · Ctrl+B/I/E/K · Ctrl+Shift+P
+                    </p>
+                </div>
+            </span>
+        </span>
+        <span class="msg-md-mode muted">
+            <button type="button" class="linkish msg-md-mode-btn is-on" data-md-mode="write">письмо</button>
+            ·
+            <button type="button" class="linkish msg-md-mode-btn" data-md-mode="split">рядом</button>
+            ·
+            <button type="button" class="linkish msg-md-mode-btn" data-md-mode="preview">просмотр</button>
+        </span>
+    </div>
+</div>

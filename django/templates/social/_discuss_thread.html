@@ -1,0 +1,59 @@
+{# Open discussion thread (FB 2006). Expects: p, group, is_member, is_admin, me, comment_form #}
+{% load static vd %}
+<div class="discuss-open" id="topic-{{ p.id }}">
+    <h5 class="discuss-subject">{{ p.title_line }}</h5>
+    <div class="discuss-op">
+        <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
+            <td class="image">
+                {% if p.posted_as_community %}
+                <a href="{% url 'groups.show' group.id %}"><img class="avatar" src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" width="50" height="50" alt=""></a>
+                {% else %}
+                <a href="{% url 'profile' p.social_user.id %}">{% avatar p.social_user 50 %}</a>
+                {% endif %}
+            </td>
+            <td>
+                <div class="info">
+                    <div class="header">
+                        {% if p.posted_as_community %}
+                        <a href="{% url 'groups.show' group.id %}"><b>{{ group.name }}</b></a>
+                        {% else %}
+                        <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
+                        {% endif %}
+                        {% if p.created_at %}<span class="muted"> · {{ p.created_at|fb_when }}</span>{% endif %}
+                        {% if is_admin or me and me.id == p.social_user_id %}
+                        <span class="wallpost-edit">
+                            <a href="{% url 'groups.posts.edit' group.id p.id %}">ред.</a>
+                            ·
+                            <form method="post" action="{% url 'groups.posts.delete' group.id p.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish muted">удалить</button>
+                            </form>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="text">
+                        {% if p.body_text %}<div class="msg-md">{{ p.body_text|msg_md }}</div>{% elif p.body and not p.subject %}<div class="msg-md">{{ p.body|msg_md }}</div>{% endif %}
+                        {% include "social/_post_media.html" with post=p %}
+                    </div>
+                    <div class="actions">
+                        {% if is_member %}
+                        <form method="post" action="{% url 'groups.posts.like' group.id p.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish wall-act">{% if p.liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
+                        </form>
+                        {% if p.n_likes %} <span class="muted">({{ p.n_likes }})</span>{% endif %}
+                        {% elif p.n_likes %}
+                        <span class="muted">Нравится ({{ p.n_likes }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </td>
+        </tr></table>
+    </div>
+    <div class="discuss-replies">
+        <h5>Ответы{% if p.n_comments %} ({{ p.n_comments }}){% endif %}</h5>
+        {% comment_thread p.comments.all preview=0 kind="group" group=group %}
+        {% if is_member and comment_form %}
+        {% url 'groups.comment' group.id p.id as c_action %}
+        {% include "social/_comment_compose.html" with action=c_action compose_id=p.id compose_kind="gpost" form=comment_form open=1 %}
+        {% endif %}
+    </div>
+</div>

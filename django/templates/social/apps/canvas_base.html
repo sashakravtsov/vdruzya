@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ app.name }} — Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index app-canvas-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ app.name }}</h1>
+        <div class="subtitle">
+            <a href="{% url 'apps' %}">← приложения</a>
+            · <a href="{% url 'apps' %}?tab=mine">мои приложения</a>
+            · <a href="{% url 'apps.show' app.slug %}">о приложении</a>
+            · canvas
+            · {{ app.developer|default:"ВДрузья" }}
+            {% if installed %}
+            · <span class="muted">в закладках</span>
+            ·
+            <form method="post" action="{% url 'apps.uninstall' app.slug %}" class="inline" id="canvas-uninst">{% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'apps' %}?tab=mine">
+                <button type="submit" class="linkish muted"
+                        data-fb-dialog
+                        data-fb-dialog-title="Убрать из закладок?"
+                        data-fb-dialog-message="Убрать «{{ app.name }}» из закладок слева?"
+                        data-fb-dialog-form="#canvas-uninst">убрать</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead muted">{{ app.blurb }}</p>
+        {% block canvas_body %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

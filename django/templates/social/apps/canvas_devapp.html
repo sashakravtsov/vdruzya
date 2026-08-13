@@ -1,0 +1,26 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>{{ app.name }}</h4>
+    <div class="profile-box-body">
+        <p>{{ app.detail|default:app.blurb }}</p>
+        <p class="muted">Разработчик: {{ app.developer }}{% if n_installs %} · установок: {{ n_installs }}{% endif %}</p>
+        {% if website_url %}
+        <p class="action-row">
+            <a class="inputsubmit" href="{% url 'apps.launch' app.slug %}">Открыть с авторизацией ВДрузья</a>
+            · <a href="{% url 'apps.authorize' app.slug %}">OAuth-разрешения</a>
+            · <a href="{{ website_url }}" rel="nofollow noopener" target="_blank">сайт без входа</a>
+        </p>
+        <p class="muted">
+            Запуск — редирект с <code>signed_request</code> (без iframe).
+            API: <a href="{% url 'developers.docs' %}">документация</a>.
+        </p>
+        {% else %}
+        <p class="muted">Сайт ещё не указан.{% if is_owner %} <a href="{% url 'developers.edit' app.slug %}">Настроить</a>{% endif %}</p>
+        {% endif %}
+        {% if is_owner %}
+        <p class="muted"><a href="{% url 'developers.edit' app.slug %}">кабинет разработчика</a> · ключи API</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

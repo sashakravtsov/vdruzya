@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Друзья {{ owner.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header" class="withsubtitle">
+        <h1>Друзья {{ owner.name }}</h1>
+        <div class="subtitle"><a href="{% url 'profile' owner.id %}">← профиль</a></div>
+    </div>
+    <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
+        {% if private %}
+        <div class="profile-box">
+            <h4>Друзья</h4>
+            <div class="profile-box-body">
+                <p class="muted">Список друзей доступен только друзьям.</p>
+            </div>
+        </div>
+        {% else %}
+        <form class="people-search-form" method="get" action="{% url 'profile.friends' owner.id %}">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="label">Найти:</td>
+                    <td>
+                        <input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off">
+                        <input class="inputsubmit" type="submit" value="Найти">
+                        {% if q %}<a href="{% url 'profile.friends' owner.id %}">сбросить</a>{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <div class="profile-box">
+            <h4>Друзья{% if friends_total %} ({{ friends_total }}){% endif %}
+                {% if is_own %}<a class="edit" href="{% url 'friends' %}">мои друзья</a>{% endif %}
+                {% if me and not is_own %}<a class="edit" href="{% url 'profile.mutual' owner.id %}">общие</a>{% endif %}
+            </h4>
+            <div class="profile-box-body">
+                {% for f in friends %}
+                {% if me and not is_own and f.id != me.id %}
+                {% include "social/_person_row.html" with person=f friend_row=1 with_friend_actions=1 %}
+                {% else %}
+                {% include "social/_person_row.html" with person=f friend_row=1 %}
+                {% endif %}
+                {% empty %}
+                <p class="muted">{% if q %}Никого не найдено.{% else %}Список друзей пуст.{% endif %}</p>
+                {% endfor %}
+                {% if page_obj and page_obj.has_other_pages %}
+                <p class="people-top-links">
+                    {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&amp;p={{ page_obj.previous_page_number }}">« назад</a>{% endif %}
+                    стр. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&amp;p={{ page_obj.next_page_number }}">вперёд »</a>{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "layout.html" %}
+{% load vd static %}
+{% block title %}Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index">
+    <div id="header" class="withsubtitle"><h1>Приложения</h1><div class="subtitle">каталог · закладки</div></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">
+            Добавьте приложение <b>в закладки</b> — оно появится слева в блоке «Мои приложения»
+            и на вкладке ниже. Открытие canvas тоже добавляет закладку.
+            <a href="{% url 'developers' %}">Кабинет разработчика</a> — для своих сайтов.
+        </p>
+
+        <div class="subtabs">
+            <div class="{% if tab == 'browse' and not category %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps' %}">Все</a></div>
+            {% for slug, lab in categories %}
+            <div class="{% if category == slug %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps' %}?category={{ slug }}">{{ lab }}</a>
+            </div>
+            {% endfor %}
+            {% if me %}
+            <div class="{% if tab == 'mine' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps' %}?tab=mine">Мои приложения{% if mine_count %} ({{ mine_count }}){% endif %}</a></div>
+            {% endif %}
+        </div>
+
+        {% if tab == 'mine' %}
+        <div class="profile-box">
+            <h4>Мои приложения <span class="muted">· закладки слева</span></h4>
+            <div class="profile-box-body">
+                <p class="muted apps-bookmark-hint">Это ваши закладки: быстрый вход слева в меню и список здесь. Убрать закладку можно кнопкой «убрать».</p>
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in mine_apps %}
+                        <tr>
+                            <td class="col-name">{% if app.icon %}<img class="app-ico" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}<a href="{% url 'apps.canvas' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
+                                ·
+                                <a href="{% url 'apps.show' app.slug %}">о приложении</a>
+                                ·
+                                <form method="post" action="{% url 'apps.uninstall' app.slug %}" class="inline" id="uninst-{{ app.slug }}">{% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'apps' %}?tab=mine">
+                                    <button type="submit" class="linkish muted"
+                                            data-fb-dialog
+                                            data-fb-dialog-title="Убрать из закладок?"
+                                            data-fb-dialog-message="Убрать «{{ app.name }}» из закладок слева?"
+                                            data-fb-dialog-form="#uninst-{{ app.slug }}">убрать</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="muted">
+                                Закладок пока нет.
+                                <a href="{% url 'apps' %}">Откройте каталог</a>
+                                и нажмите «В закладки» у нужного приложения.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+
+        {% if featured and not category %}
+        <div class="profile-box">
+            <h4>Рекомендуемые <span class="muted">· подборка ВДрузья</span></h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in featured %}
+                        <tr>
+                            <td class="col-name">{% if app.icon %}<img class="app-ico" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}<a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                {% if app.slug in installed %}
+                                <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
+                                · <span class="muted">в закладках</span>
+                                {% else %}
+                                <form method="post" action="{% url 'apps.install' app.slug %}" class="inline" id="feat-inst-{{ app.slug }}">{% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'apps' %}?tab=mine">
+                                    <button type="submit" class="linkish"
+                                            data-fb-dialog
+                                            data-fb-dialog-title="В закладки?"
+                                            data-fb-dialog-message="Добавить «{{ app.name }}» в закладки слева (Мои приложения)?"
+                                            data-fb-dialog-form="#feat-inst-{{ app.slug }}">В закладки</button>
+                                </form>
+                                · <a href="{% url 'apps.show' app.slug %}">подробнее</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>{% if category %}Каталог{% else %}Все приложения{% endif %}</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in apps %}
+                        <tr>
+                            <td class="col-name">{% if app.icon %}<img class="app-ico" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}<a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a>
+                                <div class="muted">{{ app.developer|default:"ВДрузья" }}</div></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                {% if app.slug in installed %}
+                                <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
+                                · <span class="muted">в закладках</span>
+                                · <a href="{% url 'apps.show' app.slug %}">о приложении</a>
+                                {% else %}
+                                {% if me %}
+                                <form method="post" action="{% url 'apps.install' app.slug %}" class="inline" id="cat-inst-{{ app.slug }}">{% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'apps' %}?tab=mine">
+                                    <button type="submit" class="linkish"
+                                            data-fb-dialog
+                                            data-fb-dialog-title="В закладки?"
+                                            data-fb-dialog-message="Добавить «{{ app.name }}» в закладки слева (Мои приложения)?"
+                                            data-fb-dialog-form="#cat-inst-{{ app.slug }}">В закладки</button>
+                                </form>
+                                ·
+                                {% endif %}
+                                <a href="{% url 'apps.show' app.slug %}">подробнее</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="muted">Нет приложений в этой категории.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

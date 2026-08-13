@@ -1,0 +1,339 @@
+{% extends "social/apps/canvas_base.html" %}
+{% load static %}
+{% load vd %}
+{% block canvas_body %}
+<div class="profile-box farm-app" id="farm-app" data-tab="{{ tab }}" data-ws-url="/ws/farm/" data-user-live="/ws/live/user/">
+    <h4>Ферма <span class="farm-mark" aria-hidden="true">◈</span> <span class="app-live" data-app-live hidden>…</span></h4>
+    <div class="profile-box-body">
+        <p class="farm-toast" data-farm-toast data-user-live-toast hidden></p>
+        <p class="farm-lead">Поле, хлев, соседи и лавка — соцферма ВДрузья с живым балансом фишек и агрошколой.</p>
+        <p class="farm-strip">
+            Фишки <b>{{ strip.chips_fmt }}</b>
+            · ур. <b>{{ strip.level }}</b>
+            · серия <b>{{ strip.streak }}</b>
+            · грядки <b>{{ strip.plots_unlocked }}</b>
+            · лейки <b>{{ strip.water_cans }}</b>
+            · удобрения <b>{{ strip.fertilizer }}</b>
+            {% if strip.ready %} · к сбору <b>{{ strip.ready }}</b>{% endif %}
+            {% if strip.bankrupt %}<span class="farm-bankrupt"> · банкрот ~{{ strip.bankrupt_days_left }} дн.</span>{% endif %}
+        </p>
+
+        <div class="subtabs farm-tabs">
+            <div class="{% if tab == 'field' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'farm' %}?tab=field">Поле{% if strip.ready %} <span class="farm-badge">{{ strip.ready }}</span>{% endif %}</a></div>
+            <div class="{% if tab == 'barn' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'farm' %}?tab=barn">Хлев</a></div>
+            <div class="{% if tab == 'shop' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'farm' %}?tab=shop">Лавка</a></div>
+            <div class="{% if tab == 'neighbors' or tab == 'visit' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'farm' %}?tab=neighbors">Соседи</a></div>
+            <div class="{% if tab == 'learn' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'farm' %}?tab=learn">Агрошкола</a></div>
+            <div class="{% if tab == 'bank' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'farm' %}?tab=bank">Банк</a></div>
+        </div>
+
+        {% if strip.goals %}
+        <div class="farm-path">
+            <b>Цели дня</b> · {{ strip.goals.done }}/{{ strip.goals.total }}
+            <div class="farm-meter"><span style="width:{{ strip.goals.pct }}%"></span></div>
+            <ul class="farm-list">
+                {% for g in strip.goals.items %}
+                <li>{% if g.done %}<span class="farm-done">✓</span>{% else %}○{% endif %} {{ g.title }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if strip.bankrupt %}
+        <div class="farm-bankrupt-banner">
+            Ферма на паузе из‑за банкротства (~{{ strip.bankrupt_days_left }} дн.).
+            Можно читать агрошколу. После срока — сброс профиля на вкладке «Банк».
+        </div>
+        {% endif %}
+
+        {% if tab == 'field' %}
+        <div class="farm-field-layout">
+            <div class="farm-field" id="farm-field">
+                {% for pl in plots %}
+                <div class="farm-plot state-{{ pl.state }}{% if pl.watered %} is-watered{% endif %}"
+                     data-plot-id="{{ pl.id }}"
+                     data-state="{{ pl.state }}"
+                     data-ready-at="{{ pl.ready_at }}"
+                     data-left="{{ pl.left_sec }}"
+                     style="{% if pl.crop %}--crop:{{ pl.crop.color }};{% endif %}">
+                    <div class="farm-plot-inner">
+                        <span class="farm-plot-idx">#{{ pl.idx|add:1 }}</span>
+                        {% if pl.state == 'empty' %}
+                        <b class="farm-plot-title">пусто</b>
+                        {% elif pl.state == 'withered' %}
+                        <b class="farm-plot-title">увяло</b>
+                        {% else %}
+                        <b class="farm-plot-title">{{ pl.label }}</b>
+                        <span class="farm-plot-timer" data-farm-timer>{{ pl.left_sec }}</span>
+                        {% if not pl.watered and pl.state == 'growing' %}<span class="farm-plot-hint">нужен полив</span>{% endif %}
+                        {% if pl.stolen %}<span class="farm-plot-hint">часть забрали</span>{% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="farm-plot-acts">
+                        {% if pl.state == 'empty' and not strip.bankrupt %}
+                        <form method="post" class="farm-plant-form">{% csrf_token %}
+                            <input type="hidden" name="action" value="plant">
+                            <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                            <select name="crop" class="inputtext">
+                                {% for c in crops %}
+                                <option value="{{ c.slug }}" {% if c.locked %}disabled{% endif %}>{{ c.title }} · {{ c.cost }}{% if c.locked %} (ур.{{ c.need_level }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="inputsubmit">Посадить</button>
+                        </form>
+                        {% elif pl.state == 'growing' and not strip.bankrupt %}
+                            {% if not pl.watered %}
+                            <form method="post" class="inline">{% csrf_token %}
+                                <input type="hidden" name="action" value="water">
+                                <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                                <button type="submit" class="inputsubmit">Полить</button>
+                            </form>
+                            {% endif %}
+                            {% if not pl.fertilized and strip.fertilizer %}
+                            <form method="post" class="inline">{% csrf_token %}
+                                <input type="hidden" name="action" value="fertilize">
+                                <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                                <button type="submit" class="inputbutton">Удобрить</button>
+                            </form>
+                            {% endif %}
+                            {% if strip.boosts %}
+                            <form method="post" class="inline">{% csrf_token %}
+                                <input type="hidden" name="action" value="boost">
+                                <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                                <button type="submit" class="linkish">ускорить</button>
+                            </form>
+                            {% endif %}
+                        {% elif pl.state == 'ready' and not strip.bankrupt %}
+                        <form method="post" class="inline">{% csrf_token %}
+                            <input type="hidden" name="action" value="harvest">
+                            <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                            <button type="submit" class="inputsubmit farm-btn-harvest">Собрать</button>
+                        </form>
+                        {% elif pl.state == 'withered' and not strip.bankrupt %}
+                        <form method="post" class="inline">{% csrf_token %}
+                            <input type="hidden" name="action" value="clear">
+                            <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                            <button type="submit" class="linkish muted">очистить</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="farm-side">
+                <h5>Культуры</h5>
+                <ul class="farm-crop-list">
+                    {% for c in crops %}
+                    <li class="{% if c.locked %}is-locked{% endif %}">
+                        <i style="background:{{ c.color }}"></i>
+                        <b>{{ c.title }}</b>
+                        <span class="muted">{{ c.cost }} → {{ c.yield }} · {{ c.grow_sec }}с</span>
+                        {% if c.locked %}<span class="farm-tag">ур.{{ c.need_level }}</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if strip.plots_unlocked < 24 and not strip.bankrupt %}
+                <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="expand">
+                    <button type="submit" class="inputsubmit">Новая грядка · {{ strip.expand_cost_fmt }}</button>
+                </form>
+                {% endif %}
+                <div class="farm-xp">
+                    Уровень {{ strip.level }}
+                    <div class="farm-meter thin"><span style="width:{{ strip.xp_pct }}%"></span></div>
+                    <span class="muted">{{ strip.xp_into }}/{{ strip.xp_need }} XP</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if tab == 'barn' %}
+        <h5>Хлев</h5>
+        <p class="muted">Купите животное, кормите и забирайте продукцию по таймеру.</p>
+        <div class="farm-barn">
+            {% for an in animals %}
+            <div class="farm-animal" data-left="{{ an.left_sec }}" data-ready-at="{{ an.ready_at }}">
+                <b>{{ an.meta.title }}</b>
+                <div class="muted">{% if an.ready %}готово!{% elif an.left_sec %}через <span data-farm-timer>{{ an.left_sec }}</span>с{% else %}голодно{% endif %}</div>
+                {% if not strip.bankrupt %}
+                {% if an.ready %}
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="collect">
+                    <input type="hidden" name="animal_id" value="{{ an.id }}">
+                    <button type="submit" class="inputsubmit">Забрать {{ an.meta.product_yield }}</button>
+                </form>
+                {% elif not an.left_sec %}
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="feed">
+                    <input type="hidden" name="animal_id" value="{{ an.id }}">
+                    <button type="submit" class="inputsubmit">Кормить · {{ an.meta.feed_cost }}</button>
+                </form>
+                {% endif %}
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="muted">Хлев пуст — купите первое животное ниже.</p>
+            {% endfor %}
+        </div>
+        {% if not strip.bankrupt %}
+        <h5>Купить</h5>
+        <ul class="farm-list">
+            {% for a in animal_catalog %}
+            <li>
+                <b>{{ a.title }}</b> · {{ a.buy }} фишек · продукция {{ a.product_yield }} / {{ a.product_sec }}с
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="buy_animal">
+                    <input type="hidden" name="kind" value="{{ a.slug }}">
+                    <button type="submit" class="inputbutton">Купить</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endif %}
+
+        {% if tab == 'shop' %}
+        <h5>Сельская лавка</h5>
+        <ul class="farm-shop">
+            {% for s in shop %}
+            <li>
+                <b>{{ s.title }}</b> — {{ s.price }} фишек
+                <div class="muted">{{ s.blurb }}</div>
+                {% if not strip.bankrupt %}
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="shop">
+                    <input type="hidden" name="item" value="{{ s.slug }}">
+                    <input type="number" name="qty" value="1" min="1" max="20" class="inputtext" size="3">
+                    <button type="submit" class="inputsubmit">Купить</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if tab == 'neighbors' %}
+        <h5>Фермы друзей</h5>
+        <p class="muted">Полейте чужую грядку или заберите долю готового урожая — как в классических соцфермах, но честнее по балансу.</p>
+        <ul class="farm-people">
+            {% for f in friends %}
+            <li>
+                <a href="{% url 'profile' f.profile.id %}">{% avatar f.profile 32 %} {{ f.profile.name }}</a>
+                <span class="muted">· ур.{{ f.level }}{% if f.need_water %} · ждут полива: {{ f.need_water }}{% endif %}{% if f.ready_n %} · готово: {{ f.ready_n }}{% endif %}</span>
+                <a class="inputsubmit" href="{% url 'apps.canvas' 'farm' %}?tab=visit&amp;owner={{ f.profile.id }}">в гости</a>
+            </li>
+            {% empty %}
+            <li class="muted">Добавьте друзей — появятся соседские фермы.</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if tab == 'visit' and visit %}
+        <p><a href="{% url 'apps.canvas' 'farm' %}?tab=neighbors">← к соседям</a></p>
+        <h5>Ферма {{ visit.owner.name }}</h5>
+        <div class="farm-field visit">
+            {% for pl in visit.plots %}
+            <div class="farm-plot state-{{ pl.state }}{% if pl.watered %} is-watered{% endif %}" style="{% if pl.crop %}--crop:{{ pl.crop.color }};{% endif %}">
+                <div class="farm-plot-inner">
+                    <b>{{ pl.label }}</b>
+                    <span class="muted">{{ pl.state }}</span>
+                </div>
+                {% if not visit.is_self and not strip.bankrupt %}
+                <div class="farm-plot-acts">
+                    {% if pl.state == 'growing' and not pl.watered %}
+                    <form method="post" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="help">
+                        <input type="hidden" name="owner_id" value="{{ visit.owner.id }}">
+                        <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                        <button type="submit" class="inputsubmit">Помочь</button>
+                    </form>
+                    {% elif pl.state == 'ready' and not pl.stolen %}
+                    <form method="post" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="steal">
+                        <input type="hidden" name="owner_id" value="{{ visit.owner.id }}">
+                        <input type="hidden" name="plot_id" value="{{ pl.id }}">
+                        <button type="submit" class="inputbutton">Взять долю</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if tab == 'learn' %}
+        <h5>Агрошкола</h5>
+        <div class="farm-learn">
+            <ul class="farm-list farm-learn-nav">
+                {% for ch in chapters %}
+                <li><b>{{ ch.title }}</b>
+                    <ul>
+                    {% for les in ch.lessons %}
+                        <li>{% if les.slug in lesson_done %}<span class="farm-done">✓</span>{% endif %}
+                            <a href="{% url 'apps.canvas' 'farm' %}?tab=learn&amp;lesson={{ les.slug }}">{{ les.title }}</a></li>
+                    {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if lesson %}
+            <div class="farm-lesson">
+                <h5>{{ lesson.title }} <span class="muted">· {{ lesson.minutes }} мин</span></h5>
+                {% for line in lesson.body %}<p>{{ line }}</p>{% endfor %}
+                {% if lesson.slug in lesson_done %}
+                <p class="farm-done">Урок пройден. {{ lesson.quiz.explain }}</p>
+                {% else %}
+                <form method="post" action="{% url 'apps.canvas' 'farm' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
+                    <input type="hidden" name="action" value="lesson_quiz">
+                    <input type="hidden" name="lesson_slug" value="{{ lesson.slug }}">
+                    <p><b>{{ lesson.quiz.question }}</b></p>
+                    <ul class="farm-quiz">
+                        {% for val, label in lesson.quiz.choices %}
+                        <li><label><input type="radio" name="choice" value="{{ val }}"> {{ label }}</label></li>
+                        {% endfor %}
+                    </ul>
+                    <input type="submit" class="inputsubmit" value="Проверить">
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if tab == 'bank' %}
+        <h5>Банк фермы</h5>
+        <p>Баланс: <b>{{ strip.chips_fmt }}</b> фишек · старт после сброса: <b>{{ starting_chips }}</b></p>
+        {% if not strip.daily_claimed and not strip.bankrupt %}
+        <form method="post">{% csrf_token %}
+            <input type="hidden" name="action" value="daily">
+            <button type="submit" class="inputsubmit">Забрать дневной бонус</button>
+        </form>
+        {% elif strip.daily_claimed %}
+        <p class="farm-done">Дневной бонус уже получен.</p>
+        {% endif %}
+        {% if strip.can_reset %}
+        <form method="post" class="farm-reset" onsubmit="return confirm('Обнулить ферму и получить 1 000 000 фишек?');">{% csrf_token %}
+            <input type="hidden" name="action" value="reset">
+            <p>Срок банкротства истёк.</p>
+            <button type="submit" class="inputsubmit">Сбросить профиль → 1 000 000</button>
+        </form>
+        {% elif strip.bankrupt %}
+        <p class="farm-bankrupt">До сброса ~{{ strip.bankrupt_days_left }} дн.</p>
+        {% endif %}
+        <h5>Ачивки</h5>
+        <div class="farm-badges">
+            {% for b in strip.badges %}
+            <span class="farm-badge-pill{% if b.unlocked %} on{% endif %}" title="{{ b.hint }}">{{ b.title }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <p class="muted farm-foot">Разработчик: ВДрузья · first-party canvas</p>
+    </div>
+</div>
+<script src="{% static 'js/live-client.js' %}" defer></script>
+<script src="{% static 'js/farm-field.js' %}" defer></script>
+<script src="{% static 'js/farm-live.js' %}" defer></script>
+<script src="{% static 'js/user-live.js' %}" defer></script>
+{% endblock %}

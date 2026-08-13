@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Редактировать {{ group.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="group-page">
+    <div id="header" class="withsubtitle">
+        <h1>Редактировать группу</h1>
+        <div class="subtitle"><a href="{% url 'groups.show' group.id %}">{{ group.name }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Настройки</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
+                        <tr>
+                            <td class="label">Короткое имя:</td>
+                            <td>
+                                {{ form.slug }}
+                                <div class="file-hint muted">5–32 символа · латиница · /groups/{{ group.id }} · /g/{{ group.slug }}</div>
+                                {% if form.slug.errors %}<div class="error">{{ form.slug.errors }}</div>{% endif %}
+                            </td>
+                        </tr>
+                        <tr><td class="label">Тип:</td><td>{{ form.category }}</td></tr>
+                        <tr><td class="label">Последние новости:</td><td>{{ form.short_description }}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Доступ:</td><td>{{ form.privacy }}</td></tr>
+                        <tr><td class="label">Вступление:</td><td>{{ form.join_mode }}</td></tr>
+                        <tr><td class="label">Кто пишет:</td><td>{{ form.posting_policy }}</td></tr>
+                        <tr><td class="label">Картинка:</td><td>{{ form.picture }}{% if group.cover_url %}<div class="file-hint muted">сейчас есть · загрузите новую, чтобы заменить</div>{% endif %}</td></tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{% url 'groups.show' group.id %}">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Удалить группу</h4>
+            <div class="profile-box-body">
+                <p class="muted">Группа, стена, обсуждения, документы и участники будут удалены без возможности восстановления.</p>
+                <form method="post" action="{% url 'groups.delete' group.id %}" onsubmit="return confirm('Удалить группу «{{ group.name|escapejs }}» навсегда?');">{% csrf_token %}
+                    <input type="submit" class="inputsubmit" value="Удалить группу">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
