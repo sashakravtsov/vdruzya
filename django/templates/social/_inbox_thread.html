@@ -37,10 +37,9 @@
 <form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" id="inbox-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.reply_to }}
     {{ form.sticker }}
-    {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" %}
-    <div class="msg-compose-fields">
-        {{ form.body }}
-        <div class="msg-md-preview msg-text msg-md" data-md-preview hidden></div>
+    <div class="msg-md-shell">
+        {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" %}
+        {% include "social/_inbox_md_stage.html" with body_field=form.body %}
     </div>
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
     {{ form.waveform }}

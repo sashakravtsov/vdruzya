@@ -25,7 +25,7 @@ class MessageForm(ClassicForm, forms.ModelForm):
     class Meta:
         model = Message
         fields = ("body",)
-        widgets = {"body": _ta(5, style="width:80%")}
+        widgets = {"body": _ta(6, style="width:100%")}
 
     def __init__(self, *args, stickers=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -37,7 +37,12 @@ class MessageForm(ClassicForm, forms.ModelForm):
         if stickers:
             self.fields["sticker"].widget = forms.HiddenInput(attrs={"id": "id_sticker"})
             self.fields["body"].widget.attrs.setdefault("id", "id_message_body")
-            self.fields["body"].widget.attrs.setdefault("class", "inputtext msg-body-input")
+            self.fields["body"].widget.attrs.update({
+                "class": "inputtext msg-body-input",
+                "spellcheck": "true",
+                "maxlength": "4000",
+                "placeholder": "Сообщение — можно Markdown",
+            })
 
     def clean(self):
         data = super().clean()
@@ -62,7 +67,7 @@ class ComposeMessageForm(ClassicForm, forms.Form):
     )
     body = forms.CharField(
         required=False,
-        widget=_ta(5, style="width:100%"),
+        widget=_ta(6, style="width:100%"),
     )
     photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
     sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
@@ -77,7 +82,12 @@ class ComposeMessageForm(ClassicForm, forms.Form):
         if stickers:
             self.fields["sticker"].widget = forms.HiddenInput(attrs={"id": "id_compose_sticker"})
             self.fields["body"].widget.attrs.setdefault("id", "id_compose_body")
-            self.fields["body"].widget.attrs.setdefault("class", "inputtext msg-body-input")
+            self.fields["body"].widget.attrs.update({
+                "class": "inputtext msg-body-input",
+                "spellcheck": "true",
+                "maxlength": "4000",
+                "placeholder": "Сообщение — можно Markdown",
+            })
 
     def clean(self):
         data = super().clean()

@@ -1,0 +1,9 @@
+{# Textarea + live Markdown preview stage (write / split / preview). #}
+<div class="msg-compose-fields is-write" data-md-stage>
+    {{ body_field }}
+    <div class="msg-md-preview msg-text msg-md" data-md-preview hidden></div>
+</div>
+<p class="msg-md-status muted">
+    <span data-md-count>0</span> / <span data-md-max>4000</span>
+    <span class="msg-md-status-hint"> · Markdown</span>
+</p>

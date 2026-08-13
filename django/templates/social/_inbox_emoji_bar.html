@@ -1,20 +1,27 @@
-{# Classic message editor: Markdown toolbar + emoji/sticker panes (no npm). #}
-<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'inbox.preview' %}">
+{# Classic Markdown compose chrome — toolbar, modes, emoji/sticker panes (no npm). #}
+<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'inbox.preview' %}" data-md-max="4000">
     <div class="msg-md-bar">
-        <span class="msg-md-tools">
-            <button type="button" class="msg-md-btn" data-md="bold" title="Жирный ** **">Ж</button>
-            <button type="button" class="msg-md-btn" data-md="italic" title="Курсив * *"><i>К</i></button>
-            <button type="button" class="msg-md-btn" data-md="strike" title="Зачёркнутый ~~ ~~">Ч</button>
-            <button type="button" class="msg-md-btn" data-md="code" title="Код ` `">код</button>
-            <button type="button" class="msg-md-btn" data-md="link" title="Ссылка">ссылка</button>
-            <button type="button" class="msg-md-btn" data-md="ul" title="Список">• список</button>
-            <button type="button" class="msg-md-btn" data-md="quote" title="Цитата">« »</button>
+        <span class="msg-md-tools" role="toolbar" aria-label="Markdown">
+            <button type="button" class="msg-md-btn" data-md="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button>
+            <button type="button" class="msg-md-btn" data-md="italic" title="Курсив (Ctrl+I)"><i>К</i></button>
+            <button type="button" class="msg-md-btn" data-md="strike" title="Зачёркнутый">Ч</button>
+            <span class="msg-md-sep" aria-hidden="true"></span>
+            <button type="button" class="msg-md-btn" data-md="code" title="Код (Ctrl+E)">код</button>
+            <button type="button" class="msg-md-btn" data-md="codeblock" title="Блок кода">```</button>
+            <button type="button" class="msg-md-btn" data-md="link" title="Ссылка (Ctrl+K)">ссылка</button>
+            <span class="msg-md-sep" aria-hidden="true"></span>
+            <button type="button" class="msg-md-btn" data-md="h3" title="Заголовок">H</button>
+            <button type="button" class="msg-md-btn" data-md="ul" title="Список">•</button>
+            <button type="button" class="msg-md-btn" data-md="ol" title="Нумерованный">1.</button>
+            <button type="button" class="msg-md-btn" data-md="quote" title="Цитата">«»</button>
+            <button type="button" class="msg-md-btn" data-md="hr" title="Разделитель">―</button>
         </span>
         <span class="msg-md-mode muted">
             <button type="button" class="linkish msg-md-mode-btn is-on" data-md-mode="write">письмо</button>
             ·
+            <button type="button" class="linkish msg-md-mode-btn" data-md-mode="split">рядом</button>
+            ·
             <button type="button" class="linkish msg-md-mode-btn" data-md-mode="preview">просмотр</button>
-            <span class="msg-md-keys muted" title="Ctrl+B жирный · Ctrl+I курсив · Ctrl+E код · Ctrl+K ссылка · Ctrl+Shift+P просмотр">Ctrl</span>
         </span>
     </div>
     <p class="msg-editor-tabs muted">
@@ -22,7 +29,7 @@
         ·
         <button type="button" class="linkish msg-editor-tab" data-pane="stickers">стикеры</button>
         ·
-        <button type="button" class="linkish msg-editor-tab" data-pane="help">markdown</button>
+        <button type="button" class="linkish msg-editor-tab" data-pane="help">справка</button>
         <span class="msg-sticker-clear muted" hidden>
             · <button type="button" class="linkish muted" data-sticker-clear="1">убрать стикер</button>
         </span>
@@ -57,9 +64,10 @@
     <div class="msg-help-pane muted" data-pane-body="help" hidden>
         <p class="msg-md-help">
             <code>**жирный**</code> · <code>*курсив*</code> · <code>~~зачёркнутый~~</code> ·
-            <code>`код`</code> · <code>[текст](https://…)</code> ·
-            список с <code>-</code> · цитата с <code>&gt;</code>
-            · горячие клавиши: Ctrl+B / I / E / K · Ctrl+Shift+P
+            <code>`код`</code> · <code>```блок```</code> · <code>[текст](https://…)</code> ·
+            <code>### заголовок</code> · список <code>-</code> / <code>1.</code> ·
+            цитата <code>&gt;</code> · линия <code>---</code>
+            · Ctrl+B/I/E/K · Ctrl+Shift+P · Tab · Enter продолжает список
         </p>
     </div>
 </div>
