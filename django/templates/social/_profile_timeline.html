@@ -1,17 +1,11 @@
 {% load vd %}
-{# Classic Timeline tab — cover, milestones, year browse (2006 chrome, not blue redesign). #}
-{% if profile.cover_url %}
-<div class="profile-box profile-cover-box">
-    <h4>Обложка</h4>
-    <div class="profile-box-body">
-        <img src="{{ profile.cover_url }}" alt="" class="profile-cover-img">
-    </div>
-</div>
-{% endif %}
-
+{# Timeline tab — years, milestones, activity. Cover is optional banner, not its own section. #}
 <div class="profile-box">
     <h4>Лента жизни{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}?section=picture">обложка</a>{% endif %}</h4>
     <div class="profile-box-body">
+        {% if profile.cover_url %}
+        <img src="{{ profile.cover_url }}" alt="" class="profile-cover-img">
+        {% endif %}
         <div class="subtabs">
             {% for y in timeline_years %}
             <div class="{% if y == timeline_year %}activetab{% else %}inactivetab{% endif %}">
