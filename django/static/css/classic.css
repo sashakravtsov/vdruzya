@@ -638,24 +638,36 @@ button.linkish .ico { margin-right: 2px; }
 .people-top-links a{color:var(--fb)}
 .people-top-links span{margin:0 4px;color:#aaa}
 .people-search-form{margin:0 0 10px}
-/* directory tabs — classic #tabs */
-.people-page #tabs, .events-page #tabs, .group-page #tabs, .groups-index #tabs, .search-page #tabs {
-  text-align:left;padding:4px 0;margin:0 0 12px;border-bottom:solid 1px var(--fb);
+/* directory tabs — classic left #tabs (not centered about-page chrome) */
+:is(
+  .people-page, .events-page, .group-page, .groups-index, .search-page,
+  .questions-page, .polls-page, .notes-page, .market-page, .links-page, .gifts-page
+) #tabs {
+  text-align: left; padding: 4px 0; margin: 0 0 12px; border-bottom: solid 1px var(--fb);
 }
-.people-page #tabs .activetab, .people-page #tabs .inactivetab,
-.events-page #tabs .activetab, .events-page #tabs .inactivetab,
-.group-page #tabs .activetab, .group-page #tabs .inactivetab,
-.groups-index #tabs .activetab, .groups-index #tabs .inactivetab,
-.search-page #tabs .activetab, .search-page #tabs .inactivetab { display:inline;padding:0;margin:0; }
-.people-page #tabs a, .events-page #tabs a, .group-page #tabs a, .groups-index #tabs a, .search-page #tabs a { margin:0;padding:4px; }
-.people-page #tabs .activetab a, .events-page #tabs .activetab a,
-.group-page #tabs .activetab a, .groups-index #tabs .activetab a, .search-page #tabs .activetab a {
-  color:#fff;background:var(--fb);text-decoration:none;
+:is(
+  .people-page, .events-page, .group-page, .groups-index, .search-page,
+  .questions-page, .polls-page, .notes-page, .market-page, .links-page, .gifts-page
+) #tabs .activetab,
+:is(
+  .people-page, .events-page, .group-page, .groups-index, .search-page,
+  .questions-page, .polls-page, .notes-page, .market-page, .links-page, .gifts-page
+) #tabs .inactivetab { display: inline; padding: 0; margin: 0; }
+:is(
+  .people-page, .events-page, .group-page, .groups-index, .search-page,
+  .questions-page, .polls-page, .notes-page, .market-page, .links-page, .gifts-page
+) #tabs a { margin: 0; padding: 4px; }
+:is(
+  .people-page, .events-page, .group-page, .groups-index, .search-page,
+  .questions-page, .polls-page, .notes-page, .market-page, .links-page, .gifts-page
+) #tabs .activetab a {
+  color: #fff; background: var(--fb); text-decoration: none;
 }
-.people-page #tabs .inactivetab a:hover, .events-page #tabs .inactivetab a:hover,
-.group-page #tabs .inactivetab a:hover, .groups-index #tabs .inactivetab a:hover,
-.search-page #tabs .inactivetab a:hover {
-  background:var(--line);text-decoration:none;
+:is(
+  .people-page, .events-page, .group-page, .groups-index, .search-page,
+  .questions-page, .polls-page, .notes-page, .market-page, .links-page, .gifts-page
+) #tabs .inactivetab a:hover {
+  background: var(--line); text-decoration: none;
 }
 .classic-person-row{
   margin:0 0 8px;padding:0 0 8px;border-bottom:1px solid #eee;
@@ -1235,13 +1247,22 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-actions form { display: inline; }
 .inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
 .market-page .market-row,
-.notes-page .note-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
+.notes-page .note-row,
+.questions-page .question-row,
+.questions-page .answer-row,
+.polls-page .poll-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
 .market-page .market-row:last-child,
-.notes-page .note-row:last-child { border-bottom: 0; }
+.notes-page .note-row:last-child,
+.questions-page .question-row:last-child,
+.questions-page .answer-row:last-child,
+.polls-page .poll-row:last-child { border-bottom: 0; }
 .market-page .market-photo { margin: 0 0 8px; }
 .market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
 .note-photo { margin: 4px 0; }
 .note-photo img { border: 1px solid #B3B3B3; }
+.polls-page .poll-options { width: 100%; }
+.polls-page .poll-options .poll-opt { width: 55%; }
+.polls-page .poll-options .poll-votes { white-space: nowrap; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-video { margin-top: 4px; }
 .inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }

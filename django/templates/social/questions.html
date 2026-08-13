@@ -26,13 +26,15 @@
             <h4>{% if mine %}Мои вопросы{% else %}Вопросы друзей{% endif %}</h4>
             <div class="profile-box-body">
                 {% for q in items %}
-                <div class="event-list-row">
+                <div class="event-list-row question-row">
                     {% include "social/_list_thumb.html" with url=q.photo_url href=q.get_absolute_url %}
-                    <b><a href="{% url 'questions.show' q.id %}">{{ q.body|truncatewords:20 }}</a></b>
-                    <div class="muted">
-                        <a href="{% url 'profile' q.social_user.id %}">{{ q.social_user.name }}</a>
-                        {% if q.created_at %} · {{ q.created_at|fb_when }}{% endif %}
-                        · {{ q.n_answers }} отв.
+                    <div class="list-row-body">
+                        <b><a href="{% url 'questions.show' q.id %}">{{ q.body|truncatewords:20 }}</a></b>
+                        <div class="muted">
+                            <a href="{% url 'profile' q.social_user.id %}">{{ q.social_user.name }}</a>
+                            {% if q.created_at %} · {{ q.created_at|fb_when }}{% endif %}
+                            · {{ q.n_answers }} отв.
+                        </div>
                     </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет вопросов.</p>{% endfor %}

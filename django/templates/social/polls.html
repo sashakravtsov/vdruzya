@@ -26,12 +26,14 @@
             <h4>{% if mine %}Мои опросы{% else %}Опросы друзей{% endif %}</h4>
             <div class="profile-box-body">
                 {% for p in items %}
-                <div class="event-list-row">
-                    <b><a href="{% url 'polls.show' p.id %}">{{ p.question|truncatewords:20 }}</a></b>
-                    <div class="muted">
-                        <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
-                        {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
-                        · {{ p.n_votes }} гол.
+                <div class="event-list-row poll-row">
+                    <div class="list-row-body">
+                        <b><a href="{% url 'polls.show' p.id %}">{{ p.question|truncatewords:20 }}</a></b>
+                        <div class="muted">
+                            <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
+                            {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
+                            · {{ p.n_votes }} гол.
+                        </div>
                     </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет опросов.</p>{% endfor %}

@@ -17,10 +17,10 @@
                     {% if poll.created_at %} · {{ poll.created_at|fb_when }}{% endif %}
                     · {{ total }} гол.
                 </p>
-                <table class="formtable" cellpadding="0" cellspacing="0" style="width:100%">
+                <table class="formtable poll-options" cellpadding="0" cellspacing="0">
                     {% for o in options %}
                     <tr>
-                        <td style="width:55%">
+                        <td class="poll-opt">
                             {% if me %}
                             <form method="post" action="{% url 'polls.vote' poll.id o.id %}" class="inline">{% csrf_token %}
                                 <input type="hidden" name="next" value="{% url 'polls.show' poll.id %}">
@@ -30,7 +30,7 @@
                             {{ o.body }}
                             {% endif %}
                         </td>
-                        <td class="muted">{{ o.n_votes }} ({{ o.pct }}%)</td>
+                        <td class="muted poll-votes">{{ o.n_votes }} ({{ o.pct }}%)</td>
                     </tr>
                     {% empty %}
                     <tr><td class="muted">Нет вариантов.</td></tr>

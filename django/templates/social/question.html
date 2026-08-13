@@ -31,18 +31,20 @@
                 </form>
                 {% endif %}
                 {% for a in answers %}
-                <div class="event-list-row" style="margin-top:10px">
-                    <a href="{% url 'profile' a.social_user.id %}"><b>{{ a.social_user.name }}</b></a>:
-                    {{ a.body }}
-                    <div class="muted">
-                        {{ a.n_votes }} гол.
-                        {% if me %}
-                        ·
-                        <form method="post" action="{% url 'questions.vote' question.id a.id %}" class="inline">{% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.path }}">
-                            <button type="submit" class="linkish">{% if a.voted_by_me %}убрать голос{% else %}голосовать{% endif %}</button>
-                        </form>
-                        {% endif %}
+                <div class="event-list-row answer-row">
+                    <div class="list-row-body">
+                        <a href="{% url 'profile' a.social_user.id %}"><b>{{ a.social_user.name }}</b></a>:
+                        {{ a.body }}
+                        <div class="muted">
+                            {{ a.n_votes }} гол.
+                            {% if me %}
+                            ·
+                            <form method="post" action="{% url 'questions.vote' question.id a.id %}" class="inline">{% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="linkish">{% if a.voted_by_me %}убрать голос{% else %}голосовать{% endif %}</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет ответов. Будьте первым.</p>{% endfor %}
