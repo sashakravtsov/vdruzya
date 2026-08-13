@@ -20,8 +20,12 @@ def _me(request):
     return profile_of(request.user)
 
 
-def _compose_form(friends, data=None, files=None, to=None):
-    return ComposeMessageForm(friends, data, files, initial={"to": str(to)} if to else None)
+def _compose_form(friends, data=None, files=None, to=None, stickers=None):
+    return ComposeMessageForm(
+        friends, data, files,
+        stickers=stickers,
+        initial={"to": str(to)} if to else None,
+    )
 
 
 def _page(request):
@@ -100,8 +104,10 @@ def inbox_compose(request):
     me = _me(request)
     if not me:
         return redirect("inbox")
+    from apps.social.gifts import catalog
     friends = list(friends_of(me, limit=200))
-    form = _compose_form(friends, request.POST, request.FILES)
+    stickers = catalog()[:40]
+    form = _compose_form(friends, request.POST, request.FILES, stickers=stickers)
     if not form.is_valid():
         messages.error(request, "Выберите друга и напишите сообщение.")
         return redirect(_go(compose=True))
@@ -119,9 +125,10 @@ def inbox_compose(request):
         ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
+            sticker_id=form.cleaned_data.get("sticker") or None,
         )
     except ValueError:
-        messages.error(request, "Напишите текст или приложите фото.")
+        messages.error(request, "Напишите текст, приложите фото или выберите стикер.")
         return redirect(_go(compose=True))
     return redirect(_go(conv.id))
 
@@ -138,6 +145,40 @@ def inbox_unarchive(request, me, conv):
     if ch.unarchive(me, conv):
         messages.success(request, "Переписка возвращена во входящие.")
     return redirect(_go(conv.id))
+
+
+@ch.member_post
+def inbox_mute(request, me, conv):
+    if ch.mute(me, conv):
+        messages.info(request, "Уведомления по этой переписке выключены.")
+    return redirect(_go(conv.id))
+
+
+@ch.member_post
+def inbox_unmute(request, me, conv):
+    if ch.unmute(me, conv):
+        messages.success(request, "Уведомления по переписке снова включены.")
+    return redirect(_go(conv.id))
+
+
+@ch.member_post
+def inbox_title(request, me, conv):
+    title = (request.POST.get("title") or "").strip()
+    ch.set_title(me, conv, title)
+    messages.success(request, "Тема обновлена." if title else "Тема снята.")
+    return redirect(_go(conv.id))
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def inbox_read_all(request):
+    me = _me(request)
+    if not me:
+        return redirect("inbox")
+    ch.mark_all_read(me)
+    messages.info(request, "Все входящие отмечены как прочитанные.")
+    return redirect("inbox")
 
 
 @login_required

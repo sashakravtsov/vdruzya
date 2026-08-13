@@ -71,6 +71,20 @@ def typing_for(me, conv_id: int) -> list[dict]:
     return out
 
 
+def _peer_read_iso(me, conv_id: int) -> str | None:
+    try:
+        conv = ch.require_member(me, conv_id)
+    except Http404:
+        return None
+    ts = ch.peer_read_at(me, conv)
+    if not ts:
+        return None
+    try:
+        return ts.isoformat()
+    except Exception:
+        return str(ts)
+
+
 def snapshot(me, *, conv_id=None) -> dict:
     from apps.social import notify
 
@@ -87,6 +101,7 @@ def snapshot(me, *, conv_id=None) -> dict:
             Message.objects.filter(conversation_id=conv_id).aggregate(m=Max("id")).get("m") or 0
         )
         data["typing"] = typing_for(me, conv_id)
+        data["peer_read_at"] = _peer_read_iso(me, conv_id)
     return data
 
 
@@ -154,11 +169,13 @@ def inbox_since(request, conversation_id):
         after = 0
     rows = list(
         Message.objects.filter(conversation=conv, id__gt=after)
-        .select_related("social_user")
+        .select_related("social_user", "reply_to", "reply_to__social_user")
         .order_by("id")[:40]
     )
+    ch.attach_message_stickers(rows)
     if rows and not ch.is_archived(me, conv):
         ch.mark_read(me, conv)
+    peer_ts = ch.peer_read_at(me, conv)
     html = "".join(
         render_to_string(
             "social/_inbox_line.html",
@@ -172,4 +189,5 @@ def inbox_since(request, conversation_id):
         "last_id": rows[-1].id if rows else after,
         "unread_messages": _unread(me),
         "typing": typing_for(me, conversation_id),
+        "peer_read_at": peer_ts.isoformat() if peer_ts else None,
     })

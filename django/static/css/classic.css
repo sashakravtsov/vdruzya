@@ -1210,6 +1210,11 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-filter .inputtext { width: 70%; }
 .inbox-pane .msg-tabs { margin: 0 0 8px; font-size: 11px; }
 .inbox-pane .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
+.inbox-pane .msg-tabs .msg-read-all { display: inline; }
+.inbox-pane .msg-title-edit { margin: 0 0 10px; font-size: 11px; }
+.inbox-pane .msg-title-edit .inputtext { width: 55%; max-width: 280px; margin: 0 4px; }
+.inbox-pane .msg-receipt { font-size: 11px; }
+.inbox-pane .msg-line.is-mine.is-read .msg-receipt { color: #3B5998; }
 .inbox-pane .msg-pager { margin: 8px 0 0; font-size: 11px; }
 .inbox-table { width: 100%; border-collapse: collapse; margin: 4px 0 0; }
 .inbox-table th {
