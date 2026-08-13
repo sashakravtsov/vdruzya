@@ -189,6 +189,9 @@
             создал(а) событие
             <a href="{% url 'events.show' item.event.id %}"><b>{{ item.event.title }}</b></a>.
             {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
+            {% if item.event.cover_url %}
+            <div class="news-photo-row"><a href="{% url 'events.show' item.event.id %}"><img src="{{ item.event.cover_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% endif %}
         </div>
     {% elif item.kind == 'event_going' %}
         <span class="ico ico-note news-ico"></span>

@@ -218,7 +218,7 @@ def group_event_create(request, pk):
         return redirect("groups.show", pk=pk)
     from apps.social import events as ev
     from apps.social.forms import EventForm
-    form = EventForm(request.POST)
+    form = EventForm(request.POST, request.FILES)
     if form.is_valid():
         event = ev.create_event(
             me,
@@ -226,6 +226,7 @@ def group_event_create(request, pk):
             place=form.cleaned_data.get("place") or "—",
             starts_at=form.cleaned_data["starts_at"],
             community=group,
+            cover=form.cleaned_data.get("cover"),
         )
         if event:
             ev.set_rsvp(me, event, "going")

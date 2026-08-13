@@ -14,6 +14,9 @@
             <div class="profile-box">
                 <h4>Событие</h4>
                 <div class="profile-box-body">
+                    {% if event.cover_url %}
+                    <p class="event-cover"><img src="{{ event.cover_url }}" alt="" class="news-photo"></p>
+                    {% endif %}
                     <table class="infotable">
                         <tr><td class="label">Когда:</td><td>{{ event.starts_at|date:"l, j E Y, H:i" }}</td></tr>
                         <tr><td class="label">Где:</td><td>{{ event.place|default:"—" }}</td></tr>

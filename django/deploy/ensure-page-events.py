@@ -16,6 +16,8 @@ from django.db import connection
 SQL = """
 ALTER TABLE events
   ADD COLUMN IF NOT EXISTS company_id bigint NULL;
+ALTER TABLE events
+  ADD COLUMN IF NOT EXISTS cover_path varchar(255) NULL;
 """
 
 # Soft FK index (no hard REFERENCES — companies may be cleaned independently)
@@ -51,7 +53,12 @@ def main():
             "WHERE table_name='events' AND column_name='company_id'"
         )
         assert cur.fetchone(), "company_id missing"
-    print("OK   events.company_id + gift sticker colors")
+        cur.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name='events' AND column_name='cover_path'"
+        )
+        assert cur.fetchone(), "cover_path missing"
+    print("OK   events.company_id + cover_path + gift sticker colors")
 
 
 if __name__ == "__main__":

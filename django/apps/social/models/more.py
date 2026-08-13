@@ -118,6 +118,8 @@ class Event(models.Model):
         Company, models.DO_NOTHING, null=True, blank=True, related_name="events",
         db_column="company_id",
     )
+    # Optional cover on same media disk as wall photos (ensure-page-events ALTER)
+    cover_path = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
@@ -128,6 +130,11 @@ class Event(models.Model):
 
     def get_absolute_url(self):
         return f"/events/{self.pk}"
+
+    @property
+    def cover_url(self):
+        from apps.social.media import media_url
+        return media_url(self.cover_path)
 
     @property
     def topic_key(self):

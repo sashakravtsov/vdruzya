@@ -11,12 +11,18 @@ import django
 
 django.setup()
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
 from apps.accounts.models import User
 from apps.social import events as ev
 from apps.social.models import Event, EventAttendee, SocialProfile
 from apps.social.services import now, profile_of
+
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+)
 
 
 def ok(label):
@@ -129,6 +135,33 @@ def main():
         event.refresh_from_db()
         assert event.title == "QA Event Night Edited" and event.place == "СПб"
         ok("event host edit")
+
+        # Cover photo on same media disk
+        from django.db import connection
+        with connection.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name='events' AND column_name='cover_path'"
+            )
+            assert cur.fetchone(), "events.cover_path — run ensure-page-events.py"
+        starts = (now() + timedelta(days=4)).strftime("%d.%m.%Y %H:%M")
+        r = c.post("/events", {
+            "title": "QA Event Cover",
+            "place": "Москва",
+            "description": "with cover",
+            "starts_at": starts,
+            "cover": SimpleUploadedFile("ev.png", PNG, content_type="image/png"),
+        }, secure=True)
+        assert r.status_code in (301, 302), r.status_code
+        covered = Event.objects.filter(host=me, title="QA Event Cover").order_by("-id").first()
+        assert covered and covered.cover_path and covered.cover_path.startswith("events/"), covered
+        assert covered.cover_url
+        created.append(covered)
+        r = c.get(f"/events/{covered.id}", secure=True)
+        assert r.status_code == 200 and b"<img" in r.content
+        r = c.get("/events?tab=hosting", secure=True)
+        assert r.status_code == 200 and b"event-thumb" in r.content
+        ok("event cover photo")
 
         from apps.social.services import bump_news, news_items
         bump_news()

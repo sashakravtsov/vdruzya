@@ -65,7 +65,7 @@ def _event_posts(event, *, photos_only=False, limit=30, viewer=None):
 @login_required
 def events_home(request):
     me = profile_of(request.user)
-    form = EventForm(request.POST or None)
+    form = EventForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and me:
         if form.is_valid():
             event = ev.create_event(
@@ -74,6 +74,7 @@ def events_home(request):
                 place=form.cleaned_data.get("place") or "—",
                 description=form.cleaned_data.get("description") or "",
                 starts_at=form.cleaned_data["starts_at"],
+                cover=form.cleaned_data.get("cover"),
             )
             if event:
                 ev.set_rsvp(me, event, "going")
@@ -202,7 +203,10 @@ def event_edit(request, event_id):
         "description": event.description or "",
         "starts_at": event.starts_at.strftime("%d.%m.%Y %H:%M") if event.starts_at else "",
     }
-    form = EventForm(request.POST or None, initial=None if request.method == "POST" else initial)
+    form = EventForm(
+        request.POST or None, request.FILES or None,
+        initial=None if request.method == "POST" else initial,
+    )
     if request.method == "POST":
         if form.is_valid():
             row = ev.update_event(
@@ -211,6 +215,7 @@ def event_edit(request, event_id):
                 place=form.cleaned_data.get("place") or "—",
                 description=form.cleaned_data.get("description") or "",
                 starts_at=form.cleaned_data["starts_at"],
+                cover=form.cleaned_data.get("cover"),
             )
             if row:
                 messages.success(request, "Событие сохранено.")

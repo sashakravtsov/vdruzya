@@ -116,7 +116,7 @@
                 <h4>События</h4>
                 <div class="profile-box-body">
                     {% if event_form %}
-                    <form method="post" action="{% url 'pages.events' page.id %}">{% csrf_token %}
+                    <form method="post" action="{% url 'pages.events' page.id %}" enctype="multipart/form-data">{% csrf_token %}
                         <table class="formtable" cellpadding="0" cellspacing="0">
                             <tr><td class="label">Название:</td><td>{{ event_form.title }}</td></tr>
                             <tr><td class="label">Место:</td><td>{{ event_form.place }}</td></tr>
@@ -125,6 +125,7 @@
                                 <td>{{ event_form.starts_at }}{% if event_form.starts_at.help_text %} <span class="muted">{{ event_form.starts_at.help_text }}</span>{% endif %}</td>
                             </tr>
                             <tr><td class="label">Описание:</td><td>{{ event_form.description }}</td></tr>
+                            <tr><td class="label">Обложка:</td><td>{{ event_form.cover }}</td></tr>
                             <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать событие"></td></tr>
                         </table>
                     </form>

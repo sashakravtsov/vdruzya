@@ -316,11 +316,13 @@
                 <h4>События</h4>
                 <div class="profile-box-body">
                     {% if is_admin and event_form %}
-                    <form method="post" action="{% url 'groups.events' group.id %}">{% csrf_token %}
+                    <form method="post" action="{% url 'groups.events' group.id %}" enctype="multipart/form-data">{% csrf_token %}
                         <table class="formtable" cellpadding="0" cellspacing="0">
                             <tr><td class="label">Название:</td><td>{{ event_form.title }}</td></tr>
                             <tr><td class="label">Место:</td><td>{{ event_form.place }}</td></tr>
-                            <tr><td class="label">Когда:</td><td>{{ event_form.starts_at }}{% if event_form.starts_at.help_text %} <span class="muted">{{ event_form.starts_at.help_text }}</span>{% endif %} <input type="submit" class="inputsubmit" value="Создать"></td></tr>
+                            <tr><td class="label">Когда:</td><td>{{ event_form.starts_at }}{% if event_form.starts_at.help_text %} <span class="muted">{{ event_form.starts_at.help_text }}</span>{% endif %}</td></tr>
+                            <tr><td class="label">Обложка:</td><td>{{ event_form.cover }}</td></tr>
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
                         </table>
                     </form>
                     {% endif %}

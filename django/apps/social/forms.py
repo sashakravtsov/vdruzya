@@ -595,7 +595,7 @@ class StatusForm(ClassicForm, forms.Form):
 
 
 class EventForm(ClassicForm, forms.Form):
-    """Classic Events create — text date, no datetime-local."""
+    """Classic Events create — text date, no datetime-local (+ optional cover)."""
     title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
     place = forms.CharField(max_length=160, required=False, widget=_in(style="width:100%"))
     starts_at = forms.CharField(
@@ -604,6 +604,7 @@ class EventForm(ClassicForm, forms.Form):
         help_text="ДД.ММ.ГГГГ ЧЧ:ММ",
     )
     description = forms.CharField(required=False, widget=_ta(3, style="width:100%"))
+    cover = forms.ImageField(required=False, label="Обложка", widget=_file())
 
     def clean_starts_at(self):
         from apps.social.events import parse_starts

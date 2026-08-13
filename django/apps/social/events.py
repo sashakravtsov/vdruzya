@@ -38,7 +38,18 @@ def parse_starts(raw):
     return starts
 
 
-def create_event(me, *, title, place="", description="", starts_at=None, community=None, company=None):
+def _event_save_cover(upload):
+    """Optional event cover on the same media disk as wall photos."""
+    if not upload:
+        return None
+    from apps.social.media import save_image
+    try:
+        return save_image(upload, "events")
+    except Exception:
+        return None
+
+
+def create_event(me, *, title, place="", description="", starts_at=None, community=None, company=None, cover=None):
     title = (title or "").strip()[:255]
     if not me or not title or not starts_at:
         return None
@@ -51,6 +62,7 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
         host=me,
         community=community,
         company=company,
+        cover_path=_event_save_cover(cover),
         created_at=t,
         updated_at=t,
     )
@@ -59,7 +71,7 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
     return event
 
 
-def update_event(me, event, *, title, place="", description="", starts_at=None):
+def update_event(me, event, *, title, place="", description="", starts_at=None, cover=None):
     if not me or not event or event.host_id != me.id:
         return None
     title = (title or "").strip()[:255]
@@ -70,7 +82,12 @@ def update_event(me, event, *, title, place="", description="", starts_at=None):
     event.description = (description or "").strip()[:4000]
     event.starts_at = starts_at
     event.updated_at = now()
-    event.save(update_fields=["title", "place", "description", "starts_at", "updated_at"])
+    fields = ["title", "place", "description", "starts_at", "updated_at"]
+    path = _event_save_cover(cover)
+    if path:
+        event.cover_path = path
+        fields.append("cover_path")
+    event.save(update_fields=fields)
     from apps.social.services import bump_news
     bump_news()
     return event

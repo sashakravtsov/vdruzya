@@ -253,7 +253,7 @@ def page_event_create(request, pk):
         return redirect(page)
     from apps.social import events as ev
     from apps.social.forms import EventForm
-    form = EventForm(request.POST)
+    form = EventForm(request.POST, request.FILES)
     if form.is_valid():
         event = ev.create_event(
             me,
@@ -262,6 +262,7 @@ def page_event_create(request, pk):
             description=form.cleaned_data.get("description") or "",
             starts_at=form.cleaned_data["starts_at"],
             company=page,
+            cover=form.cleaned_data.get("cover"),
         )
         if event:
             ev.set_rsvp(me, event, "going")
