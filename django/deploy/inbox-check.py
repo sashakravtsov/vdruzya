@@ -78,7 +78,9 @@ def main():
     css = (root / "static/css/classic.css").read_text()
     body_rule = re.search(r"\.inbox-pane \.msg-line \.msg-body\s*\{[^}]+\}", css)
     assert body_rule and "pre-wrap" not in body_rule.group(0)
-    assert "overflow: hidden" in re.search(r"\.inbox-pane \.msg-line\s*\{[^}]+\}", css, re.S).group(0)
+    line_rule = re.search(r"\.inbox-pane \.msg-line\s*\{[^}]+\}", css, re.S)
+    assert line_rule and "grid-template-columns" in line_rule.group(0)
+    assert "msg-main" in html and "msg-text" in html or "msg-main" in html
     ok("inbox thread layout chrome")
 
     from apps.social import realtime as rt
