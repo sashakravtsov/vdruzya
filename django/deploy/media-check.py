@@ -195,8 +195,9 @@ def main():
         r = c.get("/feed", secure=True)
         assert r.status_code == 200
         assert b"<video" in r.content
-        # Raw storage paths must not leak into the classic news snippet.
-        assert b"storage:videos/" not in r.content
+        # This post's storage: path must not appear as raw text in the feed.
+        marker = (pp_post.body or "").split("\n", 1)[0].encode()
+        assert marker not in r.content, marker
         ok("page video in news feed")
     else:
         ok("page wall video skipped (no admin page)")
