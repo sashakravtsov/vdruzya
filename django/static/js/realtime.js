@@ -711,69 +711,72 @@
     });
   }
 
-  function insertAtCursor(ta, text) {
-    if (!ta || !text) return;
-    ta.focus();
+  var MD_MODE_KEY = "vd-md-mode";
+
+  function mdNotify(ta) {
+    try { ta.dispatchEvent(new Event("input", { bubbles: true })); } catch (e) {}
+  }
+
+  function mdSel(ta) {
     var start = typeof ta.selectionStart === "number" ? ta.selectionStart : ta.value.length;
     var end = typeof ta.selectionEnd === "number" ? ta.selectionEnd : start;
-    var before = ta.value.slice(0, start);
-    var after = ta.value.slice(end);
-    ta.value = before + text + after;
-    var pos = start + text.length;
+    return { start: start, end: end, val: ta.value, selected: ta.value.slice(start, end) };
+  }
+
+  function mdReplace(ta, start, end, text, selStart, selEnd) {
+    ta.focus();
+    ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
     try {
-      ta.selectionStart = pos;
-      ta.selectionEnd = pos;
+      ta.selectionStart = selStart;
+      ta.selectionEnd = selEnd;
     } catch (e) {}
-    try {
-      ta.dispatchEvent(new Event("input", { bubbles: true }));
-    } catch (e2) {}
+    mdNotify(ta);
+  }
+
+  function insertAtCursor(ta, text) {
+    if (!ta || !text) return;
+    var s = mdSel(ta);
+    mdReplace(ta, s.start, s.end, text, s.start + text.length, s.start + text.length);
   }
 
   function wrapSelection(ta, before, after, placeholder) {
     if (!ta) return;
-    ta.focus();
-    var start = typeof ta.selectionStart === "number" ? ta.selectionStart : ta.value.length;
-    var end = typeof ta.selectionEnd === "number" ? ta.selectionEnd : start;
-    var selected = ta.value.slice(start, end);
+    var s = mdSel(ta);
+    var selected = s.selected;
+    if (selected && selected.indexOf(before) === 0 && selected.length >= before.length + after.length
+        && selected.slice(selected.length - after.length) === after) {
+      var un = selected.slice(before.length, selected.length - after.length);
+      mdReplace(ta, s.start, s.end, un, s.start, s.start + un.length);
+      return;
+    }
+    if (!selected && s.start >= before.length
+        && s.val.slice(s.start - before.length, s.start) === before
+        && s.val.slice(s.end, s.end + after.length) === after) {
+      mdReplace(ta, s.start - before.length, s.end + after.length, "", s.start - before.length, s.start - before.length);
+      return;
+    }
     var inner = selected || placeholder || "";
     var block = before + inner + after;
-    ta.value = ta.value.slice(0, start) + block + ta.value.slice(end);
-    if (selected) {
-      try {
-        ta.selectionStart = start;
-        ta.selectionEnd = start + block.length;
-      } catch (e) {}
-    } else {
-      try {
-        ta.selectionStart = start + before.length;
-        ta.selectionEnd = start + before.length + inner.length;
-      } catch (e2) {}
-    }
-    try { ta.dispatchEvent(new Event("input", { bubbles: true })); } catch (e3) {}
+    if (selected) mdReplace(ta, s.start, s.end, block, s.start, s.start + block.length);
+    else mdReplace(ta, s.start, s.end, block, s.start + before.length, s.start + before.length + inner.length);
   }
 
-  function linePrefix(ta, prefix) {
+  function linePrefix(ta, prefix, emptyLabel) {
     if (!ta) return;
-    ta.focus();
-    var start = typeof ta.selectionStart === "number" ? ta.selectionStart : 0;
-    var end = typeof ta.selectionEnd === "number" ? ta.selectionEnd : start;
-    var val = ta.value;
-    var lineStart = val.lastIndexOf("\n", start - 1) + 1;
-    var lineEnd = val.indexOf("\n", end);
-    if (lineEnd < 0) lineEnd = val.length;
-    var chunk = val.slice(lineStart, lineEnd);
+    var s = mdSel(ta);
+    var lineStart = s.val.lastIndexOf("\n", s.start - 1) + 1;
+    var lineEnd = s.val.indexOf("\n", s.end);
+    if (lineEnd < 0) lineEnd = s.val.length;
+    var chunk = s.val.slice(lineStart, lineEnd);
     var lines = chunk.split("\n");
+    var allOn = lines.every(function (ln) { return !ln || ln.indexOf(prefix) === 0; });
     var out = lines.map(function (ln) {
-      if (!ln) return prefix + "текст";
+      if (!ln) return allOn ? "" : prefix + (emptyLabel || "текст");
+      if (allOn && ln.indexOf(prefix) === 0) return ln.slice(prefix.length);
       if (ln.indexOf(prefix) === 0) return ln;
       return prefix + ln;
     }).join("\n");
-    ta.value = val.slice(0, lineStart) + out + val.slice(lineEnd);
-    try {
-      ta.selectionStart = lineStart;
-      ta.selectionEnd = lineStart + out.length;
-    } catch (e) {}
-    try { ta.dispatchEvent(new Event("input", { bubbles: true })); } catch (e2) {}
+    mdReplace(ta, lineStart, lineEnd, out, lineStart, lineStart + out.length);
   }
 
   function applyMdAction(ta, action) {
@@ -782,9 +785,37 @@
     else if (action === "italic") wrapSelection(ta, "*", "*", "курсив");
     else if (action === "strike") wrapSelection(ta, "~~", "~~", "зачёркнутый");
     else if (action === "code") wrapSelection(ta, "`", "`", "код");
+    else if (action === "codeblock") wrapSelection(ta, "```\n", "\n```", "код");
     else if (action === "link") wrapSelection(ta, "[", "](https://)", "текст");
+    else if (action === "h3") linePrefix(ta, "### ", "заголовок");
     else if (action === "ul") linePrefix(ta, "- ");
+    else if (action === "ol") linePrefix(ta, "1. ");
     else if (action === "quote") linePrefix(ta, "> ");
+    else if (action === "hr") insertAtCursor(ta, "\n\n---\n\n");
+  }
+
+  function continueListOnEnter(ta, ev) {
+    var s = mdSel(ta);
+    if (s.start !== s.end) return false;
+    var lineStart = s.val.lastIndexOf("\n", s.start - 1) + 1;
+    var line = s.val.slice(lineStart, s.start);
+    var m = line.match(/^(\s*)([-*] |\d+\. |> )(.*)$/);
+    if (!m) return false;
+    ev.preventDefault();
+    if (!(m[3] || "").trim()) {
+      mdReplace(ta, lineStart, s.start, "", lineStart, lineStart);
+      return true;
+    }
+    var next = m[2];
+    if (/^\d+\. $/.test(next)) next = (parseInt(next, 10) + 1) + ". ";
+    insertAtCursor(ta, "\n" + m[1] + next);
+    return true;
+  }
+
+  function autosizeMd(ta) {
+    if (!ta || ta.hidden) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(280, Math.max(96, ta.scrollHeight)) + "px";
   }
 
   function wireEmojiEditors(root) {
@@ -796,26 +827,41 @@
         ed.setAttribute("data-wired", "1");
         var targetId = ed.getAttribute("data-emoji-for");
         var previewUrl = ed.getAttribute("data-preview-url") || "/inbox/preview";
+        var maxLen = parseInt(ed.getAttribute("data-md-max") || "4000", 10) || 4000;
+        var shell = ed.closest ? ed.closest(".msg-md-shell") : null;
+        var stage = (shell && shell.querySelector("[data-md-stage]")) || null;
+        var form = ed.closest ? ed.closest("form") : null;
         var ta = targetId ? document.getElementById(targetId) : null;
         var tabs = ed.querySelectorAll(".msg-editor-tab");
         var panes = ed.querySelectorAll("[data-pane-body]");
         var clearWrap = ed.querySelector(".msg-sticker-clear");
-        var form = ed.closest ? ed.closest("form") : null;
-        var preview = (form && form.querySelector("[data-md-preview]")) || ed.querySelector("[data-md-preview]");
+        var preview = (stage && stage.querySelector("[data-md-preview]"))
+          || (form && form.querySelector("[data-md-preview]"))
+          || ed.querySelector("[data-md-preview]");
         var modeBtns = ed.querySelectorAll(".msg-md-mode-btn");
+        var countEl = shell && shell.querySelector("[data-md-count]");
+        var maxEl = shell && shell.querySelector("[data-md-max]");
+        var statusEl = shell && shell.querySelector(".msg-md-status");
         var previewTimer = null;
+        var previewReq = 0;
         var mode = "write";
+        if (maxEl) maxEl.textContent = String(maxLen);
 
         function getTa() {
           if (!ta) ta = document.getElementById(targetId);
           return ta;
         }
-
         function getPreview() {
           if (preview && preview.isConnected) return preview;
-          form = ed.closest ? ed.closest("form") : form;
-          preview = (form && form.querySelector("[data-md-preview]")) || ed.querySelector("[data-md-preview]");
+          preview = (stage && stage.querySelector("[data-md-preview]"))
+            || (form && form.querySelector("[data-md-preview]"))
+            || ed.querySelector("[data-md-preview]");
           return preview;
+        }
+        function getStage() {
+          if (stage && stage.isConnected) return stage;
+          stage = (shell && shell.querySelector("[data-md-stage]")) || null;
+          return stage;
         }
 
         function showPane(name) {
@@ -828,30 +874,22 @@
           }
         }
 
-        function setMode(next) {
-          mode = next === "preview" ? "preview" : "write";
-          for (var m = 0; m < modeBtns.length; m++) {
-            if (modeBtns[m].getAttribute("data-md-mode") === mode) modeBtns[m].classList.add("is-on");
-            else modeBtns[m].classList.remove("is-on");
-          }
+        function syncCount() {
           var field = getTa();
-          var pane = getPreview();
-          if (mode === "preview") {
-            if (field) field.hidden = true;
-            if (pane) pane.hidden = false;
-            refreshPreview();
-          } else {
-            if (field) field.hidden = false;
-            if (pane) pane.hidden = true;
-            if (field) field.focus();
+          var n = field ? (field.value || "").length : 0;
+          if (countEl) countEl.textContent = String(n);
+          if (statusEl) {
+            if (n >= maxLen - 200) statusEl.classList.add("is-warn");
+            else statusEl.classList.remove("is-warn");
           }
         }
 
         function refreshPreview() {
           var pane = getPreview();
-          if (!pane) return;
+          if (!pane || pane.hidden) return;
           var field = getTa();
           var body = field ? field.value : "";
+          var id = ++previewReq;
           pane.innerHTML = "<p class=\"muted\">обновляем…</p>";
           var fd = new FormData();
           fd.set("body", body);
@@ -862,14 +900,45 @@
             body: fd,
           }).then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
+              if (id !== previewReq) return;
               if (!data) {
                 pane.innerHTML = "<p class=\"muted\">не удалось показать превью</p>";
                 return;
               }
-              pane.innerHTML = data.html || "";
+              pane.innerHTML = data.html || "<p class=\"muted\">Пусто — напишите текст.</p>";
             }).catch(function () {
+              if (id !== previewReq) return;
               pane.innerHTML = "<p class=\"muted\">не удалось показать превью</p>";
             });
+        }
+
+        function schedulePreview() {
+          if (mode === "write") return;
+          if (previewTimer) clearTimeout(previewTimer);
+          previewTimer = setTimeout(refreshPreview, 220);
+        }
+
+        function setMode(next) {
+          mode = (next === "split" || next === "preview") ? next : "write";
+          try { sessionStorage.setItem(MD_MODE_KEY, mode); } catch (e) {}
+          for (var m = 0; m < modeBtns.length; m++) {
+            if (modeBtns[m].getAttribute("data-md-mode") === mode) modeBtns[m].classList.add("is-on");
+            else modeBtns[m].classList.remove("is-on");
+          }
+          var st = getStage();
+          var field = getTa();
+          var pane = getPreview();
+          if (st) {
+            st.classList.remove("is-write", "is-split", "is-preview");
+            st.classList.add("is-" + mode);
+          }
+          if (field) field.hidden = mode === "preview";
+          if (pane) pane.hidden = mode === "write";
+          if (mode !== "write") refreshPreview();
+          if (field && mode !== "preview") {
+            field.focus();
+            autosizeMd(field);
+          }
         }
 
         for (var t = 0; t < tabs.length; t++) {
@@ -878,14 +947,12 @@
             showPane(this.getAttribute("data-pane") || "emoji");
           });
         }
-
         for (var mb = 0; mb < modeBtns.length; mb++) {
           modeBtns[mb].addEventListener("click", function (ev) {
             ev.preventDefault();
             setMode(this.getAttribute("data-md-mode") || "write");
           });
         }
-
         var mdBtns = ed.querySelectorAll(".msg-md-btn");
         for (var mb2 = 0; mb2 < mdBtns.length; mb2++) {
           mdBtns[mb2].addEventListener("click", function (ev) {
@@ -898,22 +965,32 @@
         var field = getTa();
         if (field) {
           field.addEventListener("keydown", function (ev) {
-            if (!(ev.ctrlKey || ev.metaKey)) return;
             var k = (ev.key || "").toLowerCase();
+            if (ev.key === "Enter" && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+              if (continueListOnEnter(field, ev)) return;
+            }
+            if (ev.key === "Tab" && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+              ev.preventDefault();
+              insertAtCursor(field, "  ");
+              return;
+            }
+            if (!(ev.ctrlKey || ev.metaKey)) return;
             if (k === "b") { ev.preventDefault(); applyMdAction(field, "bold"); }
             else if (k === "i") { ev.preventDefault(); applyMdAction(field, "italic"); }
             else if (k === "e") { ev.preventDefault(); applyMdAction(field, "code"); }
             else if (k === "k") { ev.preventDefault(); applyMdAction(field, "link"); }
             else if (k === "p" && ev.shiftKey) {
               ev.preventDefault();
-              setMode(mode === "preview" ? "write" : "preview");
+              setMode(mode === "write" ? "split" : (mode === "split" ? "preview" : "write"));
             }
           });
           field.addEventListener("input", function () {
-            if (mode !== "preview") return;
-            if (previewTimer) clearTimeout(previewTimer);
-            previewTimer = setTimeout(refreshPreview, 280);
+            syncCount();
+            autosizeMd(field);
+            schedulePreview();
           });
+          syncCount();
+          autosizeMd(field);
         }
 
         var emojiBtns = ed.querySelectorAll(".msg-emoji-btn");
@@ -960,6 +1037,10 @@
           });
         }
         syncStickerUI();
+
+        var saved = "";
+        try { saved = sessionStorage.getItem(MD_MODE_KEY) || ""; } catch (e2) {}
+        setMode(saved === "split" || saved === "preview" ? saved : "write");
       })(editors[i]);
     }
   }

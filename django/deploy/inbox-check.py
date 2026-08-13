@@ -76,8 +76,10 @@ def main():
     assert 'data-rt="' in html or "realtime/stream" in html
     assert "<br" in html  # markdown nl2br for multiline
     assert "msg-md" in html
-    assert 'data-md="bold"' in html and 'data-md-mode="preview"' in html
+    assert 'data-md="bold"' in html and 'data-md-mode="split"' in html
+    assert 'data-md="codeblock"' in html and 'data-md="h3"' in html
     assert "msg-md-preview" in html and "msg-compose-fields" in html
+    assert "msg-md-shell" in html and "data-md-count" in html
     css = (root / "static/css/classic.css").read_text()
     body_rule = re.search(r"\.inbox-pane \.msg-line \.msg-body\s*\{[^}]+\}", css)
     assert body_rule and "pre-wrap" not in body_rule.group(0)
@@ -100,6 +102,7 @@ def main():
     assert ".msg-day" in (root / "static/css/classic.css").read_text()
     js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
     assert "wireEmojiEditors" in js and "applyMdAction" in js and "refreshPreview" in js
+    assert "continueListOnEnter" in js and "autosizeMd" in js and "MD_MODE_KEY" in js
     assert "grid-template-columns: 40px" in (root / "static/css/classic.css").read_text()
     # Markdown render + server preview (bleach-safe)
     from apps.social.markdown_msg import render_message_md
@@ -109,13 +112,15 @@ def main():
     ch.post_message(me, conv, md_msg)
     r = c.get(f"/inbox?c={conv.id}", secure=True)
     assert r.status_code == 200 and b"<strong>bold</strong>" in r.content
-    r = c.post("/inbox/preview", {"body": "**hi**\n\n- a\n- b"}, secure=True)
+    r = c.post("/inbox/preview", {"body": "**hi**\n\n### Title\n\n- a\n- b\n\n---\n\n```\nx\n```"}, secure=True)
     assert r.status_code == 200
     prev = r.json()
     assert prev.get("ok") and "<strong>hi</strong>" in (prev.get("html") or "")
     assert "<ul>" in (prev.get("html") or "")
+    assert "<h3>" in (prev.get("html") or "") and "<pre>" in (prev.get("html") or "")
     r = c.get("/inbox?compose=1", secure=True)
     assert r.status_code == 200 and b'data-md="bold"' in r.content and b"msg-md-preview" in r.content
+    assert b'data-md-mode="split"' in r.content and b"msg-md-shell" in r.content
     Message.objects.filter(conversation=conv, body=md_msg).delete()
     ok("markdown editor + preview")
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "typing"}, secure=True)
