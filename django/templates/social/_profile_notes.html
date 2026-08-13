@@ -1,0 +1,43 @@
+{% load vd %}
+<div class="profile-box">
+    <h4>Заметки</h4>
+    <div class="profile-box-body">
+        {% if note_form %}
+        <form method="post" action="{% url 'notes' %}" class="note-compose" enctype="multipart/form-data">{% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}?tab=notes">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr><td class="label">Заголовок:</td><td>{{ note_form.title }}</td></tr>
+                <tr><td class="label">Текст:</td><td>{{ note_form.body }}</td></tr>
+                <tr><td class="label">Фото:</td><td>{{ note_form.photo }}</td></tr>
+                <tr><td class="label">Кому:</td><td>{{ note_form.visibility }}</td></tr>
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Опубликовать"></td></tr>
+            </table>
+        </form>
+        {% endif %}
+        {% for note in notes %}
+        <div class="note-item">
+            <div class="note-head">
+                <a href="{% url 'posts.show' note.id %}"><b>{{ note.media_label|default:"Заметка" }}</b></a>
+                {% if note.created_at %}<span class="muted"> · {{ note.created_at|fb_when }}</span>{% endif %}
+                {% if is_own %}
+                <span class="muted">
+                    · <a href="{% url 'posts.edit' note.id %}?next={{ request.path }}%3Ftab%3Dnotes">ред.</a>
+                    ·
+                    <form method="post" action="{% url 'posts.delete' note.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}?tab=notes">
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                </span>
+                {% endif %}
+            </div>
+            {% if note.media_url %}
+            <div class="note-photo"><a href="{% url 'posts.show' note.id %}"><img src="{{ note.media_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% endif %}
+            <div class="note-body">{{ note.body|truncatewords:40|linebreaksbr }}</div>
+            <div class="muted"><a href="{% url 'posts.show' note.id %}">Читать полностью</a>{% if note.n_comments %} · {{ note.n_comments }} коммент.{% endif %}</div>
+        </div>
+        {% empty %}
+        <p class="muted">{% if is_own %}Пока нет заметок. Напишите первую выше.{% else %}Заметок пока нет.{% endif %}</p>
+        {% endfor %}
+    </div>
+</div>
