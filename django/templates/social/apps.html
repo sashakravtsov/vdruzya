@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index">
+    <div id="header" class="withsubtitle"><h1>Приложения</h1><div class="subtitle">каталог</div></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">
+            Каталог приложений в духе Facebook Platform — canvas-приложения ВДрузья
+            (без стороннего хостинга). Фото, группы и события остаются в меню слева.
+        </p>
+
+        <div class="subtabs">
+            <div class="{% if tab == 'browse' and not category %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps' %}">Все</a></div>
+            {% for slug, lab in categories %}
+            <div class="{% if category == slug %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps' %}?category={{ slug }}">{{ lab }}</a>
+            </div>
+            {% endfor %}
+            {% if me %}
+            <div class="{% if tab == 'mine' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps' %}?tab=mine">Мои приложения</a></div>
+            {% endif %}
+        </div>
+
+        {% if tab == 'mine' %}
+        <div class="profile-box">
+            <h4>Мои приложения</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in mine_apps %}
+                        <tr>
+                            <td class="col-name"><a href="{% url 'apps.canvas' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
+                                ·
+                                <form method="post" action="{% url 'apps.uninstall' app.slug %}" class="inline" id="uninst-{{ app.slug }}">{% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'apps' %}?tab=mine">
+                                    <button type="submit" class="linkish muted"
+                                            data-fb-dialog
+                                            data-fb-dialog-title="Удалить приложение?"
+                                            data-fb-dialog-message="Убрать «{{ app.name }}» из ваших приложений?"
+                                            data-fb-dialog-form="#uninst-{{ app.slug }}">удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="muted">Пока нет установленных приложений. Выберите ниже.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+
+        {% if featured and not category %}
+        <div class="profile-box">
+            <h4>Избранные</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in featured %}
+                        <tr>
+                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                {% if app.slug in installed %}
+                                <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
+                                {% else %}
+                                <a href="{% url 'apps.show' app.slug %}">добавить</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>{% if category %}Каталог{% else %}Все приложения{% endif %}</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in apps %}
+                        <tr>
+                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                {% if app.slug in installed %}
+                                <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
+                                · <span class="muted">добавлено</span>
+                                {% else %}
+                                <a href="{% url 'apps.show' app.slug %}">подробнее</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="muted">Нет приложений в этой категории.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

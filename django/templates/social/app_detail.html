@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ app.name }} — Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index">
+    <div id="header" class="withsubtitle">
+        <h1>{{ app.name }}</h1>
+        <div class="subtitle"><a href="{% url 'apps' %}">← приложения</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>О приложении</h4>
+            <div class="profile-box-body">
+                <p>{{ app.detail }}</p>
+                <p class="muted">{{ app.blurb }}</p>
+                <table class="infotable">
+                    <tr><td class="label">Разработчик:</td><td>{{ app.developer|default:"ВДрузья" }}</td></tr>
+                    <tr><td class="label">Тип:</td><td>canvas · first-party</td></tr>
+                </table>
+                <p class="stack-md action-row">
+                    {% if user.is_authenticated %}
+                        {% if installed %}
+                        <a class="inputsubmit app-open-btn" href="{% url 'apps.canvas' app.slug %}">Открыть приложение</a>
+                        ·
+                        <form method="post" action="{% url 'apps.uninstall' app.slug %}" class="inline" id="app-uninst">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'apps.show' app.slug %}">
+                            <button type="submit" class="linkish muted"
+                                    data-fb-dialog
+                                    data-fb-dialog-title="Удалить приложение?"
+                                    data-fb-dialog-message="Убрать «{{ app.name }}» из ваших приложений?"
+                                    data-fb-dialog-form="#app-uninst">удалить</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'apps.install' app.slug %}" class="inline" id="app-inst">{% csrf_token %}
+                            <button type="submit" class="inputsubmit"
+                                    data-fb-dialog
+                                    data-fb-dialog-title="Добавить приложение?"
+                                    data-fb-dialog-message="Разрешить «{{ app.name }}» доступ к базовому профилю и друзьям (как в Facebook Platform)?"
+                                    data-fb-dialog-form="#app-inst">Добавить приложение</button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'login' %}">Войдите</a>, чтобы добавить приложение.
+                    {% endif %}
+                    · <a href="{% url 'apps' %}">все приложения</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

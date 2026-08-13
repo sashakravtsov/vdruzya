@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Коллекции — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="collections-page">
+    <div id="header"><h1>Коллекции</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Собирайте посты, ссылки и страницы в тематические подборки.</p>
+
+        <div class="profile-box">
+            <h4>Новая коллекция</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Название:</td><td><input class="inputtext" type="text" name="title" size="40" maxlength="160"></td></tr>
+                        <tr><td class="label">Описание:</td><td><input class="inputtext" type="text" name="description" size="40" maxlength="500"></td></tr>
+                        <tr><td class="label">Кто видит:</td><td>
+                            <select name="visibility" class="inputtext">
+                                <option value="friends">Друзья</option>
+                                <option value="public">Все</option>
+                                <option value="private">Только я</option>
+                            </select>
+                        </td></tr>
+                        <tr><td class="label">Обложка:</td><td><input type="file" name="cover" accept="image/jpeg,image/png,image/gif"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Мои коллекции</h4>
+            <div class="profile-box-body">
+                {% for c in mine %}
+                <div class="classic-person-row">
+                    {% include "social/_list_thumb.html" with url=c.cover_url href=c.get_absolute_url %}
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'collections.delete' c.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted" onclick="return confirm('Удалить коллекцию?');">удалить</button>
+                        </form>
+                    </span>
+                    <a href="{% url 'collections.show' c.id %}"><b>{{ c.title }}</b></a>
+                    <span class="muted"> · {% if c.visibility == 'public' %}всем{% elif c.visibility == 'friends' %}друзьям{% else %}только мне{% endif %}</span>
+                    {% if c.description %}<div class="muted">{{ c.description }}</div>{% endif %}
+                </div>
+                {% empty %}<p class="muted">Пока нет коллекций.</p>{% endfor %}
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Доступные</h4>
+            <div class="profile-box-body">
+                {% for c in browse %}
+                <div class="classic-person-row">
+                    {% include "social/_list_thumb.html" with url=c.cover_url href=c.get_absolute_url %}
+                    <a href="{% url 'collections.show' c.id %}"><b>{{ c.title }}</b></a>
+                    {% if c.social_user %} · <a href="{% url 'profile' c.social_user.id %}">{{ c.social_user.name }}</a>{% endif %}
+                </div>
+                {% empty %}<p class="muted">Нет чужих коллекций.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

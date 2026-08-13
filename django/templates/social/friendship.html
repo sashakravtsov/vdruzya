@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}Дружба с {{ other.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="friendship-page">
+    <div id="header" class="withsubtitle">
+        <h1>Дружба</h1>
+        <div class="subtitle"><a href="{% url 'profile' other.id %}">← {{ other.name }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>{{ me.name }} и {{ other.name }}</h4>
+            <div class="profile-box-body">
+                <table class="infotable">
+                    <tr>
+                        <td class="label">Статус:</td>
+                        <td>{% if are_friends %}Друзья{% else %}Не в друзьях{% endif %}</td>
+                    </tr>
+                    {% if since %}
+                    <tr>
+                        <td class="label">Дружите с:</td>
+                        <td>{{ since|date:"j E Y" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if mutual_count %}
+                    <tr>
+                        <td class="label">Общие друзья:</td>
+                        <td><a href="{% url 'profile.mutual' other.id %}">{{ mutual_label }}</a></td>
+                    </tr>
+                    {% endif %}
+                </table>
+                {% if are_friends %}
+                <div class="stack-sm action-row">
+                    <a href="{% url 'profile.walltowall' other.id %}">Стена к стене</a>
+                    ·
+                    <a href="{% url 'gifts.send' %}?to={{ other.id }}">Подарок</a>
+                    ·
+                    <form method="post" action="{% url 'inbox.start' other.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">Написать</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if mutual %}
+        <div class="profile-box">
+            <h4>Общие друзья{% if mutual_count %} ({{ mutual_count }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% include "social/_profile_friend_grid.html" with friends=mutual compact=1 %}
+                {% if mutual_count > mutual|length %}
+                <p class="muted"><a href="{% url 'profile.mutual' other.id %}">Все общие друзья →</a></p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if groups %}
+        <div class="profile-box">
+            <h4>Общие группы</h4>
+            <div class="profile-box-body">
+                <ul class="profilelinks">
+                    {% for g in groups %}<li><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a></li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if photos %}
+        <div class="profile-box">
+            <h4>Общие фото</h4>
+            <div class="profile-box-body profile-photo-thumbs">
+                {% for ph in photos %}
+                <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
+                    {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<img src="{% static 'img/nophoto.gif' %}" alt="" width="50" height="50">{% endif %}
+                </a>
+                {% endfor %}
+                <div class="clear"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if wall_preview %}
+        <div class="profile-box wall-box">
+            <h4>Стена к стене <a class="edit" href="{% url 'profile.walltowall' other.id %}">[все]</a></h4>
+            <div class="profile-box-body">
+                {% for post in wall_preview %}
+                {% include "social/_wall_post.html" with post=post me=me comment_form=None next=request.path comment_preview=0 %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

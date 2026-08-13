@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ item.title }} — Барахолка — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="market-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ item.title }}</h1>
+        <div class="subtitle"><a href="{% url 'marketplace' %}">← барахолка</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Объявление</h4>
+            <div class="profile-box-body">
+                {% if item.photo_url %}
+                <p class="market-photo"><img src="{{ item.photo_url }}" alt="" class="news-photo"></p>
+                {% endif %}
+                <table class="infotable">
+                    {% if item.price %}<tr><td class="label">Цена:</td><td>{{ item.price }}</td></tr>{% endif %}
+                    {% if item.place %}<tr><td class="label">Где:</td><td>{{ item.place }}</td></tr>{% endif %}
+                    <tr><td class="label">Продавец:</td><td><a href="{% url 'profile' item.social_user.id %}">{{ item.social_user.name }}</a></td></tr>
+                    {% if item.created_at %}<tr><td class="label">Когда:</td><td>{{ item.created_at|fb_when }}</td></tr>{% endif %}
+                </table>
+                {% if item.description %}<p class="stack-sm">{{ item.description|linebreaksbr }}</p>{% endif %}
+                {% if user.is_authenticated and item.social_user_id != me.id %}
+                <div class="stack-md action-row">
+                    <form method="post" action="{% url 'inbox.start' item.social_user.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="inputsubmit">Написать продавцу</button>
+                    </form>
+                </div>
+                {% endif %}
+                {% if is_owner %}
+                <div class="stack-md action-row">
+                    <a href="{% url 'marketplace.edit' item.id %}">ред.</a>
+                    ·
+                    <form method="post" action="{% url 'marketplace.delete' item.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted" onclick="return confirm('Удалить объявление?');">удалить</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% include "social/_osm_map.html" with map=map %}
+    </div>
+</div>
+{% endblock %}
