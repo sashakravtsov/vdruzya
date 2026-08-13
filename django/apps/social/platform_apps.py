@@ -171,8 +171,12 @@ PLATFORM_APPS = (
         "name": "Ферма",
         "category": "games",
         "featured": True,
-        "blurb": "Посадите урожай и соберите его с друзьями.",
-        "detail": "Мини-ферма в духе FarmVille: посадите, подождите, соберите.",
+        "blurb": "Поле, хлев, соседи и фишки — соцферма с банкротством и агрошколой.",
+        "detail": (
+            "Ферма ВДрузья: грядки с таймерами, полив и удобрения, животные, "
+            "визиты к друзьям (помощь/доля урожая), лавка, цели дня, обучение "
+            "и банкротство на 1 день с сбросом на 1 000 000 фишек — без стороннего iframe."
+        ),
         "developer": "ВДрузья",
         "permissions": (
             "Основная информация профиля",
@@ -403,14 +407,15 @@ def installed_slugs(me) -> set[str]:
 
 
 def install(me, slug: str):
+    """Add app bookmark. Returns (row, created) or (None, False)."""
     if not me or not app_by_slug(slug, viewer=me):
-        return None
+        return None, False
     from apps.social.models import AppInstall
-    row, _ = AppInstall.objects.get_or_create(
+    row, created = AppInstall.objects.get_or_create(
         social_user=me, app_slug=slug,
         defaults={"created_at": now()},
     )
-    return row
+    return row, created
 
 
 def uninstall(me, slug: str) -> bool:
@@ -422,11 +427,27 @@ def uninstall(me, slug: str) -> bool:
 
 
 def my_apps(me):
-    slugs = installed_slugs(me)
+    """Installed apps (= bookmarks), newest first."""
+    if not me:
+        return []
+    from apps.social.models import AppInstall
+
     catalog = {a["slug"]: a for a in PLATFORM_APPS}
     for a in published_dev_apps():
         catalog[a["slug"]] = a
-    return [catalog[s] for s in catalog if s in slugs]
+    ordered = list(
+        AppInstall.objects.filter(social_user=me)
+        .order_by("-id")
+        .values_list("app_slug", flat=True)
+    )
+    out = []
+    seen = set()
+    for slug in ordered:
+        if slug in seen or slug not in catalog:
+            continue
+        seen.add(slug)
+        out.append(catalog[slug])
+    return out
 
 
 def cause_join_counts() -> dict[str, int]:
@@ -528,8 +549,17 @@ def install_dialog_message(app: dict) -> str:
     perms = "; ".join(permissions_for(app))
     dev = app.get("developer") or "ВДрузья"
     return (
-        f"Разрешить «{name}» доступ? Запрашивает: {perms}. "
+        f"Добавить «{name}» в закладки? "
+        f"Приложение появится слева в «Мои приложения» и запросит: {perms}. "
         f"Разработчик: {dev}."
+    )
+
+
+def bookmark_remove_message(app: dict) -> str:
+    name = app.get("name") or "приложение"
+    return (
+        f"Убрать «{name}» из закладок? "
+        "Ссылка исчезнет из блока «Мои приложения» слева."
     )
 
 

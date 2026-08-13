@@ -20,7 +20,7 @@
         <a href="{% url 'events' %}"{% if nav == 'events' %} class="is-on"{% endif %}>Мои события</a>
         <a href="{% url 'apps' %}"{% if nav == 'apps' or nav == 'apps.show' or nav == 'apps.canvas' %} class="is-on"{% endif %}>Приложения</a>
         {% if sidebar_apps %}
-        <span class="snav-apps-label">Закладки</span>
+        <a class="snav-apps-label" href="{% url 'apps' %}?tab=mine" title="Управление закладками">Мои приложения</a>
         {% for app in sidebar_apps|slice:":4" %}
         <a class="snav-app{% if nav == 'apps.canvas' %} is-on{% endif %}" href="{% url 'apps.canvas' app.slug %}">{{ app.name }}</a>
         {% endfor %}
@@ -55,7 +55,7 @@
                 <a href="{% url 'collections' %}"{% if nav == 'collections' %} class="is-on"{% endif %}>Коллекции</a>
                 <a href="{% url 'developers' %}"{% if nav == 'developers' %} class="is-on"{% endif %}>Разработчик</a>
                 {% if sidebar_apps|length > 4 %}
-                <span class="snav-apps-label">Ещё закладки</span>
+                <a class="snav-apps-label" href="{% url 'apps' %}?tab=mine">Ещё приложения</a>
                 {% for app in sidebar_apps|slice:"4:" %}
                 <a class="snav-app{% if nav == 'apps.canvas' %} is-on{% endif %}" href="{% url 'apps.canvas' app.slug %}">{{ app.name }}</a>
                 {% endfor %}
