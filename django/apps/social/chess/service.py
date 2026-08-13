@@ -664,21 +664,21 @@ def lesson_done_slugs(user: SocialProfile) -> set[str]:
 
 def daily_goals(user: SocialProfile) -> dict:
     """Lightweight daily engagement: lesson / puzzle / move."""
-    from datetime import date, datetime, time, timedelta
+    from datetime import date, timedelta
+
+    from django.utils import timezone
 
     today = date.today()
-    start = datetime.combine(today, time.min)
-    end = start + timedelta(days=1)
+    # Date filters avoid naive/aware datetime mismatches under USE_TZ.
     lesson_done = ChessLessonProgress.objects.filter(
-        social_user=user, completed_at__gte=start, completed_at__lt=end,
+        social_user=user, completed_at__date=today,
     ).exists()
     rating = get_or_create_rating(user)
     puzzle_done = getattr(rating, "last_puzzle_on", None) == today
+    since = timezone.now() - timedelta(hours=36)
     move_done = ChessMove.objects.filter(
-        game__white=user, created_at__gte=start, created_at__lt=end,
-    ).exists() or ChessMove.objects.filter(
-        game__black=user, created_at__gte=start, created_at__lt=end,
-    ).exists()
+        created_at__gte=since, created_at__date=today,
+    ).filter(Q(game__white=user) | Q(game__black=user)).exists()
     items = [
         {"key": "lesson", "label": "урок", "done": lesson_done},
         {"key": "puzzle", "label": "задача", "done": puzzle_done},
