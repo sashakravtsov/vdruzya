@@ -109,29 +109,31 @@ def main():
     assert r.status_code == 200 and b"access_token" in r.content
     from apps.social.models import DevApp
     from apps.social import platform_oauth as oauth
-    DevApp.objects.filter(slug="somneniya").delete()
+    # Use a disposable slug — never delete production DevApp "somneniya".
+    probe_slug = f"oauthprobe-{uuid.uuid4().hex[:8]}"
+    DevApp.objects.filter(slug=probe_slug).delete()
     r = c.post("/developers/new", {
-        "slug": "somneniya", "name": "Сомнения", "category": "lifestyle",
-        "blurb": "Сайт somneniya.ru", "detail": "Приложение для сайта Сомнения",
+        "slug": probe_slug, "name": "OAuth Probe", "category": "lifestyle",
+        "blurb": "Smoke probe app", "detail": "Temporary OAuth-lite probe",
         "website_url": "https://somneniya.ru",
         "callback_url": "https://somneniya.ru/vd-callback",
         "published": "1",
     }, secure=True)
     assert r.status_code in (301, 302)
-    app = DevApp.objects.filter(slug="somneniya", owner=me).first()
+    app = DevApp.objects.filter(slug=probe_slug, owner=me).first()
     assert app and app.api_key.startswith("vd_") and len(app.api_secret) >= 32
-    r = c.get("/apps/somneniya", secure=True)
+    r = c.get(f"/apps/{probe_slug}", secure=True)
     assert r.status_code == 200 and b"somneniya.ru" in r.content
-    r = c.get("/apps/somneniya/canvas", secure=True)
+    r = c.get(f"/apps/{probe_slug}/canvas", secure=True)
     assert r.status_code == 200 and b"signed_request" in r.content
     assert b"<iframe" not in r.content.lower()
-    r = c.get("/apps/somneniya/launch", secure=True)
+    r = c.get(f"/apps/{probe_slug}/launch", secure=True)
     assert r.status_code in (301, 302)
     loc = r["Location"]
     assert "somneniya.ru" in loc and "signed_request=" in loc
     signed = loc.split("signed_request=")[1].split("&")[0]
     assert oauth.verify_signed_request(app, signed)
-    r = c.post("/apps/somneniya/authorize", {
+    r = c.post(f"/apps/{probe_slug}/authorize", {
         "allow": "1",
         "client_id": app.api_key,
         "redirect_uri": "https://somneniya.ru/vd-callback",
@@ -154,6 +156,7 @@ def main():
     assert r.status_code == 200 and r.json()["id"] == me.id
     r = anon.get("/api/app/friends", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
     assert r.status_code == 200 and "data" in r.json()
+    DevApp.objects.filter(slug=probe_slug).delete()
     ok("developer OAuth-lite + signed launch + API")
 
     r = c.get("/collections", secure=True)
