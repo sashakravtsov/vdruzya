@@ -41,7 +41,7 @@
                 <div class="gift-grid">
                     {% for g in catalog %}
                     <a class="gift-tile{% if sticker_preview and sticker_preview.slug == g.slug %} is-on{% endif %}"
-                       href="?gift={{ g.slug }}{% if form.to.value %}&amp;to={{ form.to.value }}{% endif %}" style="background:{{ g.bg }};color:{{ g.fg }}">
+                       href="?gift={{ g.slug }}{% if form.to.value %}&amp;to={{ form.to.value }}{% endif %}" style="--gift-bg:{{ g.bg }};--gift-fg:{{ g.fg }}">
                         {% if g.image_url %}<img src="{{ g.image_url }}" alt="">{% else %}<span class="gift-tile-title">{{ g.title }}</span>{% endif %}
                         <span class="gift-tile-cap">{{ g.phrase|default:g.title }}</span>
                     </a>

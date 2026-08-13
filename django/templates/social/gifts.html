@@ -20,7 +20,7 @@
                 <p class="muted">Подарки можно отправить только друзьям.</p>
                 <div class="gift-grid">
                     {% for g in catalog %}
-                    <a class="gift-tile" href="{% url 'gifts.send' %}?gift={{ g.slug }}" style="background:{{ g.bg }};color:{{ g.fg }}">
+                    <a class="gift-tile" href="{% url 'gifts.send' %}?gift={{ g.slug }}" style="--gift-bg:{{ g.bg }};--gift-fg:{{ g.fg }}">
                         {% if g.image_url %}<img src="{{ g.image_url }}" alt="">{% else %}<span class="gift-tile-title">{{ g.title }}</span>{% endif %}
                         <span class="gift-tile-cap">{{ g.phrase|default:g.title }}</span>
                     </a>
