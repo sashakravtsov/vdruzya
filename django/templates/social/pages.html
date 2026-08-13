@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{% if mine %}Мои страницы{% else %}Страницы{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="groups-index pages-index">
+    <div id="header"><h1>{% if mine %}Мои страницы{% else %}Страницы{% endif %}</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+
+        <div id="tabs">
+            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'pages' %}{% if q %}?q={{ q|urlencode }}{% endif %}">Обзор</a></div>
+            <div class="{% if mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'pages' %}?mine=1">Мои страницы</a></div>
+        </div>
+        {% if me and not mine %}<p class="people-top-links"><a href="#create">Создать страницу</a></p>{% endif %}
+
+        {% if not mine %}
+        <form method="get" class="groups-search">
+            {% if industry %}<input type="hidden" name="industry" value="{{ industry }}">{% endif %}
+            <label>Поиск:</label>
+            <input class="inputtext" name="q" value="{{ q }}" autocomplete="off">
+            <input class="inputsubmit" type="submit" value="Найти">
+        </form>
+        {% if industries %}
+        <p class="groups-cats">
+            {% for cat in industries %}
+            <a href="?industry={{ cat|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if industry == cat %} class="is-active"{% endif %}>{{ cat|ru_label }}</a>{% if not forloop.last %} · {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% endif %}
+
+        {% if pages %}
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead>
+                <tr>
+                    <th class="col-name">Страница</th>
+                    <th class="col-type">Тип</th>
+                    <th class="col-n">Поклонники</th>
+                    <th class="col-act"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pages %}
+                <tr>
+                    <td class="col-name">
+                        <a href="{% url 'pages.show' p.id %}"><b>{{ p.name }}</b></a>
+                        {% if p.city %}<div class="muted">{{ p.city }}</div>{% endif %}
+                        {% if p.description %}<div class="muted">{{ p.description|truncatewords:18 }}</div>{% endif %}
+                    </td>
+                    <td class="col-type">{{ p.industry|ru_label }}</td>
+                    <td class="col-n">{{ p.n_fans }}</td>
+                    <td class="col-act">
+                        <a href="{% url 'pages.show' p.id %}">открыть</a>
+                        {% if me and p.is_admin %}
+                        · <a href="{% url 'pages.edit' p.id %}">ред.</a>
+                        {% elif me and not p.is_fan %}
+                        ·
+                        <form method="post" action="{% url 'pages.fan' p.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">стать поклонником</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if page_obj and page_obj.has_other_pages %}
+        <p class="people-top-links">
+            {% if page_obj.has_previous %}<a href="?{% if mine %}mine=1&amp;{% endif %}q={{ q|urlencode }}&amp;industry={{ industry|urlencode }}&amp;p={{ page_obj.previous_page_number }}">« назад</a>{% endif %}
+            стр. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            {% if page_obj.has_next %}<a href="?{% if mine %}mine=1&amp;{% endif %}q={{ q|urlencode }}&amp;industry={{ industry|urlencode }}&amp;p={{ page_obj.next_page_number }}">вперёд »</a>{% endif %}
+        </p>
+        {% endif %}
+        {% else %}
+        <p class="muted">{% if mine %}У вас пока нет страниц.{% elif q or industry %}Ничего не найдено.{% else %}Пока нет страниц. Создайте первую.{% endif %}</p>
+        {% endif %}
+
+        {% if me %}
+        <div class="groups-create" id="create">
+            <h4>Создать страницу</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
+                        <tr><td class="label">Тип:</td><td>{{ form.industry }}</td></tr>
+                        <tr><td class="label">Город:</td><td>{{ form.city }}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Обложка:</td><td>{{ form.cover }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать страницу"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

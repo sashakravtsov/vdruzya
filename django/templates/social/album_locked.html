@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Альбом недоступен — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page">
+    <div id="header"><h1>Альбом недоступен</h1></div>
+    <div id="content" class="albums-content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Закрытый альбом</h4>
+            <div class="profile-box-body">
+                <p>Этот альбом виден только {% if album and album.visibility == 'friends' %}друзьям владельца{% else %}владельцу{% endif %}.</p>
+                {% if album %}
+                <p class="muted"><a href="{% url 'profile' album.social_user_id %}">К профилю владельца</a></p>
+                {% endif %}
+                {% if not user.is_authenticated %}
+                <p><a href="{% url 'login' %}?next={{ request.path }}">Войти</a>, чтобы проверить доступ.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
