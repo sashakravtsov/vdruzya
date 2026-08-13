@@ -156,7 +156,7 @@ def main():
         covered = Event.objects.filter(host=me, title="QA Event Cover").order_by("-id").first()
         assert covered and covered.cover_path and covered.cover_path.startswith("events/"), covered
         assert covered.cover_url
-        created.append(covered)
+        created.append(covered.id)
         r = c.get(f"/events/{covered.id}", secure=True)
         assert r.status_code == 200 and b"<img" in r.content
         r = c.get("/events?tab=hosting", secure=True)
