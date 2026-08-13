@@ -694,6 +694,7 @@ class PageForm(ClassicForm, forms.Form):
     industry = forms.ChoiceField(choices=[], widget=forms.Select())
     city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
     description = forms.CharField(required=False, widget=_ta(4, style="width:100%"))
+    cover = forms.ImageField(required=False, label="Обложка", widget=_file())
 
     def __init__(self, *args, **kwargs):
         from apps.social.page_categories import CHOICES

@@ -60,8 +60,7 @@ def page_milestone_delete(request, pk, mid):
 @login_required
 @require_POST
 def page_cover_upload(request, pk):
-    from django.conf import settings
-    from apps.social.media import save_image
+    from apps.social.media import try_save_image
     from apps.social.services import bump_news, now
 
     me = profile_of(request.user)
@@ -69,9 +68,9 @@ def page_cover_upload(request, pk):
     if not ok:
         messages.error(request, "Только администраторы.")
         return redirect(page)
-    f = request.FILES.get("cover")
-    if f and f.size <= settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
-        page.cover_path = save_image(f, "page-covers")
+    path = try_save_image(request.FILES.get("cover"), "page-covers")
+    if path:
+        page.cover_path = path
         page.updated_at = now()
         page.save(update_fields=["cover_path", "updated_at"])
         bump_news()

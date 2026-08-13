@@ -53,11 +53,12 @@ def _page_posts(page, limit=30, viewer=None):
 def pages_home(request):
     """Directory + create Page."""
     me = profile_of(request.user) if request.user.is_authenticated else None
-    form = PageForm(request.POST or None)
+    form = PageForm(request.POST or None, request.FILES or None)
     if request.method == "POST":
         if not me:
             return redirect("/login?next=/pages")
         if form.is_valid():
+            from apps.social.media import try_save_image
             from apps.social.slugs import unique_slug
             d = form.cleaned_data
             t = now()
@@ -68,6 +69,7 @@ def pages_home(request):
                 city=d.get("city") or "",
                 size="",
                 cover_color="#3B5998",
+                cover_path=try_save_image(d.get("cover"), "page-covers"),
                 description=d.get("description") or "",
                 created_at=t, updated_at=t,
             )

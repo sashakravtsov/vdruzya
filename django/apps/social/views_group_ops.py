@@ -19,7 +19,7 @@ def _member(me, group):
 
 @login_required
 def group_edit(request, pk):
-    from apps.social.media import save_image
+    from apps.social.media import try_save_image
 
     me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
     if not is_group_admin(me, group):
@@ -28,9 +28,9 @@ def group_edit(request, pk):
     form = GroupForm(request.POST or None, request.FILES or None, instance=group)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
-        pic = form.cleaned_data.get("picture")
-        if pic:
-            obj.cover_path = save_image(pic, "groups")
+        path = try_save_image(form.cleaned_data.get("picture"), "groups")
+        if path:
+            obj.cover_path = path
         obj.updated_at = now()
         obj.save()
         bump_news()

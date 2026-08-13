@@ -1,15 +1,8 @@
 """Classic FB Profile page assembly — short helpers, no view bloat."""
 from django.db.models import Q
-from django.urls import reverse
 from django.utils.html import format_html
 
-from apps.social.albums import albums_for
-from apps.social.forms import CommentForm, NoteForm, PostForm, StatusForm
-from apps.social.models import (
-    Album, Block, Community, Company, Education, Experience, Friendship, Photo, Place,
-)
-from apps.social.services import friend_count, mini_feed, notes_for, wall_posts_for
-from apps.social import gifts as gf
+from apps.social.models import Album, Block, Education, Experience, Friendship, Photo
 
 TABS = frozenset({"wall", "timeline", "info", "photos", "notes", "friends"})
 EDIT_SECTIONS = frozenset({"basic", "contact", "personal", "eduwork", "picture", "privacy"})
@@ -232,127 +225,6 @@ def build_edit_context(me, request):
 
 
 def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="all"):
-    """Full template context for classic Profile — load only what the tab needs."""
-    from apps.social import friendship as fr
-
-    tab = tab if tab in TABS else "wall"
-    photos_view = (photos_view or "albums").lower()
-    if photos_view not in ("albums", "of"):
-        photos_view = "albums"
-    relation, blocked, mutual, mutual_text = _relation(me, profile)
-    can_see = fr.can_see_friends(me, profile)
-    is_own = bool(me and me.id == profile.id)
-    full = can_view_full(me, profile, relation)
-    can_wall = can_write_wall(me, profile, relation) if full else False
-    show_wall = can_view_wall(me, profile, relation) if full else False
-    wall = tab == "wall" and full
-
-    education = experiences = []
-    boxes = []
-    if full and tab == "info":
-        education = list(Education.objects.filter(social_user=profile)[:10])
-        experiences = list(Experience.objects.filter(social_user=profile)[:10])
-        boxes = info_boxes(profile, education, experiences)
-        edu_rail, exp_rail = education[:3], experiences[:5]
-    else:
-        edu_rail = list(Education.objects.filter(social_user=profile)[:3])
-        exp_rail = list(
-            Experience.objects.filter(social_user=profile).exclude(company_name="").order_by("-id")[:5]
-        )
-
-    communities = (
-        list(Community.objects.filter(memberships__social_user=profile).distinct()[:12])
-        if full else []
-    )
-    pages = (
-        list(
-            Company.objects.filter(
-                Q(followers__social_user=profile) | Q(admins__social_user=profile)
-            ).distinct().order_by("name")[:12]
-        ) if full else []
-    )
-    friends_rail, friends_are_mutual = friend_tiles(
-        me, profile, can_see=can_see, relation=relation, limit=6, prefer_mutual=True,
-    )
-    if tab == "friends":
-        friends_tab, _ = friend_tiles(
-            me, profile, can_see=can_see, relation=relation, limit=30, prefer_mutual=False,
-        )
-    else:
-        friends_tab = friends_rail
-
-    vis_albums = Album.objects.filter(social_user=profile).visible_to(me) if full else Album.objects.none()
-    rail_photos = recent_photos(profile, me, 4) if full else []
-    albums = albums_for(profile, me, 12) if full and tab == "photos" else []
-    tagged_photos = []
-    if full and tab == "photos" and photos_view == "of":
-        from apps.social.photo_tags import photos_of
-        tagged_photos = photos_of(profile, me, limit=40)
-    notes = notes_for(profile, 20, viewer=me) if full and tab == "notes" else []
-    gifts = []
-    if wall and show_wall:
-        gifts = gf.attach_stickers(gf.gifts_for(profile, limit=12))
-
-    from apps.social import era2011 as e11
-    following = e11.is_following(me, profile) if me and not is_own else False
-    n_followers = e11.follow_count(profile) if full else 0
-    n_following = e11.following_count(profile) if full and is_own else 0
-    timeline = {}
-    if full and tab == "timeline":
-        try:
-            y = int(getattr(profile, "_timeline_year", 0) or 0) or None
-        except (TypeError, ValueError):
-            y = None
-        timeline = e11.timeline_bundle(profile, me, year=y)
-        timeline["milestone_kinds"] = e11.MILESTONE_KINDS
-
-    ctx = {
-        "profile": profile, "me": me, "is_own": is_own, "limited": not full, "tab": tab,
-        "friends": friends_rail, "friends_tab": friends_tab,
-        "friends_are_mutual": friends_are_mutual,
-        "communities": communities,
-        "pages": pages,
-        "rail_photos": rail_photos,
-        "albums": albums,
-        "photos_view": photos_view,
-        "tagged_photos": tagged_photos,
-        "notes": notes,
-        "gifts": gifts,
-        "note_form": NoteForm() if is_own and tab == "notes" else None,
-        "posts": wall_posts_for(profile, 20, viewer=me, wall_filter=wall_filter) if wall and show_wall else [],
-        "wall_filter": wall_filter if wall_filter in ("all", "photos", "links", "videos", "shares", "friends", "mine") else "all",
-        "relation": relation, "blocked": blocked,
-        "mutual": mutual, "mutual_text": mutual_text,
-        "info_boxes": boxes,
-        "networks": networks_for(profile, edu_rail, exp_rail),
-        "stats": {
-            "friends": friend_count(profile) if can_see else 0,
-            "photos": Photo.objects.filter(album__in=vis_albums).count() if full else 0,
-            "groups": (
-                Community.objects.filter(memberships__social_user=profile).distinct().count()
-                if full else 0
-            ),
-            "pages": (
-                Company.objects.filter(
-                    Q(followers__social_user=profile) | Q(admins__social_user=profile)
-                ).distinct().count() if full else 0
-            ),
-            "followers": n_followers,
-            "following": n_following,
-        },
-        "form": PostForm(simple=True) if wall and can_wall else None,
-        "comment_form": CommentForm() if ((wall and me and show_wall) or (tab == "notes" and me)) else None,
-        "can_wall": can_wall,
-        "show_wall": show_wall,
-        "can_see_friends": can_see,
-        "mini": mini_feed(profile, viewer=me) if wall else [],
-        "status_form": (
-            StatusForm(
-                initial={"headline": profile.headline or ""},
-                places=list(Place.objects.order_by("name")[:80]),
-            ) if is_own else None
-        ),
-        "is_following": following,
-        **timeline,
-    }
-    return ctx
+    """Full template context for classic Profile — builders in profile_ctx."""
+    from apps.social.profile_ctx import build_context as build
+    return build(profile, me, tab=tab, photos_view=photos_view, wall_filter=wall_filter)

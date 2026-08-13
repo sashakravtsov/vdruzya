@@ -11,11 +11,17 @@ import django
 
 django.setup()
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
 from apps.accounts.models import User
 from apps.social.models import Company, CompanyAdmin, CompanyFollower, Post
 from apps.social.services import news_items, profile_of, wall_posts_for
+
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+)
 
 
 def ok(label):
@@ -40,6 +46,7 @@ def main():
     assert r.status_code == 200 and "Страницы".encode() in r.content
     assert b'id="tabs"' in r.content
     assert b' required' not in r.content and b'required="' not in r.content
+    assert "Обложка".encode() in r.content
     ok("pages directory")
 
     name = f"QA Page {uuid.uuid4().hex[:6]}"
@@ -48,16 +55,19 @@ def main():
         "industry": "brand",
         "city": "Москва",
         "description": "Тестовая страница QA",
+        "cover": SimpleUploadedFile("page.png", PNG, content_type="image/png"),
     }, secure=True)
     assert r.status_code in (301, 302)
     page = Company.objects.filter(name=name).first()
     assert page and CompanyAdmin.objects.filter(company=page, social_user=me).exists()
     assert CompanyFollower.objects.filter(company=page, social_user=me).exists()
-    ok("create page + admin/fan")
+    assert page.cover_path and page.cover_path.startswith("page-covers/"), page.cover_path
+    ok("create page + admin/fan + cover")
 
     r = c.get(f"/pages/{page.id}", secure=True)
     assert r.status_code == 200 and name.encode() in r.content
     assert "Стена".encode() in r.content
+    assert b"<img" in r.content and page.cover_url.encode() in r.content
     ok("page show")
 
     r = c.post(f"/pages/{page.id}/posts", {"body": "Новость со страницы QA"}, secure=True)
