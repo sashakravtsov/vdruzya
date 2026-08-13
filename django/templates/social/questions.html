@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Вопросы — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="questions-page">
+    <div id="header"><h1>Вопросы</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div id="tabs">
+            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'questions' %}">Друзья</a></div>
+            <div class="{% if mine %}activetab{% else %}inactivetab{% endif %}"><a href="?mine=1">Мои</a></div>
+        </div>
+        <div class="profile-box">
+            <h4>Задать вопрос</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Вопрос:</td><td>{{ form.body }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Спросить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>{% if mine %}Мои вопросы{% else %}Вопросы друзей{% endif %}</h4>
+            <div class="profile-box-body">
+                {% for q in items %}
+                <div class="event-list-row question-row">
+                    {% include "social/_list_thumb.html" with url=q.photo_url href=q.get_absolute_url %}
+                    <div class="list-row-body">
+                        <b><a href="{% url 'questions.show' q.id %}">{{ q.body|truncatewords:20 }}</a></b>
+                        <div class="muted">
+                            <a href="{% url 'profile' q.social_user.id %}">{{ q.social_user.name }}</a>
+                            {% if q.created_at %} · {{ q.created_at|fb_when }}{% endif %}
+                            · {{ q.n_answers }} отв.
+                        </div>
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока нет вопросов.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

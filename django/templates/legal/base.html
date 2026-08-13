@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}ВДрузья | {{ title }}{% endblock %}
+{% block bodyclass %} about{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="about">
+    <div id="header"><h1>{{ title }}</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        {% include "partials/info_tabs.html" %}
+        {% block legal_body %}{% endblock %}
+    </div>
+    {% include "partials/footer.html" %}
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}

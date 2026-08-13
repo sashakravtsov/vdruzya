@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Барахолка — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="market-page">
+    <div id="header"><h1>Барахолка</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div id="tabs">
+            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'marketplace' %}">Все</a></div>
+            <div class="{% if mine %}activetab{% else %}inactivetab{% endif %}"><a href="?mine=1">Мои</a></div>
+        </div>
+        <div class="profile-box">
+            <h4>Новое объявление</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Цена:</td><td>{{ form.price }}</td></tr>
+                        <tr><td class="label">Город:</td><td>{{ form.place }}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Опубликовать"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Объявления</h4>
+            <div class="profile-box-body">
+                <form method="get" class="msg-filter">
+                    {% if mine %}<input type="hidden" name="mine" value="1">{% endif %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="label">Поиск:</td>
+                            <td><input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off"></td>
+                            <td class="label">Город:</td>
+                            <td><input class="inputtext input-city" type="text" name="place" value="{{ place }}" autocomplete="off"></td>
+                            <td><input type="submit" class="inputbutton" value="Найти"></td>
+                        </tr>
+                    </table>
+                </form>
+                {% for it in items %}
+                <div class="event-list-row market-row">
+                    {% include "social/_list_thumb.html" with url=it.photo_url href=it.get_absolute_url %}
+                    <div class="list-row-body">
+                        <b><a href="{% url 'marketplace.show' it.id %}">{{ it.title }}</a></b>
+                        {% if it.price %}<span class="muted"> · {{ it.price }}</span>{% endif %}
+                        <div class="muted">
+                            <a href="{% url 'profile' it.social_user.id %}">{{ it.social_user.name }}</a>
+                            {% if it.place %} · {{ it.place }}{% endif %}
+                            {% if it.created_at %} · {{ it.created_at|fb_when }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока нет объявлений.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

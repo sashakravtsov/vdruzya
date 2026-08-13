@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ col.title }} — Коллекции — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="collections-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ col.title }}</h1>
+        <div class="subtitle">
+            <a href="{% url 'collections' %}">← Коллекции</a>
+            · {{ col.social_user.name }}
+            · {% if col.visibility == 'public' %}всем{% elif col.visibility == 'friends' %}друзьям{% else %}только мне{% endif %}
+        </div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        {% if col.description %}
+        <p class="classic-page-lead">{{ col.description }}</p>
+        {% endif %}
+        {% if col.cover_url %}
+        <p class="event-cover"><img src="{{ col.cover_url }}" alt="" class="news-photo"></p>
+        {% endif %}
+
+        {% if is_own %}
+        <div class="profile-box">
+            <h4>Обложка</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'collections.cover' col.id %}" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Файл:</td><td><input type="file" name="cover" accept="image/jpeg,image/png,image/gif"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Загрузить"></td></tr>
+                    </table>
+                </form>
+                {% if col.cover_url %}
+                <form method="post" action="{% url 'collections.cover.clear' col.id %}" class="stack-sm">{% csrf_token %}
+                    <input type="submit" class="inputsubmit" value="Удалить обложку">
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Добавить</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'collections.items' col.id %}">{% csrf_token %}
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Тип:</td><td>
+                            <select name="kind" class="inputtext" id="col-kind">
+                                <option value="link">Ссылка</option>
+                                <option value="page">Страница (id)</option>
+                                <option value="post">Запись (id)</option>
+                            </select>
+                        </td></tr>
+                        <tr><td class="label">Заголовок:</td><td><input class="inputtext" type="text" name="title" size="40" maxlength="255"></td></tr>
+                        <tr><td class="label">URL:</td><td><input class="inputtext" type="text" name="url" size="40" maxlength="500"></td></tr>
+                        <tr><td class="label">ID страницы:</td><td><input class="inputtext" type="text" name="company_id" size="10" maxlength="12"></td></tr>
+                        <tr><td class="label">ID записи:</td><td><input class="inputtext" type="text" name="post_id" size="10" maxlength="12"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>Содержимое</h4>
+            <div class="profile-box-body">
+                {% for it in items %}
+                <div class="minifeed-item">
+                    {% if it.kind == 'page' and it.company %}
+                    страница: <a href="{% url 'pages.show' it.company.id %}"><b>{{ it.title|default:it.company.name }}</b></a>
+                    {% elif it.kind == 'post' and it.post %}
+                    {% include "social/_list_thumb.html" with url=it.post.media_url href=it.post.get_absolute_url %}
+                    запись: <a href="{% url 'posts.show' it.post.id %}"><b>{{ it.title|default:it.post.snippet_text|default:"Запись" }}</b></a>
+                    {% elif it.url %}
+                    ссылка: <a href="{{ it.url }}" rel="nofollow noopener"><b>{{ it.title|default:it.url }}</b></a>
+                    {% else %}
+                    <b>{{ it.title }}</b>
+                    {% endif %}
+                    {% if is_own %}
+                    <form method="post" action="{% url 'collections.items.delete' col.id it.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% empty %}<p class="muted">Пока пусто.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

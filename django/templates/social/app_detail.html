@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ app.name }} — Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index">
+    <div id="header" class="withsubtitle">
+        <h1>{{ app.name }}</h1>
+        <div class="subtitle"><a href="{% url 'apps' %}">← приложения</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>О приложении</h4>
+            <div class="profile-box-body">
+                <p>{{ app.detail }}</p>
+                <p class="muted">{{ app.blurb }}</p>
+                <p>
+                    <a class="inputsubmit app-open-btn" href="{% url app.url_name %}">Открыть</a>
+                    · <a href="{% url 'apps' %}">все приложения</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

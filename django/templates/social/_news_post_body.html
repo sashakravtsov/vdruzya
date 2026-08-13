@@ -1,0 +1,12 @@
+{# Shared news snippet body — hides raw storage: video paths. Expects post. #}
+{% if post.kind == 'video' %}
+    {% if post.link_blurb %}<div class="wall-body">{{ post.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
+    {% include "social/_post_media.html" with post=post %}
+{% elif post.kind == 'link' %}
+    {% if post.link_blurb %}<div class="wall-body">{{ post.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
+    {% if post.link_url %}<div class="muted"><a href="{{ post.link_url }}" rel="nofollow noopener">{{ post.link_url|truncatechars:80 }}</a></div>{% endif %}
+    {% include "social/_post_media.html" with post=post %}
+{% else %}
+    {% if post.snippet_text %}<div class="wall-body">{{ post.snippet_text|truncatewords:40|linebreaksbr }}</div>{% endif %}
+    {% include "social/_post_media.html" with post=post %}
+{% endif %}

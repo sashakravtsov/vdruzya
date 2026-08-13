@@ -1,0 +1,131 @@
+{% load vd %}
+<div class="wallpost" id="post-{{ post.id }}">
+    <table class="wp-table" cellspacing="0" cellpadding="0"><tr>
+        <td class="image"><a href="{% url 'profile' post.social_user.id %}">{% avatar post.social_user 50 %}</a></td>
+        <td>
+            <div class="info">
+                <div class="header">
+                    <a href="{% url 'profile' post.social_user.id %}"><b>{{ post.social_user.name }}</b></a>
+                    {% if post.kind == 'share' %}
+                    поделился(ась) записью
+                    {% elif wall_owner and post.social_user_id != wall_owner.id %}
+                    написал(а) на стену
+                    {% elif post.wall_note_owner %}
+                    написал(а) на стену <a href="{% url 'profile' post.wall_note_owner.id %}">{{ post.wall_note_owner.name }}</a>
+                    {% endif %}
+                    {% if post.created_at %}
+                    <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.id %}">{{ post.created_at|fb_when }}</a></span>
+                    {% endif %}
+                    {% if me|can_manage_post:post %}
+                    <span class="wallpost-edit">
+                        {# FB 2006 wall notes: remove only; edit kept for Notes (kind=note) #}
+                        {% if me.id == post.social_user_id and post.kind == 'note' %}
+                        <a href="{% url 'posts.edit' post.id %}{% if next %}?next={{ next|urlencode }}{% endif %}">ред.</a>
+                        ·
+                        {% endif %}
+                        <form method="post" action="{% url 'posts.delete' post.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text">
+                    {% if post.kind == 'share' %}
+                        {% if post.body %}<div class="share-blurb">{{ post.body|linebreaksbr }}</div>{% endif %}
+                        {% if post.shared_post %}
+                        <div class="shared-note">
+                            <div class="shared-head">
+                                <a href="{% url 'profile' post.shared_post.social_user.id %}"><b>{{ post.shared_post.social_user.name }}</b></a>
+                                {% if post.shared_post.created_at %}
+                                <span class="muted"> · <a class="muted" href="{% url 'posts.show' post.shared_post.id %}">{{ post.shared_post.created_at|fb_when }}</a></span>
+                                {% endif %}
+                            </div>
+                            {% if post.shared_post.kind == 'note' and post.shared_post.media_label %}
+                            <div class="note-head"><b>{{ post.shared_post.media_label }}</b></div>
+                            {% endif %}
+                            {% if post.shared_post.kind == 'link' or post.shared_post.kind == 'video' %}
+                                {% if post.shared_post.media_label %}<div class="note-head"><b>{{ post.shared_post.media_label }}</b></div>{% endif %}
+                                {% include "social/_post_media.html" with post=post.shared_post %}
+                                {% if post.shared_post.link_blurb %}<div class="wall-body">{{ post.shared_post.link_blurb|linebreaksbr }}</div>{% endif %}
+                            {% else %}
+                                {% if post.shared_post.snippet_text %}{{ post.shared_post.snippet_text|linebreaksbr }}{% endif %}
+                                {% include "social/_post_media.html" with post=post.shared_post %}
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="muted">Исходная запись недоступна.</p>
+                        {% endif %}
+                    {% elif post.kind == 'link' or post.kind == 'video' %}
+                        {% if post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
+                        {% include "social/_post_media.html" with post=post %}
+                        {% if post.link_blurb %}<div class="wall-body">{{ post.link_blurb|linebreaksbr }}</div>{% endif %}
+                        {% if post.kind == 'link' and post.link_url %}
+                        <div class="muted"><a href="{{ post.link_url }}" rel="nofollow noopener">{{ post.link_url|truncatechars:80 }}</a></div>
+                        {% elif post.kind == 'video' and post.video_url and not post.is_file_video %}
+                        <div class="muted"><a href="{{ post.video_url }}" rel="nofollow noopener">{{ post.video_url|truncatechars:80 }}</a></div>
+                        {% endif %}
+                    {% else %}
+                        {% if post.kind == 'note' and post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
+                        {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
+                        {% include "social/_post_media.html" with post=post %}
+                    {% endif %}
+                    {% if post.post_people %}
+                    <div class="post-people muted">
+                        с:
+                        {% for t in post.post_people %}
+                        <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if me and me.id == post.social_user_id or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
+                        <form method="post" action="{% url 'posts.tag.delete' post.id t.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                            <button type="submit" class="linkish muted" title="Убрать">×</button>
+                        </form>{% endif %}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if me and post.tag_candidates %}
+                    <form method="post" action="{% url 'posts.tag' post.id %}" class="post-tag-form stack-xs">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <select name="person" class="inputtext">
+                            {% for p in post.tag_candidates %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="submit" class="inputsubmit" value="Отметить">
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="actions">
+                    {% if me %}
+                    <form method="post" action="{% url 'posts.like' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish wall-act">{% if post.liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
+                    </form>
+                    {% if post.n_likes %} <span class="muted">({{ post.n_likes }})</span>{% endif %}
+                    ·
+                    <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
+                    {% if post.can_share %}
+                    ·
+                    <form method="post" action="{% url 'posts.share' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish wall-act">Поделиться</button>
+                    </form>
+                    {% endif %}
+                    ·
+                    <form method="post" action="{% url 'posts.save' post.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <button type="submit" class="linkish wall-act">{% if post.saved_by_me %}Убрать из сохранённых{% else %}Сохранить{% endif %}</button>
+                    </form>
+                    {% else %}
+                    {% if post.n_likes %}<span class="muted">{{ post.n_likes }} нравится · </span>{% endif %}
+                    <span class="ico ico-comment"></span> {{ post.n_comments|default:0 }}
+                    {% endif %}
+                </div>
+                {% comment_thread post.comments.all preview=comment_preview|default_if_none:2 kind="wall" expand=comment_expand %}
+                {% if comment_form and me %}
+                {% url 'comments.store' post.id as c_action %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=post.id form=comment_form next=next %}
+                {% endif %}
+            </div>
+        </td>
+    </tr></table>
+</div>
