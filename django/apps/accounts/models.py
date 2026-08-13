@@ -29,10 +29,10 @@ class User(AbstractBaseUser):
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     is_active = True
-    is_staff = False
-    is_superuser = False
 
     objects = UserManager()
     USERNAME_FIELD = "email"
