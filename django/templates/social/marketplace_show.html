@@ -12,6 +12,9 @@
         <div class="profile-box">
             <h4>Объявление</h4>
             <div class="profile-box-body">
+                {% if item.photo_url %}
+                <p class="market-photo"><img src="{{ item.photo_url }}" alt="" class="news-photo"></p>
+                {% endif %}
                 <table class="infotable">
                     {% if item.price %}<tr><td class="label">Цена:</td><td>{{ item.price }}</td></tr>{% endif %}
                     {% if item.place %}<tr><td class="label">Где:</td><td>{{ item.place }}</td></tr>{% endif %}

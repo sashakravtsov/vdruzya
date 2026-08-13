@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS marketplace_listings (
   price varchar(40) NOT NULL DEFAULT '',
   place varchar(120) NOT NULL DEFAULT '',
   description text NOT NULL DEFAULT '',
+  photo_path varchar(255) NULL,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
@@ -63,6 +64,7 @@ ALTER = """
 ALTER TABLE photo_tags ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'approved';
 UPDATE photo_tags SET status = 'approved' WHERE status IS NULL OR status = '';
 CREATE INDEX IF NOT EXISTS photo_tags_pending_idx ON photo_tags (social_user_id, status);
+ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
 """
 
 
@@ -80,6 +82,11 @@ def main():
             "WHERE table_name='photo_tags' AND column_name='status'"
         )
         assert cur.fetchone(), "photo_tags.status"
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='marketplace_listings' AND column_name='photo_path'"
+        )
+        assert cur.fetchone(), "marketplace_listings.photo_path"
     print("OK   friend_lists + marketplace + photo_tags")
 
 

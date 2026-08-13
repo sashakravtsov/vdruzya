@@ -203,6 +203,9 @@
             <a href="{% url 'marketplace.show' item.listing.id %}"><b>«{{ item.listing.title }}»</b></a>
             {% if item.listing.price %}<span class="muted"> · {{ item.listing.price }}</span>{% endif %}
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.listing.photo_url %}
+            <div class="news-photo-row"><a href="{% url 'marketplace.show' item.listing.id %}"><img src="{{ item.listing.photo_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% endif %}
         </div>
     {% elif item.kind == 'checkin' %}
         <span class="ico ico-note news-ico"></span>

@@ -99,7 +99,7 @@ def networks_home(request):
 @require_http_methods(["GET", "POST"])
 def marketplace_home(request):
     me = profile_of(request.user)
-    form = MarketForm(request.POST or None)
+    form = MarketForm(request.POST or None, request.FILES or None)
     mine = request.GET.get("mine") == "1"
     if request.method == "POST":
         if form.is_valid():
@@ -109,6 +109,7 @@ def marketplace_home(request):
                 price=form.cleaned_data.get("price") or "",
                 place=form.cleaned_data.get("place") or "",
                 description=form.cleaned_data.get("description") or "",
+                photo=form.cleaned_data.get("photo"),
             )
             if row:
                 messages.success(request, "Объявление опубликовано.")
@@ -148,7 +149,10 @@ def marketplace_edit(request, pk):
         "title": item.title, "price": item.price, "place": item.place,
         "description": item.description,
     }
-    form = MarketForm(request.POST or None, initial=None if request.method == "POST" else initial)
+    form = MarketForm(
+        request.POST or None, request.FILES or None,
+        initial=None if request.method == "POST" else initial,
+    )
     if request.method == "POST":
         if form.is_valid():
             row = cx.market_update(
@@ -157,6 +161,7 @@ def marketplace_edit(request, pk):
                 price=form.cleaned_data.get("price") or "",
                 place=form.cleaned_data.get("place") or "",
                 description=form.cleaned_data.get("description") or "",
+                photo=form.cleaned_data.get("photo"),
             )
             if row:
                 messages.success(request, "Объявление сохранено.")

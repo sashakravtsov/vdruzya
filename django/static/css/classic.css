@@ -1223,6 +1223,13 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane > h4 .edit { float: right; font-weight: normal; }
 .inbox-pane .msg-actions form { display: inline; }
 .inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
+.market-page .market-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
+.market-page .market-row:last-child { border-bottom: 0; }
+.market-page .market-thumb { float: left; margin: 0 8px 0 0; }
+.market-page .market-thumb img { display: block; border: 1px solid #B3B3B3; object-fit: cover; }
+.market-page .market-row-body { overflow: hidden; }
+.market-page .market-photo { margin: 0 0 8px; }
+.market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-video { margin-top: 4px; }
 .inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }

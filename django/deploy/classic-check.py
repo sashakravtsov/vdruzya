@@ -11,11 +11,17 @@ import django
 
 django.setup()
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
 from apps.accounts.models import User
 from apps.social.models import FriendList, MarketplaceListing, Post
 from apps.social.services import news_items, profile_of
+
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+)
 
 
 def ok(label):
@@ -30,6 +36,11 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), f"missing {t} — run ensure-classic-modules.py"
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='marketplace_listings' AND column_name='photo_path'"
+        )
+        assert cur.fetchone(), "marketplace_listings.photo_path — run ensure-classic-modules.py"
     ok("schema lists+market+tags")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
@@ -104,6 +115,26 @@ def main():
     item.refresh_from_db()
     assert item.price == "1200" and "edited" in item.description
     ok("marketplace listing + edit + feed + mine")
+
+    # marketplace photo on same media disk as wall photos
+    mtitle = f"QA MarketPhoto {uuid.uuid4().hex[:5]}"
+    r = c.post("/marketplace", {
+        "title": mtitle,
+        "price": "500",
+        "place": "СПб",
+        "description": "с фото",
+        "photo": SimpleUploadedFile("m.png", PNG, content_type="image/png"),
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    mitem = MarketplaceListing.objects.filter(social_user=me, title=mtitle).first()
+    assert mitem and mitem.photo_path, mitem
+    assert mitem.photo_url and "/storage/" in mitem.photo_url
+    r = c.get(f"/marketplace/{mitem.id}", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content and mitem.photo_path.encode() in r.content
+    r = c.get("/marketplace", secure=True)
+    assert r.status_code == 200 and b"market-thumb" in r.content
+    mitem.delete()
+    ok("marketplace listing photo")
 
     # video post
     r = c.post("/videos", {

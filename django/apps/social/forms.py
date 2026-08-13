@@ -767,6 +767,7 @@ class MarketForm(ClassicForm, forms.Form):
     price = forms.CharField(max_length=40, required=False, widget=_in(style="width:120px"))
     place = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
     description = forms.CharField(required=False, widget=_ta(4, style="width:100%"))
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
     def clean_title(self):
         return (self.cleaned_data.get("title") or "").strip()[:160]

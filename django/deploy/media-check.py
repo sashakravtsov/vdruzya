@@ -26,7 +26,7 @@ from apps.social import chat as ch
 from apps.social.media import process_image_bytes, save_video
 from apps.social.models import (
     Album, Community, CommunityMember, CommunityPost, Company, CompanyAdmin,
-    Friendship, Message, Photo, Post,
+    Friendship, MarketplaceListing, Message, Photo, Post,
 )
 from apps.social.services import bump_news, news_items, now, profile_of
 
@@ -237,6 +237,23 @@ def main():
         ok("inbox video attachment + player")
     else:
         ok("inbox video skipped (no friend)")
+
+    # Marketplace listing photo (same media disk as wall photos).
+    mtitle = f"QA MarketMedia {uuid.uuid4().hex[:5]}"
+    r = c.post("/marketplace", {
+        "title": mtitle,
+        "price": "99",
+        "place": "Москва",
+        "description": "media probe",
+        "photo": SimpleUploadedFile("market.png", PNG, content_type="image/png"),
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    mitem = MarketplaceListing.objects.filter(social_user=me, title=mtitle).first()
+    assert mitem and mitem.photo_path and mitem.photo_path.startswith("market/"), mitem
+    r = c.get(f"/marketplace/{mitem.id}", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content
+    mitem.delete()
+    ok("marketplace listing photo")
 
     # Optional ffmpeg poster (same media disk — not a video CDN).
     ffmpeg = getattr(settings, "FFMPEG_BIN", "ffmpeg") or "ffmpeg"
