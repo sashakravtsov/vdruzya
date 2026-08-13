@@ -1,0 +1,174 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}{{ page.name }} — Страницы — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="group-page page-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ page.name }}</h1>
+        <div class="subtitle">{{ industry_label }}{% if page.city %} · {{ page.city }}{% endif %}</div>
+    </div>
+    <div id="content" class="group-content">
+        {% include "partials/flash.html" %}
+
+        <div class="group-rail">
+            <div class="group-picture">
+                {% if page.cover_url %}
+                <img src="{{ page.cover_url }}" alt="" class="profile-cover-img" width="180">
+                {% else %}
+                <div class="page-cover page-cover-fallback" style="background:{{ page.cover_color|default:'#3B5998' }}"></div>
+                {% endif %}
+            </div>
+            <div class="group-join-panel profile-action-links">
+                {% if user.is_authenticated %}
+                    {% if is_fan %}
+                    <p class="group-join-status"><b>Вы поклонник</b><span class="label">{{ page.n_fans }} поклонников</span></p>
+                    {% else %}
+                    <p class="group-join-status"><b>Публичная страница</b><span class="label">Станьте поклонником</span></p>
+                    {% endif %}
+                {% else %}
+                    <p class="group-join-status"><b>Войдите</b><span class="label">Чтобы стать поклонником</span></p>
+                {% endif %}
+                {% if user.is_authenticated %}
+                    {% if is_admin %}
+                        <a href="{% url 'pages.edit' page.id %}">Редактировать страницу</a>
+                    {% endif %}
+                    {% if is_fan and not is_admin %}
+                        <form method="post" action="{% url 'pages.unfan' page.id %}">{% csrf_token %}
+                            <button type="submit">Больше не поклонник</button>
+                        </form>
+                    {% elif not is_fan %}
+                        <form method="post" action="{% url 'pages.fan' page.id %}">{% csrf_token %}
+                            <button type="submit">Стать поклонником</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'login' %}?next={{ request.path }}">Войти</a>
+                {% endif %}
+                <a href="{% url 'pages' %}">Все страницы</a>
+            </div>
+
+            {% if admins %}
+            <div class="profile-box">
+                <h4>Администраторы</h4>
+                <div class="profile-box-body">
+                    {% for a in admins %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' a.social_user.id %}">
+                            {% avatar a.social_user 32 %}
+                            <span><b>{{ a.social_user.name }}</b></span>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if fans %}
+            <div class="profile-box">
+                <h4>Поклонники ({{ page.n_fans }})</h4>
+                <div class="profile-box-body">
+                    {% for f in fans %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' f.social_user.id %}">
+                            {% avatar f.social_user 32 %}
+                            <span><b>{{ f.social_user.name }}</b></span>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="group-main">
+            <div id="tabs">
+                <div class="{% if tab == 'wall' or not tab %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                <div class="{% if tab == 'timeline' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=timeline">Лента</a></div>
+                <div class="{% if tab == 'info' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=info">Информация</a></div>
+            </div>
+
+            {% if tab == 'timeline' %}
+            {% include "social/_page_timeline.html" %}
+            {% elif tab == 'info' %}
+            <div class="profile-box">
+                <h4>Информация</h4>
+                <div class="profile-box-body">
+                    <table class="infotable">
+                        <tr><td class="label">Тип:</td><td>{{ industry_label }}</td></tr>
+                        {% if page.city %}<tr><td class="label">Город:</td><td>{{ page.city }}</td></tr>{% endif %}
+                    </table>
+                    {% if page.description %}<p class="stack-sm">{{ page.description|linebreaksbr }}</p>{% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="profile-box">
+                <h4>Информация</h4>
+                <div class="profile-box-body">
+                    <table class="infotable">
+                        <tr><td class="label">Тип:</td><td>{{ industry_label }}</td></tr>
+                        {% if page.city %}<tr><td class="label">Город:</td><td>{{ page.city }}</td></tr>{% endif %}
+                    </table>
+                    {% if page.description %}<p class="stack-sm">{{ page.description|linebreaksbr }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>События</h4>
+                <div class="profile-box-body">
+                    {% if event_form %}
+                    <form method="post" action="{% url 'pages.events' page.id %}" enctype="multipart/form-data">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr><td class="label">Название:</td><td>{{ event_form.title }}</td></tr>
+                            <tr><td class="label">Место:</td><td>{{ event_form.place }}</td></tr>
+                            <tr>
+                                <td class="label">Когда:</td>
+                                <td>{{ event_form.starts_at }}{% if event_form.starts_at.help_text %} <span class="muted">{{ event_form.starts_at.help_text }}</span>{% endif %}</td>
+                            </tr>
+                            <tr><td class="label">Описание:</td><td>{{ event_form.description }}</td></tr>
+                            <tr><td class="label">Обложка:</td><td>{{ event_form.cover }}</td></tr>
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать событие"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% for e in page_events %}
+                    <div class="event-list-row">
+                        <div class="list-row-body">
+                            <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
+                            <div class="muted">
+                                {{ e.starts_at|date:"j E Y, H:i" }}
+                                {% if e.place %} · {{ e.place }}{% endif %}
+                                · {{ e.n_going }} идут
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="muted">{% if is_admin %}Создайте первое событие выше.{% else %}Пока нет ближайших событий.{% endif %}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="profile-box wall-box">
+                <h4>Стена</h4>
+                <div class="profile-box-body">
+                    {% if post_form %}
+                    <form method="post" action="{% url 'pages.posts' page.id %}" enctype="multipart/form-data" class="wall-compose">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr><td class="label">Новость:</td><td>{{ post_form.body }}</td></tr>
+                            <tr><td class="label">Фото / видео:</td><td>{{ post_form.photo }}</td></tr>
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Опубликовать"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% for post in posts %}
+                    {% include "social/_wall_post.html" with next=request.path comment_preview=2 %}
+                    {% empty %}
+                    <p class="muted">{% if is_admin %}Напишите первую новость выше.{% else %}Пока нет записей.{% endif %}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="clear"></div>
+    </div>
+</div>
+{% endblock %}

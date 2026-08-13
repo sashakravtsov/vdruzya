@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="groups-index apps-index">
+    <div id="header" class="withsubtitle"><h1>Приложения</h1><div class="subtitle">каталог</div></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Каталог встроенных приложений ВДрузья — без сторонних платформ.</p>
+
+        <div class="subtabs">
+            <div class="{% if not category %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps' %}">Все</a></div>
+            {% for slug, lab in categories %}
+            <div class="{% if category == slug %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps' %}?category={{ slug }}">{{ lab }}</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if featured and not category %}
+        <div class="profile-box">
+            <h4>Избранные</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in featured %}
+                        <tr>
+                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act"><a href="{% url app.url_name %}">открыть</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>{% if category %}Каталог{% else %}Все приложения{% endif %}</h4>
+            <div class="profile-box-body">
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Приложение</th>
+                            <th class="col-type">Описание</th>
+                            <th class="col-act"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in apps %}
+                        <tr>
+                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-type">{{ app.blurb }}</td>
+                            <td class="col-act">
+                                <a href="{% url app.url_name %}">открыть</a>
+                                · <a href="{% url 'apps.show' app.slug %}">подробнее</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="muted">Нет приложений в этой категории.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

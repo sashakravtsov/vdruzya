@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block title %}Редактирование моего профиля — ВДрузья{% endblock %}
+{% block bodyclass %} editprofile{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="editprofile">
+    <div id="header" class="withsubtitle">
+        <h1>Редактирование моего профиля</h1>
+        <div class="subtitle"><a href="{% url 'profile' me.id %}">← к профилю</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+
+        {# Archive FB 2005: section switch is horizontal #tabs, editor ~full width #}
+        <div id="tabs">
+            {% for key, label in edit_nav %}
+            <div class="{% if section == key %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?section={{ key }}">{{ label }}</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="editor">
+            {% if section == 'picture' %}
+            {% include "social/_profile_edit_avatar.html" %}
+            {% elif section == 'eduwork' %}
+            <div id="infoarea">
+                <h4>{{ section_title }}</h4>
+                <form method="post" action="?section=eduwork">{% csrf_token %}
+                    {% include "social/_editor_fields.html" with form=form me=me %}
+                    <p class="editor-buttons">
+                        <input type="submit" class="inputsubmit" value="Сохранить изменения">
+                        · <a href="{% url 'profile' me.id %}">Отмена</a>
+                    </p>
+                </form>
+            </div>
+            {% include "social/_profile_edit_rows.html" %}
+            {% else %}
+            <div id="infoarea">
+                <h4>{{ section_title }}</h4>
+                {% if section == 'privacy' %}
+                <p class="profile_note">Ограниченный профиль скрывает стену и подробности от тех, кто не в друзьях. Пароль и email — в <a href="{% url 'account' %}">Мой аккаунт</a>.</p>
+                {% endif %}
+                <form method="post" action="?section={{ section }}">{% csrf_token %}
+                    {% include "social/_editor_fields.html" with form=form me=me %}
+                    <p class="editor-buttons">
+                        <input type="submit" class="inputsubmit" value="Сохранить изменения">
+                        · <a href="{% url 'profile' me.id %}">Отмена</a>
+                    </p>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

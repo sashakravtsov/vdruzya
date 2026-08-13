@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{% if form %}Мои альбомы{% else %}Фото {{ owner.name }}{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page">
+    {% if form %}
+    <div id="header"><h1>Мои альбомы</h1></div>
+    {% else %}
+    <div id="header" class="withsubtitle">
+        <h1>Фото {{ owner.name }}</h1>
+        <div class="subtitle"><a href="{% url 'profile' owner.id %}">профиль</a></div>
+    </div>
+    {% endif %}
+    <div id="content" class="albums-content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">
+            {% if form %}
+            <a href="{% url 'profile' me.id %}">Мой профиль</a>
+            {% else %}
+            <a href="{% url 'profile' owner.id %}">← {{ owner.name }}</a>
+            {% if is_own %} · <a href="{% url 'albums' %}">Мои альбомы</a>{% endif %}
+            {% endif %}
+        </p>
+
+        {% if form %}
+        <div class="profile-box">
+            <h4>Новый альбом</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Видимость:</td><td>{{ form.visibility }}</td></tr>
+                        <tr>
+                            <td class="label">Обложка:</td>
+                            <td>
+                                {{ form.cover }}
+                                <div class="file-hint muted">JPEG, PNG или GIF · до 2 МБ</div>
+                            </td>
+                        </tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>Альбомы{% if albums %} ({{ albums|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% if form %}
+                {% include "social/_album_index.html" with empty_msg="Альбомов пока нет." %}
+                {% else %}
+                {% include "social/_album_index.html" with empty_msg="Нет доступных альбомов." %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
