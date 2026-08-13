@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Подмигивания — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="pokes-page">
+    <div id="header"><h1>Подмигивания</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Кто подмигнул</h4>
+            <div class="profile-box-body">
+                {% for n in items %}
+                <div class="classic-person-row classic-person-row-friend{% if not n.seen %} is-unread{% endif %}">
+                    {% if n.poker %}
+                    <a class="classic-person-name" href="{% url 'profile' n.poker.id %}">
+                        {% avatar n.poker 50 %}
+                        <span>
+                            <b>{{ n.poker.name }}</b>
+                            <span class="classic-person-sub">подмигнул(а) вам{% if n.created_at %} · {{ n.created_at|fb_when }}{% endif %}</span>
+                        </span>
+                    </a>
+                    {% else %}
+                    <div class="notify-body">
+                        {% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>
+                        {% else %}<b>{{ n.body|default:n.title }}</b>{% endif %}
+                        {% if n.created_at %}<span class="muted"> · {{ n.created_at|fb_when }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if n.poker_id %}
+                    <span class="classic-inline-actions classic-inline-actions-friend">
+                        <form method="post" action="{% url 'profile.poke' n.poker_id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'pokes' %}">
+                            <button type="submit" class="linkish">подмигнуть в ответ</button>
+                        </form>
+                    </span>
+                    {% endif %}
+                </div>
+                {% empty %}<p class="muted">Пока никто не подмигнул.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
