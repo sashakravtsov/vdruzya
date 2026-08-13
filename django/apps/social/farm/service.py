@@ -1,7 +1,7 @@
 """Farm domain: plots, animals, neighbors, economy, bankruptcy, engagement."""
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 
 from django.db import transaction
 from django.db.models import Q
@@ -73,7 +73,7 @@ def _aware(dt: datetime | None) -> datetime | None:
         return None
     if timezone.is_naive(dt):
         # legacy naive rows: treat as UTC
-        return timezone.make_aware(dt, timezone.utc)
+        return timezone.make_aware(dt, dt_timezone.utc)
     return dt
 
 

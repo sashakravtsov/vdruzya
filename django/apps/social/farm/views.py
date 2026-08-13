@@ -10,6 +10,17 @@ from apps.social.services import friend_ids
 from . import catalog
 from . import lessons as farm_lessons
 from . import service as farm
+from apps.social.live.broadcast import notify_farm
+
+def _live_farm(me, *extra_ids):
+    try:
+        notify_farm(me.id)
+        for uid in extra_ids:
+            if uid:
+                notify_farm(int(uid))
+    except Exception:
+        pass
+
 from .forms import (
     AnimalActionForm, AnimalBuyForm, LessonQuizForm, PlantForm, PlotActionForm, ShopForm, VisitActionForm,
 )
@@ -57,6 +68,8 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Выберите грядку и культуру")
                 farm.plant(me, form.cleaned_data["plot_id"], form.cleaned_data["crop"])
                 messages.success(request, "Посажено! Не забудьте полить.")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "water":
@@ -65,6 +78,8 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Грядка?")
                 farm.water_plot(me, form.cleaned_data["plot_id"])
                 messages.success(request, "Полито — урожай будет полным.")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "fertilize":
@@ -73,6 +88,8 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Грядка?")
                 farm.fertilize_plot(me, form.cleaned_data["plot_id"])
                 messages.success(request, "Удобрено — рост ускорен.")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "boost":
@@ -81,6 +98,8 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Грядка?")
                 farm.boost_plot(me, form.cleaned_data["plot_id"])
                 messages.success(request, "Ускоритель применён.")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "harvest":
@@ -92,6 +111,8 @@ def render_farm_canvas(request, me, app):
                     request,
                     f"Собрано {res['crop']['title']}: +{res['amount']:,} фишек, +{res['xp']} XP".replace(",", " "),
                 )
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "clear":
@@ -100,11 +121,15 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Грядка?")
                 farm.clear_withered(me, form.cleaned_data["plot_id"])
                 messages.info(request, "Увядшая грядка очищена.")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "expand":
                 farm.expand_field(me)
                 messages.success(request, "Новая грядка открыта!")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "shop":
@@ -113,6 +138,8 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Товар?")
                 farm.buy_shop(me, form.cleaned_data["item"], form.cleaned_data["qty"])
                 messages.success(request, "Покупка в лавке успешна.")
+                _live_farm(me)
+
                 return redirect(_url("shop"))
 
             if action == "buy_animal":
@@ -122,6 +149,8 @@ def render_farm_canvas(request, me, app):
                 an = farm.buy_animal(me, form.cleaned_data["kind"])
                 meta = catalog.animal_by_slug(an.kind)
                 messages.success(request, f"В хлеву новая {meta['title']}!")
+                _live_farm(me)
+
                 return redirect(_url("barn"))
 
             if action == "feed":
@@ -130,6 +159,8 @@ def render_farm_canvas(request, me, app):
                     raise ValueError("Животное?")
                 farm.feed_animal(me, form.cleaned_data["animal_id"])
                 messages.success(request, "Накормлено — ждите продукцию.")
+                _live_farm(me)
+
                 return redirect(_url("barn"))
 
             if action == "collect":
@@ -141,6 +172,8 @@ def render_farm_canvas(request, me, app):
                     request,
                     f"Продукция {res['meta']['title']}: +{res['amount']:,}".replace(",", " "),
                 )
+                _live_farm(me)
+
                 return redirect(_url("barn"))
 
             if action == "daily":
@@ -149,11 +182,15 @@ def render_farm_canvas(request, me, app):
                     request,
                     f"Дневной бонус: +{res['amount']:,} (серия {res['streak']})".replace(",", " "),
                 )
+                _live_farm(me)
+
                 return redirect(_url("bank"))
 
             if action == "reset":
                 farm.reset_after_bankruptcy(me)
                 messages.success(request, "Профиль обнулён. Снова 1 000 000 фишек — удачной пахоты!")
+                _live_farm(me)
+
                 return redirect(_url("field"))
 
             if action == "help":
@@ -164,6 +201,8 @@ def render_farm_canvas(request, me, app):
                     me, form.cleaned_data["owner_id"], form.cleaned_data["plot_id"]
                 )
                 messages.success(request, f"Помогли соседу! +{res['tip']} фишек, +{res['xp']} XP")
+                _live_farm(me)
+
                 return redirect(_url("visit", owner=form.cleaned_data["owner_id"]))
 
             if action == "steal":
@@ -177,6 +216,8 @@ def render_farm_canvas(request, me, app):
                     request,
                     f"Взяли часть «{res['crop']['title']}»: +{res['amount']:,}".replace(",", " "),
                 )
+                _live_farm(me)
+
                 return redirect(_url("visit", owner=form.cleaned_data["owner_id"]))
 
             if action == "lesson_quiz":
@@ -195,6 +236,8 @@ def render_farm_canvas(request, me, app):
                     messages.success(request, f"Верно! {meta['explain']}")
                 else:
                     messages.error(request, "Пока не то.")
+                _live_farm(me)
+
                 return redirect(_url("learn", lesson=les["slug"]))
         except ValueError as exc:
             messages.error(request, str(exc))

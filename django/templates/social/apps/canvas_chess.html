@@ -1,8 +1,8 @@
 {% extends "social/apps/canvas_base.html" %}
 {% load static chess_tags %}
 {% block canvas_body %}
-<div class="profile-box chess-app" id="chess-app" data-sfx="{{ sound_event }}">
-    <h4>Шахматы</h4>
+<div class="profile-box chess-app" id="chess-app" data-sfx="{{ sound_event }}"{% if tab == 'game' and game %} data-ws-url="/ws/chess/game/{{ game.id }}/"{% endif %}>
+    <h4>Шахматы{% if tab == 'game' and game %} <span class="app-live" data-app-live hidden>…</span>{% endif %}</h4>
     <div class="profile-box-body">
         <p class="chess-lead">Профессиональные партии с друзьями: часы, рейтинг, чемпионат недели, обучение и задачи.</p>
         <p class="chess-strip">
@@ -735,6 +735,7 @@
     </div>
 </div>
 {% if tab == 'game' or tab == 'puzzles' or tab == 'play' or tab == 'learn' %}
+<script src="{% static 'js/live-client.js' %}" defer></script>
 <script src="{% static 'js/chess-board.js' %}" defer></script>
 {% endif %}
 {% endblock %}

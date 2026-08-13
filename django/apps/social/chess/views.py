@@ -18,6 +18,7 @@ from .forms import (
     GameActionForm, LessonDrillForm, LessonQuizForm, MoveForm, PuzzleAnswerForm, StartGameForm,
 )
 from .models import ChessMove
+from apps.social.live.broadcast import notify_chess
 
 
 def render_chess_canvas(request, me, app):
@@ -105,6 +106,10 @@ def render_chess_canvas(request, me, app):
                 if not g:
                     raise ValueError("Партия не найдена")
                 g = chess.play_move(g, me, form.cleaned_data["from_sq"], form.cleaned_data["to_sq"])
+                try:
+                    notify_chess(g.id)
+                except Exception:
+                    pass
                 opp_id = g.black_id if me.id == g.white_id else g.white_id
                 notify.push(
                     opp_id, title="Шахматы",
@@ -145,10 +150,18 @@ def render_chess_canvas(request, me, app):
                     raise ValueError("Партия не найдена")
                 if action == "resign":
                     g = chess.resign(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     messages.info(request, "Вы сдались.")
                     return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}&sfx=end")
                 if action == "draw_offer":
                     g = chess.offer_draw(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     opp_id = g.black_id if me.id == g.white_id else g.white_id
                     notify.push(
                         opp_id, title="Шахматы",
@@ -159,13 +172,25 @@ def render_chess_canvas(request, me, app):
                     messages.info(request, "Предложение ничьей отправлено.")
                 elif action == "draw_accept":
                     g = chess.accept_draw(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     messages.success(request, "Ничья принята.")
                     return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}&sfx=end")
                 elif action == "draw_decline":
                     g = chess.decline_draw(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     messages.info(request, "Ничья отклонена.")
                 elif action == "claim_flag":
                     g = chess.claim_timeout(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     if g.winner_id == me.id:
                         messages.success(request, "Соперник просрочил время — победа.")
                     else:
@@ -180,6 +205,10 @@ def render_chess_canvas(request, me, app):
                     return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}&sfx=end")
                 elif action == "accept_challenge":
                     g = chess.accept_challenge(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     opp_id = g.invited_by_id or (g.black_id if me.id == g.white_id else g.white_id)
                     notify.push(
                         opp_id, title="Шахматы",
@@ -191,6 +220,10 @@ def render_chess_canvas(request, me, app):
                     return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}&sfx=start")
                 elif action == "decline_challenge":
                     g = chess.decline_challenge(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     if g.invited_by_id:
                         notify.push(
                             g.invited_by_id, title="Шахматы",
@@ -202,6 +235,10 @@ def render_chess_canvas(request, me, app):
                     return redirect(reverse("apps.canvas", args=["chess"]) + "?tab=play")
                 elif action == "cancel_challenge":
                     g = chess.cancel_challenge(g, me)
+                    try:
+                        notify_chess(g.id)
+                    except Exception:
+                        pass
                     opp_id = g.black_id if me.id == g.white_id else g.white_id
                     notify.push(
                         opp_id, title="Шахматы",

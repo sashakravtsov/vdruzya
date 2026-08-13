@@ -1,0 +1,95 @@
+"""Django forms for Poker canvas actions."""
+from django import forms
+
+from apps.social.poker import service as poker
+
+
+def _sel():
+    return forms.Select(attrs={"class": "inputtext"})
+
+
+class ChallengeForm(forms.Form):
+    friend_id = forms.IntegerField(widget=forms.Select(attrs={"class": "inputtext"}))
+    stake = forms.ChoiceField(
+        choices=[(s[0], s[1]) for s in poker.STAKE_LEVELS],
+        initial="micro",
+        label="Лимит",
+        widget=_sel(),
+    )
+    in_champ = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Учитывать в чемпионате недели",
+    )
+
+    def __init__(self, *args, friends=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        friends = friends or []
+        self.fields["friend_id"].widget.choices = [
+            (f.id, f.name) for f in friends
+        ] or [("", "Сначала добавьте друзей")]
+        if not friends:
+            self.fields["friend_id"].disabled = True
+
+
+class RoomCreateForm(forms.Form):
+    title = forms.CharField(
+        max_length=80,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "inputtext", "size": "28", "placeholder": "Название стола"}),
+    )
+    stake = forms.ChoiceField(
+        choices=[(s[0], s[1]) for s in poker.STAKE_LEVELS],
+        initial="micro",
+        label="Лимит",
+        widget=_sel(),
+    )
+    max_seats = forms.TypedChoiceField(
+        choices=[(n, f"{n} мест" + ("а" if n == 2 else "")) for n in poker.SEAT_CHOICES],
+        coerce=int,
+        initial=6,
+        label="Мест за столом",
+        widget=_sel(),
+    )
+    is_private = forms.BooleanField(required=False, initial=False, label="Приватная (по коду)")
+    in_champ = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Чемпионат недели",
+    )
+
+
+class RoomJoinCodeForm(forms.Form):
+    join_code = forms.CharField(
+        max_length=12,
+        widget=forms.TextInput(attrs={
+            "class": "inputtext", "size": "10", "placeholder": "Код",
+            "style": "text-transform:uppercase",
+        }),
+        label="Код комнаты",
+    )
+
+
+class GameActionForm(forms.Form):
+    game_id = forms.IntegerField(widget=forms.HiddenInput())
+    play = forms.ChoiceField(
+        choices=[
+            ("fold", "Фолд"),
+            ("check", "Чек"),
+            ("call", "Колл"),
+            ("bet", "Ставка"),
+            ("raise", "Рейз"),
+            ("allin", "Олл-ин"),
+        ],
+    )
+    raise_to = forms.IntegerField(required=False, min_value=0)
+
+
+class LessonQuizForm(forms.Form):
+    lesson = forms.CharField(max_length=40, widget=forms.HiddenInput())
+    choice = forms.CharField(max_length=40)
+
+
+class PuzzleAnswerForm(forms.Form):
+    puzzle_id = forms.CharField(max_length=40, widget=forms.HiddenInput())
+    choice = forms.CharField(max_length=40)

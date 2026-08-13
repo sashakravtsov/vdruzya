@@ -445,11 +445,9 @@ def _canvas_horoscope(request, me, app):
 
 
 def _canvas_dating(request, me, app):
-    matches = pa.dating_matches(me)
-    return render(request, "social/apps/canvas_dating.html", {
-        "me": me, "app": app, "matches": matches,
-        "nav": "apps", "installed": True,
-    })
+    from apps.social.dating.views import render_dating_canvas
+
+    return render_dating_canvas(request, me, app)
 
 
 def _canvas_farm(request, me, app):
@@ -491,12 +489,6 @@ def _canvas_tetris(request, me, app):
 
 
 def _canvas_poker(request, me, app):
-    cards = None
-    label = None
-    if request.method == "POST":
-        cards = pa.poker_deal()
-        label = pa.poker_rank_label(cards)
-    return render(request, "social/apps/canvas_poker.html", {
-        "me": me, "app": app, "cards": cards, "label": label,
-        "nav": "apps", "installed": True,
-    })
+    from apps.social.poker.views import render_poker_canvas
+
+    return render_poker_canvas(request, me, app)
