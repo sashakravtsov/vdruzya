@@ -60,15 +60,16 @@ def main():
     pl = farm.plant(me, empty["id"], "wheat")
     pl = FarmPlot.objects.get(pk=pl.id)
     assert pl.state == "growing", pl.state
-    # keep firmly in growing window for water
-    pl.ready_at = timezone.now().replace(tzinfo=None) + timedelta(minutes=5)
+    # keep firmly in growing window for water (aware UTC)
+    pl.ready_at = timezone.now() + timedelta(minutes=5)
     pl.wither_at = pl.ready_at + timedelta(hours=6)
     pl.watered = False
+    pl.state = "growing"
     pl.save(update_fields=["ready_at", "wither_at", "watered", "state"])
     farm.water_plot(me, pl.id)
     pl = FarmPlot.objects.get(pk=pl.id)
     assert pl.watered
-    pl.ready_at = timezone.now().replace(tzinfo=None) - timedelta(seconds=1)
+    pl.ready_at = timezone.now() - timedelta(seconds=1)
     pl.state = "growing"
     pl.save(update_fields=["ready_at", "state"])
     res = farm.harvest(me, pl.id)
@@ -87,7 +88,7 @@ def main():
     farm.engagement_strip(me)
     p.refresh_from_db()
     assert farm.is_bankrupt(p)
-    p.bankrupt_until = timezone.now().replace(tzinfo=None) - timedelta(minutes=1)
+    p.bankrupt_until = timezone.now() - timedelta(minutes=1)
     p.save(update_fields=["bankrupt_until"])
     farm.reset_after_bankruptcy(me)
     p.refresh_from_db()

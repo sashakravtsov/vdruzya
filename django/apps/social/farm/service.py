@@ -32,11 +32,11 @@ BADGES = [
 
 
 def _now() -> datetime:
-    return timezone.now().replace(tzinfo=None)
+    return timezone.now()
 
 
 def _today() -> date:
-    return date.today()
+    return timezone.localdate()
 
 
 def _fmt(n: int) -> str:
@@ -68,21 +68,26 @@ def _lesson_set(p: FarmProfile) -> set[str]:
     return {x for x in raw.split(",") if x} if raw else set()
 
 
+def _aware(dt: datetime | None) -> datetime | None:
+    if not dt:
+        return None
+    if timezone.is_naive(dt):
+        # legacy naive rows: treat as UTC
+        return timezone.make_aware(dt, timezone.utc)
+    return dt
+
+
 def is_bankrupt(p: FarmProfile) -> bool:
-    until = p.bankrupt_until
+    until = _aware(p.bankrupt_until)
     if not until:
         return False
-    if timezone.is_aware(until):
-        until = timezone.make_naive(until, timezone.get_current_timezone())
     return until > _now()
 
 
 def bankrupt_days_left(p: FarmProfile) -> int:
-    until = p.bankrupt_until
+    until = _aware(p.bankrupt_until)
     if not until:
         return 0
-    if timezone.is_aware(until):
-        until = timezone.make_naive(until, timezone.get_current_timezone())
     sec = (until - _now()).total_seconds()
     if sec <= 0:
         return 0
@@ -185,23 +190,16 @@ def reset_after_bankruptcy(user: SocialProfile) -> FarmProfile:
     return p
 
 
-def _as_naive(dt: datetime | None) -> datetime | None:
-    if not dt:
-        return None
-    if timezone.is_aware(dt):
-        return timezone.make_naive(dt, timezone.get_current_timezone())
-    return dt
-
-
 def _refresh_plot(pl: FarmPlot) -> FarmPlot:
     now = _now()
-    ready_at = _as_naive(pl.ready_at)
-    wither_at = _as_naive(pl.wither_at)
+    ready_at = _aware(pl.ready_at)
+    wither_at = _aware(pl.wither_at)
     if pl.state == "growing" and ready_at and ready_at <= now:
         pl.state = "ready"
         pl.ready_at = ready_at
         if not wither_at:
             pl.wither_at = ready_at + timedelta(hours=6)
+            wither_at = pl.wither_at
         pl.save(update_fields=["state", "ready_at", "wither_at"])
     if pl.state == "ready" and wither_at and wither_at <= now:
         pl.state = "withered"
@@ -220,8 +218,9 @@ def plots_view(user: SocialProfile) -> list[dict]:
         pl = _refresh_plot(pl)
         crop = catalog.crop_by_slug(pl.crop_slug) if pl.crop_slug else None
         left = 0
-        if pl.state == "growing" and pl.ready_at:
-            left = max(0, int((pl.ready_at - _now()).total_seconds()))
+        ready_at = _aware(pl.ready_at)
+        if pl.state == "growing" and ready_at:
+            left = max(0, int((ready_at - _now()).total_seconds()))
         rows.append({
             "id": pl.id,
             "idx": pl.idx,
@@ -230,7 +229,7 @@ def plots_view(user: SocialProfile) -> list[dict]:
             "watered": pl.watered,
             "fertilized": pl.fertilized,
             "stolen": pl.stolen,
-            "ready_at": pl.ready_at.isoformat(sep=" ") if pl.ready_at else "",
+            "ready_at": ready_at.isoformat(sep=" ") if ready_at else "",
             "left_sec": left,
             "label": crop["title"] if crop else "пусто",
         })
@@ -241,17 +240,18 @@ def animals_view(user: SocialProfile) -> list[dict]:
     out = []
     for an in FarmAnimal.objects.filter(owner=user).order_by("id"):
         meta = catalog.animal_by_slug(an.kind)
-        ready = bool(an.ready_at and an.ready_at <= _now())
+        ready_at = _aware(an.ready_at)
+        ready = bool(ready_at and ready_at <= _now())
         left = 0
-        if an.ready_at and not ready:
-            left = max(0, int((an.ready_at - _now()).total_seconds()))
+        if ready_at and not ready:
+            left = max(0, int((ready_at - _now()).total_seconds()))
         out.append({
             "id": an.id,
             "kind": an.kind,
             "meta": meta,
             "ready": ready,
             "left_sec": left,
-            "ready_at": an.ready_at.isoformat(sep=" ") if an.ready_at else "",
+            "ready_at": ready_at.isoformat(sep=" ") if ready_at else "",
         })
     return out
 
@@ -339,7 +339,8 @@ def fertilize_plot(user: SocialProfile, plot_id: int) -> FarmPlot:
     p.fertilizer -= 1
     p.updated_at = _now()
     p.save(update_fields=["fertilizer", "updated_at"])
-    left = max(0, int((pl.ready_at - _now()).total_seconds())) if pl.ready_at else 0
+    ready_at = _aware(pl.ready_at)
+    left = max(0, int((ready_at - _now()).total_seconds())) if ready_at else 0
     pl.ready_at = _now() + timedelta(seconds=max(15, left // 2))
     pl.wither_at = pl.ready_at + timedelta(hours=6)
     pl.fertilized = True
@@ -355,16 +356,18 @@ def boost_plot(user: SocialProfile, plot_id: int) -> FarmPlot:
     if not pl:
         raise ValueError("Грядка не найдена")
     pl = _refresh_plot(pl)
-    if pl.state != "growing" or not pl.ready_at:
+    ready_at = _aware(pl.ready_at)
+    planted_at = _aware(pl.planted_at)
+    if pl.state != "growing" or not ready_at:
         raise ValueError("Нечего ускорять")
     if int(p.boosts or 0) < 1:
         raise ValueError("Нет ускорителей")
     p.boosts -= 1
     p.updated_at = _now()
     p.save(update_fields=["boosts", "updated_at"])
-    total = max(1, int((pl.ready_at - (pl.planted_at or _now())).total_seconds()))
+    total = max(1, int((ready_at - (planted_at or _now())).total_seconds()))
     cut = int(total * 0.30)
-    pl.ready_at = max(_now() + timedelta(seconds=10), pl.ready_at - timedelta(seconds=cut))
+    pl.ready_at = max(_now() + timedelta(seconds=10), ready_at - timedelta(seconds=cut))
     pl.wither_at = pl.ready_at + timedelta(hours=6)
     pl.save(update_fields=["ready_at", "wither_at"])
     return _refresh_plot(pl)
@@ -499,9 +502,10 @@ def feed_animal(user: SocialProfile, animal_id: int) -> FarmAnimal:
     meta = catalog.animal_by_slug(an.kind)
     if not meta:
         raise ValueError("Порода неизвестна")
-    if an.ready_at and an.ready_at > _now():
+    ready_at = _aware(an.ready_at)
+    if ready_at and ready_at > _now():
         raise ValueError("Ещё рано — ждите продукцию или заберите готовую")
-    if an.ready_at and an.ready_at <= _now():
+    if ready_at and ready_at <= _now():
         raise ValueError("Сначала заберите продукцию")
     if p.chips < meta["feed_cost"]:
         raise ValueError(f"Корм стоит {_fmt(meta['feed_cost'])}")
@@ -522,7 +526,8 @@ def collect_animal(user: SocialProfile, animal_id: int) -> dict:
     if not an:
         raise ValueError("Животное не найдено")
     meta = catalog.animal_by_slug(an.kind)
-    if not meta or not an.ready_at or an.ready_at > _now():
+    ready_at = _aware(an.ready_at)
+    if not meta or not ready_at or ready_at > _now():
         raise ValueError("Продукция ещё не готова")
     amount = meta["product_yield"]
     p.chips = int(p.chips) + amount

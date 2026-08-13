@@ -75,6 +75,29 @@ CREATE TABLE IF NOT EXISTS farm_visit_logs (
 );
 CREATE INDEX IF NOT EXISTS farm_visit_logs_owner_idx ON farm_visit_logs (owner_id, id DESC);
 CREATE INDEX IF NOT EXISTS farm_visit_logs_actor_idx ON farm_visit_logs (actor_id, id DESC);
+
+-- Prefer timestamptz for plot/animal timers under USE_TZ.
+DO $$ BEGIN
+  ALTER TABLE farm_plots
+    ALTER COLUMN planted_at TYPE timestamp with time zone USING planted_at AT TIME ZONE 'UTC',
+    ALTER COLUMN ready_at TYPE timestamp with time zone USING ready_at AT TIME ZONE 'UTC',
+    ALTER COLUMN wither_at TYPE timestamp with time zone USING wither_at AT TIME ZONE 'UTC';
+EXCEPTION WHEN others THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE farm_animals
+    ALTER COLUMN fed_at TYPE timestamp with time zone USING fed_at AT TIME ZONE 'UTC',
+    ALTER COLUMN ready_at TYPE timestamp with time zone USING ready_at AT TIME ZONE 'UTC',
+    ALTER COLUMN created_at TYPE timestamp with time zone USING created_at AT TIME ZONE 'UTC';
+EXCEPTION WHEN others THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE farm_profiles
+    ALTER COLUMN bankrupt_until TYPE timestamp with time zone USING bankrupt_until AT TIME ZONE 'UTC',
+    ALTER COLUMN created_at TYPE timestamp with time zone USING created_at AT TIME ZONE 'UTC',
+    ALTER COLUMN updated_at TYPE timestamp with time zone USING updated_at AT TIME ZONE 'UTC';
+EXCEPTION WHEN others THEN NULL;
+END $$;
 """
 
 
