@@ -818,6 +818,96 @@
     ta.style.height = Math.min(280, Math.max(96, ta.scrollHeight)) + "px";
   }
 
+  function closeAllPops(except) {
+    var pops = document.querySelectorAll(".msg-pop");
+    for (var i = 0; i < pops.length; i++) {
+      if (except && pops[i] === except) continue;
+      pops[i].hidden = true;
+      var wrap = pops[i].closest(".msg-pop-wrap");
+      var btn = wrap && wrap.querySelector(".msg-pop-btn");
+      if (btn) btn.classList.remove("is-on");
+    }
+  }
+
+  function wireFromAlbum(form) {
+    if (!form || form.getAttribute("data-from-album-wired") === "1") return;
+    form.setAttribute("data-from-album-wired", "1");
+    var picks = form.querySelector("[data-from-album]");
+    var openBtns = form.querySelectorAll("[data-from-album-open]");
+    if (!picks || !openBtns.length) return;
+    var baseUrl = "/compose/albums";
+    var ed = form.querySelector(".msg-editor[data-from-album-url]");
+    if (ed) baseUrl = ed.getAttribute("data-from-album-url") || baseUrl;
+
+    function syncPicksVisibility() {
+      picks.hidden = !picks.querySelectorAll("input[name='album_photo']").length;
+    }
+    function addPick(id, url) {
+      if (!id || picks.querySelector("input[value='" + id + "']")) return;
+      if (picks.querySelectorAll("input[name='album_photo']").length >= 5) return;
+      var wrap = document.createElement("span");
+      wrap.className = "compose-from-thumb";
+      wrap.innerHTML = "<img alt=\"\"><button type=\"button\" class=\"compose-from-x\" title=\"убрать\">×</button>"
+        + "<input type=\"hidden\" name=\"album_photo\" value=\"" + id + "\">";
+      wrap.querySelector("img").src = url || "";
+      wrap.querySelector(".compose-from-x").addEventListener("click", function () {
+        wrap.remove();
+        syncPicksVisibility();
+      });
+      picks.appendChild(wrap);
+      syncPicksVisibility();
+    }
+    function bindPickerBody(root) {
+      root = root || document;
+      var back = root.querySelector("[data-from-album-back]");
+      if (back) {
+        back.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          loadPicker(baseUrl);
+        });
+      }
+      var opens = root.querySelectorAll("[data-from-album-id]");
+      for (var i = 0; i < opens.length; i++) {
+        opens[i].addEventListener("click", function (ev) {
+          ev.preventDefault();
+          var id = this.getAttribute("data-from-album-id");
+          if (id) loadPicker(baseUrl.replace(/\/$/, "") + "/" + id);
+        });
+      }
+      var thumbs = root.querySelectorAll("[data-photo-id]");
+      for (var t = 0; t < thumbs.length; t++) {
+        thumbs[t].addEventListener("click", function (ev) {
+          ev.preventDefault();
+          addPick(this.getAttribute("data-photo-id"), this.getAttribute("data-photo-url") || "");
+        });
+      }
+    }
+    function loadPicker(url) {
+      if (!window.FBDialog) return;
+      fetch(url, {
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html" },
+      }).then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (html) {
+          if (!html) return;
+          FBDialog.open({
+            title: "Фото из альбома",
+            html: html,
+            wide: true,
+            buttons: [{ label: "Готово", primary: true, close: true }],
+          });
+          var body = document.querySelector("#classic-dialog-root .fb-dialog-body");
+          bindPickerBody(body);
+        });
+    }
+    for (var b = 0; b < openBtns.length; b++) {
+      openBtns[b].addEventListener("click", function (ev) {
+        ev.preventDefault();
+        loadPicker(baseUrl);
+      });
+    }
+  }
+
   function wireEmojiEditors(root) {
     root = root || document;
     var editors = root.querySelectorAll ? root.querySelectorAll(".msg-editor") : [];
@@ -826,36 +916,36 @@
         if (ed.getAttribute("data-wired") === "1") return;
         ed.setAttribute("data-wired", "1");
         var targetId = ed.getAttribute("data-emoji-for");
-        var previewUrl = ed.getAttribute("data-preview-url") || "/inbox/preview";
-        var maxLen = parseInt(ed.getAttribute("data-md-max") || "4000", 10) || 4000;
+        var previewUrl = ed.getAttribute("data-preview-url") || "/compose/preview";
+        // data-md-limit on editor — never reuse data-md-max (status counter), or querySelector
+        // matches the editor itself and textContent wipes the whole toolbar.
+        var maxLen = parseInt(ed.getAttribute("data-md-limit") || ed.getAttribute("data-md-max") || "4000", 10) || 4000;
         var shell = ed.closest ? ed.closest(".msg-md-shell") : null;
-        var stage = (shell && shell.querySelector("[data-md-stage]")) || null;
         var form = ed.closest ? ed.closest("form") : null;
+        var stage = (shell && shell.querySelector("[data-md-stage]")) || null;
         var ta = targetId ? document.getElementById(targetId) : null;
-        var tabs = ed.querySelectorAll(".msg-editor-tab");
-        var panes = ed.querySelectorAll("[data-pane-body]");
         var clearWrap = ed.querySelector(".msg-sticker-clear");
         var preview = (stage && stage.querySelector("[data-md-preview]"))
-          || (form && form.querySelector("[data-md-preview]"))
-          || ed.querySelector("[data-md-preview]");
+          || (form && form.querySelector("[data-md-preview]"));
         var modeBtns = ed.querySelectorAll(".msg-md-mode-btn");
-        var countEl = shell && shell.querySelector("[data-md-count]");
-        var maxEl = shell && shell.querySelector("[data-md-max]");
         var statusEl = shell && shell.querySelector(".msg-md-status");
+        var countEl = statusEl && statusEl.querySelector("[data-md-count]");
+        var maxEl = statusEl && statusEl.querySelector("[data-md-max]");
+        var hoverTimer = null;
         var previewTimer = null;
         var previewReq = 0;
         var mode = "write";
-        if (maxEl) maxEl.textContent = String(maxLen);
+        if (maxEl && maxEl !== ed) maxEl.textContent = String(maxLen);
+        if (form) wireFromAlbum(form);
 
         function getTa() {
-          if (!ta) ta = document.getElementById(targetId);
+          if (!ta || !ta.isConnected) ta = targetId ? document.getElementById(targetId) : null;
           return ta;
         }
         function getPreview() {
           if (preview && preview.isConnected) return preview;
           preview = (stage && stage.querySelector("[data-md-preview]"))
-            || (form && form.querySelector("[data-md-preview]"))
-            || ed.querySelector("[data-md-preview]");
+            || (form && form.querySelector("[data-md-preview]"));
           return preview;
         }
         function getStage() {
@@ -863,17 +953,6 @@
           stage = (shell && shell.querySelector("[data-md-stage]")) || null;
           return stage;
         }
-
-        function showPane(name) {
-          for (var t = 0; t < tabs.length; t++) {
-            if (tabs[t].getAttribute("data-pane") === name) tabs[t].classList.add("is-on");
-            else tabs[t].classList.remove("is-on");
-          }
-          for (var p = 0; p < panes.length; p++) {
-            panes[p].hidden = panes[p].getAttribute("data-pane-body") !== name;
-          }
-        }
-
         function syncCount() {
           var field = getTa();
           var n = field ? (field.value || "").length : 0;
@@ -883,7 +962,6 @@
             else statusEl.classList.remove("is-warn");
           }
         }
-
         function refreshPreview() {
           var pane = getPreview();
           if (!pane || pane.hidden) return;
@@ -901,23 +979,17 @@
           }).then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
               if (id !== previewReq) return;
-              if (!data) {
-                pane.innerHTML = "<p class=\"muted\">не удалось показать превью</p>";
-                return;
-              }
-              pane.innerHTML = data.html || "<p class=\"muted\">Пусто — напишите текст.</p>";
+              pane.innerHTML = (data && data.html) || "<p class=\"muted\">не удалось показать превью</p>";
             }).catch(function () {
               if (id !== previewReq) return;
               pane.innerHTML = "<p class=\"muted\">не удалось показать превью</p>";
             });
         }
-
         function schedulePreview() {
           if (mode === "write") return;
           if (previewTimer) clearTimeout(previewTimer);
           previewTimer = setTimeout(refreshPreview, 220);
         }
-
         function setMode(next) {
           mode = (next === "split" || next === "preview") ? next : "write";
           try { sessionStorage.setItem(MD_MODE_KEY, mode); } catch (e) {}
@@ -935,25 +1007,55 @@
           if (field) field.hidden = mode === "preview";
           if (pane) pane.hidden = mode === "write";
           if (mode !== "write") refreshPreview();
-          if (field && mode !== "preview") {
-            field.focus();
-            autosizeMd(field);
-          }
+          if (field && mode !== "preview") { field.focus(); autosizeMd(field); }
+        }
+        function openPop(name) {
+          var panel = ed.querySelector("[data-pop-panel=\"" + name + "\"]");
+          var btn = ed.querySelector(".msg-pop-btn[data-pop=\"" + name + "\"]");
+          if (!panel) return;
+          var was = !panel.hidden;
+          closeAllPops();
+          if (was) return;
+          panel.hidden = false;
+          if (btn) btn.classList.add("is-on");
         }
 
-        for (var t = 0; t < tabs.length; t++) {
-          tabs[t].addEventListener("click", function (ev) {
-            ev.preventDefault();
-            showPane(this.getAttribute("data-pane") || "emoji");
-          });
+        var popBtns = ed.querySelectorAll(".msg-pop-btn");
+        for (var pb = 0; pb < popBtns.length; pb++) {
+          (function (btn) {
+            var name = btn.getAttribute("data-pop");
+            var wrap = btn.closest(".msg-pop-wrap");
+            var panel = wrap && wrap.querySelector("[data-pop-panel]");
+            btn.addEventListener("click", function (ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              openPop(name);
+            });
+            if (wrap && panel) {
+              wrap.addEventListener("mouseenter", function () {
+                if (hoverTimer) clearTimeout(hoverTimer);
+                hoverTimer = setTimeout(function () { openPop(name); }, 140);
+              });
+              wrap.addEventListener("mouseleave", function () {
+                if (hoverTimer) clearTimeout(hoverTimer);
+                hoverTimer = setTimeout(function () {
+                  if (!panel.matches(":hover") && !btn.matches(":hover")) {
+                    panel.hidden = true;
+                    btn.classList.remove("is-on");
+                  }
+                }, 220);
+              });
+            }
+          })(popBtns[pb]);
         }
+
         for (var mb = 0; mb < modeBtns.length; mb++) {
           modeBtns[mb].addEventListener("click", function (ev) {
             ev.preventDefault();
             setMode(this.getAttribute("data-md-mode") || "write");
           });
         }
-        var mdBtns = ed.querySelectorAll(".msg-md-btn");
+        var mdBtns = ed.querySelectorAll(".msg-md-btn[data-md]");
         for (var mb2 = 0; mb2 < mdBtns.length; mb2++) {
           mdBtns[mb2].addEventListener("click", function (ev) {
             ev.preventDefault();
@@ -1004,10 +1106,9 @@
 
         var stickerGrid = ed.querySelector(".msg-sticker-grid");
         var stickerInput = null;
-        if (stickerGrid) {
-          var sid = stickerGrid.getAttribute("data-sticker-input");
-          stickerInput = sid ? document.getElementById(sid) : null;
-        }
+        var sid = ed.getAttribute("data-sticker-input")
+          || (stickerGrid && stickerGrid.getAttribute("data-sticker-input"));
+        if (sid) stickerInput = document.getElementById(sid);
         function syncStickerUI() {
           var val = stickerInput ? (stickerInput.value || "") : "";
           var btns = ed.querySelectorAll(".msg-sticker-btn");
@@ -1025,7 +1126,6 @@
             var id = this.getAttribute("data-sticker-id") || "";
             stickerInput.value = (stickerInput.value === id) ? "" : id;
             syncStickerUI();
-            showPane("stickers");
           });
         }
         var clearBtn = ed.querySelector("[data-sticker-clear]");
@@ -1042,6 +1142,12 @@
         try { saved = sessionStorage.getItem(MD_MODE_KEY) || ""; } catch (e2) {}
         setMode(saved === "split" || saved === "preview" ? saved : "write");
       })(editors[i]);
+    }
+    if (!document.documentElement.getAttribute("data-md-pop-doc")) {
+      document.documentElement.setAttribute("data-md-pop-doc", "1");
+      document.addEventListener("click", function (ev) {
+        if (!ev.target.closest(".msg-pop-wrap")) closeAllPops();
+      });
     }
   }
 

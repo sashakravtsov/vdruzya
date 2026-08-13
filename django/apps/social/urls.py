@@ -8,6 +8,7 @@ from . import views_albums as albums
 from . import views_friends as friends
 from . import views_events as events
 from . import views_inbox as inbox
+from . import compose_ui
 from . import views_wall_ops as wall
 from . import views_pages as pages
 from . import views_apps as apps
@@ -159,6 +160,9 @@ urlpatterns = [
     path("inbox", inbox.inbox_home, name="inbox"),
     path("inbox/compose", inbox.inbox_compose, name="inbox.compose"),
     path("inbox/preview", inbox.inbox_preview, name="inbox.preview"),
+    path("compose/preview", compose_ui.compose_preview, name="compose.preview"),
+    path("compose/albums", compose_ui.album_picker, name="compose.albums"),
+    path("compose/albums/<int:album_id>", compose_ui.album_picker, name="compose.album"),
     path("inbox/read-all", inbox.inbox_read_all, name="inbox.read_all"),
     path("inbox/bulk", inbox.inbox_bulk, name="inbox.bulk"),
     path("inbox/start/<int:pk>", inbox.inbox_start, name="inbox.start"),

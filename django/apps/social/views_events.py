@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.social import events as ev
+from apps.social.compose_ui import attach_album_photos_wall, editor_context, parse_album_photo_ids
 from apps.social.forms import CommentForm, EventForm, PostForm
 from apps.social.models import POST_DEFER, Comment, Post, profile_related
 from apps.social.services import bump_news, now, profile_of
@@ -147,6 +148,7 @@ def event_show(request, event_id):
             "comment_form": CommentForm() if me else None,
             "map": map_ctx,
             "nav": "events",
+            **editor_context(stickers=False),
         },
     )
 
@@ -181,6 +183,8 @@ def event_post(request, event_id):
         post.created_at = post.updated_at = now()
         post.save()
         kind = apply_wall_uploads(post, files, me, max_photos=5, blurb=text)
+        if attach_album_photos_wall(post, parse_album_photo_ids(req), me, max_photos=5):
+            kind = "photo"
         if kind == "photo":
             go = event.get_absolute_url() + "?tab=photos"
         bump_news()

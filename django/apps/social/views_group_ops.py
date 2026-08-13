@@ -357,6 +357,8 @@ def group_post(request, pk):
         p.kind = "text"
         p.save()
         apply_group_uploads(p, files, me, blurb=body)
+        from apps.social.compose_ui import attach_album_photos_group, parse_album_photo_ids
+        attach_album_photos_group(p, parse_album_photo_ids(req, limit=50), me)
         bump_news()
         messages.success(req, "Тема создана." if p.topic == "discussion" else "Запись на стене опубликована.")
         if p.topic == "wall":

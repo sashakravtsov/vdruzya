@@ -36,7 +36,7 @@
                         {% include "social/_post_media.html" with post=p %}
                         {% if p.link_blurb %}<div class="wall-body">{{ p.link_blurb|linebreaksbr }}</div>{% endif %}
                     {% else %}
-                        {% if p.body %}{{ p.body|linebreaksbr }}{% endif %}
+                        {% if p.body %}<div class="msg-md">{{ p.body|msg_md }}</div>{% endif %}
                         {% include "social/_post_media.html" with post=p %}
                     {% endif %}
                 </div>

@@ -31,7 +31,7 @@
                         {% endif %}
                     </div>
                     <div class="text">
-                        {% if p.body_text %}{{ p.body_text|linebreaksbr }}{% elif p.body and not p.subject %}{{ p.body|linebreaksbr }}{% endif %}
+                        {% if p.body_text %}<div class="msg-md">{{ p.body_text|msg_md }}</div>{% elif p.body and not p.subject %}<div class="msg-md">{{ p.body|msg_md }}</div>{% endif %}
                         {% include "social/_post_media.html" with post=p %}
                     </div>
                     <div class="actions">

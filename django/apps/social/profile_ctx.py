@@ -4,6 +4,7 @@ from __future__ import annotations
 from django.db.models import Q
 
 from apps.social.albums import albums_for
+from apps.social.compose_ui import editor_context
 from apps.social.forms import CommentForm, NoteForm, PostForm, StatusForm
 from apps.social.models import (
     Album, Community, Company, Education, Experience, Photo, Place,
@@ -162,6 +163,7 @@ def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="al
         ),
         "form": PostForm(simple=True) if wall and a["can_wall"] else None,
         "comment_form": CommentForm() if ((wall and me and a["show_wall"]) or (tab == "notes" and me)) else None,
+        **editor_context(stickers=False),
         "can_wall": a["can_wall"], "show_wall": a["show_wall"],
         "can_see_friends": a["can_see"],
         "mini": mini_feed(profile, viewer=me) if wall else [],

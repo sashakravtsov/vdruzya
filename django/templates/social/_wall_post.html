@@ -71,7 +71,7 @@
                         {% endif %}
                     {% else %}
                         {% if post.kind == 'note' and post.media_label %}<div class="note-head"><b>{{ post.media_label }}</b></div>{% endif %}
-                        {% if post.body %}{{ post.body|linebreaksbr }}{% endif %}
+                        {% if post.body %}<div class="msg-md">{{ post.body|msg_md }}</div>{% endif %}
                         {% include "social/_post_media.html" with post=post %}
                     {% endif %}
                     {% if post.post_people %}

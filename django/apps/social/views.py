@@ -72,6 +72,7 @@ def profile(request, pk):
 def wall_to_wall(request, pk):
     """FB 2005 Wall-to-Wall between viewer and profile."""
     from apps.social import friendship as fr
+    from apps.social.compose_ui import editor_context
     from apps.social.forms import CommentForm, PostForm
     from apps.social.services import friend_ids, wall_to_wall as w2w
 
@@ -86,8 +87,9 @@ def wall_to_wall(request, pk):
     return render(request, "social/wall_to_wall.html", {
         "me": me, "other": other, "posts": posts,
         "comment_form": CommentForm(),
-        "form": PostForm() if can_write else None,
+        "form": PostForm(simple=True) if can_write else None,
         "nav": "friends",
+        **editor_context(stickers=False),
     })
 
 
