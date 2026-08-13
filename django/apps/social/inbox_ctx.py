@@ -17,11 +17,34 @@ def _page(request) -> int:
         return 1
 
 
+def _folder(request) -> str:
+    folder = request.GET.get("folder") or "inbox"
+    return folder if folder in FOLDERS else "inbox"
+
+
+def _load_active(me, active_id, conversations, show_all):
+    """Return (active, members, thread_messages, has_older, err_redirect)."""
+    if not active_id:
+        return None, [], [], False, None
+    try:
+        active = ch.require_member(me, int(active_id))
+    except (Http404, TypeError, ValueError):
+        return None, [], [], False, "inbox"
+    active.display_name = ch.label(active, me)
+    active.peer = ch.peer(active, me)
+    members = ch.others(active, me)
+    thread_messages, has_older = ch.thread(active, all_messages=show_all)
+    if not ch.is_archived(me, active):
+        ch.mark_read(me, active)
+    for c in conversations:
+        if c.id == active.id:
+            c.unread = False
+    return active, members, thread_messages, has_older, None
+
+
 def build_inbox_ctx(request, me, *, compose_form):
     q = (request.GET.get("q") or "").strip()
-    folder = request.GET.get("folder") or "inbox"
-    if folder not in FOLDERS:
-        folder = "inbox"
+    folder = _folder(request)
     compose = request.GET.get("compose") or request.GET.get("new")
     to_id = request.GET.get("to")
     page = _page(request)
@@ -30,28 +53,10 @@ def build_inbox_ctx(request, me, *, compose_form):
         me, limit=40, offset=(page - 1) * 40, q=q,
         sent_only=folder == "sent",
     )
-
-    active = None
-    members, thread_messages, has_older = [], [], False
     active_id = request.GET.get("c")
-    err_redirect = None
-    if active_id:
-        try:
-            active = ch.require_member(me, int(active_id))
-        except (Http404, TypeError, ValueError):
-            err_redirect = "inbox"
-
-    if active:
-        active.display_name = ch.label(active, me)
-        active.peer = ch.peer(active, me)
-        members = ch.others(active, me)
-        thread_messages, has_older = ch.thread(active, all_messages=show_all)
-        if not ch.is_archived(me, active):
-            ch.mark_read(me, active)
-        for c in conversations:
-            if c.id == active.id:
-                c.unread = False
-
+    active, members, thread_messages, has_older, err_redirect = _load_active(
+        me, active_id, conversations, show_all,
+    )
     friends = list(friends_of(me, limit=200))
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
     from apps.social.gifts import catalog

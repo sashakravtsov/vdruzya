@@ -73,57 +73,27 @@ class CommunityPost(models.Model):
 
     @staticmethod
     def pack_topic(subject: str, body: str) -> str:
-        """Store discussion as subject\\n\\nbody (no separate title column)."""
-        subject = (subject or "").strip()[:120]
-        body = (body or "").strip()
-        if subject:
-            return f"{subject}\n\n{body}" if body else subject
-        return body
+        from apps.social.community_post import pack_topic
+        return pack_topic(subject, body)
 
     @property
     def subject(self) -> str:
-        """Discussion topic subject; empty on wall posts."""
-        if (self.topic or "") == "wall":
-            return ""
-        body = self.body or ""
-        if "\n\n" in body:
-            return body.split("\n\n", 1)[0].strip()[:120]
-        return body.split("\n", 1)[0].strip()[:120]
+        from apps.social.community_post import subject_of
+        return subject_of(self)
 
     @property
     def body_text(self) -> str:
-        """Message body without subject line (discussion) or full wall body.
-
-        Wall video posts pack storage:<path>\\n\\nblurb — never surface the path.
-        """
-        body = self.body or ""
-        if (self.topic or "") == "wall":
-            if (self.kind or "") == "video" or body.startswith("storage:"):
-                from apps.social.classic_extra import unpack_link_body
-                _url, blurb = unpack_link_body(body)
-                return (blurb or "").strip()
-            return body
-        if "\n\n" in body:
-            return body.split("\n\n", 1)[1]
-        parts = body.split("\n", 1)
-        return parts[1] if len(parts) > 1 else ""
+        from apps.social.community_post import body_text_of
+        return body_text_of(self)
 
     @property
     def title_line(self) -> str:
-        if (self.kind or "") == "video":
-            return "Видео"
-        line = self.subject or (self.body or "").strip().split("\n", 1)[0].strip()
-        if line.startswith("storage:"):
-            return "Видео"
-        if not line:
-            return "Фото" if self.kind == "photo" or self.media_path else "Тема"
-        return line[:80] + ("…" if len(line) > 80 else "")
+        from apps.social.community_post import title_line_of
+        return title_line_of(self)
 
     def get_absolute_url(self):
-        base = f"/groups/{self.community_id}"
-        if self.topic == "wall":
-            return f"{base}?tab=wall#topic-{self.id}"
-        return f"{base}?tab=discussion&topic={self.id}"
+        from apps.social.community_post import absolute_url
+        return absolute_url(self)
 
 
 class CommunityPostMedia(models.Model):

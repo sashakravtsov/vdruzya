@@ -151,13 +151,22 @@ def main():
     ok("wall/groups/graph/inbox/news slim modules")
     ok("pages/ticker/note_edit slim + search Q")
     ok("search_dir/people_search/comment_thread/page_show slim")
-    from apps.social.forms import ProfileForm
+    from apps.social.forms import ProfileForm, GroupForm, CreateGroupForm, CommunityPostForm
     from apps.social import profile_form as pf
     from apps.social import profile_edit as pe
     from apps.social import wall_compose as wc
+    from apps.social import group_form as gf
+    from apps.social import community_post as cp
+    from apps.social import profile_labels as pl
     assert ProfileForm is pf.ProfileForm
     assert callable(pe.build_edit_context) and callable(wc.create_wall_post)
     ok("profile_form/edit + wall_compose slim")
+    assert GroupForm is gf.GroupForm
+    assert CreateGroupForm is gf.CreateGroupForm
+    assert CommunityPostForm is gf.CommunityPostForm
+    assert callable(cp.body_text_of) and callable(pl.birthday_display)
+    assert me.birthday_display() == pl.birthday_display(me)
+    ok("group_form + community_post + profile_labels slim")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()

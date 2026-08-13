@@ -70,20 +70,8 @@ class SocialProfile(models.Model):
         return self.name
 
     def birthday_display(self) -> str | None:
-        if not self.birthday:
-            return None
-        vis = self.birthday_visibility or "day_month"
-        if vis == "hide":
-            return None
-        months = "января февраля марта апреля мая июня июля августа сентября октября ноября декабря".split()
-        d, m, y = self.birthday.day, months[self.birthday.month - 1], self.birthday.year
-        now = timezone.now().date()
-        age = now.year - y - ((now.month, now.day) < (self.birthday.month, self.birthday.day))
-        if vis == "full":
-            return f"{d} {m} {y} ({age})"
-        if vis == "age":
-            return str(age)
-        return f"{d} {m}"
+        from apps.social.profile_labels import birthday_display
+        return birthday_display(self)
 
     @cached_property
     def avatar_url(self) -> str | None:
@@ -100,27 +88,16 @@ class SocialProfile(models.Model):
         return reverse("profile", kwargs={"pk": self.pk})
 
     def languages_label(self) -> str:
-        data = self.languages
-        if isinstance(data, list):
-            return ", ".join(map(str, data))
-        return str(data or "")
+        from apps.social.profile_labels import languages_label
+        return languages_label(self)
 
     def looking_for_label(self) -> str:
-        raw = self.looking_for
-        if not isinstance(raw, list) or not raw:
-            return ""
-        labels = {
-            "friendship": "Дружба", "dating": "Знакомства",
-            "relationship": "Отношения", "networking": "Деловые контакты",
-        }
-        return ", ".join(labels.get(str(x), str(x)) for x in raw)
+        from apps.social.profile_labels import looking_for_label
+        return looking_for_label(self)
 
     def interested_in_label(self) -> str:
-        raw = self.interested_in
-        if not isinstance(raw, list) or not raw:
-            return ""
-        labels = {"men": "Мужчины", "women": "Женщины"}
-        return ", ".join(labels.get(str(x), str(x)) for x in raw)
+        from apps.social.profile_labels import interested_in_label
+        return interested_in_label(self)
 
 class Friendship(models.Model):
     id = models.BigAutoField(primary_key=True)
