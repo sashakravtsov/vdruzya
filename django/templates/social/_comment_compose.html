@@ -1,0 +1,6 @@
+{# Classic reveal compose. Expects: action, compose_id; optional form, next, open #}
+<form method="post" action="{{ action }}" class="wall-comment-compose{% if open or form and form.errors %} is-open{% endif %}" id="c-{{ compose_id }}">{% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% if form %}{{ form.body }}{% else %}<input class="inputtext input-comment" name="body" maxlength="2000" autocomplete="off">{% endif %}
+    <input type="submit" class="inputsubmit" value="Комментировать">
+</form>

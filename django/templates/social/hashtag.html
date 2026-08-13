@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}#{{ tag_name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="hashtag-page">
+    <div id="header"><h1>#{{ tag_name }}</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="people-top-links muted">
+            <a href="{% url 'graph' %}?q=%D0%BA%D1%82%D0%BE+%D0%BB%D1%8E%D0%B1%D0%B8%D1%82+%23{{ tag_name|urlencode }}">кто любит #{{ tag_name }}</a>
+            · <a href="{% url 'trending' %}">В тренде</a>
+            · <a href="{% url 'feed' %}">Лента</a>
+        </p>
+        <p class="muted">Упоминаний: {{ use_count }}</p>
+
+        <div class="profile-box">
+            <h4>Посты с #{{ tag_name }}</h4>
+            <div class="profile-box-body">
+                {% for post in posts %}
+                <div class="minifeed-item">
+                    <a href="{% url 'profile' post.social_user_id %}"><b>{{ post.social_user.name }}</b></a>
+                    {% if post.created_at %}<span class="muted"> · {{ post.created_at|fb_when }}</span>{% endif %}
+                    {% if post.kind == 'video' or post.kind == 'link' %}
+                    {% include "social/_news_post_body.html" with post=post %}
+                    {% else %}
+                    {% if post.snippet_text %}<div class="wall-body">{{ post.snippet_text|truncatewords:50|linebreaksbr }}</div>{% endif %}
+                    {% include "social/_post_media.html" with post=post %}
+                    {% endif %}
+                    <div class="wall-actions muted">
+                        <a href="{% url 'posts.show' post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="muted">Пока нет видимых постов с этим хэштегом. Добавьте #{{ tag_name }} в статус или запись на стене.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

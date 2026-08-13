@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}{% if is_note %}Редактировать заметку{% else %}Редактировать запись{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="feed-page">
+    <div id="header"><h1>{% if is_note %}Редактировать заметку{% else %}Редактировать запись{% endif %}</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>{% if is_note %}Заметка{% else %}Запись{% endif %}</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        {% if is_note %}
+                        <tr><td class="label">Заголовок:</td><td>{{ form.title }}{% if form.title.errors %}<div class="error">{{ form.title.errors }}</div>{% endif %}</td></tr>
+                        <tr><td class="label">Текст:</td><td>{{ form.body }}{% if form.body.errors %}<div class="error">{{ form.body.errors }}</div>{% endif %}</td></tr>
+                        <tr><td class="label">Фото:</td><td>
+                            {% if post.media_url %}<p class="note-photo"><img src="{{ post.media_url }}" alt="" width="120"></p>{% endif %}
+                            {{ form.photo }}
+                        </td></tr>
+                        <tr><td class="label">Кому:</td><td>{{ form.visibility }}</td></tr>
+                        {% else %}
+                        <tr><td class="label">Текст:</td><td>{{ form.body }}</td></tr>
+                        {% if form.visibility %}
+                        <tr><td class="label">Кому:</td><td>{{ form.visibility }}</td></tr>
+                        {% endif %}
+                        {% endif %}
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{{ next|default:'/feed' }}">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

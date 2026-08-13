@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Safety Check — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="safety-page">
+    <div id="header"><h1>Safety Check</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Отметьтесь, если с вами всё в порядке — друзья увидят статус в ленте и уведомлениях.</p>
+
+        <div class="profile-box">
+            <h4>Активные события</h4>
+            <div class="profile-box-body">
+                {% for ev in events %}
+                <div class="classic-person-row">
+                    <span>
+                        <a href="{% url 'safety.show' ev.id %}"><b>{{ ev.title }}</b></a>
+                        {% if ev.city %}<span class="muted"> · {{ ev.city }}</span>{% endif %}
+                        {% if ev.body %}<div class="muted">{{ ev.body }}</div>{% endif %}
+                    </span>
+                    <a href="{% url 'safety.show' ev.id %}">открыть</a>
+                </div>
+                {% empty %}
+                <p class="muted">Сейчас нет активных проверок безопасности.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

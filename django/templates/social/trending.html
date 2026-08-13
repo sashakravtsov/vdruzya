@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}В тренде — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="trending-page">
+    <div id="header"><h1>В тренде</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Популярные хэштеги в круге ваших друзей.</p>
+        <p class="people-top-links muted">
+            <a href="{% url 'graph' %}">Graph Search</a>
+            · <a href="{% url 'nearby' %}">Друзья рядом</a>
+            · <a href="{% url 'feed' %}">Лента</a>
+        </p>
+
+        <div class="profile-box">
+            <h4>Популярные хэштеги</h4>
+            <div class="profile-box-body">
+                {% if topics %}
+                <table class="mygroups-table" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Хэштег</th>
+                            <th class="col-type">Упоминаний</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in topics %}
+                        <tr>
+                            <td class="col-name"><a href="{% url 'hashtag' name=t.name %}"><b>#{{ t.name }}</b></a></td>
+                            <td class="col-type">{{ t.count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="muted">Пока нет хэштегов. Добавьте #тег в статус или пост на стене.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

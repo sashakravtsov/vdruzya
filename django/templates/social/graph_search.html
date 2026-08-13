@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Graph Search — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="search-page people-page">
+    <div id="header"><h1>Graph Search</h1></div>
+    <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Поиск по вашей сети друзей: город, интересы и хэштеги.</p>
+        <p class="people-top-links muted">
+            <a href="{% url 'trending' %}">В тренде</a>
+            · <a href="{% url 'nearby' %}">Друзья рядом</a>
+            · <a href="{% url 'search' %}">Обычный поиск</a>
+        </p>
+
+        <form method="get" action="{% url 'graph' %}" class="people-search-form">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="label">Запрос:</td>
+                    <td>
+                        <input class="inputtext input-search-wide" name="q" value="{{ q }}"  autocomplete="off">
+                        <input type="submit" class="inputsubmit" value="Найти">
+                        {% if q %}<a href="{% url 'graph' %}">сбросить</a>{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <p class="muted">Примеры: <code>друзья в Москва</code>, <code>кто любит #футбол</code>, <code>друзья с #путешествия</code></p>
+
+        {% if q %}
+        <div class="profile-box">
+            <h4>Результаты{% if people %} · {{ people|length }}{% endif %}</h4>
+            <div class="profile-box-body">
+                {% for person in people %}
+                    {% include "social/_person_row.html" with person=person %}
+                {% empty %}
+                    <p class="muted">Никого не найдено. Попробуйте другой город или хэштег.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% if posts %}
+        <div class="profile-box">
+            <h4>Посты</h4>
+            <div class="profile-box-body">
+                {% for post in posts %}
+                <div class="minifeed-item">
+                    <a href="{% url 'profile' post.social_user_id %}"><b>{{ post.social_user.name }}</b></a>
+                    {% if post.at or post.created_at %}<span class="muted"> · {{ post.created_at|fb_when }}</span>{% endif %}
+                    {% include "social/_news_post_body.html" with post=post %}
+                    <div class="muted"><a href="{% url 'posts.show' post.id %}">открыть</a></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="profile-box">
+            <h4>Как искать</h4>
+            <div class="profile-box-body">
+                <ul>
+                    <li><b>друзья в &lt;город&gt;</b> — совпадение по городу в профиле</li>
+                    <li><b>кто любит #тег</b> — друзья с постами по хэштегу</li>
+                    <li>или просто имя друга</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
