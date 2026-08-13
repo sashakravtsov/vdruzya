@@ -40,7 +40,7 @@ def main():
     c = Client(HTTP_HOST="vdruzya.ru")
     c.force_login(u)
 
-    for path, needle in (("/saves", "Сохранённое"), ("/safety", "Safety Check")):
+    for path, needle in (("/saves", "Сохранённое"), ("/safety", "Проверка безопасности")):
         r = c.get(path, secure=True)
         assert r.status_code == 200, f"{path} -> {r.status_code}"
         assert needle.encode() in r.content
@@ -91,7 +91,7 @@ def main():
     assert "Сохранённое".encode() in r.content
     r = c.get("/apps/safety", secure=True)
     assert r.status_code == 200
-    assert b"Safety Check" in r.content
+    assert "Проверка безопасности".encode() in r.content
     ok("app center entries")
 
     # cleanup

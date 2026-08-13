@@ -41,7 +41,7 @@ def main():
     c.force_login(u)
 
     for path, needle in (
-        ("/graph", "Graph Search"),
+        ("/graph", "Поиск по графу"),
         ("/trending", "В тренде"),
         ("/nearby", "Друзья рядом"),
     ):
@@ -84,7 +84,7 @@ def main():
     city = (me.city or "").strip() or "Москва"
     r = c.get("/graph", {"q": f"друзья в {city}"}, secure=True)
     assert r.status_code == 200
-    assert b"Graph Search" in r.content
+    assert "Поиск по графу".encode() in r.content
     ok("graph search by city")
 
     topics = e13.trending_topics(me, 30, hours=24 * 30)
@@ -114,7 +114,7 @@ def main():
 
     r = c.get("/apps/graph", secure=True)
     assert r.status_code == 200
-    assert b"Graph Search" in r.content
+    assert "Поиск по графу".encode() in r.content
     ok("app center graph")
 
     # cleanup

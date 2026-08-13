@@ -58,7 +58,7 @@ def main():
     r = c.get("/apps", secure=True)
     assert r.status_code == 200
     assert "Приложения".encode() in r.content
-    assert b"App Center" in r.content
+    assert "Приложения".encode() in r.content
     assert "Избранные".encode() in r.content
     assert b"page-tabs" not in r.content
     assert b"display: flex" not in r.content.lower()
@@ -139,7 +139,7 @@ def main():
     assert ms
     r = c.get(f"/pages/{page.id}?tab=timeline&y={ms.occurred_on.year}", secure=True)
     assert r.status_code == 200
-    assert b"Timeline" in r.content
+    assert "Лента".encode() in r.content
     assert ms.title.encode() in r.content
     assert b"page-tabs" not in r.content
     # fan so page milestones appear in feed

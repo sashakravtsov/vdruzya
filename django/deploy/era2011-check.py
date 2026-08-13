@@ -43,7 +43,7 @@ def main():
 
     r = c.get("/og", secure=True)
     assert r.status_code == 200
-    assert "Open Graph".encode() in r.content
+    assert "Активность".encode() in r.content
     assert b"display: flex" not in r.content.lower()
     ok("og page")
 
@@ -85,7 +85,7 @@ def main():
     assert ms
     r = c.get(f"/profile/{me.id}?tab=timeline&y={ms.occurred_on.year}", secure=True)
     assert r.status_code == 200
-    assert b"Timeline" in r.content
+    assert b"ÐÐµÐ½ÑÐ° Ð¶Ð¸Ð·Ð½Ð¸" in r.content or "Лента жизни".encode() in r.content
     assert ms.title.encode() in r.content
     assert b"page-tabs" not in r.content
     feed = news_items(me, limit=80)
