@@ -537,6 +537,8 @@ button.linkish .ico { margin-right: 2px; }
 .avatar-edit-preview,.cover-edit-preview{width:80px;height:80px;border:1px solid #B3B3B3}
 .cover-edit-preview{width:120px;height:120px}
 .albums-page #content.albums-content { padding: 10px; }
+.albums-page .album-show-cover { margin: 0 0 10px; }
+.albums-page .album-show-cover img { display: block; border: 1px solid #B3B3B3; width: 130px; height: 97px; }
 .classic-page-lead { margin: 0 0 10px; font-size: 11px; color: #555; }
 /* FB 2005 My Photos album index */
 .album-index { overflow: hidden; margin: 2px 0 0; }

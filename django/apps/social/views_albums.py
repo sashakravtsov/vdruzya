@@ -25,15 +25,13 @@ def _forbid(request, album=None):
 @login_required
 @require_http_methods(["GET", "HEAD", "POST"])
 def albums(request):
-    from apps.social.media import save_image
+    from apps.social.media import try_save_image
     me = profile_of(request.user)
     form = AlbumForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid() and me:
         a = form.save(commit=False)
         a.social_user, a.created_at, a.updated_at = me, now(), now()
-        cover = form.cleaned_data.get("cover")
-        if cover:
-            a.cover_path = save_image(cover, "albums")
+        a.cover_path = try_save_image(form.cleaned_data.get("cover"), "albums") or a.cover_path
         a.save()
         messages.success(request, "Альбом создан.")
         return redirect("albums.show", album_id=a.id)
@@ -79,7 +77,7 @@ def album_show(request, album_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def album_edit(request, album_id):
-    from apps.social.media import save_image
+    from apps.social.media import try_save_image
     me = profile_of(request.user)
     album = get_object_or_404(Album, pk=album_id)
     if not can_edit(album, me):
@@ -87,9 +85,9 @@ def album_edit(request, album_id):
     form = AlbumForm(request.POST or None, request.FILES or None, instance=album)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
-        cover = form.cleaned_data.get("cover")
-        if cover:
-            obj.cover_path = save_image(cover, "albums")
+        path = try_save_image(form.cleaned_data.get("cover"), "albums")
+        if path:
+            obj.cover_path = path
         obj.updated_at = now()
         obj.save()
         messages.success(request, "Альбом сохранён.")

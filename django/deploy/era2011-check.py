@@ -92,6 +92,31 @@ def main():
     assert any(i.get("kind") == "milestone" and i.get("milestone") and i["milestone"].id == ms.id for i in feed)
     ok("timeline milestone + feed")
 
+    # Profile cover on same media disk (classic picture section)
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    png = bytes.fromhex(
+        "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+        "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+    )
+    prev = me.cover_path
+    r = c.post("/profile/cover", {
+        "cover": SimpleUploadedFile("cover.png", png, content_type="image/png"),
+        "next": "/profile/edit?section=picture",
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    me.refresh_from_db()
+    assert me.cover_path and me.cover_path.startswith("covers/"), me.cover_path
+    r = c.get(f"/profile/{me.id}?tab=timeline", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content
+    r = c.post("/profile/cover/clear", {"next": "/profile/edit?section=picture"}, secure=True)
+    assert r.status_code in (301, 302)
+    me.refresh_from_db()
+    assert not me.cover_path
+    if prev:
+        me.cover_path = prev
+        me.save(update_fields=["cover_path"])
+    ok("profile cover upload + clear")
+
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert b"Ticker" in r.content

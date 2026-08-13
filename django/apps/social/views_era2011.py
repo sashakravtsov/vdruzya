@@ -104,13 +104,14 @@ def og_home(request):
 @require_POST
 def cover_upload(request):
     from django.conf import settings
-    from apps.social.media import save_image
+    from apps.social.media import try_save_image
     from apps.social.services import bump_news, now
 
     me = profile_of(request.user)
     f = request.FILES.get("cover")
-    if me and f and f.size <= settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
-        me.cover_path = save_image(f, "covers")
+    path = try_save_image(f, "covers") if me and f and f.size <= settings.FILE_UPLOAD_MAX_MEMORY_SIZE else None
+    if me and path:
+        me.cover_path = path
         me.updated_at = now()
         me.save(update_fields=["cover_path", "updated_at"])
         bump_news()

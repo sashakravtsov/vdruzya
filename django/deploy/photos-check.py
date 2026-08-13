@@ -138,6 +138,11 @@ def main():
     assert a.cover_path == ph.path
     ok("photo set cover")
 
+    r = c.get(f"/albums/{a.id}", secure=True)
+    assert r.status_code == 200 and b"album-show-cover" in r.content
+    assert a.cover_url and a.cover_url.encode() in r.content
+    ok("album show cover")
+
     r = c.get(f"/albums/{a.id}/edit", secure=True)
     assert r.status_code == 200 and "Настройки".encode() in r.content
     ok("album edit")

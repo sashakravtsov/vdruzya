@@ -21,6 +21,9 @@
             {% endif %}
         </p>
         {% if album.description %}<p class="classic-page-lead">{{ album.description }}</p>{% endif %}
+        {% if album.cover_url %}
+        <p class="album-show-cover"><img src="{{ album.cover_url }}" alt="" width="130" height="97"></p>
+        {% endif %}
 
         {% if is_owner and upload_form %}
         <div class="profile-box">
