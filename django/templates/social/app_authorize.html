@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Разрешения — {{ app.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index">
+    <div id="header" class="withsubtitle">
+        <h1>Разрешения приложения</h1>
+        <div class="subtitle"><a href="{% url 'apps.show' app.slug %}">← {{ app.name }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>{{ app.name }}</h4>
+            <div class="profile-box-body">
+                <p>Разрешить «{{ app.name }}» доступ к вашим данным на ВДрузья?</p>
+                <p class="muted">Разработчик: {{ app.developer|default:"ВДрузья" }}</p>
+                <p class="muted">После согласия вы перейдёте на сайт приложения с кодом авторизации.</p>
+                <ul class="app-perms-list">
+                    {% for p in permissions %}
+                    <li>{{ p }}</li>
+                    {% endfor %}
+                </ul>
+                <form method="post" class="stack-md">{% csrf_token %}
+                    <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+                    <input type="hidden" name="client_id" value="{{ client_id }}">
+                    <button type="submit" name="allow" value="1" class="inputsubmit">Разрешить и продолжить</button>
+                    ·
+                    <button type="submit" name="allow" value="0" class="inputbutton">Отмена</button>
+                </form>
+                <p class="muted file-hint">redirect: {{ redirect_uri|truncatechars:80 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

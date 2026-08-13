@@ -1,0 +1,55 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Сравнить друзей</h4>
+    <div class="profile-box-body">
+        {% if friends|length >= 2 %}
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Первый:</td>
+                    <td>
+                        <select name="a" class="inputtext">
+                            {% for f in friends %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Второй:</td>
+                    <td>
+                        <select name="b" class="inputtext">
+                            {% for f in friends %}<option value="{{ f.id }}"{% if forloop.counter == 2 %} selected{% endif %}>{{ f.name }}</option>{% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Сравнить"></td></tr>
+            </table>
+        </form>
+        {% else %}
+        <p class="muted">Нужно минимум двое друзей.</p>
+        {% endif %}
+    </div>
+</div>
+{% if rows and left and right %}
+<div class="profile-box">
+    <h4>{{ left.name }} · {{ right.name }}</h4>
+    <div class="profile-box-body">
+        <table class="infotable" cellspacing="0">
+            {% for r in rows %}
+            <tr>
+                <td class="label">{{ r.label }}:</td>
+                <td>
+                    {% if r.label == "Общие интересы" %}
+                        {{ r.a }}{% if r.same %} <span class="muted">(есть совпадения)</span>{% endif %}
+                    {% else %}
+                        {{ r.a }} · {{ r.b }}
+                        {% if r.same %}<span class="muted"> · совпадает</span>{% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

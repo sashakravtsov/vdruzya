@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Подарки — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="gifts-page">
+    <div id="header"><h1>Подарки</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+
+        <div id="tabs">
+            <div class="{% if tab == 'shop' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'gifts' %}">Витрина</a></div>
+            <div class="{% if tab == 'received' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=received">Полученные</a></div>
+            <div class="{% if tab == 'sent' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=sent">Отправленные</a></div>
+        </div>
+
+        {% if tab == 'shop' %}
+        <div class="profile-box">
+            <h4>Выберите подарок</h4>
+            <div class="profile-box-body">
+                <p class="muted">Подарки можно отправить только друзьям.</p>
+                <div class="gift-grid">
+                    {% for g in catalog %}
+                    <a class="gift-tile" href="{% url 'gifts.send' %}?gift={{ g.slug }}" style="--gift-bg:{{ g.bg }};--gift-fg:{{ g.fg }}">
+                        {% if g.image_url %}<img src="{{ g.image_url }}" alt="">{% else %}<span class="gift-tile-title">{{ g.title }}</span>{% endif %}
+                        <span class="gift-tile-cap">{{ g.phrase|default:g.title }}</span>
+                    </a>
+                    {% empty %}<p class="muted">Каталог пуст.</p>{% endfor %}
+                </div>
+            </div>
+        </div>
+        {% elif tab == 'received' %}
+        <div class="profile-box">
+            <h4>Полученные подарки</h4>
+            <div class="profile-box-body">
+                {% for p in received %}
+                <div class="gift-recv-row">
+                    {% include "social/_gift_tile.html" with sticker=p.gift_sticker sm=1 %}
+                    <div class="gift-recv-meta">
+                        <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
+                        прислал(а) {% if p.gift_sticker %}«{{ p.gift_sticker.title }}»{% else %}подарок{% endif %}
+                        {% if p.body %}<div class="muted">«{{ p.body|truncatewords:20 }}»</div>{% endif %}
+                        {% if p.created_at %}<span class="muted">{{ p.created_at|fb_when }}</span>{% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока нет подарков. <a href="{% url 'gifts' %}">Выберите подарок другу</a></p>{% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="profile-box">
+            <h4>Отправленные подарки</h4>
+            <div class="profile-box-body">
+                {% for p in sent %}
+                <div class="gift-recv-row">
+                    {% include "social/_gift_tile.html" with sticker=p.gift_sticker sm=1 %}
+                    <div class="gift-recv-meta">
+                        {% if p.gift_to %}
+                        для <a href="{% url 'profile' p.gift_to.id %}"><b>{{ p.gift_to.name }}</b></a>
+                        {% else %}подарок{% endif %}
+                        {% if p.gift_sticker %} — «{{ p.gift_sticker.title }}»{% endif %}
+                        {% if p.created_at %}<span class="muted"> · {{ p.created_at|fb_when }}</span>{% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Вы ещё не отправляли подарков.</p>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
