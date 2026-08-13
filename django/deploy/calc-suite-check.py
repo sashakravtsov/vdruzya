@@ -71,8 +71,14 @@ def main():
     assert b"vacation" in body or "Отпускные".encode() in body
     assert b"calc-suite" in body
     assert "Часто ищут".encode() in body
+    assert b"ico-calc.gif" in body
+    assert b"ico-tax.gif" in body
     assert b"<iframe" not in body.lower()
     assert "22%".encode() in body or "НДС".encode() in body
+
+    r = c.get("/apps/calculator/canvas?tool=vat", secure=True)
+    assert r.status_code == 200
+    assert b'value="5"' in r.content and b'value="7"' in r.content and b'value="22"' in r.content
 
     r = c.post("/apps/calculator/canvas?tool=vat", {
         "tool": "vat", "amount": "1220", "rate": "22", "mode": "extract",
@@ -82,7 +88,7 @@ def main():
 
     r = c.get("/apps/calculator/canvas?q=ндс", secure=True)
     assert r.status_code == 200 and "НДС".encode() in r.content
-    ok("canvas index + VAT 22% post + search")
+    ok("canvas index + VAT 22% post + search + icons")
 
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
