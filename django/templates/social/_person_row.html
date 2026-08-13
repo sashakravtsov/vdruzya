@@ -1,0 +1,19 @@
+{% load vd %}
+{# Shared directory row: person + optional friend_actions. #}
+<div class="classic-person-row{% if side %} classic-person-row-side{% endif %}{% if friend_row %} classic-person-row-friend{% endif %}">
+  {% if with_friend_actions %}
+  <span class="classic-inline-actions{% if friend_row %} classic-inline-actions-friend{% endif %}{% if stack %} classic-inline-actions-stack{% endif %}">
+    {% include "partials/friend_actions.html" with p=person r=person.rel %}
+  </span>
+  {% endif %}
+  <a class="classic-person-name" href="{% url 'profile' person.id %}">
+    {% if size %}{% avatar person size %}{% else %}{% avatar person 50 %}{% endif %}
+    <span>
+      <b>{{ person.name }}</b>
+      {% if sub %}<span class="classic-person-sub">{{ sub }}</span>
+      {% elif person.mutual %}<span class="classic-person-sub">{{ person.mutual }}</span>
+      {% elif person.headline %}<span class="classic-person-sub">{{ person.headline }}</span>
+      {% elif person.city %}<span class="classic-person-sub">{{ person.city }}</span>{% endif %}
+    </span>
+  </a>
+</div>

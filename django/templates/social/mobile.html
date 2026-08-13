@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block title %}Мобильная версия — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="mobile-page">
+    <div id="header"><h1>Мобильная версия</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>ВДрузья с телефона</h4>
+            <div class="profile-box-body">
+                <p>Откройте сайт ВДрузья в браузере телефона — классический интерфейс рассчитан на узкий экран (фиксированная ширина 760px).</p>
+                <p class="muted">Отдельное приложение не требуется: войдите тем же e-mail и паролем, что и на компьютере.</p>
+                <table class="infotable" style="margin-top:10px">
+                    <tr><td class="label">Адрес:</td><td><b>https://vdruzya.ru</b></td></tr>
+                    <tr><td class="label">Совет:</td><td>добавьте закладку на главный экран телефона</td></tr>
+                </table>
+                {% if user.is_authenticated %}
+                <p style="margin-top:10px"><a href="{% url 'feed' %}">Перейти на главную</a></p>
+                {% else %}
+                <p style="margin-top:10px"><a href="{% url 'login' %}">Войти</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
