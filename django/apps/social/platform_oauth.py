@@ -9,18 +9,20 @@ import hashlib
 import hmac
 import json
 import secrets
-from datetime import timedelta
+from datetime import timedelta, timezone as dt_timezone
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 
 from django.utils import timezone
 
 from apps.social.services import friend_ids, now
 
+_UTC = dt_timezone.utc
+
 
 def _utc_naive():
     """UTC naive timestamps for OAuth rows (matches USE_TZ DB storage)."""
     t = timezone.now()
-    return timezone.make_naive(t, timezone.utc) if timezone.is_aware(t) else t
+    return timezone.make_naive(t, _UTC) if timezone.is_aware(t) else t
 
 
 def new_api_key() -> str:
@@ -158,7 +160,7 @@ def exchange_code(app, code: str, redirect_uri: str):
     tnow = _utc_naive()
     created = row.created_at or tnow
     if timezone.is_aware(created):
-        created = timezone.make_naive(created, timezone.utc)
+        created = timezone.make_naive(created, _UTC)
     if (tnow - created) > timedelta(minutes=10):
         return None, "expired_code"
     if (row.redirect_uri or "") and redirect_uri and row.redirect_uri != redirect_uri:
@@ -194,7 +196,7 @@ def token_profile(token: str):
     if row.expires_at:
         exp = row.expires_at
         if timezone.is_aware(exp):
-            exp = timezone.make_naive(exp, timezone.utc)
+            exp = timezone.make_naive(exp, _UTC)
         if exp < _utc_naive():
             return None, None
     return row, row.social_user
