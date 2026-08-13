@@ -8,7 +8,7 @@
         <div class="subtitle">
             <a href="{% url 'collections' %}">← Коллекции</a>
             · {{ col.social_user.name }}
-            · {{ col.visibility }}
+            · {% if col.visibility == 'public' %}всем{% elif col.visibility == 'friends' %}друзьям{% else %}только мне{% endif %}
         </div>
     </div>
     <div id="content">
