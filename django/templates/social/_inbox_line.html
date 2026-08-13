@@ -42,7 +42,7 @@
             </div>
             {% endif %}
             {% if m.sticker %}{% include "social/_gift_tile.html" with sticker=m.sticker sm=1 %}{% endif %}
-            {% if m.body_visible %}<div class="msg-text">{{ m.body|linebreaksbr }}</div>{% endif %}
+            {% if m.body_visible %}<div class="msg-text msg-md">{{ m.body|msg_md }}</div>{% endif %}
             {% if m.attachment_url %}
                 {% if m.attachment_is_audio %}
                 <div class="msg-voice" data-ms="{{ m.duration_ms|default:0 }}" data-peaks="{{ m.waveform|default:'' }}">

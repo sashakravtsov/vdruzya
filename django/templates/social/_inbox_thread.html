@@ -38,7 +38,10 @@
     {{ form.reply_to }}
     {{ form.sticker }}
     {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" %}
-    {{ form.body }}
+    <div class="msg-compose-fields">
+        {{ form.body }}
+        <div class="msg-md-preview msg-text msg-md" data-md-preview hidden></div>
+    </div>
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
     {{ form.waveform }}
     {{ form.duration_ms }}

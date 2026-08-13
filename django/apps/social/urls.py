@@ -158,6 +158,7 @@ urlpatterns = [
     path("g/<slug:slug>", browse.group_slug_redirect, name="groups.vanity"),
     path("inbox", inbox.inbox_home, name="inbox"),
     path("inbox/compose", inbox.inbox_compose, name="inbox.compose"),
+    path("inbox/preview", inbox.inbox_preview, name="inbox.preview"),
     path("inbox/read-all", inbox.inbox_read_all, name="inbox.read_all"),
     path("inbox/bulk", inbox.inbox_bulk, name="inbox.bulk"),
     path("inbox/start/<int:pk>", inbox.inbox_start, name="inbox.start"),

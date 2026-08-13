@@ -13,3 +13,5 @@ channels-redis>=4.2
 
 django-storages[s3]>=1.14
 boto3>=1.34
+Markdown>=3.5
+bleach>=6.0
