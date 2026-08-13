@@ -453,30 +453,9 @@ def _canvas_dating(request, me, app):
 
 
 def _canvas_farm(request, me, app):
-    crop = None
-    planted = harvested = None
-    if request.method == "POST":
-        action = (request.POST.get("action") or "plant").strip()
-        slug = (request.POST.get("crop") or "wheat").strip()
-        crops = {c[0]: c for c in pa.FARM_CROPS}
-        crop = crops.get(slug) or pa.FARM_CROPS[0]
-        if action == "harvest":
-            harvested = crop[1]
-            Post.objects.create(
-                social_user=me,
-                body=f"собрал(а) урожай «{harvested}» в приложении Ферма",
-                kind="text", visibility="friends",
-                created_at=now(), updated_at=now(),
-            )
-            bump_news()
-            messages.success(request, f"Урожай «{harvested}» собран.")
-            return redirect("apps.canvas", slug="farm")
-        planted = crop[1]
-        messages.info(request, f"Посажено: {planted}. Загляните позже за сбором.")
-    return render(request, "social/apps/canvas_farm.html", {
-        "me": me, "app": app, "crops": pa.FARM_CROPS,
-        "planted": planted, "nav": "apps", "installed": True,
-    })
+    from apps.social.farm.views import render_farm_canvas
+
+    return render_farm_canvas(request, me, app)
 
 
 def _canvas_billiards(request, me, app):
