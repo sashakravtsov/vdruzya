@@ -176,8 +176,12 @@ input[type="submit"], input[type="button"] {
 #fnav a { padding: 2px 5px; }
 #fnav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
 
-.flash, .status { margin: 0 10px 10px; padding: 10px; border: 1px solid #ffe222; background: #fffbe2; }
-.error, #error { margin: 0 10px 10px; padding: 10px; border: 1px solid #dd3c10; background: #ffebe8; color: #dd3c10; }
+/* Align with #content width — no extra side inset (content already pads). */
+.flash, .status { margin: 0 0 10px; padding: 10px; border: 1px solid #ffe222; background: #fffbe2; box-sizing: border-box; }
+.error, #error { margin: 0 0 10px; padding: 10px; border: 1px solid #dd3c10; background: #ffebe8; color: #dd3c10; box-sizing: border-box; }
+/* editprofile #content has no horizontal padding — keep a classic side gutter there only */
+.editprofile .flash, .editprofile .status,
+.editprofile .error, .editprofile #error { margin-left: 10px; margin-right: 10px; }
 #error p { margin: 4px 0 0; }
 #error a { text-decoration: none; color: #dd3c10; }
 .auth-box { padding: 12px 20px; }
