@@ -170,6 +170,11 @@
                     {% if row.opener %}<div class="dating-opener-line">{{ row.opener }}</div>{% endif %}
                     <a class="inputsubmit" href="{% url 'inbox.start' row.peer.id %}">Написать</a>
                     <a href="{% url 'profile' row.peer.id %}">профиль</a>
+                    <form method="post" class="inline" onsubmit="return confirm('Удалить матч с {{ row.peer.name|escapejs }}?');">{% csrf_token %}
+                        <input type="hidden" name="action" value="unmatch">
+                        <input type="hidden" name="match_id" value="{{ row.match.id }}">
+                        <button type="submit" class="linkish muted">удалить матч</button>
+                    </form>
                 </div>
             </li>
             {% empty %}

@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Редактировать опрос — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="polls-page">
+    <div id="header" class="withsubtitle">
+        <h1>Редактировать опрос</h1>
+        <div class="subtitle"><a href="{% url 'polls.show' poll.id %}">← к опросу</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Вопрос опроса</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="label">Текст:</td>
+                            <td><input class="inputtext" type="text" name="question" size="50" maxlength="500" value="{{ poll.question }}"></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{% url 'polls.show' poll.id %}">Отмена</a>
+                                <div class="file-hint muted">Варианты ответов не меняются — чтобы сменить список, создайте новый опрос.</div>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

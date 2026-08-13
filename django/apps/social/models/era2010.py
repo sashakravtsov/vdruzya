@@ -16,6 +16,10 @@ class Place(models.Model):
     lon = models.FloatField(null=True, blank=True)
     osm_type = models.CharField(max_length=20, blank=True, default="")
     osm_id = models.BigIntegerField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, null=True, blank=True,
+        related_name="+", db_column="created_by_id",
+    )
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

@@ -229,6 +229,12 @@ def list_show(request, pk):
     fl = get_object_or_404(FriendList, pk=pk, social_user=me)
     if request.method == "POST":
         action = request.POST.get("action") or "add"
+        if action == "rename":
+            if cx.list_rename(me, fl, request.POST.get("name") or ""):
+                messages.success(request, "Список переименован.")
+            else:
+                messages.error(request, "Укажите название списка.")
+            return redirect(fl)
         try:
             fid = int(request.POST.get("friend_id") or 0)
         except (TypeError, ValueError):

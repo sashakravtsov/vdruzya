@@ -101,8 +101,53 @@ def place_show(request, pk):
         "checkins": e10.place_checkins(place),
         "reviews": e10.place_reviews(place),
         "map": map_ctx,
+        "can_manage": e10.can_manage_place(me, place),
         "nav": "places",
     })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def place_edit(request, pk):
+    me = profile_of(request.user)
+    place = get_object_or_404(Place, pk=pk)
+    if not e10.can_manage_place(me, place):
+        messages.error(request, "Редактировать может только автор места.")
+        return redirect(place)
+    initial = {
+        "name": place.name, "city": place.city or "", "address": place.address or "",
+        "lat": place.lat, "lon": place.lon,
+    }
+    form = PlaceForm(request.POST or None, request.FILES or None, initial=None if request.method == "POST" else initial)
+    if request.method == "POST" and form.is_valid():
+        if e10.place_update(
+            me, place,
+            name=form.cleaned_data["name"],
+            city=form.cleaned_data.get("city") or "",
+            address=form.cleaned_data.get("address") or "",
+            photo=form.cleaned_data.get("photo"),
+            lat=form.cleaned_data.get("lat"),
+            lon=form.cleaned_data.get("lon"),
+        ):
+            messages.success(request, "Место сохранено.")
+            return redirect(place)
+        messages.error(request, "Не удалось сохранить.")
+    return render(request, "social/place_edit.html", {
+        "me": me, "place": place, "form": form, "nav": "places",
+    })
+
+
+@login_required
+@require_POST
+def place_delete(request, pk):
+    me = profile_of(request.user)
+    place = get_object_or_404(Place, pk=pk)
+    name = place.name
+    if e10.place_delete(me, place):
+        messages.info(request, f"Место «{name}» удалено.")
+        return redirect("places")
+    messages.error(request, "Удалить может только автор места.")
+    return redirect(place)
 
 
 @login_required
@@ -141,10 +186,47 @@ def question_show(request, pk):
                 messages.success(request, "Ответ добавлен.")
                 return redirect(question)
         messages.error(request, "Напишите ответ.")
+    is_own = bool(me and me.id == question.social_user_id)
     return render(request, "social/question.html", {
         "me": me, "question": question, "form": form,
-        "answers": e10.question_answers(question, viewer=me), "nav": "questions",
+        "answers": e10.question_answers(question, viewer=me),
+        "is_own": is_own, "nav": "questions",
     })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def question_edit(request, pk):
+    me = profile_of(request.user)
+    question = get_object_or_404(Question, pk=pk, social_user=me)
+    form = QuestionForm(
+        request.POST or None, request.FILES or None,
+        initial=None if request.method == "POST" else {"body": question.body},
+    )
+    if request.method == "POST" and form.is_valid():
+        if e10.question_update(
+            me, question,
+            body=form.cleaned_data["body"],
+            photo=form.cleaned_data.get("photo"),
+        ):
+            messages.success(request, "Вопрос сохранён.")
+            return redirect(question)
+        messages.error(request, "Напишите вопрос.")
+    return render(request, "social/question_edit.html", {
+        "me": me, "question": question, "form": form, "nav": "questions",
+    })
+
+
+@login_required
+@require_POST
+def question_delete(request, pk):
+    me = profile_of(request.user)
+    question = get_object_or_404(Question, pk=pk)
+    if e10.question_delete(me, question):
+        messages.info(request, "Вопрос удалён.")
+        return redirect("questions")
+    messages.error(request, "Удалить можно только свой вопрос.")
+    return redirect(question)
 
 
 @login_required
@@ -190,10 +272,38 @@ def poll_show(request, pk):
         ClassicPoll.objects.select_related("social_user"), pk=pk,
     )
     options, my_option, total = e10.poll_options(poll, viewer=me)
+    is_own = bool(me and me.id == poll.social_user_id)
     return render(request, "social/poll.html", {
         "me": me, "poll": poll, "options": options,
-        "my_option": my_option, "total": total, "nav": "polls",
+        "my_option": my_option, "total": total, "is_own": is_own, "nav": "polls",
     })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def poll_edit(request, pk):
+    me = profile_of(request.user)
+    poll = get_object_or_404(ClassicPoll, pk=pk, social_user=me)
+    if request.method == "POST":
+        if e10.poll_update(me, poll, question=request.POST.get("question") or ""):
+            messages.success(request, "Опрос сохранён.")
+            return redirect(poll)
+        messages.error(request, "Укажите текст вопроса.")
+    return render(request, "social/poll_edit.html", {
+        "me": me, "poll": poll, "nav": "polls",
+    })
+
+
+@login_required
+@require_POST
+def poll_delete(request, pk):
+    me = profile_of(request.user)
+    poll = get_object_or_404(ClassicPoll, pk=pk)
+    if e10.poll_delete(me, poll):
+        messages.info(request, "Опрос удалён.")
+        return redirect("polls")
+    messages.error(request, "Удалить можно только свой опрос.")
+    return redirect(poll)
 
 
 @login_required

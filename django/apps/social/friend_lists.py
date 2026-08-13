@@ -43,6 +43,16 @@ def list_create(me, name: str):
     return FriendList.objects.create(social_user=me, name=name, created_at=t, updated_at=t)
 
 
+def list_rename(me, flist, name: str) -> bool:
+    name = (name or "").strip()[:120]
+    if not me or not flist or flist.social_user_id != me.id or not name:
+        return False
+    flist.name = name
+    flist.updated_at = now()
+    flist.save(update_fields=["name", "updated_at"])
+    return True
+
+
 def list_members(flist, limit=200):
     return list(
         SocialProfile.objects.filter(list_memberships__friend_list=flist)

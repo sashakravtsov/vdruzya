@@ -94,7 +94,10 @@ def main():
         likes = dating.likes_you(me)
         matches = dating.my_matches(me)
         assert any(m["peer"].id == peer.id for m in matches)
-        ok("mutual match")
+        mid = next(m["match"].id for m in matches if m["peer"].id == peer.id)
+        assert dating.unmatch(me, mid)
+        assert not any(m["peer"].id == peer.id for m in dating.my_matches(me))
+        ok("mutual match + unmatch")
     else:
         ok("match skipped (need 2+ users)")
 
@@ -112,6 +115,8 @@ def main():
     assert b"dating-app" in discover
     tips_html = c.get("/apps/dating/canvas?tab=tips", secure=True).content
     assert "Школа".encode() in tips_html or "совет".encode() in tips_html.lower()
+    matches_html = c.get("/apps/dating/canvas?tab=matches", secure=True).content
+    assert "удалить матч".encode() in matches_html or "Матчей ещё нет".encode() in matches_html
     ok("canvas tabs")
     print("ALL dating probes passed")
 

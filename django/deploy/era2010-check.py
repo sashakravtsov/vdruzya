@@ -50,6 +50,7 @@ def main():
             assert cur.fetchone(), f"missing {t}"
         for table, col in (
             ("places", "photo_path"),
+            ("places", "created_by_id"),
             ("place_checkins", "photo_path"),
             ("questions", "photo_path"),
         ):
@@ -88,6 +89,7 @@ def main():
     assert r.status_code in (301, 302)
     place = Place.objects.filter(name=name).order_by("-id").first()
     assert place and place.photo_path and place.photo_path.startswith("places/"), place
+    assert place.created_by_id == me.id
     r = c.get("/places", secure=True)
     assert r.status_code == 200 and b"list-thumb" in r.content
     r = c.post(f"/places/{place.id}", {
@@ -138,7 +140,14 @@ def main():
     assert QuestionVote.objects.filter(answer=ans, social_user=me).exists()
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "question" and i.get("question") and i["question"].id == q.id for i in feed)
-    ok("question photo + answer vote + feed")
+    r = c.get(f"/questions/{q.id}/edit", secure=True)
+    assert r.status_code == 200 and "Редактировать".encode() in r.content
+    edited_q = f"QA: edited {uuid.uuid4().hex[:5]}"
+    r = c.post(f"/questions/{q.id}/edit", {"body": edited_q}, secure=True)
+    assert r.status_code in (301, 302)
+    q.refresh_from_db()
+    assert q.body == edited_q
+    ok("question photo + answer vote + edit + feed")
 
     # Classic poll
     r = c.post(
@@ -156,7 +165,12 @@ def main():
     assert ClassicPollVote.objects.filter(poll=poll, social_user=me, option=opt).exists()
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "poll" and i.get("poll") and i["poll"].id == poll.id for i in feed)
-    ok("classic poll vote + feed")
+    edited_poll = f"QA: чай или сок? {uuid.uuid4().hex[:4]}"
+    r = c.post(f"/polls/{poll.id}/edit", {"question": edited_poll}, secure=True)
+    assert r.status_code in (301, 302)
+    poll.refresh_from_db()
+    assert poll.question == edited_poll
+    ok("classic poll vote + edit + feed")
 
     # Like + Share (need a second profile's post, or share of self fails — create friend post on wall)
     t = now()
@@ -437,17 +451,29 @@ def main():
     Post.objects.filter(pk__in=[tpost.id, shared.id]).delete()
     if owned_other:
         Post.objects.filter(pk=other.id).delete()
-    ClassicPollVote.objects.filter(poll=poll).delete()
-    ClassicPollOption.objects.filter(poll=poll).delete()
-    ClassicPoll.objects.filter(pk=poll.id).delete()
-    QuestionVote.objects.filter(answer=ans).delete()
-    QuestionAnswer.objects.filter(question=q).delete()
-    Question.objects.filter(pk=q.id).delete()
-    Post.objects.filter(topic=f"place:{place.id}").delete()
-    PlaceReview.objects.filter(place=place).delete()
-    PlaceCheckin.objects.filter(place=place).delete()
-    place.delete()
-    ok("cleanup")
+    poll_id = poll.id
+    r = c.post(f"/polls/{poll_id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not ClassicPoll.objects.filter(pk=poll_id).exists()
+    q_id = q.id
+    r = c.post(f"/questions/{q_id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not Question.objects.filter(pk=q_id).exists()
+    r = c.get(f"/places/{place.id}/edit", secure=True)
+    assert r.status_code == 200 and "Удалить место".encode() in r.content
+    new_place = f"QA Cafe Edit {uuid.uuid4().hex[:5]}"
+    r = c.post(f"/places/{place.id}/edit", {
+        "name": new_place, "city": "Москва", "address": "Арбат",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    place.refresh_from_db()
+    assert place.name == new_place and place.address == "Арбат"
+    place_id = place.id
+    r = c.post(f"/places/{place_id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not Place.objects.filter(pk=place_id).exists()
+    assert not Post.objects.filter(topic=f"place:{place_id}").exists()
+    ok("place/question/poll edit+delete")
     print("ALL 2010 classic modules probes passed")
 
 

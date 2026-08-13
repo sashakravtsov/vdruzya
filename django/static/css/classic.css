@@ -1244,6 +1244,8 @@ button.linkish .ico { margin-right: 2px; }
   margin: 0 0 0 40px; clear: none; white-space: normal; word-wrap: break-word;
 }
 .inbox-pane .msg-older { margin: 0 0 8px; font-size: 11px; }
+.inbox-pane .msg-typing { min-height: 1.2em; margin: 0 0 6px; font-style: italic; }
+.inbox-pane .msg-voice-row { margin: 4px 0 6px; }
 .inbox-pane .msg-compose { margin: 0 0 8px; clear: both; }
 .inbox-pane .msg-compose textarea,
 .inbox-pane .msg-compose .inputtext {

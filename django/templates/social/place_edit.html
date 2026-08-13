@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Редактировать {{ place.name }} — Места — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="places-page">
+    <div id="header" class="withsubtitle">
+        <h1>Редактировать место</h1>
+        <div class="subtitle"><a href="{% url 'places.show' place.id %}">← {{ place.name }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Место</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
+                        <tr><td class="label">Город:</td><td>{{ form.city }}</td></tr>
+                        <tr><td class="label">Адрес:</td><td>{{ form.address }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}{% if place.photo_url %}<div class="file-hint muted">сейчас есть · загрузите новое, чтобы заменить</div>{% endif %}</td></tr>
+                        <tr><td class="label">Широта:</td><td>{{ form.lat }}</td></tr>
+                        <tr><td class="label">Долгота:</td><td>{{ form.lon }}</td></tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{% url 'places.show' place.id %}">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Удалить место</h4>
+            <div class="profile-box-body">
+                <p class="muted">Место, отзывы и отметки будут удалены.</p>
+                <form method="post" action="{% url 'places.delete' place.id %}" onsubmit="return confirm('Удалить место «{{ place.name|escapejs }}»?');">{% csrf_token %}
+                    <input type="submit" class="inputsubmit" value="Удалить место">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

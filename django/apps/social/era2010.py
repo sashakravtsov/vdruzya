@@ -48,6 +48,7 @@ def place_create(me, *, name, city="", address="", photo=None, lat=None, lon=Non
         city=city_s,
         address=addr_s,
         photo_path=try_save_image(photo, "places"),
+        created_by=me,
         created_at=t, updated_at=t,
     )
     if coords:
@@ -60,6 +61,54 @@ def place_create(me, *, name, city="", address="", photo=None, lat=None, lon=Non
             place.osm_id = osm_id
     place.save()
     return place
+
+
+def can_manage_place(me, place) -> bool:
+    return bool(me and place and place.created_by_id and place.created_by_id == me.id)
+
+
+def place_update(me, place, *, name, city="", address="", photo=None, lat=None, lon=None):
+    from apps.social import osm
+    from apps.social.media import try_save_image
+    if not can_manage_place(me, place):
+        return False
+    name = (name or "").strip()[:160]
+    if not name:
+        return False
+    place.name = name
+    place.city = (city or "").strip()[:120]
+    place.address = (address or "").strip()[:255]
+    path = try_save_image(photo, "places")
+    if path:
+        place.photo_path = path
+    coords = osm.parse_coords(lat, lon)
+    if coords:
+        place.lat, place.lon = coords
+    elif not osm.has_coords(place):
+        hit = osm.geocode_parts(place.name, place.address, place.city)
+        if hit:
+            place.lat, place.lon = hit.lat, hit.lon
+            place.osm_type = hit.osm_type or place.osm_type
+            place.osm_id = hit.osm_id if hit.osm_id is not None else place.osm_id
+    place.updated_at = now()
+    place.save()
+    bump_news()
+    return True
+
+
+def place_delete(me, place) -> bool:
+    if not can_manage_place(me, place):
+        return False
+    from apps.social.cascade import purge_wall_posts
+    from apps.social.models.era2014 import SavedItem
+    topic = f"place:{place.id}"
+    purge_wall_posts(list(Post.objects.filter(topic=topic).values_list("id", flat=True)))
+    PlaceCheckin.objects.filter(place=place).delete()
+    PlaceReview.objects.filter(place=place).delete()
+    SavedItem.objects.filter(place=place).delete()
+    place.delete()
+    bump_news()
+    return True
 
 
 def place_checkin(me, place, message="", photo=None):
@@ -166,6 +215,35 @@ def question_create(me, body: str, photo=None):
     return q
 
 
+def question_update(me, question, *, body: str, photo=None) -> bool:
+    from apps.social.media import try_save_image
+    if not me or not question or question.social_user_id != me.id:
+        return False
+    body = (body or "").strip()[:500]
+    if not body:
+        return False
+    question.body = body
+    path = try_save_image(photo, "questions")
+    if path:
+        question.photo_path = path
+    question.updated_at = now()
+    question.save(update_fields=["body", "photo_path", "updated_at"] if path else ["body", "updated_at"])
+    bump_news()
+    return True
+
+
+def question_delete(me, question) -> bool:
+    if not me or not question or question.social_user_id != me.id:
+        return False
+    aids = list(QuestionAnswer.objects.filter(question=question).values_list("id", flat=True))
+    if aids:
+        QuestionVote.objects.filter(answer_id__in=aids).delete()
+    QuestionAnswer.objects.filter(question=question).delete()
+    question.delete()
+    bump_news()
+    return True
+
+
 def question_answer(me, question, body: str):
     body = (body or "").strip()[:500]
     if not me or not question or not body:
@@ -244,6 +322,29 @@ def poll_create(me, question: str, options: list[str]):
         ClassicPollOption.objects.create(poll=poll, body=body, sort_order=i)
     bump_news()
     return poll
+
+
+def poll_update(me, poll, *, question: str) -> bool:
+    if not me or not poll or poll.social_user_id != me.id:
+        return False
+    question = (question or "").strip()[:500]
+    if not question:
+        return False
+    poll.question = question
+    poll.updated_at = now()
+    poll.save(update_fields=["question", "updated_at"])
+    bump_news()
+    return True
+
+
+def poll_delete(me, poll) -> bool:
+    if not me or not poll or poll.social_user_id != me.id:
+        return False
+    ClassicPollVote.objects.filter(poll=poll).delete()
+    ClassicPollOption.objects.filter(poll=poll).delete()
+    poll.delete()
+    bump_news()
+    return True
 
 
 def poll_options(poll, viewer=None):

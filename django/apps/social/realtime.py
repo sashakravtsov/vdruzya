@@ -9,15 +9,17 @@ from django.core.cache import cache
 from django.db.models import Max
 from django.http import Http404, JsonResponse, StreamingHttpResponse
 from django.template.loader import render_to_string
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.social import chat as ch
 from apps.social import friendship as fr
-from apps.social.models import Message, Notification
+from apps.social.models import ConversationMember, Message, Notification
 from apps.social.services import profile_of
 
 INTERVAL = 4
 MAX_TICKS = 75  # ~5 min then client reconnects
+TYPING_TTL = 6
+TYPING_STATES = frozenset({"typing", "voice"})
 
 
 def _unread(me) -> int:
@@ -28,6 +30,45 @@ def _unread(me) -> int:
     n = ch.unread_count(me)
     cache.set(key, n, 30)
     return n
+
+
+def _typing_key(conv_id: int, user_id: int) -> str:
+    return f"typing:{conv_id}:{user_id}"
+
+
+def set_typing(me, conv_id: int, state: str = "typing") -> bool:
+    """Mark presence for classic Inbox (cache TTL; SSE picks it up)."""
+    if not me or not conv_id or not ch.is_member(me, conv_id):
+        return False
+    state = (state or "typing").strip().lower()
+    if state not in TYPING_STATES:
+        state = "typing"
+    cache.set(
+        _typing_key(conv_id, me.id),
+        {"id": me.id, "name": me.name or "Кто-то", "state": state},
+        TYPING_TTL,
+    )
+    return True
+
+
+def typing_for(me, conv_id: int) -> list[dict]:
+    if not me or not conv_id or not ch.is_member(me, conv_id):
+        return []
+    peer_ids = list(
+        ConversationMember.objects.filter(conversation_id=conv_id)
+        .exclude(social_user_id=me.id)
+        .values_list("social_user_id", flat=True)[:20]
+    )
+    out = []
+    for pid in peer_ids:
+        row = cache.get(_typing_key(conv_id, pid))
+        if isinstance(row, dict) and row.get("name"):
+            out.append({
+                "id": int(row.get("id") or pid),
+                "name": str(row["name"])[:80],
+                "state": row.get("state") if row.get("state") in TYPING_STATES else "typing",
+            })
+    return out
 
 
 def snapshot(me, *, conv_id=None) -> dict:
@@ -45,6 +86,7 @@ def snapshot(me, *, conv_id=None) -> dict:
         data["last_message_id"] = (
             Message.objects.filter(conversation_id=conv_id).aggregate(m=Max("id")).get("m") or 0
         )
+        data["typing"] = typing_for(me, conv_id)
     return data
 
 
@@ -83,6 +125,19 @@ def stream(request):
 
 
 @login_required
+@require_POST
+def inbox_typing(request, conversation_id):
+    """Ping «печатает» / «записывает голосовое» for SSE peers (no WS messenger)."""
+    me = profile_of(request.user)
+    if not me:
+        return JsonResponse({"error": "auth"}, status=403)
+    state = (request.POST.get("state") or "typing").strip().lower()
+    if not set_typing(me, conversation_id, state):
+        return JsonResponse({"error": "forbidden"}, status=403)
+    return JsonResponse({"ok": True, "state": state if state in TYPING_STATES else "typing"})
+
+
+@login_required
 @require_GET
 def inbox_since(request, conversation_id):
     """HTML fragment of new classic inbox lines after `after` id."""
@@ -116,4 +171,5 @@ def inbox_since(request, conversation_id):
         "html": html,
         "last_id": rows[-1].id if rows else after,
         "unread_messages": _unread(me),
+        "typing": typing_for(me, conversation_id),
     })

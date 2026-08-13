@@ -84,16 +84,30 @@ def main():
     from apps.social import realtime as rt
     snap = rt.snapshot(me, conv_id=conv.id)
     assert "unread_messages" in snap and "last_message_id" in snap
+    assert "typing" in snap
+    assert 'id="inbox-typing"' in html
+    assert 'data-typing-url="' in html
+    assert 'id="inbox-voice-btn"' in html
+    r = c.post(f"/inbox/{conv.id}/typing", {"state": "typing"}, secure=True)
+    assert r.status_code == 200 and r.json().get("ok")
+    r = c.post(f"/inbox/{conv.id}/typing", {"state": "voice"}, secure=True)
+    assert r.status_code == 200 and r.json().get("state") == "voice"
+    # peer view of typing: set as other, read as me
+    assert rt.set_typing(other, conv.id, "typing")
+    peers = rt.typing_for(me, conv.id)
+    assert any(p.get("id") == other.id and p.get("state") == "typing" for p in peers)
     r = c.get(f"/inbox/{conv.id}/since?after=0", secure=True)
     assert r.status_code == 200
     data = r.json()
-    assert "html" in data and "last_id" in data
-    r = c.get("/realtime/stream?once=1", secure=True)
+    assert "html" in data and "last_id" in data and "typing" in data
+    r = c.get(f"/realtime/stream?once=1&c={conv.id}", secure=True)
     assert r.status_code == 200
     assert "text/event-stream" in (r.get("Content-Type") or "")
     chunk = b"".join(r.streaming_content)
-    assert b"data:" in chunk and b"unread_messages" in chunk
-    ok("realtime SSE + inbox since")
+    assert b"data:" in chunk and b"unread_messages" in chunk and b"typing" in chunk
+    js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
+    assert "pingTyping" in js and "записывает голосовое" in js
+    ok("realtime SSE + inbox since + typing")
 
     r = c.get("/birthdays", secure=True)
     assert r.status_code == 200 and "Дни рождения".encode() in r.content
