@@ -536,11 +536,14 @@ def _add_page_posts(items, viewer, page_ids, blocked, limit):
     )
     if blocked:
         qs = qs.exclude(social_user_id__in=blocked)
+    from apps.social.classic_extra import hydrate_posted
     posts = list(qs[:limit])
     attach_pages(posts)
     for p in posts:
         if not getattr(p, "page", None):
             continue
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
         items.append({
             "kind": "page_post", "at": p.created_at, "post": p,
             "actor": p.social_user, "page": p.page,
@@ -612,6 +615,7 @@ def _add_event_posts(items, viewer, fids, blocked, limit):
     )
     if blocked:
         qs = qs.exclude(social_user_id__in=blocked)
+    from apps.social.classic_extra import hydrate_posted
     posts = list(qs[:limit])
     need = set()
     for p in posts:
@@ -628,6 +632,8 @@ def _add_event_posts(items, viewer, fids, blocked, limit):
         event = events.get(eid)
         if not event:
             continue
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
         items.append({
             "kind": "event_post", "at": p.created_at, "post": p,
             "actor": p.social_user, "event": event,

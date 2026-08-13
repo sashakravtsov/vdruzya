@@ -85,15 +85,8 @@
             {% if item.at %}<span class="news-time muted">{{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
                 <a href="{{ item.post.get_absolute_url }}"><b>{{ item.post.title_line }}</b></a>
-                {% if item.post.kind == 'video' %}
-                    {% if item.post.link_blurb %}<div class="wall-body">{{ item.post.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
-                    {% if item.post.video_url %}
-                    <div class="wall-media wall-media-video">
-                        <video controls preload="metadata" {% if item.post.media_url %}poster="{{ item.post.media_url }}"{% endif %}>
-                            <source src="{{ item.post.video_url }}" type="video/mp4">
-                        </video>
-                    </div>
-                    {% endif %}
+                {% if item.post.kind == 'video' or item.post.kind == 'link' %}
+                    {% include "social/_news_post_body.html" with post=item.post %}
                 {% else %}
                     {% with text=item.post.body_text|default:item.post.body %}
                     {% if text %}<div class="wall-body">{{ text|truncatewords:40|linebreaksbr }}</div>{% endif %}
@@ -123,8 +116,7 @@
             опубликовал(а) новость
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
-                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
-                {% include "social/_post_media.html" with post=item.post %}
+                {% include "social/_news_post_body.html" with post=item.post %}
             </div>
             <div class="wall-actions muted">
                 <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
@@ -168,8 +160,7 @@
             <a href="{% url 'events.show' item.event.id %}">{{ item.event.title }}</a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
             <div class="news-snippet">
-                {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
-                {% include "social/_post_media.html" with post=item.post %}
+                {% include "social/_news_post_body.html" with post=item.post %}
             </div>
             <div class="wall-actions muted">
                 <a href="{% url 'posts.show' item.post.id %}"><span class="ico ico-comment"></span>Комментировать</a>

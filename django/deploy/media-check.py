@@ -182,8 +182,25 @@ def main():
         assert b"<video" in r.content
         assert b"page-tabs" not in r.content
         ok("page wall video + player")
+        bump_news()
+        feed = news_items(me, limit=80)
+        hit = next(
+            (
+                i for i in feed
+                if i.get("kind") == "page_post" and i.get("post") and i["post"].id == pp_post.id
+            ),
+            None,
+        )
+        assert hit and getattr(hit["post"], "video_url", None), hit
+        r = c.get("/feed", secure=True)
+        assert r.status_code == 200
+        assert b"<video" in r.content
+        # Raw storage paths must not leak into the classic news snippet.
+        assert b"storage:videos/" not in r.content
+        ok("page video in news feed")
     else:
         ok("page wall video skipped (no admin page)")
+        ok("page video in news feed skipped")
 
     # Classic Inbox — video attachment (not live Messenger).
     inbox_msg = None
