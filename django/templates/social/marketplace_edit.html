@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load static vd %}
 {% block title %}Редактирование — {{ item.title }} — Барахолка{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="market-page">
@@ -13,6 +13,7 @@
             <h4>Объявление</h4>
             <div class="profile-box-body">
                 <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    {{ form.lat }}{{ form.lon }}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
                         <tr><td class="label">Цена:</td><td>{{ form.price }}</td></tr>
@@ -29,4 +30,5 @@
         </div>
     </div>
 </div>
+<script src="{% static 'js/osm-suggest.js' %}" defer></script>
 {% endblock %}

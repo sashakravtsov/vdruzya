@@ -7,10 +7,24 @@ from apps.social.forms import ClassicForm, _file, _in, _ta
 
 
 class PlaceForm(ClassicForm, forms.Form):
-    name = forms.CharField(max_length=160, widget=_in(style="width:100%"))
-    city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
-    address = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%"))
+    name = forms.CharField(
+        max_length=160,
+        widget=_in(style="width:100%", **{
+            "id": "id_place_name",
+            "data-osm-suggest": "1",
+            "data-osm-lat": "#id_place_lat",
+            "data-osm-lon": "#id_place_lon",
+            "data-osm-city": "#id_city",
+            "data-osm-address": "#id_address",
+            "data-osm-fill": "name",
+            "autocomplete": "off",
+        }),
+    )
+    city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%", id="id_city"))
+    address = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%", id="id_address"))
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    lat = forms.FloatField(required=False, widget=forms.HiddenInput(attrs={"id": "id_place_lat"}))
+    lon = forms.FloatField(required=False, widget=forms.HiddenInput(attrs={"id": "id_place_lon"}))
 
     def clean_name(self):
         return (self.cleaned_data.get("name") or "").strip()[:160]

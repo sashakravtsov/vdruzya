@@ -51,9 +51,23 @@ class PostedItemForm(ClassicForm, forms.Form):
 class MarketForm(ClassicForm, forms.Form):
     title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
     price = forms.CharField(max_length=40, required=False, widget=_in(style="width:120px"))
-    place = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
+    place = forms.CharField(
+        max_length=120, required=False,
+        widget=_in(
+            style="width:100%", id="id_market_place",
+            **{
+                "data-osm-suggest": "1",
+                "data-osm-lat": "#id_market_lat",
+                "data-osm-lon": "#id_market_lon",
+                "data-osm-fill": "keep",
+                "autocomplete": "off",
+            },
+        ),
+    )
     description = forms.CharField(required=False, widget=_ta(4, style="width:100%"))
     photo = forms.ImageField(required=False, label="Фото", widget=_file())
+    lat = forms.FloatField(required=False, widget=forms.HiddenInput(attrs={"id": "id_market_lat"}))
+    lon = forms.FloatField(required=False, widget=forms.HiddenInput(attrs={"id": "id_market_lon"}))
 
     def clean_title(self):
         return (self.cleaned_data.get("title") or "").strip()[:160]

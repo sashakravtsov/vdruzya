@@ -75,6 +75,8 @@ def events_home(request):
                 description=form.cleaned_data.get("description") or "",
                 starts_at=form.cleaned_data["starts_at"],
                 cover=form.cleaned_data.get("cover"),
+                lat=form.cleaned_data.get("lat"),
+                lon=form.cleaned_data.get("lon"),
             )
             if event:
                 ev.set_rsvp(me, event, "going")
@@ -118,6 +120,19 @@ def event_show(request, event_id):
     else:
         wall_posts = []
         photos = posts if show_tab == "photos" else []
+    from apps.social import osm
+    map_ctx = None
+    if osm.has_coords(event):
+        map_ctx = osm.map_context(event.lat, event.lon, zoom=14, title=event.title)
+    elif event.place and event.place != "—":
+        hit = osm.geocode(event.place)
+        if hit:
+            event.lat, event.lon = hit.lat, hit.lon
+            try:
+                event.save(update_fields=["lat", "lon"])
+            except Exception:
+                pass
+            map_ctx = osm.map_context(event.lat, event.lon, zoom=14, title=event.title)
     return render(
         request, "social/event.html",
         {
@@ -130,6 +145,7 @@ def event_show(request, event_id):
             "wall_posts": wall_posts, "photos": photos,
             "form": PostForm(simple=True) if can_post else None,
             "comment_form": CommentForm() if me else None,
+            "map": map_ctx,
             "nav": "events",
         },
     )
@@ -216,6 +232,8 @@ def event_edit(request, event_id):
                 description=form.cleaned_data.get("description") or "",
                 starts_at=form.cleaned_data["starts_at"],
                 cover=form.cleaned_data.get("cover"),
+                lat=form.cleaned_data.get("lat"),
+                lon=form.cleaned_data.get("lon"),
             )
             if row:
                 messages.success(request, "Событие сохранено.")

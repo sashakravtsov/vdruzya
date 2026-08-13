@@ -1382,3 +1382,20 @@ select.inputtext {
   border-left: 3px solid #d8dfea;
   background: #f7f7f7;
 }
+
+/* OSM maps — classic profile-box, Leaflet owns its own layout */
+.osm-box .osm-map {
+  width: 100%; height: 220px; border: 1px solid #B3B3B3; background: #e8eef7;
+}
+.osm-suggest-wrap { position: relative; display: inline-block; width: 100%; max-width: 360px; }
+.osm-suggest-wrap .inputtext { width: 100%; box-sizing: border-box; }
+.osm-suggest-box {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+  background: #fff; border: 1px solid #B3B3B3; max-height: 160px; overflow: auto;
+  font: 11px/14px var(--font);
+}
+.osm-suggest-item {
+  display: block; padding: 4px 6px; color: var(--fb); text-decoration: none;
+  border-bottom: 1px solid #eee;
+}
+.osm-suggest-item:hover { background: #D8DFEA; }

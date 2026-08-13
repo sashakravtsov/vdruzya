@@ -110,6 +110,8 @@ def marketplace_home(request):
                 place=form.cleaned_data.get("place") or "",
                 description=form.cleaned_data.get("description") or "",
                 photo=form.cleaned_data.get("photo"),
+                lat=form.cleaned_data.get("lat"),
+                lon=form.cleaned_data.get("lon"),
             )
             if row:
                 messages.success(request, "Объявление опубликовано.")
@@ -129,11 +131,25 @@ def marketplace_home(request):
 @login_not_required
 @require_http_methods(["GET", "HEAD"])
 def marketplace_show(request, pk):
+    from apps.social import osm
     item = get_object_or_404(MarketplaceListing.objects.select_related("social_user"), pk=pk)
     me = profile_of(request.user) if request.user.is_authenticated else None
+    map_ctx = None
+    if osm.has_coords(item):
+        map_ctx = osm.map_context(item.lat, item.lon, zoom=14, title=item.title)
+    elif item.place:
+        hit = osm.geocode(item.place)
+        if hit:
+            item.lat, item.lon = hit.lat, hit.lon
+            try:
+                item.save(update_fields=["lat", "lon"])
+            except Exception:
+                pass
+            map_ctx = osm.map_context(item.lat, item.lon, zoom=14, title=item.title)
     return render(request, "social/marketplace_show.html", {
         "me": me, "item": item, "nav": "marketplace",
         "is_owner": bool(me and item.social_user_id == me.id),
+        "map": map_ctx,
     })
 
 
@@ -162,6 +178,8 @@ def marketplace_edit(request, pk):
                 place=form.cleaned_data.get("place") or "",
                 description=form.cleaned_data.get("description") or "",
                 photo=form.cleaned_data.get("photo"),
+                lat=form.cleaned_data.get("lat"),
+                lon=form.cleaned_data.get("lon"),
             )
             if row:
                 messages.success(request, "Объявление сохранено.")

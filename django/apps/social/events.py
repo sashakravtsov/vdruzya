@@ -38,15 +38,22 @@ def parse_starts(raw):
     return starts
 
 
-def create_event(me, *, title, place="", description="", starts_at=None, community=None, company=None, cover=None):
+def create_event(me, *, title, place="", description="", starts_at=None, community=None, company=None, cover=None, lat=None, lon=None):
+    from apps.social import osm
     from apps.social.media import try_save_image
     title = (title or "").strip()[:255]
     if not me or not title or not starts_at:
         return None
     t = now()
-    event = Event.objects.create(
+    place_s = (place or "").strip()[:255] or "—"
+    coords = osm.parse_coords(lat, lon)
+    if not coords and place_s and place_s != "—":
+        hit = osm.geocode(place_s)
+        if hit:
+            coords = (hit.lat, hit.lon)
+    event = Event(
         title=title,
-        place=(place or "").strip()[:255] or "—",
+        place=place_s,
         description=(description or "").strip()[:4000],
         starts_at=starts_at,
         host=me,
@@ -56,24 +63,38 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
         created_at=t,
         updated_at=t,
     )
+    if coords:
+        event.lat, event.lon = coords
+    event.save()
     from apps.social.services import bump_news
     bump_news()
     return event
 
 
-def update_event(me, event, *, title, place="", description="", starts_at=None, cover=None):
+def update_event(me, event, *, title, place="", description="", starts_at=None, cover=None, lat=None, lon=None):
+    from apps.social import osm
     if not me or not event or event.host_id != me.id:
         return None
     title = (title or "").strip()[:255]
     if not title or not starts_at:
         return None
     event.title = title
-    event.place = (place or "").strip()[:255] or "—"
+    place_s = (place or "").strip()[:255] or "—"
+    event.place = place_s
     event.description = (description or "").strip()[:4000]
     event.starts_at = starts_at
+    coords = osm.parse_coords(lat, lon)
+    if not coords and place_s and place_s != "—":
+        hit = osm.geocode(place_s)
+        if hit:
+            coords = (hit.lat, hit.lon)
+    if coords:
+        event.lat, event.lon = coords
     from apps.social.media import try_save_image
     event.updated_at = now()
     fields = ["title", "place", "description", "starts_at", "updated_at"]
+    if coords:
+        fields.extend(["lat", "lon"])
     path = try_save_image(cover, "events")
     if path:
         event.cover_path = path

@@ -46,11 +46,31 @@ def hashtag_show(request, name):
 @login_required
 @require_GET
 def nearby_friends(request):
+    from apps.social import osm
     me = profile_of(request.user)
     city = (request.GET.get("city") or "").strip()
     people, used_city = e13.nearby_friends(me, city=city or None, limit=40)
+    map_ctx = None
+    if me and osm.ensure_profile_geo(me, network=True):
+        markers = []
+        for p in people:
+            d = getattr(p, "distance_km", None)
+            if d is not None:
+                p.headline = f"{d} км"
+            if osm.has_coords(p):
+                markers.append({
+                    "lat": p.lat, "lon": p.lon,
+                    "title": p.name, "url": f"/profile/{p.id}",
+                })
+        if markers or osm.has_coords(me):
+            map_ctx = osm.map_context(
+                me.lat, me.lon, zoom=11,
+                title=used_city or me.city or "Рядом",
+                markers=markers,
+            )
     return render(request, "social/nearby_friends.html", {
         "me": me, "people": people, "city": used_city or (me.city if me else ""),
+        "map": map_ctx,
         "nav": "nearby",
     })
 

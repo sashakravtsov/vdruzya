@@ -104,8 +104,9 @@ def trending_topics(viewer, limit=8, hours=72):
     return [{"name": r["hashtag__name"], "count": r["n"], "id": r["hashtag_id"]} for r in rows]
 
 
-def nearby_friends(viewer, *, city=None, limit=40):
-    """Friends in the same city (Nearby Friends without GPS)."""
+def nearby_friends(viewer, *, city=None, limit=40, radius_km=40):
+    """Friends nearby — OSM distance when coords exist, else same city string (no GPS)."""
+    from apps.social import osm
     if not viewer:
         return [], ""
     city = (city or viewer.city or "").strip()
@@ -113,14 +114,25 @@ def nearby_friends(viewer, *, city=None, limit=40):
     if not fids:
         return [], city
     qs = SocialProfile.objects.filter(id__in=fids).defer(*profile_related()).order_by("name")
+    origin = osm.ensure_profile_geo(viewer, network=True)
+    if origin and osm.has_coords(viewer):
+        # Friends: cache-only geocode (no Nominatim storm); viewer may hit network once.
+        friends = list(qs[:200])
+        for p in friends:
+            if not osm.has_coords(p) and (p.city or p.hometown):
+                osm.ensure_profile_geo(p, network=False)
+        near = [
+            p for p in friends
+            if osm.has_coords(p) and osm.within_radius(viewer, p, radius_km)
+        ]
+        if near:
+            return osm.sort_by_distance(viewer, near, limit=limit), city or (viewer.city or "")
     if city:
         same = list(qs.filter(Q(city__iexact=city) | Q(hometown__iexact=city))[:limit])
         if same:
             return same, city
-        # partial city match
         same = list(qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))[:limit])
         return same, city
-    # no city set — friends who have any city, grouped by first matches of viewer's empty
     return list(qs.exclude(city="").exclude(city__isnull=True)[:limit]), city
 
 

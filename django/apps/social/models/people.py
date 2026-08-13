@@ -58,6 +58,8 @@ class SocialProfile(models.Model):
         db_column="invited_by_id",
     )
     onboarding_completed_at = models.DateTimeField(null=True, blank=True)
+    lat = models.FloatField(null=True, blank=True)
+    lon = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

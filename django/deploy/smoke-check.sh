@@ -736,6 +736,19 @@ if ! grep -q 'name="saves"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
 else
   echo "OK   2014 Save + Safety Check routes"
 fi
+echo "== OSM geo schema probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-osm.py \
+  && .venv/bin/python deploy/osm-check.py; then
+  echo "OK   OSM geo features"
+else
+  echo "FAIL OSM geo features"; FAIL=1
+fi
+if ! grep -q 'name="geo.suggest"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'osm-map.js' "${ROOT}/django/templates/social/_osm_map.html" 2>/dev/null; then
+  echo "FAIL OSM routes/templates missing"; FAIL=1
+else
+  echo "OK   OSM routes + map partial"
+fi
 echo "== FB 2009-10 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2010-modules.py \
   && .venv/bin/python deploy/era2010-check.py; then

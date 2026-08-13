@@ -26,16 +26,22 @@ def places_home(request):
                 city=form.cleaned_data.get("city") or "",
                 address=form.cleaned_data.get("address") or "",
                 photo=form.cleaned_data.get("photo"),
+                lat=form.cleaned_data.get("lat"),
+                lon=form.cleaned_data.get("lon"),
             )
             if place:
                 messages.success(request, "Место добавлено.")
                 return redirect(place)
         messages.error(request, "Укажите название места.")
+    from apps.social import osm
     q = (request.GET.get("q") or "").strip()
     city = (request.GET.get("city") or "").strip()
+    near_me = request.GET.get("near") == "1"
+    near = osm.ensure_profile_geo(me) if near_me else None
+    places = e10.places_list(q=q, city=city, near=me if near else None)
     return render(request, "social/places.html", {
-        "me": me, "form": form, "places": e10.places_list(q=q, city=city),
-        "q": q, "city": city, "nav": "places",
+        "me": me, "form": form, "places": places,
+        "q": q, "city": city, "near": near_me, "nav": "places",
     })
 
 
@@ -75,11 +81,26 @@ def place_show(request, pk):
                 return redirect(place)
             messages.error(request, "Не удалось отметиться.")
 
+    from apps.social import osm
+    map_ctx = None
+    if osm.has_coords(place):
+        map_ctx = osm.map_context(place.lat, place.lon, zoom=16, title=place.name)
+    elif place.city or place.address:
+        hit = osm.geocode_parts(place.name, place.address, place.city)
+        if hit:
+            place.lat, place.lon = hit.lat, hit.lon
+            place.osm_type, place.osm_id = hit.osm_type, hit.osm_id
+            try:
+                place.save(update_fields=["lat", "lon", "osm_type", "osm_id"])
+            except Exception:
+                pass
+            map_ctx = osm.map_context(place.lat, place.lon, zoom=16, title=place.name)
     return render(request, "social/place.html", {
         "me": me, "place": place,
         "form": checkin_form, "review_form": review_form, "my_review": mine,
         "checkins": e10.place_checkins(place),
         "reviews": e10.place_reviews(place),
+        "map": map_ctx,
         "nav": "places",
     })
 

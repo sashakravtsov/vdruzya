@@ -128,9 +128,37 @@ def safety_event_get(pk):
     return SafetyEvent.objects.filter(pk=pk).first()
 
 
+def ensure_safety_geo(event: SafetyEvent) -> bool:
+    """Geocode safety event city once for map + radius checks."""
+    from apps.social import osm
+    if not event:
+        return False
+    if osm.has_coords(event):
+        return True
+    city = (event.city or "").strip()
+    if not city:
+        return False
+    hit = osm.geocode(city)
+    if not hit:
+        return False
+    event.lat, event.lon = hit.lat, hit.lon
+    if not event.radius_km:
+        event.radius_km = 50
+    try:
+        event.save(update_fields=["lat", "lon", "radius_km"])
+    except Exception:
+        return False
+    return True
+
+
 def in_affected_area(me, event: SafetyEvent) -> bool:
+    from apps.social import osm
     if not me or not event:
         return False
+    ensure_safety_geo(event)
+    osm.ensure_profile_geo(me)
+    if osm.has_coords(event) and osm.has_coords(me):
+        return osm.within_radius(event, me, event.radius_km or 50)
     city = (event.city or "").strip()
     if not city:
         return True
@@ -193,7 +221,8 @@ def friend_checkins(me, event, limit=40):
 
 
 def friends_needing_check(me, event, limit=30):
-    """Friends in city without a check-in yet."""
+    """Friends in affected area without a check-in yet (OSM radius or city)."""
+    from apps.social import osm
     if not me or not event:
         return []
     fids = friend_ids(me)
@@ -204,6 +233,24 @@ def friends_needing_check(me, event, limit=30):
         .values_list("social_user_id", flat=True)
     )
     qs = SocialProfile.objects.filter(id__in=fids - checked).defer(*profile_related()).order_by("name")
+    ensure_safety_geo(event)
+    if osm.has_coords(event):
+        rows = list(qs[:120])
+        out = []
+        for p in rows:
+            osm.ensure_profile_geo(p, network=False)
+            if osm.has_coords(p) and osm.within_radius(event, p, event.radius_km or 50):
+                out.append(p)
+            elif not osm.has_coords(p):
+                city = (event.city or "").strip()
+                if city and (
+                    city.lower() in (p.city or "").lower()
+                    or city.lower() in (p.hometown or "").lower()
+                ):
+                    out.append(p)
+            if len(out) >= limit:
+                break
+        return out
     city = (event.city or "").strip()
     if city:
         qs = qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))

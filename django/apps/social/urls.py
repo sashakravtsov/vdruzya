@@ -19,9 +19,12 @@ from . import views_era2011 as era11
 from . import views_era2012 as era12
 from . import views_era2013 as era13
 from . import views_era2014 as era14
+from . import views_osm as osm_views
 from . import realtime as rt
 
 urlpatterns = [
+    path("geo/suggest", osm_views.geo_suggest, name="geo.suggest"),
+    path("geo/ping", osm_views.geo_ping, name="geo.ping"),
     path("up", meta.up, name="up"),
     path("", views.home, name="home"),
     path("feed", views.feed, name="feed"),

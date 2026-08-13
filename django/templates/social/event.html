@@ -54,6 +54,8 @@
                 </div>
             </div>
 
+            {% include "social/_osm_map.html" with map=map %}
+
             <div id="tabs">
                 <div class="{% if show_tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
                 <div class="{% if show_tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>

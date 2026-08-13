@@ -12,6 +12,10 @@ class Place(models.Model):
     city = models.CharField(max_length=120, blank=True, default="")
     address = models.CharField(max_length=255, blank=True, default="")
     photo_path = models.CharField(max_length=255, null=True, blank=True)
+    lat = models.FloatField(null=True, blank=True)
+    lon = models.FloatField(null=True, blank=True)
+    osm_type = models.CharField(max_length=20, blank=True, default="")
+    osm_id = models.BigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

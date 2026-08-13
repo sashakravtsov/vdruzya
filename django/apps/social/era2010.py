@@ -11,28 +11,55 @@ from apps.social.models import (
 from apps.social.services import bump_news, friend_ids, now, profile_related
 
 
-def places_list(q="", city="", limit=40):
+def places_list(q="", city="", limit=40, *, near=None, radius_km=40):
+    from apps.social import osm
     qs = Place.objects.all().order_by("name")
     if q:
         qs = qs.filter(name__icontains=q)
     if city:
         qs = qs.filter(city__icontains=city)
-    return list(qs[:limit])
+    rows = list(qs[: max(limit * 3, limit)])
+    if near is not None and osm.has_coords(near):
+        rows = [
+            p for p in rows
+            if osm.has_coords(p) and osm.within_radius(near, p, radius_km)
+        ] or rows
+        return osm.sort_by_distance(near, rows, limit=limit)
+    return rows[:limit]
 
 
-def place_create(me, *, name, city="", address="", photo=None):
+def place_create(me, *, name, city="", address="", photo=None, lat=None, lon=None, osm_type="", osm_id=None):
+    from apps.social import osm
     from apps.social.media import try_save_image
     name = (name or "").strip()[:160]
     if not me or not name:
         return None
     t = now()
-    return Place.objects.create(
+    city_s = (city or "").strip()[:120]
+    addr_s = (address or "").strip()[:255]
+    coords = osm.parse_coords(lat, lon)
+    hit = None
+    if not coords:
+        hit = osm.geocode_parts(name, addr_s, city_s)
+        if hit:
+            coords = (hit.lat, hit.lon)
+    place = Place(
         name=name,
-        city=(city or "").strip()[:120],
-        address=(address or "").strip()[:255],
+        city=city_s,
+        address=addr_s,
         photo_path=try_save_image(photo, "places"),
         created_at=t, updated_at=t,
     )
+    if coords:
+        place.lat, place.lon = coords
+        if hit:
+            place.osm_type = hit.osm_type or (osm_type or "")
+            place.osm_id = hit.osm_id if hit.osm_id is not None else osm_id
+        else:
+            place.osm_type = (osm_type or "")[:20]
+            place.osm_id = osm_id
+    place.save()
+    return place
 
 
 def place_checkin(me, place, message="", photo=None):

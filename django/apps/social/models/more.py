@@ -120,6 +120,8 @@ class Event(models.Model):
     )
     # Optional cover on same media disk as wall photos (ensure-page-events ALTER)
     cover_path = models.CharField(max_length=255, null=True, blank=True)
+    lat = models.FloatField(null=True, blank=True)
+    lon = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

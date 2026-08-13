@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load static vd %}
 {% block title %}Места — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="places-page">
@@ -10,12 +10,13 @@
             <h4>Добавить место</h4>
             <div class="profile-box-body">
                 <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    {{ form.lat }}{{ form.lon }}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
                         <tr><td class="label">Город:</td><td>{{ form.city }}</td></tr>
                         <tr><td class="label">Адрес:</td><td>{{ form.address }}</td></tr>
                         <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
-                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"><span class="muted"> · подсказки OpenStreetMap</span></td></tr>
                     </table>
                 </form>
             </div>
@@ -30,6 +31,7 @@
                             <td><input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off"></td>
                             <td class="label">Город:</td>
                             <td><input class="inputtext input-city" type="text" name="city" value="{{ city }}" autocomplete="off"></td>
+                            <td><label class="muted"><input type="checkbox" name="near" value="1"{% if near %} checked{% endif %}> рядом</label></td>
                             <td><input type="submit" class="inputbutton" value="Найти"></td>
                         </tr>
                     </table>
@@ -39,7 +41,7 @@
                     {% include "social/_list_thumb.html" with url=p.photo_url href=p.get_absolute_url %}
                     <div class="list-row-body">
                         <b><a href="{% url 'places.show' p.id %}">{{ p.name }}</a></b>
-                        <div class="muted">{% if p.city %}{{ p.city }}{% endif %}{% if p.address %} · {{ p.address }}{% endif %}</div>
+                        <div class="muted">{% if p.city %}{{ p.city }}{% endif %}{% if p.address %} · {{ p.address }}{% endif %}{% if p.distance_km != None %} · {{ p.distance_km }} км{% endif %}</div>
                     </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет мест. Добавьте первое выше.</p>{% endfor %}
@@ -47,4 +49,5 @@
         </div>
     </div>
 </div>
+<script src="{% static 'js/osm-suggest.js' %}" defer></script>
 {% endblock %}

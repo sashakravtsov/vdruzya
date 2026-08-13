@@ -23,6 +23,9 @@ def profile_edit(request):
         obj = form.save(commit=False)
         obj.updated_at = _now()
         obj.save()
+        if ctx["section"] in ("basic", "contact") and (obj.city or obj.hometown):
+            from apps.social import osm
+            osm.ensure_profile_geo(obj, force=True, network=True)
         # Relationship confirmation (classic partner must accept)
         partner = obj.relationship_with
         status = obj.relationship_status or ""

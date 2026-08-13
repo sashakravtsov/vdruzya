@@ -51,7 +51,7 @@ APP_CENTER = (
     {"slug": "marketplace", "name": "Барахолка", "category": "tools", "featured": False,
      "blurb": "Купить и продать рядом.", "detail": "Объявления друзей: вещи, услуги, локальный обмен.", "url_name": "marketplace"},
     {"slug": "places", "name": "Места", "category": "places", "featured": True,
-     "blurb": "Отмечайтесь в местах.", "detail": "Отметки и отзывы о местах — в классическом интерфейсе.", "url_name": "places"},
+     "blurb": "Отмечайтесь в местах.", "detail": "Отметки и отзывы о местах на карте OpenStreetMap — подсказки Nominatim и фильтр «рядом».", "url_name": "places"},
     {"slug": "questions", "name": "Вопросы", "category": "social", "featured": False,
      "blurb": "Спросите друзей.", "detail": "Вопросы с ответами и голосами друзей.", "url_name": "questions"},
     {"slug": "polls", "name": "Опросы", "category": "social", "featured": False,
@@ -81,13 +81,13 @@ APP_CENTER = (
     {"slug": "trending", "name": "В тренде", "category": "social", "featured": True,
      "blurb": "Популярные хэштеги друзей.", "detail": "Популярные хэштеги в круге друзей — колонка в ленте и отдельная страница.", "url_name": "trending"},
     {"slug": "nearby", "name": "Друзья рядом", "category": "places", "featured": True,
-     "blurb": "Друзья в вашем городе.", "detail": "Друзья рядом без GPS: совпадение по городу в профиле.", "url_name": "nearby"},
+     "blurb": "Друзья в вашем городе.", "detail": "Друзья рядом без GPS: город в профиле + расстояние по OpenStreetMap.", "url_name": "nearby"},
     {"slug": "hashtags", "name": "Хэштеги", "category": "social", "featured": False,
      "blurb": "Посты по #тегам.", "detail": "Каталог трендовых хэштегов и страницы по имени тега — из статусов и стены.", "url_name": "trending"},
     {"slug": "saves", "name": "Сохранённое", "category": "tools", "featured": True,
      "blurb": "Отложите на потом.", "detail": "Сохраняйте посты, ссылки, места и страницы — список только для вас.", "url_name": "saves"},
     {"slug": "safety", "name": "Проверка безопасности", "category": "tools", "featured": True,
-     "blurb": "Отметьтесь: я в безопасности.", "detail": "Проверка безопасности: отметьте себя или друга во время ЧП — друзья увидят статус в ленте.", "url_name": "safety"},
+     "blurb": "Отметьтесь: я в безопасности.", "detail": "Проверка безопасности: зона на карте OpenStreetMap, отметка себя или друга — статус в ленте.", "url_name": "safety"},
 )
 
 

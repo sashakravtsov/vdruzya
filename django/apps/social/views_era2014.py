@@ -108,12 +108,36 @@ def safety_show(request, pk):
         else:
             messages.error(request, "Не удалось отметить.")
         return redirect("safety.show", pk=event.id)
+    from apps.social import osm
+    e14.ensure_safety_geo(event)
     mine = e14.my_checkin(me, event)
     friends_safe = e14.friend_checkins(me, event, 40)
     needing = e14.friends_needing_check(me, event, 20)
+    map_ctx = None
+    if osm.has_coords(event):
+        markers = [{
+            "lat": event.lat, "lon": event.lon,
+            "title": event.title, "url": event.get_absolute_url(),
+        }]
+        for row in friends_safe[:12]:
+            p = row.social_user
+            osm.ensure_profile_geo(p, network=False)
+            if osm.has_coords(p):
+                markers.append({
+                    "lat": p.lat, "lon": p.lon,
+                    "title": f"{p.name} — в безопасности",
+                    "url": f"/profile/{p.id}",
+                })
+        map_ctx = osm.map_context(
+            event.lat, event.lon,
+            zoom=10 if (event.radius_km or 50) >= 30 else 12,
+            title=event.city or event.title,
+            markers=markers,
+        )
     return render(request, "social/safety_event.html", {
         "me": me, "event": event, "mine": mine,
         "friends_safe": friends_safe, "needing": needing,
         "in_area": e14.in_affected_area(me, event),
+        "map": map_ctx,
         "nav": "safety",
     })

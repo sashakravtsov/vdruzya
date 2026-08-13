@@ -41,6 +41,8 @@ class MarketplaceListing(models.Model):
     place = models.CharField(max_length=120, blank=True, default="")
     description = models.TextField(blank=True, default="")
     photo_path = models.CharField(max_length=255, null=True, blank=True)
+    lat = models.FloatField(null=True, blank=True)
+    lon = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

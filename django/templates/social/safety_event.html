@@ -9,7 +9,8 @@
     </div>
     <div id="content">
         {% include "partials/flash.html" %}
-        {% if event.city %}<p class="muted">Зона: {{ event.city }}</p>{% endif %}
+        {% if event.city %}<p class="muted">Зона: {{ event.city }}{% if event.radius_km %} · ~{{ event.radius_km|floatformat:0 }} км{% endif %}</p>{% endif %}
+        {% include "social/_osm_map.html" with map=map %}
         {% if event.body %}<p>{{ event.body }}</p>{% endif %}
 
         <div class="profile-box">
