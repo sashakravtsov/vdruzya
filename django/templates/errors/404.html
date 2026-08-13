@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}Страница не найдена — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>Страница не найдена</h1></div>
+    <div id="content">
+        <div class="infocontent">
+            <p>Такой страницы нет. Возможно, ссылка устарела.</p>
+            <p><a href="{% url 'home' %}">На главную</a> · <a href="{% url 'search' %}">Поиск</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
