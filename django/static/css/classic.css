@@ -1226,7 +1226,7 @@ button.linkish .ico { margin-right: 2px; }
 .market-page .market-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
 .market-page .market-row:last-child { border-bottom: 0; }
 .market-page .market-thumb { float: left; margin: 0 8px 0 0; }
-.market-page .market-thumb img { display: block; border: 1px solid #B3B3B3; object-fit: cover; }
+.market-page .market-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
 .market-page .market-row-body { overflow: hidden; }
 .market-page .market-photo { margin: 0 0 8px; }
 .market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
