@@ -767,6 +767,57 @@ button.linkish .ico { margin-right: 2px; }
   overflow: hidden;
   background: #fff;
 }
+/* Timeline cover sits full-bleed above the two columns. */
+.profile-tl #content { padding: 0 0 10px 0 !important; }
+.profile-tl #userprofile { margin: 0 0 0 10px; }
+.profile-tl .tl-cover {
+  position: relative;
+  margin: 0 0 10px;
+  border-bottom: 1px solid #B3B3B3;
+  background: #3B5998;
+}
+.profile-tl .tl-cover-photo {
+  height: 260px;
+  background-color: #3B5998;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.profile-tl .tl-cover.is-empty .tl-cover-photo {
+  background-image: linear-gradient(180deg, #4c70ba 0%, #3B5998 55%, #2f477a 100%);
+}
+.profile-tl .tl-cover-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  padding: 4px 8px; border: 1px solid #999; background: #fff;
+  color: #333; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  text-decoration: none;
+}
+.profile-tl .tl-cover-btn:hover { background: #eceff5; text-decoration: none; }
+.profile-tl .tl-cover-foot {
+  position: absolute; left: 12px; right: 12px; bottom: 10px;
+  overflow: hidden;
+}
+.profile-tl .tl-avatar {
+  float: left; margin: 0 12px 0 0;
+  border: 4px solid #fff;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.profile-tl .tl-avatar img {
+  display: block; width: 120px; height: 120px; border: 0; vertical-align: top;
+}
+.profile-tl .tl-who {
+  overflow: hidden; padding-top: 58px;
+}
+.profile-tl .tl-who h1 {
+  margin: 0; padding: 0;
+  color: #fff; font-size: 20px; line-height: 24px; font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+.profile-tl .tl-sub {
+  margin: 2px 0 0; color: #f0f0f0; font-size: 11px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
 .profile #userprofile {
   background: #fff url("../img/narrowleftbg.gif") repeat-y left top;
   overflow: hidden;
@@ -1594,9 +1645,15 @@ select.inputtext {
 #squicklogin .file-hint { margin: 6px 0 0; }
 
 
-/* FB 2011 classic — Timeline cover + Ticker (float chrome, no flex/grid) */
+/* FB 2011 Timeline cover — see .profile-tl .tl-cover* above */
 .profile-cover-img { display: block; max-width: 100%; height: auto; margin: 4px 0; }
 #currentcover { margin-top: 16px; clear: both; }
+#currentcover .tl-edit-preview {
+  width: 100%; max-width: 520px; height: 160px; margin: 0 0 8px;
+  border: 1px solid #B3B3B3;
+  background: #3B5998 center center no-repeat;
+  background-size: cover;
+}
 .ticker-row {
   padding: 4px 0;
   border-bottom: 1px solid #d8dfea;

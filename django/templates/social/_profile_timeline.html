@@ -1,11 +1,8 @@
 {% load vd %}
-{# Timeline tab — years, milestones, activity. Cover is optional banner, not its own section. #}
+{# Timeline tab — years, milestones, activity. Cover lives on the profile banner. #}
 <div class="profile-box">
-    <h4>Лента жизни{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}?section=picture">обложка</a>{% endif %}</h4>
+    <h4>Лента жизни</h4>
     <div class="profile-box-body">
-        {% if profile.cover_url %}
-        <img src="{{ profile.cover_url }}" alt="" class="profile-cover-img">
-        {% endif %}
         <div class="subtabs">
             {% for y in timeline_years %}
             <div class="{% if y == timeline_year %}activetab{% else %}inactivetab{% endif %}">

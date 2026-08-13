@@ -1,9 +1,5 @@
 {% load static vd %}
-<div class="profile-picture">
-    {% if is_own %}<a href="{% url 'profile.edit' %}?section=picture">{% else %}<a href="?tab=photos">{% endif %}
-    <img src="{% if profile.avatar_url %}{{ profile.avatar_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" alt="" width="200" height="200">
-    </a>
-</div>
+{# Avatar lives on the Timeline cover; left rail starts with status / actions. #}
 
 {# FB 2005–06: status under picture — «Name is …» (+ optional Place, 2010) #}
 {% if not limited and is_own and status_form %}
