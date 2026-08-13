@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ app.name }} — Приложения — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index app-canvas-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ app.name }}</h1>
+        <div class="subtitle">
+            <a href="{% url 'apps' %}">← приложения</a>
+            · canvas
+            · {{ app.developer|default:"ВДрузья" }}
+        </div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead muted">{{ app.blurb }}</p>
+        {% block canvas_body %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

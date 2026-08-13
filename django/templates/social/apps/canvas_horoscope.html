@@ -1,0 +1,28 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Гороскопы</h4>
+    <div class="profile-box-body">
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Знак:</td>
+                    <td>
+                        <select name="sign">
+                            {% for slug, lab in signs %}
+                            <option value="{{ slug }}"{% if sign == slug %} selected{% endif %}>{{ lab }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="submit" class="inputsubmit" value="Прогноз">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        {% if reading %}
+        <p><b>{{ reading.label }}</b> · настроение: {{ reading.mood }}</p>
+        <p>{{ reading.line }}</p>
+        {% endif %}
+        <p class="muted">Разработчик: Александр</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Шахматы</h4>
+    <div class="profile-box-body">
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Соперник:</td>
+                    <td>
+                        <select name="friend_id">
+                            {% for f in friends %}
+                            <option value="{{ f.id }}">{{ f.name }}</option>
+                            {% empty %}
+                            <option value="">нет друзей</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Фигура:</td>
+                    <td>
+                        <select name="piece">
+                            <option>пешка</option>
+                            <option>конь</option>
+                            <option>слон</option>
+                            <option>ладья</option>
+                            <option>ферзь</option>
+                            <option>король</option>
+                        </select>
+                        на
+                        <input class="inputtext" name="square" value="e4" size="4" maxlength="4">
+                    </td>
+                </tr>
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Сделать ход"></td></tr>
+            </table>
+        </form>
+    </div>
+</div>
+{% endblock %}

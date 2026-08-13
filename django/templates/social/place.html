@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ place.name }} — Места — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="places-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ place.name }}</h1>
+        <div class="subtitle"><a href="{% url 'places' %}">← места</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Место</h4>
+            <div class="profile-box-body">
+                {% if place.photo_url %}
+                <p class="place-photo"><img src="{{ place.photo_url }}" alt="" class="news-photo"></p>
+                {% endif %}
+                <table class="infotable">
+                    {% if place.city %}<tr><td class="label">Город:</td><td>{{ place.city }}</td></tr>{% endif %}
+                    {% if place.address %}<tr><td class="label">Адрес:</td><td>{{ place.address }}</td></tr>{% endif %}
+                </table>
+                {% if form %}
+                <form method="post" enctype="multipart/form-data" class="checkin-form">{% csrf_token %}
+                    <input type="hidden" name="action" value="checkin">
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Сообщение:</td><td>{{ form.message }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Я здесь"></td></tr>
+                    </table>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% include "social/_osm_map.html" with map=map %}
+        <div class="profile-box">
+            <h4>Отзыв</h4>
+            <div class="profile-box-body">
+                {% if review_form %}
+                <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="review">
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Оценка:</td><td>{{ review_form.stars }} из 5</td></tr>
+                        <tr><td class="label">Текст:</td><td>{{ review_form.body }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="{% if my_review %}Обновить отзыв{% else %}Оставить отзыв{% endif %}"></td></tr>
+                    </table>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Отзывы</h4>
+            <div class="profile-box-body">
+                {% for r in reviews %}
+                <div class="event-list-row review-row">
+                    <div class="list-row-body">
+                        <a href="{% url 'profile' r.social_user.id %}"><b>{{ r.social_user.name }}</b></a>
+                        — {{ r.stars }}/5
+                        {% if r.body %} — {{ r.body }}{% endif %}
+                        {% if r.created_at %}<span class="muted"> · {{ r.created_at|fb_when }}</span>{% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока нет отзывов.</p>{% endfor %}
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Отметки</h4>
+            <div class="profile-box-body">
+                {% for c in checkins %}
+                <div class="event-list-row place-row">
+                    {% include "social/_list_thumb.html" with url=c.photo_url %}
+                    <div class="list-row-body">
+                        <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
+                        {% if c.message %} — {{ c.message }}{% endif %}
+                        {% if c.created_at %}<span class="muted"> · {{ c.created_at|fb_when }}</span>{% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока никто не отмечался.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

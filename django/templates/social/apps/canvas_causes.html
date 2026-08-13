@@ -1,0 +1,27 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Выберите дело</h4>
+    <div class="profile-box-body">
+        {% for c in causes %}
+        <div class="classic-person-row">
+            <span>
+                <b>{{ c.title }}</b>
+                <span class="muted"> · {{ c.n }} участников</span>
+                <div class="muted">{{ c.blurb }}</div>
+            </span>
+            <span class="classic-inline-actions">
+                {% if c.joined %}
+                <span class="muted">вы участвуете</span>
+                {% else %}
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="cause" value="{{ c.slug }}">
+                    <button type="submit" class="inputsubmit">Присоединиться</button>
+                </form>
+                {% endif %}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

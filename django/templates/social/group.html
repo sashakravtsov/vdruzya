@@ -1,0 +1,358 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}{{ group.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="group-page">
+    <div id="header"{% if group.category %} class="withsubtitle"{% endif %}>
+        <h1>{{ group.name }}</h1>
+        {% if group.category %}<div class="subtitle">{{ group.category|ru_label }}</div>{% endif %}
+    </div>
+    <div id="content" class="group-content">
+        {% include "partials/flash.html" %}
+
+        <div class="group-rail">
+            <div class="group-picture">
+                <img src="{% if group.cover_url %}{{ group.cover_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" alt="" width="180" height="180">
+            </div>
+            <div class="group-join-panel profile-action-links">
+                {% if user.is_authenticated %}
+                    {% if is_member %}
+                    <p class="group-join-status"><b>Вы в группе</b><span class="label">Лента, комментарии и события</span></p>
+                    {% elif join_pending %}
+                    <p class="group-join-status"><b>Заявка на рассмотрении</b><span class="label">Администратор скоро ответит</span></p>
+                    {% elif group.join_mode == 'request' or group.privacy == 'closed' %}
+                    <p class="group-join-status"><b>Вступление по заявке</b><span class="label">Администратор подтвердит доступ</span></p>
+                    {% else %}
+                    <p class="group-join-status"><b>Открытая группа</b><span class="label">Вступите, чтобы быть участником</span></p>
+                    {% endif %}
+                {% else %}
+                    <p class="group-join-status"><b>Войдите</b><span class="label">Чтобы вступить или написать группе</span></p>
+                {% endif %}
+                {% if can_view %}
+                <a href="?tab=wall">Стена</a>
+                <a href="?tab=discussion">Доска обсуждений</a>
+                <a href="?tab=docs">Документы</a>
+                <a href="?tab=members">Участники ({{ n_members }})</a>
+                {% endif %}
+                {% if user.is_authenticated %}
+                    {% if is_member %}
+                        {% if is_admin %}<a href="{% url 'groups.edit' group.id %}">Редактировать группу{% if pending %} ({{ pending|length }}){% endif %}</a>{% endif %}
+                        <form method="post" action="{% url 'groups.leave' group.id %}">{% csrf_token %}
+                            <button type="submit">Выйти из группы</button>
+                        </form>
+                    {% elif join_pending %}
+                        <form method="post" action="{% url 'groups.join.cancel' group.id %}">{% csrf_token %}
+                            <button type="submit">Отозвать заявку</button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'groups.join' group.id %}">{% csrf_token %}
+                            <button type="submit">{% if group.join_mode == 'open' and group.privacy != 'closed' %}Вступить{% else %}Подать заявку{% endif %}</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'login' %}?next={{ request.path }}">Войти</a>
+                {% endif %}
+                <a href="{% url 'contacts' %}?subject=group-{{ group.id }}">Пожаловаться на группу</a>
+            </div>
+
+            {% if is_member and invite_friends %}
+            <div class="profile-box">
+                <h4>Пригласить друзей</h4>
+                <div class="profile-box-body">
+                    {% for f in invite_friends %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' f.id %}">
+                            {% avatar f 32 %}
+                            <span><b>{{ f.name }}</b></span>
+                        </a>
+                        <span class="classic-inline-actions">
+                            <form method="post" action="{% url 'groups.invite' group.id %}" class="inline">{% csrf_token %}
+                                <input type="hidden" name="friend_id" value="{{ f.id }}">
+                                <button type="submit" class="linkish">пригласить</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if is_admin and pending %}
+            <div class="profile-box">
+                <h4>Заявки</h4>
+                <div class="profile-box-body">
+                    {% for r in pending %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' r.social_user.id %}">
+                            {% avatar r.social_user 32 %}
+                            <span><b>{{ r.social_user.name }}</b></span>
+                        </a>
+                        <span class="classic-inline-actions classic-inline-actions-stack">
+                            <form method="post" action="{% url 'groups.join.accept' group.id r.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish">принять</button>
+                            </form>
+                            <form method="post" action="{% url 'groups.join.reject' group.id r.id %}" class="inline">{% csrf_token %}
+                                <button type="submit" class="linkish muted">отклонить</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Руководители</h4>
+                <div class="profile-box-body">
+                    {% if officers %}
+                    {% for o in officers %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' o.id %}">
+                            {% avatar o 32 %}
+                            <span><b>{{ o.name }}</b></span>
+                        </a>
+                    </div>
+                    {% endfor %}
+                    {% else %}<p class="muted">—</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Похожие группы</h4>
+                <div class="profile-box-body">
+                    {% if related %}
+                    <ul class="plain">{% for g in related %}<li><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a> <span class="muted">({{ g.n_members }})</span></li>{% endfor %}</ul>
+                    {% else %}<p class="muted">Нет похожих.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="group-main">
+            {% if not can_view %}
+            <div class="profile-box group-locked">
+                <h4>Закрытая группа</h4>
+                <div class="profile-box-body">
+                    <p>Лента, доска обсуждений и участники доступны только членам группы.</p>
+                    {% if user.is_authenticated %}
+                        {% if join_pending %}
+                        <p class="muted">Заявка на рассмотрении.</p>
+                        <form method="post" action="{% url 'groups.join.cancel' group.id %}">{% csrf_token %}
+                            <input type="submit" class="inputsubmit" value="Отозвать заявку">
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'groups.join' group.id %}">{% csrf_token %}
+                            <input type="submit" class="inputsubmit" value="{% if group.join_mode == 'open' and group.privacy != 'closed' %}Вступить{% else %}Подать заявку{% endif %}">
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'login' %}?next={{ request.path }}">Войти, чтобы вступить</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+
+            <div id="tabs">
+                <div class="{% if tab == 'wall' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall">Стена</a></div>
+                <div class="{% if tab == 'discussion' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=discussion">Доска обсуждений</a></div>
+                <div class="{% if tab == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=photos">Фото</a></div>
+                <div class="{% if tab == 'docs' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=docs">Документы</a></div>
+                <div class="{% if tab == 'members' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=members">Участники</a></div>
+                <div class="{% if tab == 'events' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=events">События</a></div>
+            </div>
+
+            {% if tab == 'wall' %}
+            <div class="profile-box">
+                <h4>Информация</h4>
+                <div class="profile-box-body">
+                    <table class="infotable">
+                        <tr><td class="label">Название:</td><td>{{ group.name }}</td></tr>
+                        {% if group.category %}<tr><td class="label">Тип:</td><td>{{ group.category|ru_label }}</td></tr>{% endif %}
+                        <tr><td class="label">Доступ:</td><td>{{ group.privacy|ru_label }}</td></tr>
+                        {% if group.description or group.short_description %}
+                        <tr><td class="label">Описание:</td><td>{{ group.short_description|default:group.description|linebreaksbr }}</td></tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            {% if group.short_description or is_admin %}
+            <div class="profile-box">
+                <h4>Последние новости{% if is_admin %}<a class="edit" href="{% url 'groups.edit' group.id %}">ред.</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if group.short_description %}
+                    <p>{{ group.short_description|linebreaksbr }}</p>
+                    {% else %}
+                    <p class="muted">Новостей пока нет.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            <div class="profile-box group-wall-box wall-box" id="wall">
+                <h4>Стена</h4>
+                <div class="profile-box-body">
+                    {% if can_post %}
+                    {% url 'groups.posts' group.id as gpost %}
+                    {% include "social/_wall_compose.html" with form=form action=gpost submit="Написать на стену" show_as_community=is_admin %}
+                    {% endif %}
+                    {% for p in wall_posts %}
+                    {% include "social/_group_post.html" with p=p %}
+                    {% empty %}
+                    <p class="muted">На стене группы пока тихо.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'discussion' %}
+            <div class="profile-box" id="board">
+                <h4>Доска обсуждений{% if n_topics > posts|length %}<a class="edit" href="?tab=discussion&amp;all=1">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if can_post and not open_topic %}
+                    {% url 'groups.posts' group.id as gpost %}
+                    {% include "social/_discuss_compose.html" with form=board_form action=gpost submit="Начать тему" show_as_community=is_admin %}
+                    {% endif %}
+                    {% if posts %}
+                    <table class="discuss-table" cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th class="col-topic">Тема</th>
+                                <th class="col-n">Ответы</th>
+                                <th class="col-author">Автор</th>
+                                <th class="col-when">Обновлено</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in posts %}
+                            <tr class="{% if open_topic and open_topic.id == p.id %}is-open{% endif %}">
+                                <td class="col-topic"><a href="?tab=discussion&amp;topic={{ p.id }}">{{ p.title_line }}</a></td>
+                                <td class="col-n">{{ p.n_comments }}</td>
+                                <td class="col-author"><a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a></td>
+                                <td class="col-when muted">{% if p.updated_at or p.created_at %}{{ p.updated_at|default:p.created_at|fb_when }}{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if n_topics > posts|length %}
+                    <p class="muted">Показано {{ posts|length }} из {{ n_topics }} · <a href="?tab=discussion&amp;all=1">показать все</a></p>
+                    {% endif %}
+                    {% if open_topic %}
+                    <p class="muted"><a href="?tab=discussion">← к списку тем</a></p>
+                    {% include "social/_discuss_thread.html" with p=open_topic %}
+                    {% endif %}
+                    {% else %}
+                    <p class="muted">Пока нет тем для обсуждения. Начните первую выше.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'photos' %}
+            <div class="profile-box">
+                <h4>Фото</h4>
+                <div class="profile-box-body">
+                    {% if can_post %}
+                    <form method="post" action="{% url 'groups.posts' group.id %}" enctype="multipart/form-data" class="photo-upload-form">{% csrf_token %}
+                        {{ photo_form.board }}
+                        <input type="hidden" name="body" value="">
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            {% include "social/_file_row.html" with field=photo_form.photo label="Добавить фото" %}
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Загрузить"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% if photos %}
+                    <div class="group-photo-grid">
+                        {% for p in photos %}
+                        <a href="{% if p.topic == 'wall' %}?tab=wall#topic-{{ p.id }}{% else %}?tab=discussion&amp;topic={{ p.id }}{% endif %}"><img src="{{ p.media_url }}" alt=""></a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="muted">Пока никто не загрузил фото.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'members' %}
+            <div class="profile-box" id="members">
+                <h4>Участники<a class="edit" href="{% url 'groups.members' group.id %}">все</a></h4>
+                <div class="profile-box-body">
+                    <p class="muted">В этой группе {{ n_members }} участник{% if n_members == 1 %}{% elif n_members > 1 and n_members < 5 %}а{% else %}ов{% endif %}{% if group.category %} · {{ group.category|ru_label }}{% endif %}.</p>
+                    {% if members %}
+                    {% include "social/_profile_friend_grid.html" with friends=members %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'docs' %}
+            <div class="profile-box" id="docs">
+                <h4>Документы</h4>
+                <div class="profile-box-body">
+                    {% if can_post and doc_form %}
+                    <form method="post" action="{% url 'groups.docs' group.id %}">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr><td class="label">Название:</td><td>{{ doc_form.title }}</td></tr>
+                            <tr><td class="label">Текст:</td><td>{{ doc_form.body }}</td></tr>
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать документ"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% for d in docs %}
+                    <div class="event-list-row doc-row">
+                        <div class="list-row-body">
+                            <b><a href="{% url 'groups.docs.show' group.id d.id %}">{{ d.title }}</a></b>
+                            <div class="muted">
+                                <a href="{% url 'profile' d.social_user.id %}">{{ d.social_user.name }}</a>
+                                {% if d.updated_at %} · {{ d.updated_at|fb_when }}{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="muted">Документов пока нет.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tab == 'events' %}
+            <div class="profile-box" id="events">
+                <h4>События</h4>
+                <div class="profile-box-body">
+                    {% if is_admin and event_form %}
+                    <form method="post" action="{% url 'groups.events' group.id %}" enctype="multipart/form-data">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr><td class="label">Название:</td><td>{{ event_form.title }}</td></tr>
+                            <tr><td class="label">Место:</td><td>{{ event_form.place }}</td></tr>
+                            <tr><td class="label">Когда:</td><td>{{ event_form.starts_at }}{% if event_form.starts_at.help_text %} <span class="muted">{{ event_form.starts_at.help_text }}</span>{% endif %}</td></tr>
+                            <tr><td class="label">Обложка:</td><td>{{ event_form.cover }}</td></tr>
+                            <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                    {% for e in events %}
+                    <div class="event-row">
+                        <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
+                        <div class="muted">{{ e.place }} · {{ e.starts_at|date:"j E Y, H:i" }}</div>
+                        {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'events.rsvp' e.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="status" value="going">
+                            <input type="hidden" name="next" value="?tab=events">
+                            <button type="submit" class="linkish">Пойду</button>
+                        </form>
+                        ·
+                        <a href="{% url 'events.show' e.id %}">открыть</a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="muted">Событий пока нет.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% endif %}
+        </div>
+
+        <div class="clear"></div>
+    </div>
+</div>
+{% endblock %}

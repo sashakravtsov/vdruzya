@@ -1,0 +1,17 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Покер</h4>
+    <div class="profile-box-body">
+        <form method="post">{% csrf_token %}
+            <input type="submit" class="inputsubmit" value="Раздать карты">
+        </form>
+        {% if cards %}
+        <p class="stack-md">
+            {% for c in cards %}<span class="poker-card">{{ c }}</span> {% endfor %}
+        </p>
+        <p>Комбинация: <b>{{ label }}</b></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
