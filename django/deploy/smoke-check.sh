@@ -369,7 +369,7 @@ if ! grep -q 'collections.cover.clear' "${ROOT}/django/apps/social/urls.py" 2>/d
 else
   echo "OK   collection cover clear"
 fi
-if ! grep -q 'event_going\|_add_market' "${ROOT}/django/apps/social/services.py" 2>/dev/null; then
+if ! grep -q 'event_going\|_add_market' "${ROOT}/django/apps/social/news_stories.py" 2>/dev/null; then
   echo "FAIL event/market news stories missing"; FAIL=1
 else
   echo "OK   event/market news stories"

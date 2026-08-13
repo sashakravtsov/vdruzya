@@ -170,7 +170,6 @@ def main():
     from apps.social import news_stories as ns
     from apps.social import mini_feed_side as mfs
     from apps.social import story_keys as sk
-    from apps.social import feed_hide as fh
     assert callable(ns._add_group_posts) and callable(ns._add_follow_public)
     assert callable(mfs._side_items)
     assert fh.story_key_for is sk.story_key_for
