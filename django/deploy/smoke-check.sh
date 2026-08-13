@@ -778,7 +778,8 @@ if ! grep -q 'name="apps.canvas"' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
   || ! grep -q 'name="apps.authorize"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'name="api.oauth.token"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'data-comment-open' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
-  || ! grep -q 'app_access_tokens' "${ROOT}/django/deploy/ensure-platform-apps.py" 2>/dev/null; then
+  || ! grep -q 'app_access_tokens' "${ROOT}/django/deploy/ensure-platform-apps.py" 2>/dev/null \
+  || ! grep -q '@login_not_required' "${ROOT}/django/apps/social/views_app_api.py" 2>/dev/null; then
   echo "FAIL platform OAuth / photo modal / developers missing"; FAIL=1
 else
   echo "OK   platform OAuth + photo modal + developers"
