@@ -1582,7 +1582,36 @@ body.fb-dialog-open { overflow: hidden; }
 .chess-app .chess-done { color: #390; font-weight: bold; margin-left: 4px; }
 .chess-app span.chess-sq {
   display: block; width: 28px; height: 28px; color: #111;
+  cursor: pointer; user-select: none;
 }
+.chess-app .chess-board td.dragging { opacity: 0.7; }
+.chess-app .chess-board td.drag-over { outline: 2px dashed var(--fb); outline-offset: -2px; }
+.chess-app .chess-clocks {
+  margin: 8px 0 10px; max-width: 280px;
+}
+.chess-app .chess-clock-side {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 4px 8px; border: 1px solid #ccc; background: #f7f7f7;
+  font: 11px/16px var(--font);
+}
+.chess-app .chess-clock-side + .chess-clock-meta + .chess-clock-side,
+.chess-app .chess-clock-meta + .chess-clock-side { margin-top: 4px; }
+.chess-app .chess-clock-meta { margin: 3px 0; font-size: 10px; }
+.chess-app .chess-clock-time {
+  font-weight: bold; font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right;
+}
+.chess-app .chess-clock-side.is-running {
+  background: #edf2f8; border-color: var(--fb);
+}
+.chess-app .chess-clock-side.is-low .chess-clock-time { color: #a40; }
+.chess-app .chess-clock-side.is-flag {
+  background: #fde8e8; border-color: #c66;
+}
+.chess-app .chess-manual { margin: 6px 0 8px; }
+.chess-app .chess-manual-check { margin-right: 4px; vertical-align: middle; }
+.chess-app .chess-manual-toggle { cursor: pointer; vertical-align: middle; }
+.chess-app .chess-manual-fields { display: none; margin-top: 6px; }
+.chess-app .chess-manual-check:checked ~ .chess-manual-fields { display: block; }
 
 /* OSM maps — classic profile-box, Leaflet owns its own layout */
 .osm-box .osm-map {

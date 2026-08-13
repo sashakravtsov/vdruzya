@@ -39,6 +39,19 @@ class StartGameForm(ClassicForm, forms.Form):
         initial="white",
         widget=_sel(),
     )
+    time_control = forms.ChoiceField(
+        choices=(
+            ("0", "Без лимита"),
+            ("1800", "30 минут на партию"),
+            ("3600", "1 час на партию"),
+            ("86400", "24 часа на партию"),
+            ("259200", "3 дня на партию"),
+        ),
+        initial="86400",
+        label="Часы",
+        widget=_sel(),
+        help_text="Как в настоящих шахматах: время тикает только на вашем ходу. Ноль — поражение.",
+    )
     in_champ = forms.BooleanField(
         required=False, initial=True, label="Учитывать в чемпионате недели",
         widget=forms.CheckboxInput(),
@@ -61,7 +74,7 @@ class MoveForm(ClassicForm, forms.Form):
 
 
 class GameActionForm(ClassicForm, forms.Form):
-    """resign / draw_offer / draw_accept / draw_decline"""
+    """resign / draw / flag"""
     game_id = forms.IntegerField(widget=forms.HiddenInput())
     action = forms.ChoiceField(
         choices=(
@@ -69,6 +82,7 @@ class GameActionForm(ClassicForm, forms.Form):
             ("draw_offer", "draw_offer"),
             ("draw_accept", "draw_accept"),
             ("draw_decline", "draw_decline"),
+            ("claim_flag", "claim_flag"),
         ),
         widget=forms.HiddenInput(),
     )

@@ -83,10 +83,16 @@ def main():
     puzzles_html = c.get("/apps/chess/canvas?tab=puzzles", secure=True).content
     assert "Задачи".encode() in puzzles_html
     assert "Мат в 1 ход".encode() in puzzles_html
+    assert b"chess-board.js" in puzzles_html
+    assert b"data-chess-live" in puzzles_html
     assert "Чемпионат недели".encode() in c.get("/apps/chess/canvas?tab=champs", secure=True).content
     play = c.get("/apps/chess/canvas?tab=play", secure=True).content
     assert "Учитывать в чемпионате".encode() in play
-    ok("canvas tabs + learn/puzzles UI")
+    assert "Часы".encode() in play
+    assert "24 часа на партию".encode() in play
+    legal = engine.legal_moves_map(engine.START_FEN, "w")
+    assert "e2" in legal and "e4" in legal["e2"]
+    ok("canvas tabs + mouse board + clocks helpers")
     print("ALL chess probes passed")
 
 

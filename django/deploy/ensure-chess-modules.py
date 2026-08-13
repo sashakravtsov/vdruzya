@@ -80,6 +80,11 @@ CREATE TABLE IF NOT EXISTS chess_moves (
 CREATE INDEX IF NOT EXISTS chess_moves_game_idx ON chess_moves (game_id, ply);
 
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS draw_offer_by_id bigint;
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS time_control_sec integer NOT NULL DEFAULT 0;
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS increment_sec integer NOT NULL DEFAULT 0;
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS white_clock_ms bigint NOT NULL DEFAULT 0;
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS black_clock_ms bigint NOT NULL DEFAULT 0;
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS clock_running_since timestamp without time zone;
 
 CREATE TABLE IF NOT EXISTS chess_lesson_progress (
   id bigserial PRIMARY KEY,

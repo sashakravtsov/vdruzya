@@ -32,10 +32,15 @@ def render_chess_canvas(request, me, app):
     moves = []
     board_rows = []
     legal_hint = []
+    legal_map = {}
+    clock = {"enabled": False}
+    my_side = ""
+    can_move = False
     from_sq = (request.GET.get("from") or "").strip().lower()
     lesson = None
     puzzle = None
     puzzle_board = []
+    puzzle_legal = {}
     start_form = StartGameForm(friends=friends)
     move_form = MoveForm()
     puzzle_form = PuzzleAnswerForm()
@@ -47,7 +52,7 @@ def render_chess_canvas(request, me, app):
                 form = StartGameForm(request.POST, friends=friends)
                 if not form.is_valid():
                     start_form = form
-                    raise ValueError("Проверьте выбор соперника")
+                    raise ValueError("Проверьте выбор соперника и контроль времени")
                 fid = form.cleaned_data["friend_id"]
                 if fid not in friend_ids(me):
                     raise ValueError("Выберите друга из списка")
@@ -56,10 +61,11 @@ def render_chess_canvas(request, me, app):
                     raise ValueError("Соперник не найден")
                 color = form.cleaned_data["color"]
                 in_champ = bool(form.cleaned_data.get("in_champ"))
+                tc = int(form.cleaned_data["time_control"])
                 if color == "black":
-                    g = chess.start_game(peer, me, in_champ=in_champ)
+                    g = chess.start_game(peer, me, in_champ=in_champ, time_control_sec=tc)
                 else:
-                    g = chess.start_game(me, peer, in_champ=in_champ)
+                    g = chess.start_game(me, peer, in_champ=in_champ, time_control_sec=tc)
                 notify.push(
                     peer.id, title="Шахматы",
                     body=f"{me.name} приглашает сыграть партию",
@@ -85,13 +91,16 @@ def render_chess_canvas(request, me, app):
                     type="message",
                     url=reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}",
                 )
-                messages.success(
-                    request,
-                    "Партия завершена." if g.result != "*" else f"Ход {form.cleaned_data['from_sq']}-{form.cleaned_data['to_sq']} сделан.",
-                )
+                if g.status == "timeout":
+                    messages.info(request, "Время истекло — партия завершена.")
+                else:
+                    messages.success(
+                        request,
+                        "Партия завершена." if g.result != "*" else f"Ход {form.cleaned_data['from_sq']}-{form.cleaned_data['to_sq']} сделан.",
+                    )
                 return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}")
 
-            if action in ("resign", "draw_offer", "draw_accept", "draw_decline"):
+            if action in ("resign", "draw_offer", "draw_accept", "draw_decline", "claim_flag"):
                 form = GameActionForm(request.POST)
                 if not form.is_valid():
                     raise ValueError("Некорректное действие")
@@ -114,9 +123,22 @@ def render_chess_canvas(request, me, app):
                 elif action == "draw_accept":
                     g = chess.accept_draw(g, me)
                     messages.success(request, "Ничья принята.")
-                else:
+                elif action == "draw_decline":
                     g = chess.decline_draw(g, me)
                     messages.info(request, "Ничья отклонена.")
+                else:
+                    g = chess.claim_timeout(g, me)
+                    if g.winner_id == me.id:
+                        messages.success(request, "Соперник просрочил время — победа.")
+                    else:
+                        messages.info(request, "Время истекло — партия завершена.")
+                    opp_id = g.black_id if me.id == g.white_id else g.white_id
+                    notify.push(
+                        opp_id, title="Шахматы",
+                        body="Партия завершена: истекло время на часах",
+                        type="message",
+                        url=reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}",
+                    )
                 return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}")
 
             if action == "lesson_done":
@@ -156,6 +178,9 @@ def render_chess_canvas(request, me, app):
             gid = 0
         game = chess.game_for(me, gid) if gid else None
         if game:
+            game, flagged = chess.ensure_clock(game)
+            if flagged:
+                messages.info(request, "Время на часах истекло — партия завершена.")
             flip = me.id == game.black_id
             board_rows = chess_engine.board_rows(game.fen, flip=flip)
             moves = list(ChessMove.objects.filter(game=game).order_by("ply")[:120])
@@ -165,13 +190,16 @@ def render_chess_canvas(request, me, app):
                 "from_sq": from_sq,
                 "to_sq": to_sq,
             })
-            if from_sq and game.result == "*" and chess.side_of(game, me) == game.turn:
+            my_side = chess.side_of(game, me) or ""
+            can_move = bool(game.result == "*" and my_side and my_side == game.turn)
+            if can_move:
                 try:
-                    legal_hint = chess_engine.legal_moves_from(
-                        chess_engine.parse_fen(game.fen), from_sq,
-                    )
+                    legal_map = chess_engine.legal_moves_map(game.fen, my_side)
                 except Exception:
-                    legal_hint = []
+                    legal_map = {}
+            if from_sq and can_move:
+                legal_hint = legal_map.get(from_sq, [])
+            clock = chess.clock_snapshot(game)
         else:
             messages.error(request, "Партия не найдена или недоступна.")
             tab = "play"
@@ -210,6 +238,10 @@ def render_chess_canvas(request, me, app):
         puzzle = chess_puzzles.puzzle_by_id(pid) or chess_puzzles.PUZZLES[0]
         puzzle_board = chess_engine.board_rows(puzzle["fen"], flip=(puzzle["side"] == "b"))
         puzzle_form = PuzzleAnswerForm(initial={"puzzle_id": puzzle["id"]})
+        try:
+            puzzle_legal = chess_engine.legal_moves_map(puzzle["fen"], puzzle["side"])
+        except Exception:
+            puzzle_legal = {}
 
     active_games = list(
         ChessGame.objects.filter(Q(white=me) | Q(black=me), result="*")
@@ -220,7 +252,9 @@ def render_chess_canvas(request, me, app):
         "me": me, "app": app, "friends": friends, "tab": tab,
         "champ": champ, "my_rating": my_rating,
         "game": game, "board_rows": board_rows, "moves": moves,
-        "legal_hint": legal_hint, "from_sq": from_sq,
+        "legal_hint": legal_hint, "legal_map": legal_map,
+        "from_sq": from_sq, "my_side": my_side, "can_move": can_move,
+        "clock": clock,
         "start_form": start_form, "move_form": move_form,
         "stats": stats, "history_page": history_page,
         "ratings_page": ratings_page,
@@ -230,6 +264,7 @@ def render_chess_canvas(request, me, app):
         "learn_meta": learn_meta,
         "puzzle": puzzle, "puzzles": chess_puzzles.PUZZLES,
         "puzzle_board": puzzle_board, "puzzle_form": puzzle_form,
+        "puzzle_legal": puzzle_legal,
         "active_games": active_games,
         "nav": "apps", "installed": True,
     })

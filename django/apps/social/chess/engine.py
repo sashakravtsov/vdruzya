@@ -373,6 +373,23 @@ def board_rows(fen: str, flip: bool = False) -> list[list[dict]]:
     return rows
 
 
+def legal_moves_map(fen: str, side: str | None = None) -> dict[str, list[str]]:
+    """Map square -> legal target squares for the side to move (or given side)."""
+    state = parse_fen(fen)
+    turn = side or state["turn"]
+    out: dict[str, list[str]] = {}
+    for r in range(8):
+        for c in range(8):
+            p = state["board"][r][c]
+            if not _own(turn, p):
+                continue
+            sq = rc_to_sq(r, c)
+            targets = legal_moves_from(state, sq)
+            if targets:
+                out[sq] = targets
+    return out
+
+
 def game_status(fen: str) -> str:
     """active | check | checkmate | stalemate"""
     state = parse_fen(fen)

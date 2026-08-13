@@ -62,7 +62,7 @@ class ChessGame(models.Model):
         SocialProfile, on_delete=models.DO_NOTHING, db_column="black_id", related_name="+",
     )
     fen = models.CharField(max_length=100)
-    status = models.CharField(max_length=16, default="active")  # active|check|mate|draw|resign
+    status = models.CharField(max_length=16, default="active")  # active|check|mate|draw|resign|timeout
     result = models.CharField(max_length=8, default="*")  # 1-0|0-1|1/2-1/2|*
     turn = models.CharField(max_length=1, default="w")
     championship = models.ForeignKey(
@@ -77,6 +77,12 @@ class ChessGame(models.Model):
         SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
         db_column="draw_offer_by_id", related_name="+",
     )
+    # Chess clocks (0 = unlimited). Time runs only on the side to move.
+    time_control_sec = models.IntegerField(default=0)
+    increment_sec = models.IntegerField(default=0)
+    white_clock_ms = models.BigIntegerField(default=0)
+    black_clock_ms = models.BigIntegerField(default=0)
+    clock_running_since = models.DateTimeField(null=True, blank=True)
     moves_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)

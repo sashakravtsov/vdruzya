@@ -85,9 +85,121 @@ def leaderboard(limit: int = 20):
     )
 
 
-def start_game(white: SocialProfile, black: SocialProfile, *, in_champ: bool = True) -> ChessGame:
+TIME_CONTROL_CHOICES = (
+    (0, "Без лимита"),
+    (30 * 60, "30 минут на партию"),
+    (60 * 60, "1 час на партию"),
+    (24 * 3600, "24 часа на партию"),
+    (3 * 24 * 3600, "3 дня на партию"),
+)
+
+
+def clocks_enabled(game: ChessGame) -> bool:
+    return int(getattr(game, "time_control_sec", 0) or 0) > 0
+
+
+def remaining_ms(game: ChessGame, side: str, at=None) -> int:
+    """Remaining clock for side (applies live tick for the side to move)."""
+    at = at or _now()
+    base = int(game.white_clock_ms if side == "w" else game.black_clock_ms) or 0
+    if not clocks_enabled(game) or game.result != "*":
+        return max(0, base)
+    if game.turn != side or not game.clock_running_since:
+        return max(0, base)
+    elapsed = int((at - game.clock_running_since).total_seconds() * 1000)
+    return max(0, base - max(0, elapsed))
+
+
+def clock_snapshot(game: ChessGame, at=None) -> dict:
+    at = at or _now()
+    if not clocks_enabled(game):
+        return {"enabled": False, "white_ms": 0, "black_ms": 0, "turn": game.turn, "active": False}
+    return {
+        "enabled": True,
+        "white_ms": remaining_ms(game, "w", at),
+        "black_ms": remaining_ms(game, "b", at),
+        "turn": game.turn,
+        "active": game.result == "*",
+        "label": _time_control_label(game.time_control_sec),
+        "increment_sec": int(game.increment_sec or 0),
+    }
+
+
+def _time_control_label(sec: int) -> str:
+    for value, label in TIME_CONTROL_CHOICES:
+        if value == sec:
+            return label
+    if sec <= 0:
+        return "Без лимита"
+    if sec % 86400 == 0:
+        days = sec // 86400
+        return f"{days} дн. на партию"
+    if sec % 3600 == 0:
+        return f"{sec // 3600} ч. на партию"
+    if sec % 60 == 0:
+        return f"{sec // 60} мин. на партию"
+    return f"{sec} с на партию"
+
+
+@transaction.atomic
+def flag_loss(game: ChessGame, loser_side: str) -> ChessGame:
+    if game.result != "*":
+        return game
+    game.status = "timeout"
+    if loser_side == "w":
+        game.result = "0-1"
+        game.winner_id = game.black_id
+        game.white_clock_ms = 0
+    else:
+        game.result = "1-0"
+        game.winner_id = game.white_id
+        game.black_clock_ms = 0
+    game.clock_running_since = None
+    game.updated_at = _now()
+    game.save()
+    _finish_ratings(game)
+    return game
+
+
+@transaction.atomic
+def ensure_clock(game: ChessGame) -> tuple[ChessGame, bool]:
+    """If the side to move has flagged, finish the game. Returns (game, flagged)."""
+    if game.result != "*" or not clocks_enabled(game):
+        return game, False
+    rem = remaining_ms(game, game.turn)
+    if rem > 0:
+        return game, False
+    return flag_loss(game, game.turn), True
+
+
+@transaction.atomic
+def claim_timeout(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if not side_of(game, user):
+        raise ValueError("Это не ваша партия")
+    if game.result != "*":
+        raise ValueError("Партия уже закончена")
+    if not clocks_enabled(game):
+        raise ValueError("В этой партии нет часов")
+    if remaining_ms(game, game.turn) > 0:
+        raise ValueError("Время ещё не истекло")
+    return flag_loss(game, game.turn)
+
+
+def start_game(
+    white: SocialProfile,
+    black: SocialProfile,
+    *,
+    in_champ: bool = True,
+    time_control_sec: int = 0,
+    increment_sec: int = 0,
+) -> ChessGame:
     if white.id == black.id:
         raise ValueError("Нельзя играть с самим собой")
+    allowed = {v for v, _ in TIME_CONTROL_CHOICES}
+    time_control_sec = int(time_control_sec or 0)
+    if time_control_sec not in allowed:
+        raise ValueError("Выберите контроль времени из списка")
+    increment_sec = max(0, min(int(increment_sec or 0), 3600))
     champ = ensure_week_championship() if in_champ else None
     get_or_create_rating(white)
     get_or_create_rating(black)
@@ -97,6 +209,8 @@ def start_game(white: SocialProfile, black: SocialProfile, *, in_champ: bool = T
                 championship=champ, social_user=u,
                 defaults={"points": 0, "wins": 0, "losses": 0, "draws": 0},
             )
+    now = _now()
+    bank = time_control_sec * 1000
     return ChessGame.objects.create(
         white=white,
         black=black,
@@ -106,8 +220,13 @@ def start_game(white: SocialProfile, black: SocialProfile, *, in_champ: bool = T
         turn="w",
         championship=champ,
         moves_count=0,
-        created_at=_now(),
-        updated_at=_now(),
+        time_control_sec=time_control_sec,
+        increment_sec=increment_sec,
+        white_clock_ms=bank,
+        black_clock_ms=bank,
+        clock_running_since=now if time_control_sec > 0 else None,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -137,30 +256,49 @@ def play_move(game: ChessGame, user: SocialProfile, frm: str, to: str) -> ChessG
         raise ValueError("Это не ваша партия")
     if game.turn != side:
         raise ValueError("Сейчас ход соперника")
+    now = _now()
+    if clocks_enabled(game):
+        rem = remaining_ms(game, side, now)
+        if rem <= 0:
+            return flag_loss(game, side)
+        mover_bank = rem + int(game.increment_sec or 0) * 1000
+    else:
+        mover_bank = None
     new_fen, san = engine.make_move(game.fen, frm, to)
     status = engine.game_status(new_fen)
     game.fen = new_fen
     game.turn = "b" if side == "w" else "w"
     game.moves_count += 1
     game.draw_offer_by_id = None
-    game.updated_at = _now()
+    game.updated_at = now
+    if mover_bank is not None:
+        if side == "w":
+            game.white_clock_ms = mover_bank
+        else:
+            game.black_clock_ms = mover_bank
     ChessMove.objects.create(
         game=game, ply=game.moves_count, from_sq=frm.lower()[:2], to_sq=to.lower()[:2],
-        san=san, fen_after=new_fen, created_at=_now(),
+        san=san, fen_after=new_fen, created_at=now,
     )
     if status == "checkmate":
         game.status = "mate"
         game.result = "1-0" if side == "w" else "0-1"
         game.winner_id = user.id
+        game.clock_running_since = None
         _finish_ratings(game)
     elif status == "stalemate":
         game.status = "draw"
         game.result = "1/2-1/2"
+        game.clock_running_since = None
         _finish_ratings(game)
     elif status == "check":
         game.status = "check"
+        if clocks_enabled(game):
+            game.clock_running_since = now
     else:
         game.status = "active"
+        if clocks_enabled(game):
+            game.clock_running_since = now
     game.save()
     return game
 
@@ -179,6 +317,7 @@ def resign(game: ChessGame, user: SocialProfile) -> ChessGame:
     else:
         game.result = "1-0"
         game.winner_id = game.white_id
+    game.clock_running_since = None
     game.updated_at = _now()
     game.save()
     _finish_ratings(game)
@@ -281,6 +420,7 @@ def accept_draw(game: ChessGame, user: SocialProfile) -> ChessGame:
     game.status = "draw"
     game.result = "1/2-1/2"
     game.draw_offer_by_id = None
+    game.clock_running_since = None
     game.updated_at = _now()
     game.save()
     _finish_ratings(game)
