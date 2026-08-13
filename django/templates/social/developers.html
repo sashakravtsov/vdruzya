@@ -10,11 +10,12 @@
     <div id="content">
         {% include "partials/flash.html" %}
         <p class="classic-page-lead">
-            Создайте приложение ВДрузья для своего сайта (например somneniya.ru).
-            Canvas остаётся на ВДрузья; сайт открывается ссылкой — без стороннего iframe.
+            Подключите свой сайт (somneniya.ru и др.) к ВДрузья: OAuth-lite, ключи API,
+            signed_request. Canvas на ВДрузья, сайт — редиректом, без iframe.
         </p>
         <p class="action-row">
             <a class="inputsubmit" href="{% url 'developers.new' %}">Создать приложение</a>
+            · <a href="{% url 'developers.docs' %}">документация API</a>
             · <a href="{% url 'apps' %}">каталог</a>
         </p>
 
@@ -25,7 +26,7 @@
                     <thead>
                         <tr>
                             <th class="col-name">Приложение</th>
-                            <th class="col-type">Сайт</th>
+                            <th class="col-type">Сайт / API</th>
                             <th class="col-act">Статус</th>
                         </tr>
                     </thead>
@@ -33,13 +34,14 @@
                         {% for a in apps %}
                         <tr>
                             <td class="col-name">
-                                <a href="{% url 'apps.show' a.slug %}"><b>{{ a.name }}</b></a>
-                                <div class="muted">/apps/{{ a.slug }}</div>
+                                <a href="{% url 'developers.edit' a.slug %}"><b>{{ a.name }}</b></a>
+                                <div class="muted">/apps/{{ a.slug }} · {{ a.n_installs }} уст.</div>
                             </td>
                             <td class="col-type">
                                 {% if a.website_url %}
-                                <a href="{{ a.website_url }}" rel="nofollow noopener">{{ a.website_url|truncatechars:40 }}</a>
+                                <a href="{{ a.website_url }}" rel="nofollow noopener">{{ a.website_url|truncatechars:36 }}</a>
                                 {% else %}<span class="muted">—</span>{% endif %}
+                                <div class="muted">key: {{ a.api_key|truncatechars:18 }}</div>
                             </td>
                             <td class="col-act">
                                 {% if a.published %}<span class="muted">в каталоге</span>{% else %}<span class="muted">черновик</span>{% endif %}
@@ -50,7 +52,7 @@
                                     <button type="submit" class="linkish muted"
                                             data-fb-dialog
                                             data-fb-dialog-title="Удалить приложение?"
-                                            data-fb-dialog-message="Убрать «{{ a.name }}» из кабинета и каталога?"
+                                            data-fb-dialog-message="Убрать «{{ a.name }}» и отозвать токены?"
                                             data-fb-dialog-form="#dev-del-{{ a.slug }}">удалить</button>
                                 </form>
                             </td>

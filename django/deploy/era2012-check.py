@@ -105,21 +105,54 @@ def main():
 
     r = c.get("/developers", secure=True)
     assert r.status_code == 200 and "Кабинет разработчика".encode() in r.content
+    r = c.get("/developers/docs", secure=True)
+    assert r.status_code == 200 and b"access_token" in r.content
     from apps.social.models import DevApp
+    from apps.social import platform_oauth as oauth
     DevApp.objects.filter(slug="somneniya").delete()
     r = c.post("/developers/new", {
         "slug": "somneniya", "name": "Сомнения", "category": "lifestyle",
         "blurb": "Сайт somneniya.ru", "detail": "Приложение для сайта Сомнения",
-        "website_url": "https://somneniya.ru", "published": "1",
+        "website_url": "https://somneniya.ru",
+        "callback_url": "https://somneniya.ru/vd-callback",
+        "published": "1",
     }, secure=True)
     assert r.status_code in (301, 302)
-    assert DevApp.objects.filter(slug="somneniya", owner=me).exists()
+    app = DevApp.objects.filter(slug="somneniya", owner=me).first()
+    assert app and app.api_key.startswith("vd_") and len(app.api_secret) >= 32
     r = c.get("/apps/somneniya", secure=True)
     assert r.status_code == 200 and b"somneniya.ru" in r.content
     r = c.get("/apps/somneniya/canvas", secure=True)
-    assert r.status_code == 200 and b"somneniya.ru" in r.content
+    assert r.status_code == 200 and b"signed_request" in r.content
     assert b"<iframe" not in r.content.lower()
-    ok("developer cabinet + link-out app")
+    r = c.get("/apps/somneniya/launch", secure=True)
+    assert r.status_code in (301, 302)
+    loc = r["Location"]
+    assert "somneniya.ru" in loc and "signed_request=" in loc
+    signed = loc.split("signed_request=")[1].split("&")[0]
+    assert oauth.verify_signed_request(app, signed)
+    r = c.post("/apps/somneniya/authorize", {
+        "allow": "1",
+        "client_id": app.api_key,
+        "redirect_uri": "https://somneniya.ru/vd-callback",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    loc = r["Location"]
+    assert "code=vc_" in loc and "somneniya.ru/vd-callback" in loc
+    from urllib.parse import urlparse, parse_qs
+    code = parse_qs(urlparse(loc).query)["code"][0]
+    r = c.post("/api/oauth/access_token", {
+        "client_id": app.api_key, "client_secret": app.api_secret,
+        "code": code, "redirect_uri": "https://somneniya.ru/vd-callback",
+    }, secure=True)
+    assert r.status_code == 200
+    tok = r.json()["access_token"]
+    assert tok.startswith("vat_")
+    r = c.get("/api/app/me", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
+    assert r.status_code == 200 and r.json()["id"] == me.id
+    r = c.get("/api/app/friends", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
+    assert r.status_code == 200 and "data" in r.json()
+    ok("developer OAuth-lite + signed launch + API")
 
     r = c.get("/collections", secure=True)
     assert r.status_code == 200

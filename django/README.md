@@ -7,7 +7,7 @@
 
 **Под chrome 2006 (float / `#tabs` / formtable):** Страницы, App Center, Likes, Places, Questions, classic Polls, Share, Open Graph, Timeline milestones, Collections, Graph Search, Hashtags, Nearby Friends, Trending, Save, Safety Check. Inbox — классический Message Center (ответы/стикеры), без live Messenger.
 
-**Soft bans (не возвращать):** WebSocket Messenger / `consumers.py` / `CHANNEL_LAYERS` / `static/js/messenger.js`, PYMK, Ads/Flyers/Beacon/Connect, **third-party hosted canvas/iframe** (чужой код во frame — нельзя; кабинет `/developers` + link-out на сайт вроде somneniya.ru — можно; first-party canvas на ВДрузья — можно), отдельный video-CDN продукт (видео — на том же медиа-диске/S3, что и фото), Facebook Home, blue Timeline redesign (`page-tabs` / flex-hero), `models/polls.py` (использовать только `ClassicPoll`), современный photo theater/lightbox (можно только 2006 `FBDialog`: фото слева / комментарии справа).
+**Soft bans (не возвращать):** WebSocket Messenger / `consumers.py` / `CHANNEL_LAYERS` / `static/js/messenger.js`, PYMK, Ads/Flyers/Beacon/Connect, **third-party hosted canvas/iframe** (чужой код во frame — нельзя; кабинет `/developers` + OAuth-lite / signed_request / `/api/app/*` + редирект на сайт вроде somneniya.ru — можно; first-party canvas на ВДрузья — можно), отдельный video-CDN продукт (видео — на том же медиа-диске/S3, что и фото), Facebook Home, blue Timeline redesign (`page-tabs` / flex-hero), `models/polls.py` (использовать только `ClassicPoll`), современный photo theater/lightbox (можно только 2006 `FBDialog`: фото слева / комментарии справа).
 
 ## Стек
 - Django 6, Daphne, WhiteNoise, Postgres FTS

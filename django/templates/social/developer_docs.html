@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block title %}API приложений — Разработчик — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="apps-index">
+    <div id="header" class="withsubtitle">
+        <h1>API приложений</h1>
+        <div class="subtitle"><a href="{% url 'developers' %}">← кабинет</a></div>
+    </div>
+    <div id="content">
+        <p class="classic-page-lead">
+            Платформа на Django: OAuth-lite, <code>signed_request</code>, JSON API.
+            Сторонний iframe/canvas не используется — только редирект на ваш сайт.
+        </p>
+
+        <div class="profile-box">
+            <h4>1. Запуск из canvas</h4>
+            <div class="profile-box-body">
+                <p>Пользователь нажимает «Открыть с авторизацией» → редирект на ваш <b>website_url</b>:</p>
+                <pre class="code-sample">https://somneniya.ru/?signed_request=SIG.PAYLOAD&amp;user_id=123&amp;app=somneniya</pre>
+                <p class="muted">Проверка подписи: HMAC-SHA256(api_secret, PAYLOAD), сравнить с SIG (urlsafe base64).</p>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>2. OAuth-lite</h4>
+            <div class="profile-box-body">
+                <p><b>Authorize:</b></p>
+                <pre class="code-sample">GET /apps/&lt;slug&gt;/authorize?client_id=vd_…&amp;redirect_uri=https://somneniya.ru/callback</pre>
+                <p>После согласия → <code>redirect_uri?code=vc_…&amp;signed_request=…&amp;user_id=…</code></p>
+                <p><b>Обмен code → token:</b></p>
+                <pre class="code-sample">POST /api/oauth/access_token
+client_id=vd_…
+client_secret=…
+code=vc_…
+redirect_uri=https://somneniya.ru/callback</pre>
+                <p>Ответ: <code>{"access_token":"vat_…","token_type":"bearer","expires_in":2592000,"user_id":123}</code></p>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>3. Graph-lite</h4>
+            <div class="profile-box-body">
+                <pre class="code-sample">GET /api/app/me
+Authorization: Bearer vat_…
+
+GET /api/app/friends
+Authorization: Bearer vat_…</pre>
+                <p class="muted">Также: <code>POST /api/app/verify_signed</code> с client_id, client_secret, signed_request.</p>
+            </div>
+        </div>
+
+        <p class="action-row">
+            <a class="inputsubmit" href="{% url 'developers.new' %}">Создать приложение</a>
+            · <a href="{% url 'developers' %}">мои приложения</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

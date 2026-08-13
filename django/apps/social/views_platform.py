@@ -78,11 +78,90 @@ def app_canvas(request, slug):
 
 
 def _canvas_devapp(request, me, app):
-    """First-party canvas shell + link-out to developer website (no foreign iframe)."""
+    """First-party canvas shell + OAuth/signed launch (no foreign iframe)."""
+    from apps.social import platform_oauth as oauth
+    from apps.social.models import DevApp
+    row = DevApp.objects.filter(slug=app["slug"]).first()
     return render(request, "social/apps/canvas_devapp.html", {
         "me": me, "app": app, "website_url": app.get("website_url") or "",
         "nav": "apps", "installed": True,
+        "n_installs": oauth.install_count(app["slug"]) if row else 0,
+        "is_owner": bool(row and row.owner_id == me.id),
     })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def app_authorize(request, slug):
+    """OAuth-lite authorize dialog (2006 FBDialog-style page)."""
+    from apps.social import platform_oauth as oauth
+    from apps.social.models import DevApp
+
+    me = profile_of(request.user)
+    row = DevApp.objects.select_related("owner").filter(slug=slug).first()
+    if not row or not (row.published or row.owner_id == me.id):
+        messages.error(request, "Приложение не найдено.")
+        return redirect("apps")
+    oauth.ensure_app_credentials(row)
+    redirect_uri = (request.GET.get("redirect_uri") or request.POST.get("redirect_uri") or "").strip()
+    if not redirect_uri:
+        redirect_uri = (row.callback_url or row.website_url or "").strip()
+    client_id = (request.GET.get("client_id") or request.POST.get("client_id") or row.api_key).strip()
+    if client_id != row.api_key:
+        messages.error(request, "Неверный client_id.")
+        return redirect("apps.show", slug=slug)
+    if not oauth.allowed_redirect(row, redirect_uri):
+        messages.error(request, "redirect_uri не совпадает с сайтом приложения.")
+        return redirect("apps.show", slug=slug)
+
+    app = pa.app_by_slug(slug, viewer=me)
+    if request.method == "POST":
+        if request.POST.get("allow") != "1":
+            deny = oauth.append_query(redirect_uri, {"error": "access_denied"})
+            return redirect(deny)
+        if not pa.is_installed(me, slug):
+            pa.install(me, slug)
+        code = oauth.create_oauth_code(row, me, redirect_uri)
+        signed = oauth.make_signed_request(row, me)
+        go = oauth.append_query(redirect_uri, {
+            "code": code,
+            "signed_request": signed,
+            "user_id": me.id,
+        })
+        return redirect(go)
+
+    return render(request, "social/app_authorize.html", {
+        "me": me, "app": app, "dev": row, "nav": "apps",
+        "redirect_uri": redirect_uri, "client_id": row.api_key,
+        "permissions": pa.permissions_for(app),
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def app_launch(request, slug):
+    """Signed launch to website_url (install + signed_request, no iframe)."""
+    from apps.social import platform_oauth as oauth
+    from apps.social.models import DevApp
+
+    me = profile_of(request.user)
+    row = DevApp.objects.filter(slug=slug).first()
+    if not row or not (row.published or row.owner_id == me.id):
+        messages.error(request, "Приложение не найдено.")
+        return redirect("apps")
+    if not (row.website_url or "").strip():
+        messages.error(request, "У приложения не указан сайт.")
+        return redirect("apps.canvas", slug=slug)
+    oauth.ensure_app_credentials(row)
+    if not pa.is_installed(me, slug):
+        pa.install(me, slug)
+    signed = oauth.make_signed_request(row, me)
+    go = oauth.append_query(row.website_url, {
+        "signed_request": signed,
+        "user_id": me.id,
+        "app": row.slug,
+    })
+    return redirect(go)
 
 
 def _canvas_causes(request, me, app):

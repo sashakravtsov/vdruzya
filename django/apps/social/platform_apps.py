@@ -307,12 +307,17 @@ QUIZ_RESULTS = {
 RESERVED_SLUGS = frozenset(
     {a["slug"] for a in PLATFORM_APPS}
     | set(LEGACY_MODULE_REDIRECTS)
-    | {"developer", "developers", "new", "edit", "install", "uninstall", "canvas"}
+    | {
+        "developer", "developers", "new", "edit", "install", "uninstall",
+        "canvas", "authorize", "launch", "docs", "rotate",
+    }
 )
 
 
 def _dev_app_dict(row) -> dict:
     owner = getattr(row, "owner", None)
+    from apps.social import platform_oauth as oauth
+    oauth.ensure_app_credentials(row)
     return {
         "slug": row.slug,
         "name": row.name,
@@ -321,8 +326,10 @@ def _dev_app_dict(row) -> dict:
         "blurb": row.blurb or "",
         "detail": row.detail or row.blurb or "",
         "developer": (owner.name if owner else None) or "Разработчик",
-        "permissions": DEFAULT_PERMISSIONS + ("Ссылка на сайт приложения",),
+        "permissions": DEFAULT_PERMISSIONS + ("Ссылка на сайт приложения", "OAuth / API-доступ"),
         "website_url": (row.website_url or "").strip(),
+        "callback_url": (row.callback_url or "").strip(),
+        "api_key": (row.api_key or "").strip(),
         "dev_owned": True,
         "owner_id": row.owner_id,
         "published": bool(row.published),

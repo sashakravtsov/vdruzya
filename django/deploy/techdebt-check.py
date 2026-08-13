@@ -212,6 +212,8 @@ def main():
     assert "вдрузья" in body and "разрешен" in body
     r = c.get("/developers", secure=True)
     assert r.status_code == 200
+    r = c.get("/developers/docs", secure=True)
+    assert r.status_code == 200 and b"signed_request" in r.content
     ok("platform apps + install permissions + developers")
 
     print("ALL techdebt probes passed")

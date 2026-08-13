@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% load vd %}
-{% block title %}{% if is_new %}Новое приложение{% else %}Редактирование{% endif %} — Разработчик — ВДрузья{% endblock %}
+{% block title %}{% if is_new %}Новое приложение{% else %}{{ data.name }}{% endif %} — Разработчик — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="apps-index">
     <div id="header" class="withsubtitle">
@@ -9,6 +9,31 @@
     </div>
     <div id="content">
         {% include "partials/flash.html" %}
+
+        {% if not is_new and app %}
+        <div class="profile-box">
+            <h4>Ключи API</h4>
+            <div class="profile-box-body">
+                <table class="infotable">
+                    <tr><td class="label">client_id:</td><td><code>{{ app.api_key }}</code></td></tr>
+                    <tr><td class="label">client_secret:</td><td><code>{{ app.api_secret }}</code></td></tr>
+                    <tr><td class="label">Установок:</td><td>{{ n_installs }}</td></tr>
+                    <tr><td class="label">Authorize:</td><td><code>/apps/{{ app.slug }}/authorize</code></td></tr>
+                    <tr><td class="label">Launch:</td><td><code>/apps/{{ app.slug }}/launch</code></td></tr>
+                </table>
+                <form method="post" action="{% url 'developers.rotate' app.slug %}" class="stack-md" id="dev-rotate">{% csrf_token %}
+                    <button type="submit" class="inputbutton"
+                            data-fb-dialog
+                            data-fb-dialog-title="Перевыпустить ключи?"
+                            data-fb-dialog-message="Старые client_secret и токены на сайте перестанут работать."
+                            data-fb-dialog-form="#dev-rotate">Перевыпустить ключи</button>
+                    · <a href="{% url 'developers.docs' %}">документация</a>
+                    · <a href="{% url 'apps.canvas' app.slug %}">canvas</a>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="profile-box">
             <h4>Параметры</h4>
             <div class="profile-box-body">
@@ -49,7 +74,15 @@
                                 <input class="inputtext input-wide" name="website_url" value="{{ data.website_url }}" maxlength="255"
                                        placeholder="https://somneniya.ru">
                                 {% if errors.website_url %}<div class="error">{{ errors.website_url }}</div>{% endif %}
-                                <div class="muted">Откроется ссылкой из canvas (без встраивания чужого кода).</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label">Callback:</td>
+                            <td>
+                                <input class="inputtext input-wide" name="callback_url" value="{{ data.callback_url }}" maxlength="255"
+                                       placeholder="https://somneniya.ru/vd-callback">
+                                {% if errors.callback_url %}<div class="error">{{ errors.callback_url }}</div>{% endif %}
+                                <div class="muted">OAuth redirect_uri — тот же домен, что и сайт.</div>
                             </td>
                         </tr>
                         <tr>

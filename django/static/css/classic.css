@@ -1422,6 +1422,11 @@ body.fb-dialog-open { overflow: hidden; }
 .fb-dialog-perms li { margin: 2px 0; }
 .app-perms-list { margin: 0 0 0 16px; padding: 0; }
 .app-perms-list li { margin: 1px 0; }
+.code-sample {
+  background: #f7f7f7; border: 1px solid #ccc; padding: 8px 10px;
+  font: 11px/14px monospace; overflow: auto; margin: 6px 0;
+}
+.app-canvas-page code, .apps-index code { font: 11px/14px monospace; }
 .photo-modal { display: table; width: 100%; table-layout: fixed; }
 .photo-modal-left {
   display: table-cell; width: 58%; vertical-align: middle;

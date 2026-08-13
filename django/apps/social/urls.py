@@ -22,6 +22,7 @@ from . import views_era2014 as era14
 from . import views_osm as osm_views
 from . import views_platform as platform
 from . import views_developers as developers
+from . import views_app_api as app_api
 from . import realtime as rt
 
 urlpatterns = [
@@ -51,12 +52,20 @@ urlpatterns = [
     path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
     path("apps", apps.apps_home, name="apps"),
     path("developers", developers.developer_home, name="developers"),
+    path("developers/docs", developers.developer_docs, name="developers.docs"),
     path("developers/new", developers.developer_new, name="developers.new"),
     path("developers/<slug:slug>/edit", developers.developer_edit, name="developers.edit"),
+    path("developers/<slug:slug>/rotate", developers.developer_rotate, name="developers.rotate"),
     path("developers/<slug:slug>/delete", developers.developer_delete, name="developers.delete"),
+    path("api/oauth/access_token", app_api.oauth_access_token, name="api.oauth.token"),
+    path("api/app/me", app_api.api_me, name="api.app.me"),
+    path("api/app/friends", app_api.api_friends, name="api.app.friends"),
+    path("api/app/verify_signed", app_api.api_verify_signed, name="api.app.verify"),
     path("apps/<slug:slug>/install", platform.app_install, name="apps.install"),
     path("apps/<slug:slug>/uninstall", platform.app_uninstall, name="apps.uninstall"),
     path("apps/<slug:slug>/canvas", platform.app_canvas, name="apps.canvas"),
+    path("apps/<slug:slug>/authorize", platform.app_authorize, name="apps.authorize"),
+    path("apps/<slug:slug>/launch", platform.app_launch, name="apps.launch"),
     path("apps/<slug:slug>", era12.app_show, name="apps.show"),
     path("applications", meta.redirect_permanent, {"to": "/apps"}, name="applications.legacy"),
     path("collections", era12.collections_home, name="collections"),

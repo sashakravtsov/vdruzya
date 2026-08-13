@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Ensure first-party Platform app tables (installs / Causes / Truth)."""
+"""Ensure first-party Platform app tables (installs / Causes / Truth / OAuth)."""
 import os
 import sys
 
@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS dev_apps (
   blurb varchar(200) NOT NULL DEFAULT '',
   detail varchar(500) NOT NULL DEFAULT '',
   website_url varchar(255) NOT NULL DEFAULT '',
+  callback_url varchar(255) NOT NULL DEFAULT '',
+  api_key varchar(48) NOT NULL DEFAULT '',
+  api_secret varchar(64) NOT NULL DEFAULT '',
   published boolean NOT NULL DEFAULT false,
   featured boolean NOT NULL DEFAULT false,
   created_at timestamp without time zone,
@@ -61,17 +64,55 @@ CREATE TABLE IF NOT EXISTS dev_apps (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS dev_apps_slug_uniq ON dev_apps (slug);
 CREATE INDEX IF NOT EXISTS dev_apps_owner_idx ON dev_apps (owner_id, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS dev_apps_api_key_uniq ON dev_apps (api_key)
+  WHERE api_key <> '';
+
+ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS callback_url varchar(255) NOT NULL DEFAULT '';
+ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS api_key varchar(48) NOT NULL DEFAULT '';
+ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS api_secret varchar(64) NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS app_oauth_codes (
+  id bigserial PRIMARY KEY,
+  app_slug varchar(40) NOT NULL,
+  social_user_id bigint NOT NULL,
+  code varchar(64) NOT NULL,
+  redirect_uri varchar(255) NOT NULL DEFAULT '',
+  created_at timestamp without time zone,
+  used_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS app_oauth_codes_code_uniq ON app_oauth_codes (code);
+CREATE INDEX IF NOT EXISTS app_oauth_codes_app_idx ON app_oauth_codes (app_slug, id DESC);
+
+CREATE TABLE IF NOT EXISTS app_access_tokens (
+  id bigserial PRIMARY KEY,
+  app_slug varchar(40) NOT NULL,
+  social_user_id bigint NOT NULL,
+  token varchar(80) NOT NULL,
+  created_at timestamp without time zone,
+  expires_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS app_access_tokens_token_uniq ON app_access_tokens (token);
+CREATE INDEX IF NOT EXISTS app_access_tokens_app_user_idx
+  ON app_access_tokens (app_slug, social_user_id);
 """
 
 
 def main():
     with connection.cursor() as cur:
         cur.execute(SQL)
-        for t in ("app_installs", "app_cause_joins", "app_truth_asks", "dev_apps"):
+        for t in (
+            "app_installs", "app_cause_joins", "app_truth_asks", "dev_apps",
+            "app_oauth_codes", "app_access_tokens",
+        ):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
+        # Backfill credentials for existing apps
+        from apps.social.models import DevApp
+        from apps.social import platform_oauth as oauth
+        for app in DevApp.objects.all()[:200]:
+            oauth.ensure_app_credentials(app)
     print("OK   platform apps schema")
 
 

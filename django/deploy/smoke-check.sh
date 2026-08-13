@@ -775,11 +775,13 @@ if ! grep -q 'name="apps.canvas"' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
   || ! grep -q 'snav-apps-label' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null \
   || ! grep -q 'calculator' "${ROOT}/django/apps/social/platform_apps.py" 2>/dev/null \
   || ! grep -q 'name="developers"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'name="apps.authorize"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'name="api.oauth.token"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'data-comment-open' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
-  || ! grep -q 'dev_apps' "${ROOT}/django/deploy/ensure-platform-apps.py" 2>/dev/null; then
-  echo "FAIL platform / photo modal / developers / comment ids missing"; FAIL=1
+  || ! grep -q 'app_access_tokens' "${ROOT}/django/deploy/ensure-platform-apps.py" 2>/dev/null; then
+  echo "FAIL platform OAuth / photo modal / developers missing"; FAIL=1
 else
-  echo "OK   platform + photo modal + developers + comment ids"
+  echo "OK   platform OAuth + photo modal + developers"
 fi
 echo "== FB 2012 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2012-modules.py \

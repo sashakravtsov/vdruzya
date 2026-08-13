@@ -4,15 +4,22 @@
     <h4>{{ app.name }}</h4>
     <div class="profile-box-body">
         <p>{{ app.detail|default:app.blurb }}</p>
-        <p class="muted">Разработчик: {{ app.developer }}</p>
+        <p class="muted">Разработчик: {{ app.developer }}{% if n_installs %} · установок: {{ n_installs }}{% endif %}</p>
         {% if website_url %}
         <p class="action-row">
-            <a class="inputsubmit" href="{{ website_url }}" rel="nofollow noopener" target="_blank">Открыть сайт приложения</a>
-            · <a href="{% url 'apps.show' app.slug %}">о приложении</a>
+            <a class="inputsubmit" href="{% url 'apps.launch' app.slug %}">Открыть с авторизацией ВДрузья</a>
+            · <a href="{% url 'apps.authorize' app.slug %}">OAuth-разрешения</a>
+            · <a href="{{ website_url }}" rel="nofollow noopener" target="_blank">сайт без входа</a>
         </p>
-        <p class="muted">Сайт открывается отдельно. Сторонний canvas/iframe на ВДрузья не подключается.</p>
+        <p class="muted">
+            Запуск — редирект с <code>signed_request</code> (без iframe).
+            API: <a href="{% url 'developers.docs' %}">документация</a>.
+        </p>
         {% else %}
-        <p class="muted">Сайт приложения ещё не указан. Настройте его в <a href="{% url 'developers' %}">кабинете разработчика</a>.</p>
+        <p class="muted">Сайт ещё не указан.{% if is_owner %} <a href="{% url 'developers.edit' app.slug %}">Настроить</a>{% endif %}</p>
+        {% endif %}
+        {% if is_owner %}
+        <p class="muted"><a href="{% url 'developers.edit' app.slug %}">кабинет разработчика</a> · ключи API</p>
         {% endif %}
     </div>
 </div>
