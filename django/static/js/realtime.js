@@ -118,6 +118,17 @@
     }).catch(function () {});
   }
 
+  var VOICE_BARS = 40;
+  var VOICE_MAX_MS = 300000;
+  var activeVoice = null;
+
+  function voiceCfg() {
+    var box = $("inbox-thread");
+    var bars = box ? parseInt(box.getAttribute("data-voice-bars") || "40", 10) : VOICE_BARS;
+    var maxMs = box ? parseInt(box.getAttribute("data-voice-max-ms") || "300000", 10) : VOICE_MAX_MS;
+    return { bars: bars > 0 ? bars : VOICE_BARS, maxMs: maxMs > 0 ? maxMs : VOICE_MAX_MS };
+  }
+
   function pickMime() {
     if (!window.MediaRecorder) return "";
     var cands = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
@@ -132,13 +143,46 @@
     return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
   }
 
+  function ensureBars(el, n) {
+    if (!el) return;
+    n = n || voiceCfg().bars;
+    if (el.children.length === n) return;
+    var html = "";
+    for (var i = 0; i < n; i++) html += '<i style="height:18%"></i>';
+    el.innerHTML = html;
+  }
+
+  function setBarHeights(el, heights) {
+    if (!el) return;
+    ensureBars(el, heights ? heights.length : voiceCfg().bars);
+    var kids = el.children;
+    for (var i = 0; i < kids.length; i++) {
+      kids[i].style.height = Math.max(4, Math.min(100, heights && heights[i] != null ? heights[i] : 18)) + "%";
+    }
+  }
+
+  function paintPeaks(el, csv) {
+    if (!el) return;
+    var parts = (csv || "").split(",");
+    var heights = [];
+    for (var i = 0; i < parts.length; i++) {
+      var n = parseInt(parts[i], 10);
+      if (!isNaN(n)) heights.push(n);
+    }
+    if (heights.length < 8) {
+      ensureBars(el);
+      return;
+    }
+    setBarHeights(el, heights);
+  }
+
   function peaksFromBuffer(buf, bars) {
-    bars = bars || 40;
+    bars = bars || voiceCfg().bars;
     var data = buf.getChannelData(0);
     if (!data || !data.length) return "";
     var bucket = Math.max(1, Math.floor(data.length / bars));
     var peaks = [];
-    var i, j, peak, v;
+    var i, j, peak, v, max = 0.0001;
     for (i = 0; i < bars; i++) {
       peak = 0;
       for (j = 0; j < bucket; j++) {
@@ -146,9 +190,8 @@
         if (v > peak) peak = v;
       }
       peaks.push(peak);
+      if (peak > max) max = peak;
     }
-    var max = 0.0001;
-    for (i = 0; i < peaks.length; i++) if (peaks[i] > max) max = peaks[i];
     return peaks.map(function (p) {
       return String(Math.max(4, Math.min(100, Math.round((p / max) * 100))));
     }).join(",");
@@ -156,7 +199,7 @@
 
   function extractWaveform(blob) {
     return new Promise(function (resolve) {
-      if (!blob || !window.AudioContext && !window.webkitAudioContext) {
+      if (!blob || !(window.AudioContext || window.webkitAudioContext)) {
         resolve({ peaks: "", ms: 0 });
         return;
       }
@@ -165,7 +208,7 @@
       blob.arrayBuffer().then(function (ab) {
         return ctx.decodeAudioData(ab.slice(0));
       }).then(function (buf) {
-        var peaks = peaksFromBuffer(buf, 40);
+        var peaks = peaksFromBuffer(buf, voiceCfg().bars);
         var ms = Math.round((buf.duration || 0) * 1000);
         try { ctx.close(); } catch (e) {}
         resolve({ peaks: peaks, ms: ms });
@@ -178,115 +221,174 @@
 
   function paintLiveWave(el, analyser) {
     if (!el || !analyser) return;
-    var bars = 40;
+    var bars = voiceCfg().bars;
+    ensureBars(el, bars);
     var data = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteTimeDomainData(data);
-    var html = "";
     var step = Math.max(1, Math.floor(data.length / bars));
+    var heights = [];
     for (var i = 0; i < bars; i++) {
       var v = data[i * step] || 128;
-      var h = Math.max(8, Math.min(100, Math.round(Math.abs(v - 128) / 128 * 100)));
-      html += '<i style="height:' + h + '%"></i>';
+      heights.push(Math.max(8, Math.min(100, Math.round(Math.abs(v - 128) / 128 * 100))));
     }
-    el.innerHTML = html;
+    setBarHeights(el, heights);
   }
 
   function setWaveProgress(wave, ratio) {
     if (!wave) return;
-    var bars = wave.querySelectorAll("i");
+    var bars = wave.children;
     var n = bars.length;
     var on = Math.round(Math.max(0, Math.min(1, ratio || 0)) * n);
     for (var i = 0; i < n; i++) {
       if (i < on) bars[i].classList.add("is-played");
       else bars[i].classList.remove("is-played");
     }
+    wave.setAttribute("aria-valuenow", String(Math.round(Math.max(0, Math.min(1, ratio || 0)) * 100)));
+  }
+
+  function setVoicePlaying(wrap, on) {
+    if (!wrap) return;
+    var btn = wrap.querySelector(".msg-voice-play");
+    if (btn) {
+      btn.textContent = on ? "❚❚" : "▶";
+      if (on) btn.classList.add("is-on");
+      else btn.classList.remove("is-on");
+    }
+    if (on) wrap.classList.add("is-playing");
+    else wrap.classList.remove("is-playing");
+  }
+
+  function pauseVoice(wrap) {
+    if (!wrap) return;
+    var audio = wrap.querySelector("audio");
+    if (audio && !audio.paused) {
+      try { audio.pause(); } catch (e) {}
+    }
+    setVoicePlaying(wrap, false);
+    if (activeVoice === wrap) activeVoice = null;
+  }
+
+  function playVoice(wrap) {
+    if (!wrap) return;
+    var audio = wrap.querySelector("audio");
+    if (!audio) return;
+    if (activeVoice && activeVoice !== wrap) pauseVoice(activeVoice);
+    audio.play().catch(function () {});
+    setVoicePlaying(wrap, true);
+    activeVoice = wrap;
+  }
+
+  function seekVoice(wrap, ratio, andPlay) {
+    var audio = wrap.querySelector("audio");
+    var wave = wrap.querySelector(".msg-wave");
+    if (!audio) return;
+    var baseMs = parseInt(wrap.getAttribute("data-ms") || "0", 10) || 0;
+    var t = audio.duration || (baseMs / 1000) || 0;
+    if (!t) return;
+    ratio = Math.max(0, Math.min(1, ratio));
+    audio.currentTime = ratio * t;
+    setWaveProgress(wave, ratio);
+    if (andPlay) playVoice(wrap);
+  }
+
+  function wireOneVoice(wrap) {
+    if (!wrap || wrap.getAttribute("data-wired") === "1" || wrap.classList.contains("is-draft")) return;
+    wrap.setAttribute("data-wired", "1");
+    var btn = wrap.querySelector(".msg-voice-play");
+    var wave = wrap.querySelector(".msg-wave");
+    var dur = wrap.querySelector(".msg-voice-dur");
+    var audio = wrap.querySelector("audio");
+    if (!btn || !audio) return;
+    var baseMs = parseInt(wrap.getAttribute("data-ms") || "0", 10) || 0;
+    if (dur && baseMs) dur.textContent = fmtDur(baseMs);
+
+    function totalSec() {
+      return audio.duration || (baseMs / 1000) || 0;
+    }
+    function syncLabel() {
+      if (!dur) return;
+      var t = totalSec();
+      if (!t || audio.paused) {
+        dur.textContent = fmtDur(baseMs || t * 1000);
+        return;
+      }
+      dur.textContent = fmtDur(Math.max(0, t - audio.currentTime) * 1000);
+    }
+
+    btn.addEventListener("click", function () {
+      if (audio.paused) playVoice(wrap);
+      else pauseVoice(wrap);
+    });
+    audio.addEventListener("timeupdate", function () {
+      var t = totalSec();
+      setWaveProgress(wave, t ? audio.currentTime / t : 0);
+      syncLabel();
+    });
+    audio.addEventListener("ended", function () {
+      setVoicePlaying(wrap, false);
+      setWaveProgress(wave, 0);
+      if (activeVoice === wrap) activeVoice = null;
+      syncLabel();
+    });
+    audio.addEventListener("pause", function () {
+      if (audio.ended) return;
+      setVoicePlaying(wrap, false);
+      if (activeVoice === wrap) activeVoice = null;
+      syncLabel();
+    });
+    audio.addEventListener("loadedmetadata", function () {
+      if (!baseMs && audio.duration) {
+        baseMs = Math.round(audio.duration * 1000);
+        wrap.setAttribute("data-ms", String(baseMs));
+        syncLabel();
+      }
+    });
+
+    function ratioFromEvent(ev) {
+      var rect = wave.getBoundingClientRect();
+      if (!rect.width) return 0;
+      var x = (ev.touches && ev.touches[0] ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      return x / rect.width;
+    }
+    if (wave) {
+      wave.addEventListener("pointerdown", function (ev) {
+        ev.preventDefault();
+        try { wave.setPointerCapture(ev.pointerId); } catch (e) {}
+        seekVoice(wrap, ratioFromEvent(ev), true);
+      });
+      wave.addEventListener("pointermove", function (ev) {
+        if ((ev.buttons || 0) === 0 && ev.pressure === 0) return;
+        seekVoice(wrap, ratioFromEvent(ev), false);
+      });
+      wave.addEventListener("keydown", function (ev) {
+        var t = totalSec();
+        if (!t) return;
+        var cur = audio.currentTime || 0;
+        if (ev.key === "ArrowRight") { ev.preventDefault(); seekVoice(wrap, (cur + 2) / t, !audio.paused); }
+        else if (ev.key === "ArrowLeft") { ev.preventDefault(); seekVoice(wrap, (cur - 2) / t, !audio.paused); }
+        else if (ev.key === "Home") { ev.preventDefault(); seekVoice(wrap, 0, !audio.paused); }
+        else if (ev.key === "End") { ev.preventDefault(); seekVoice(wrap, 1, !audio.paused); }
+        else if (ev.key === " " || ev.key === "Enter") {
+          ev.preventDefault();
+          if (audio.paused) playVoice(wrap); else pauseVoice(wrap);
+        }
+      });
+    }
   }
 
   function wireVoicePlayers(root) {
     root = root || document;
     var nodes = root.querySelectorAll ? root.querySelectorAll(".msg-voice") : [];
-    for (var i = 0; i < nodes.length; i++) {
-      (function (wrap) {
-        if (wrap.getAttribute("data-wired") === "1") return;
-        wrap.setAttribute("data-wired", "1");
-        var btn = wrap.querySelector(".msg-voice-play");
-        var wave = wrap.querySelector(".msg-wave");
-        var dur = wrap.querySelector(".msg-voice-dur");
-        var audio = wrap.querySelector("audio");
-        if (!btn || !audio) return;
-        var baseMs = parseInt(wrap.getAttribute("data-ms") || "0", 10) || 0;
-        if (dur && baseMs) dur.textContent = fmtDur(baseMs);
-
-        function stopOthers() {
-          var all = document.querySelectorAll(".msg-voice audio");
-          for (var j = 0; j < all.length; j++) {
-            if (all[j] !== audio && !all[j].paused) {
-              try { all[j].pause(); } catch (e) {}
-              var p = all[j].closest(".msg-voice");
-              if (p) {
-                var b = p.querySelector(".msg-voice-play");
-                if (b) b.textContent = "▶";
-              }
-            }
-          }
-        }
-
-        btn.addEventListener("click", function () {
-          if (audio.paused) {
-            stopOthers();
-            audio.play().catch(function () {});
-            btn.textContent = "❚❚";
-          } else {
-            audio.pause();
-            btn.textContent = "▶";
-          }
-        });
-        audio.addEventListener("timeupdate", function () {
-          var t = audio.duration || (baseMs / 1000) || 0;
-          setWaveProgress(wave, t ? audio.currentTime / t : 0);
-          if (dur) {
-            var left = t ? Math.max(0, t - audio.currentTime) : 0;
-            dur.textContent = fmtDur(left * 1000);
-          }
-        });
-        audio.addEventListener("ended", function () {
-          btn.textContent = "▶";
-          setWaveProgress(wave, 0);
-          if (dur) dur.textContent = fmtDur(baseMs || (audio.duration || 0) * 1000);
-        });
-        audio.addEventListener("loadedmetadata", function () {
-          if (!baseMs && audio.duration) {
-            baseMs = Math.round(audio.duration * 1000);
-            wrap.setAttribute("data-ms", String(baseMs));
-            if (dur && audio.paused) dur.textContent = fmtDur(baseMs);
-          }
-        });
-        if (wave) {
-          wave.addEventListener("click", function (ev) {
-            var rect = wave.getBoundingClientRect();
-            if (!rect.width) return;
-            var ratio = (ev.clientX - rect.left) / rect.width;
-            var t = audio.duration || (baseMs / 1000) || 0;
-            if (!t) return;
-            audio.currentTime = Math.max(0, Math.min(t, ratio * t));
-            setWaveProgress(wave, ratio);
-            if (audio.paused) {
-              stopOthers();
-              audio.play().catch(function () {});
-              btn.textContent = "❚❚";
-            }
-          });
-        }
-      })(nodes[i]);
-    }
+    for (var i = 0; i < nodes.length; i++) wireOneVoice(nodes[i]);
   }
 
   function uploadVoice(blob, mime, meta) {
     var box = $("inbox-thread");
     var form = $("inbox-compose");
-    if (!box || !form || !blob) return;
+    var hint = $("inbox-voice-hint");
+    if (!box || !form || !blob) return Promise.reject();
     var url = box.getAttribute("data-message-url") || form.getAttribute("action");
-    if (!url) return;
+    if (!url) return Promise.reject();
     var fd = new FormData(form);
     var ext = (mime || "").indexOf("ogg") >= 0 ? "ogg" : ((mime || "").indexOf("mp4") >= 0 ? "m4a" : "webm");
     fd.set("voice", blob, "voice." + ext);
@@ -294,19 +396,20 @@
     fd.set("body", "");
     if (meta && meta.peaks) fd.set("waveform", meta.peaks);
     if (meta && meta.ms) fd.set("duration_ms", String(meta.ms));
-    var hint = $("inbox-voice-hint");
     if (hint) hint.textContent = "отправляем…";
-    fetch(url, {
+    return fetch(url, {
       method: "POST",
       credentials: "same-origin",
-      headers: { "X-CSRFToken": csrfToken() },
+      headers: { "X-CSRFToken": csrfToken(), "Accept": "application/json" },
       body: fd,
-      redirect: "follow",
-    }).then(function () {
-      window.location.href = "/inbox?c=" + encodeURIComponent(box.getAttribute("data-conv") || "");
-    }).catch(function () {
-      if (hint) hint.textContent = "не удалось отправить — попробуйте ещё раз";
-    });
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.data || !res.data.ok) {
+          throw new Error((res.data && res.data.error) || "fail");
+        }
+        if (hint) hint.textContent = "запись · прослушать · отправить · до 5 мин";
+        inboxBump(res.data.last_id);
+      });
   }
 
   function wireOlder() {
@@ -381,13 +484,14 @@
     var live = $("inbox-voice-live");
     var liveWave = $("inbox-voice-live-wave");
     var liveDur = $("inbox-voice-live-dur");
+    var draft = $("inbox-voice-draft");
+    var draftWave = $("inbox-voice-draft-wave");
+    var draftDur = $("inbox-voice-draft-dur");
+    var draftPlay = $("inbox-voice-draft-play");
+    var sendBtn = $("inbox-voice-send");
+    var discardBtn = $("inbox-voice-discard");
+    var fileInput = $("id_voice_file");
     if (!voiceBtn) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
-      if (hint) hint.textContent = "запись недоступна в этом браузере — можно выбрать файл";
-      var file = $("id_voice_file");
-      if (file) file.style.display = "inline";
-      return;
-    }
 
     var rec = null;
     var chunks = [];
@@ -398,6 +502,15 @@
     var mime = pickMime();
     var audioCtx = null;
     var analyser = null;
+    var draftBlob = null;
+    var draftMime = "";
+    var draftMeta = null;
+    var draftUrl = "";
+    var draftAudio = null;
+    var canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+
+    function setHint(text) { if (hint) hint.textContent = text; }
+    function idleHint() { setHint("запись · прослушать · отправить · до 5 мин"); }
 
     function stopLiveMeter() {
       if (liveRaf) { cancelAnimationFrame(liveRaf); liveRaf = 0; }
@@ -406,15 +519,68 @@
         audioCtx = null;
         analyser = null;
       }
-      if (live) live.hidden = true;
+      if (live) { live.hidden = true; live.setAttribute("aria-hidden", "true"); }
       if (cancelBtn) cancelBtn.hidden = true;
+    }
+
+    function clearDraft() {
+      if (draftAudio) {
+        try { draftAudio.pause(); } catch (e) {}
+        draftAudio = null;
+      }
+      if (draftUrl) {
+        try { URL.revokeObjectURL(draftUrl); } catch (e) {}
+        draftUrl = "";
+      }
+      draftBlob = null;
+      draftMime = "";
+      draftMeta = null;
+      if (draft) draft.hidden = true;
+      if (draftPlay) { draftPlay.textContent = "▶"; draftPlay.classList.remove("is-on"); }
+      if (fileInput) fileInput.value = "";
+    }
+
+    function showDraft(blob, usedMime, meta) {
+      clearDraft();
+      draftBlob = blob;
+      draftMime = usedMime || "audio/webm";
+      draftMeta = meta || { peaks: "", ms: 0 };
+      draftUrl = URL.createObjectURL(blob);
+      draftAudio = new Audio(draftUrl);
+      draftAudio.preload = "metadata";
+      draftAudio.onended = function () {
+        if (draftPlay) { draftPlay.textContent = "▶"; draftPlay.classList.remove("is-on"); }
+        setWaveProgress(draftWave, 0);
+        if (draftDur) draftDur.textContent = fmtDur((draftMeta && draftMeta.ms) || 0);
+      };
+      draftAudio.ontimeupdate = function () {
+        var t = draftAudio.duration || ((draftMeta && draftMeta.ms) || 0) / 1000;
+        setWaveProgress(draftWave, t ? draftAudio.currentTime / t : 0);
+        if (draftDur && t) draftDur.textContent = fmtDur(Math.max(0, t - draftAudio.currentTime) * 1000);
+      };
+      paintPeaks(draftWave, draftMeta.peaks);
+      if (draftDur) draftDur.textContent = fmtDur(draftMeta.ms || 0);
+      if (draft) draft.hidden = false;
+      setHint("прослушайте и отправьте, или сбросьте");
+      voiceBtn.textContent = "● Голосовое";
     }
 
     function tickLive() {
       if (!analyser || !liveWave) return;
+      var elapsed = Date.now() - startedAt;
       paintLiveWave(liveWave, analyser);
-      if (liveDur && startedAt) liveDur.textContent = fmtDur(Date.now() - startedAt);
+      if (liveDur) liveDur.textContent = fmtDur(elapsed);
+      if (elapsed >= voiceCfg().maxMs && rec) {
+        cancelled = false;
+        try { rec.stop(); } catch (e) {}
+        return;
+      }
       liveRaf = requestAnimationFrame(tickLive);
+    }
+
+    if (!canRecord) {
+      setHint("запись недоступна — выберите аудиофайл");
+      if (fileInput) fileInput.style.display = "inline";
     }
 
     if (cancelBtn) {
@@ -424,13 +590,70 @@
         try { rec.stop(); } catch (e) {}
       });
     }
+    if (discardBtn) {
+      discardBtn.addEventListener("click", function () {
+        clearDraft();
+        idleHint();
+      });
+    }
+    if (draftPlay) {
+      draftPlay.addEventListener("click", function () {
+        if (!draftAudio) return;
+        if (draftAudio.paused) {
+          if (activeVoice) pauseVoice(activeVoice);
+          draftAudio.play().catch(function () {});
+          draftPlay.textContent = "❚❚";
+          draftPlay.classList.add("is-on");
+        } else {
+          draftAudio.pause();
+          draftPlay.textContent = "▶";
+          draftPlay.classList.remove("is-on");
+        }
+      });
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener("click", function () {
+        if (!draftBlob) return;
+        sendBtn.disabled = true;
+        uploadVoice(draftBlob, draftMime, draftMeta).then(function () {
+          clearDraft();
+          idleHint();
+        }).catch(function (err) {
+          setHint((err && err.message) || "не удалось отправить — попробуйте ещё раз");
+        }).then(function () {
+          sendBtn.disabled = false;
+        });
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener("change", function () {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) return;
+        setHint("строим дорожку…");
+        extractWaveform(f).then(function (meta) {
+          if ((meta.ms || 0) > voiceCfg().maxMs) {
+            setHint("файл длиннее 5 минут");
+            fileInput.value = "";
+            return;
+          }
+          showDraft(f, f.type || "audio/webm", meta);
+        });
+      });
+    }
 
     voiceBtn.addEventListener("click", function () {
+      if (!canRecord) {
+        if (fileInput) fileInput.click();
+        return;
+      }
       if (rec) {
         cancelled = false;
         try { rec.stop(); } catch (e) {}
         return;
       }
+      clearDraft();
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
         chunks = [];
         cancelled = false;
@@ -447,9 +670,10 @@
           analyser = audioCtx.createAnalyser();
           analyser.fftSize = 256;
           src.connect(analyser);
-          if (live) live.hidden = false;
+          if (live) { live.hidden = false; live.setAttribute("aria-hidden", "false"); }
           if (cancelBtn) cancelBtn.hidden = false;
           startedAt = Date.now();
+          ensureBars(liveWave);
           tickLive();
         } catch (e) {}
         rec.ondataavailable = function (ev) {
@@ -463,27 +687,26 @@
           var blob = new Blob(chunks, { type: used });
           rec = null;
           if (cancelled) {
-            if (hint) hint.textContent = "запись отменена";
+            setHint("запись отменена");
             return;
           }
           if (blob.size < 64) {
-            if (hint) hint.textContent = "слишком короткая запись";
+            setHint("слишком короткая запись");
             return;
           }
-          if (hint) hint.textContent = "строим дорожку…";
+          setHint("строим дорожку…");
           extractWaveform(blob).then(function (meta) {
-            uploadVoice(blob, used, meta);
+            showDraft(blob, used, meta);
           });
         };
         rec.start(250);
         pingTyping("voice");
-        voiceBtn.textContent = "● Стоп и отправить";
-        if (hint) hint.textContent = "идёт запись… нажмите ещё раз, чтобы отправить";
+        voiceBtn.textContent = "■ Стоп";
+        setHint("идёт запись… стоп → прослушать → отправить");
         voiceTimer = setInterval(function () { pingTyping("voice"); }, 3000);
       }).catch(function () {
-        if (hint) hint.textContent = "нет доступа к микрофону — выберите файл";
-        var file = $("id_voice_file");
-        if (file) file.style.display = "inline";
+        setHint("нет доступа к микрофону — выберите файл");
+        if (fileInput) fileInput.style.display = "inline";
       });
     });
   }

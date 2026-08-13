@@ -93,6 +93,8 @@ def main():
     assert 'id="inbox-typing"' in html
     assert 'data-typing-url="' in html
     assert 'id="inbox-voice-btn"' in html
+    assert 'id="inbox-voice-draft"' in html and 'id="inbox-voice-send"' in html
+    assert 'data-voice-max-ms="' in html
     assert "msg-editor" in html and "msg-emoji-grid" in html
     assert ("msg-sticker-grid" in html) or ("Стикеры пока".encode() in r.content)
     assert ".msg-day" in (root / "static/css/classic.css").read_text()
@@ -136,12 +138,14 @@ def main():
     js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
     assert "pingTyping" in js and "записывает голосовое" in js
     assert "MediaRecorder" in js and "uploadVoice" in js
+    assert "showDraft" in js and "paintPeaks" in js and "seekVoice" in js
     ok("realtime SSE + inbox since + typing")
 
-    # Voice note upload + Telegram-style waveform peaks
+    # Voice note upload + Telegram-style waveform peaks (JSON AJAX path)
     from django.core.files.uploadedfile import SimpleUploadedFile
+    from apps.social.media import WAVEFORM_BARS, peaks_from_floats, voice_body
     voice_blob = b"OggS" + b"\x00" * 200
-    peaks = ",".join(str(10 + (i * 7) % 90) for i in range(40))
+    peaks = ",".join(str(10 + (i * 7) % 90) for i in range(WAVEFORM_BARS))
     r = c.post(
         f"/inbox/{conv.id}/message",
         {
@@ -151,21 +155,28 @@ def main():
             "duration_ms": "3200",
         },
         secure=True,
+        HTTP_ACCEPT="application/json",
     )
-    assert r.status_code in (301, 302)
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload.get("ok") and payload.get("last_id")
     vm = Message.objects.filter(conversation=conv, message_type="voice").order_by("-id").first()
-    assert vm and vm.attachment_path and vm.attachment_path.startswith("messages/")
+    assert vm and vm.id == payload["last_id"]
+    assert vm.attachment_path and vm.attachment_path.startswith("messages/")
     assert vm.waveform and len(vm.waveform.split(",")) >= 8
     assert vm.duration_ms == 3200
     assert vm.duration_label == "0:03"
+    assert voice_body(3200) == "[голосовое 0:03]"
+    assert peaks_from_floats([0.0, 0.5, -0.25, 0.1] * 20)
     r = c.get(f"/inbox?c={conv.id}", secure=True)
     assert r.status_code == 200
     assert b"msg-wave" in r.content and b"msg-voice-play" in r.content
-    assert b"<audio" in r.content
+    assert b"<audio" in r.content and b"inbox-voice-draft" in r.content
     js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
     assert "extractWaveform" in js and "wireVoicePlayers" in js and "paintLiveWave" in js
+    assert "Accept\": \"application/json\"" in js or "application/json" in js
     css = (root / "static/css/classic.css").read_text(encoding="utf-8")
-    assert ".msg-wave" in css and ".msg-voice-play" in css
+    assert ".msg-wave" in css and ".msg-voice-play" in css and ".msg-voice-draft" in css
     ok("voice message upload + waveform")
 
     # Archive folder + restore

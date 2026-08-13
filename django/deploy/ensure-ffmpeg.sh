@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Optional: install ffmpeg for video poster frames (same media disk as photos).
+# Optional: install ffmpeg for video poster frames + Inbox voice waveform decode.
 # Safe to re-run; skips when already present. Does not enable a video CDN.
 set -euo pipefail
 if command -v ffmpeg >/dev/null 2>&1; then

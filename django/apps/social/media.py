@@ -147,6 +147,8 @@ def save_video(upload, folder: str = "videos") -> tuple[str, str | None]:
 
 
 WAVEFORM_BARS = 40
+VOICE_MIN_MS = 200
+VOICE_MAX_MS = 5 * 60 * 1000  # hard stop in recorder UI + server parse
 
 
 def format_duration_ms(ms) -> str:
@@ -158,6 +160,42 @@ def format_duration_ms(ms) -> str:
         return "0:00"
     sec = max(0, ms // 1000)
     return f"{sec // 60}:{sec % 60:02d}"
+
+
+def voice_body(duration_ms=None) -> str:
+    label = format_duration_ms(duration_ms)
+    return f"[голосовое {label}]" if label != "0:00" else "[голосовое]"
+
+
+def is_voice_body(text: str) -> bool:
+    b = (text or "").strip()
+    return b == "[голосовое]" or b.startswith("[голосовое ")
+
+
+def scale_peaks(values: list[float], *, floor: int = 4) -> list[int]:
+    peak = max(values) if values else 0.0
+    if peak <= 0:
+        return [floor] * len(values)
+    return [max(floor, min(100, int(round((v / peak) * 100)))) for v in values]
+
+
+def peaks_from_floats(samples, *, bars: int = WAVEFORM_BARS) -> list[int]:
+    """Max-abs buckets → 4..100 (same shape as browser MediaRecorder path)."""
+    n = len(samples)
+    if n < 8:
+        return []
+    bucket = max(1, n // bars)
+    out: list[float] = []
+    for i in range(bars):
+        start = i * bucket
+        end = min(n, start + bucket)
+        peak = 0.0
+        for j in range(start, end):
+            v = abs(float(samples[j]))
+            if v > peak:
+                peak = v
+        out.append(peak)
+    return scale_peaks(out)
 
 
 def parse_waveform_peaks(raw, *, bars: int = WAVEFORM_BARS) -> list[int] | None:
@@ -178,7 +216,6 @@ def parse_waveform_peaks(raw, *, bars: int = WAVEFORM_BARS) -> list[int] | None:
         return None
     if len(vals) == bars:
         return vals
-    # Resample to fixed bar count
     out = []
     for i in range(bars):
         idx = int(i * (len(vals) - 1) / max(1, bars - 1))
@@ -198,18 +235,18 @@ def parse_duration_ms(raw) -> int | None:
         ms = int(raw)
     except (TypeError, ValueError):
         return None
-    if ms < 200 or ms > 15 * 60 * 1000:
+    if ms < VOICE_MIN_MS or ms > VOICE_MAX_MS:
         return None
     return ms
 
 
 def waveform_from_bytes(raw: bytes, *, bars: int = WAVEFORM_BARS) -> tuple[str | None, int | None]:
-    """Django+ffmpeg strength: decode any voice container → peaks + duration_ms."""
+    """ffmpeg decode → max-abs peaks + duration_ms (fallback when client peaks missing)."""
     if not raw or len(raw) < 64:
         return None, None
     ffmpeg = getattr(settings, "FFMPEG_BIN", "ffmpeg")
     try:
-        import struct
+        import array
         with tempfile.TemporaryDirectory(prefix="vdvoice_") as tmp:
             src = Path(tmp) / "in.bin"
             src.write_bytes(raw)
@@ -223,28 +260,14 @@ def waveform_from_bytes(raw: bytes, *, bars: int = WAVEFORM_BARS) -> tuple[str |
         pcm = proc.stdout or b""
         if len(pcm) < 16:
             return None, None
-        n = len(pcm) // 4
-        duration_ms = int(n * 1000 / 8000)
-        # Sample absolute peaks per bucket
-        bucket = max(1, n // bars)
-        peaks = []
-        for i in range(bars):
-            start = i * bucket
-            chunk = pcm[start * 4:(start + bucket) * 4]
-            if not chunk:
-                peaks.append(8)
-                continue
-            # mean abs of up to ~bucket floats
-            step = max(4, len(chunk) // 64 * 4) or 4
-            acc = 0.0
-            cnt = 0
-            for off in range(0, len(chunk) - 3, step):
-                acc += abs(struct.unpack_from("<f", chunk, off)[0])
-                cnt += 1
-            peaks.append(acc / cnt if cnt else 0.0)
-        peak = max(peaks) or 1.0
-        scaled = [max(4, min(100, int(round((v / peak) * 100)))) for v in peaks]
-        return serialize_waveform_peaks(scaled), duration_ms if duration_ms >= 200 else None
+        samples = array.array("f")
+        samples.frombytes(pcm[: len(pcm) - (len(pcm) % 4)])
+        duration_ms = int(len(samples) * 1000 / 8000)
+        peaks = peaks_from_floats(samples, bars=bars)
+        return (
+            serialize_waveform_peaks(peaks),
+            duration_ms if duration_ms >= VOICE_MIN_MS else None,
+        )
     except Exception as exc:
         log.warning("voice waveform skipped: %s", exc)
         return None, None
@@ -276,16 +299,6 @@ def save_audio(upload, folder: str = "messages") -> tuple[str, bytes]:
         raise ValueError("Пустая запись")
     path = f"{folder}/{uuid.uuid4().hex}{ext}"
     return default_storage.save(path, ContentFile(raw)), raw
-
-
-def try_save_audio(upload, folder: str = "messages") -> str | None:
-    if not upload:
-        return None
-    try:
-        path, _raw = save_audio(upload, folder)
-        return path
-    except Exception:
-        return None
 
 
 def _poster_from_bytes(raw: bytes, *, folder: str) -> str | None:
