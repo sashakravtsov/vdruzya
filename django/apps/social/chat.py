@@ -15,7 +15,11 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
-from apps.social.media import AUDIO_MAX_BYTES, VIDEO_MAX_BYTES, save_audio, save_video
+from apps.social.media import (
+    AUDIO_MAX_BYTES, VIDEO_MAX_BYTES,
+    format_duration_ms, parse_duration_ms, parse_waveform_peaks,
+    save_audio, save_video, serialize_waveform_peaks, waveform_from_bytes,
+)
 from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile
 from apps.social.services import friend_ids, now, profile_of
 
@@ -276,7 +280,11 @@ def _snippet(c, me) -> str:
     text = (c.last_body or "").strip()
     if not text and c.last_attach:
         lt = (getattr(c, "last_type", None) or "")
-        text = "[голосовое]" if lt == "voice" else ("[видео]" if lt == "video" else "[фото]")
+        if lt == "voice":
+            dur = format_duration_ms(getattr(c, "last_duration", None))
+            text = f"[голосовое {dur}]" if dur != "0:00" else "[голосовое]"
+        else:
+            text = "[видео]" if lt == "video" else "[фото]"
     text = text[:80]
     if not text:
         return ""
@@ -305,6 +313,7 @@ def _inbox_qs(me, *, archived=False):
             last_body=Subquery(last.values("body")[:1]),
             last_at=Subquery(last.values("created_at")[:1]),
             last_type=Subquery(last.values("message_type")[:1]),
+            last_duration=Subquery(last.values("duration_ms")[:1]),
             last_from_id=Subquery(last.values("social_user_id")[:1]),
             last_attach=Subquery(last.values("attachment_path")[:1]),
             my_last_body=Subquery(mine.values("body")[:1]),
@@ -517,42 +526,42 @@ def _is_video_upload(upload) -> bool:
 
 
 def _save_attach(upload, *, force_voice=False):
-    """Save photo / video / voice (same media disk). Returns (path, name, mime, kind)."""
+    """Save photo / video / voice. Voice → (path, name, mime, kind, raw_bytes)."""
     if not upload:
-        return None, None, None, None
+        return None, None, None, None, None
     size = getattr(upload, "size", 0) or 0
     ctype = (getattr(upload, "content_type", "") or "").lower()
     # Voice notes: explicit flag, or clear audio/* (not a video clip).
     as_voice = force_voice or ctype.startswith("audio/") or ctype == "application/ogg"
     if as_voice:
         if size > AUDIO_MAX_BYTES:
-            return None, None, None, None
+            return None, None, None, None, None
         try:
-            path = save_audio(upload, "messages")
+            path, raw = save_audio(upload, "messages")
         except Exception:
-            return None, None, None, None
+            return None, None, None, None, None
         name = (Path(getattr(upload, "name", "") or "voice.webm").name)[:120]
         mime = (getattr(upload, "content_type", None) or "audio/webm")[:80]
-        return path, name, mime, "voice"
+        return path, name, mime, "voice", raw
     if _is_video_upload(upload):
         if size > VIDEO_MAX_BYTES:
-            return None, None, None, None
+            return None, None, None, None, None
         try:
             path, _poster = save_video(upload, "messages")
         except Exception:
-            return None, None, None, None
+            return None, None, None, None, None
         name = (Path(getattr(upload, "name", "") or "video.mp4").name)[:120]
         mime = (getattr(upload, "content_type", None) or "video/mp4")[:80]
-        return path, name, mime, "video"
+        return path, name, mime, "video", None
     if size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
-        return None, None, None, None
+        return None, None, None, None, None
     from apps.social.media import try_save_image
     path = try_save_image(upload, "messages")
     if not path:
-        return None, None, None, None
+        return None, None, None, None, None
     name = (Path(getattr(upload, "name", "") or "photo").name)[:120]
     mime = (getattr(upload, "content_type", None) or "image/jpeg")[:80]
-    return path, name, mime, "photo"
+    return path, name, mime, "photo", None
 
 
 def _sticker_id(sticker_id):
@@ -566,7 +575,7 @@ def _sticker_id(sticker_id):
     return sid if Sticker.objects.filter(pk=sid, is_active=True).exists() else None
 
 
-def _message_payload(body, path, akind, sid, message_type):
+def _message_payload(body, path, akind, sid, message_type, *, duration_ms=None):
     body = (body or "").strip()
     if not body and not path and not sid and message_type == "text":
         raise ValueError("empty")
@@ -578,7 +587,8 @@ def _message_payload(body, path, akind, sid, message_type):
         message_type = "sticker"
     if not body and path:
         if message_type == "voice":
-            body = "[голосовое]"
+            label = format_duration_ms(duration_ms)
+            body = f"[голосовое {label}]" if label != "0:00" else "[голосовое]"
         elif message_type == "video":
             body = "[видео]"
         else:
@@ -586,12 +596,28 @@ def _message_payload(body, path, akind, sid, message_type):
     return body[:4000], message_type
 
 
+def _resolve_voice_meta(*, client_wave=None, client_ms=None, raw=None, copy_from=None):
+    wave = serialize_waveform_peaks(parse_waveform_peaks(client_wave))
+    ms = parse_duration_ms(client_ms)
+    if copy_from and (copy_from.waveform or copy_from.duration_ms):
+        wave = wave or copy_from.waveform
+        ms = ms or copy_from.duration_ms
+    if (not wave or not ms) and raw:
+        fw, fms = waveform_from_bytes(raw)
+        wave = wave or fw
+        ms = ms or fms
+    return wave, ms
+
+
 def post_message(
     me, conv: Conversation, body: str = "", *,
     message_type="text", upload=None, reply_to_id=None, sticker_id=None,
     voice=False, copy_from: Message | None = None,
+    waveform=None, duration_ms=None,
 ) -> Message:
-    path, aname, amime, akind = _save_attach(upload, force_voice=bool(voice))
+    path, aname, amime, akind, raw = _save_attach(upload, force_voice=bool(voice))
+    wave = None
+    ms = None
     if copy_from and copy_from.attachment_path and not path:
         path = copy_from.attachment_path
         aname = copy_from.attachment_name
@@ -605,10 +631,17 @@ def post_message(
             akind = "video"
         else:
             akind = "photo"
+        wave, ms = _resolve_voice_meta(copy_from=copy_from)
     sid = _sticker_id(sticker_id or (copy_from.sticker_id if copy_from else None))
     if voice and akind == "voice":
         message_type = "voice"
-    body, message_type = _message_payload(body, path, akind, sid, message_type)
+    if akind == "voice" or message_type == "voice":
+        wave, ms = _resolve_voice_meta(
+            client_wave=waveform, client_ms=duration_ms, raw=raw, copy_from=copy_from,
+        )
+    body, message_type = _message_payload(
+        body, path, akind, sid, message_type, duration_ms=ms,
+    )
     reply = (
         Message.objects.filter(pk=reply_to_id, conversation=conv).first()
         if reply_to_id else None
@@ -618,6 +651,8 @@ def post_message(
         conversation=conv, social_user=me, body=body,
         message_type=message_type, sticker_id=sid, reply_to=reply,
         attachment_path=path, attachment_name=aname, attachment_mime=amime,
+        waveform=wave if message_type == "voice" else None,
+        duration_ms=ms if message_type == "voice" else None,
         created_at=t, updated_at=t,
     )
     Conversation.objects.filter(pk=conv.pk).update(updated_at=t)

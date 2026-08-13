@@ -41,7 +41,14 @@
         {% if m.body and m.body != '[фото]' and m.body != '[видео]' and m.body != '[стикер]' and m.body != '[голосовое]' %}{{ m.body|linebreaksbr }}{% endif %}
         {% if m.attachment_url %}
             {% if m.attachment_is_audio %}
-            <div class="msg-voice"><audio controls preload="metadata" class="msg-audio"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'audio/webm' }}"></audio></div>
+            <div class="msg-voice" data-ms="{{ m.duration_ms|default:0 }}" data-peaks="{{ m.waveform|default:'' }}">
+                <button type="button" class="msg-voice-play" aria-label="Слушать">▶</button>
+                <div class="msg-wave" role="slider" aria-label="Дорожка голосового" tabindex="0">
+                    {% for h in m.waveform_bars %}<i style="height:{{ h }}%"></i>{% endfor %}
+                </div>
+                <span class="msg-voice-dur">{{ m.duration_label }}</span>
+                <audio preload="metadata" class="msg-audio-el"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'audio/webm' }}"></audio>
+            </div>
             {% elif m.attachment_is_video %}
             <div class="msg-video"><video controls preload="metadata" class="msg-photo"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'video/mp4' }}"></video></div>
             {% else %}
