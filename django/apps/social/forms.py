@@ -118,13 +118,21 @@ class PostForm(ClassicForm, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.simple = simple
         self.fields["body"].required = False
+        self.fields["body"].widget.attrs.update({
+            "class": "inputtext msg-body-input",
+            "spellcheck": "true",
+            "maxlength": "4000",
+            "placeholder": "Что у вас нового? — можно Markdown",
+            "rows": "5",
+        })
         if simple:
             # Keep multi-file widget; classic wall accepts several photos or one video.
             self.fields.pop("visibility", None)
 
     def clean(self):
         data = super().clean()
-        if not (data.get("body") or "").strip() and not _has_media(self):
+        has_album = bool(self.data.getlist("album_photo") if hasattr(self.data, "getlist") else [])
+        if not (data.get("body") or "").strip() and not _has_media(self) and not has_album:
             self.add_error("body", "Напишите текст или выберите фото / видео.")
         return data
 

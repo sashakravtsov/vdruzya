@@ -1,4 +1,4 @@
-{# Classic FB discussion compose: subject + message (no wall album chrome). #}
+{# Classic FB discussion compose — Markdown + album photos. #}
 <form method="post" action="{{ action }}" class="discuss-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.board }}
     <table class="formtable" cellpadding="0" cellspacing="0">
@@ -8,11 +8,20 @@
         </tr>
         <tr>
             <td class="label">Сообщение:</td>
-            <td>{{ form.body }}</td>
+            <td>
+                <div class="msg-md-shell">
+                    {% include "social/_inbox_emoji_bar.html" with target_id=form.body.id_for_label sticker_input_id="" from_album=1 %}
+                    {% include "social/_inbox_md_stage.html" with body_field=form.body %}
+                </div>
+                <div class="compose-from-album" data-from-album hidden></div>
+            </td>
         </tr>
         <tr>
             <td class="label">Фото:</td>
-            <td>{{ form.photo }}</td>
+            <td>
+                {{ form.photo }}
+                · <button type="button" class="linkish" data-from-album-open="1">из альбома</button>
+            </td>
         </tr>
         {% if show_as_community %}
         <tr>

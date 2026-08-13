@@ -80,6 +80,8 @@ def main():
     assert 'data-md="codeblock"' in html and 'data-md="h3"' in html
     assert "msg-md-preview" in html and "msg-compose-fields" in html
     assert "msg-md-shell" in html and "data-md-count" in html
+    assert 'data-pop="emoji"' in html and "msg-pop" in html
+    assert 'data-pop="stickers"' in html
     css = (root / "static/css/classic.css").read_text()
     body_rule = re.search(r"\.inbox-pane \.msg-line \.msg-body\s*\{[^}]+\}", css)
     assert body_rule and "pre-wrap" not in body_rule.group(0)
@@ -103,6 +105,7 @@ def main():
     js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
     assert "wireEmojiEditors" in js and "applyMdAction" in js and "refreshPreview" in js
     assert "continueListOnEnter" in js and "autosizeMd" in js and "MD_MODE_KEY" in js
+    assert "openPop" in js and "wireFromAlbum" in js
     assert "grid-template-columns: 40px" in (root / "static/css/classic.css").read_text()
     # Markdown render + server preview (bleach-safe)
     from apps.social.markdown_msg import render_message_md
@@ -112,17 +115,26 @@ def main():
     ch.post_message(me, conv, md_msg)
     r = c.get(f"/inbox?c={conv.id}", secure=True)
     assert r.status_code == 200 and b"<strong>bold</strong>" in r.content
-    r = c.post("/inbox/preview", {"body": "**hi**\n\n### Title\n\n- a\n- b\n\n---\n\n```\nx\n```"}, secure=True)
+    r = c.post("/compose/preview", {"body": "**hi**\n\n### Title\n\n- a\n- b\n\n---\n\n```\nx\n```"}, secure=True)
     assert r.status_code == 200
     prev = r.json()
     assert prev.get("ok") and "<strong>hi</strong>" in (prev.get("html") or "")
     assert "<ul>" in (prev.get("html") or "")
     assert "<h3>" in (prev.get("html") or "") and "<pre>" in (prev.get("html") or "")
+    r = c.get("/compose/albums", secure=True)
+    assert r.status_code == 200
     r = c.get("/inbox?compose=1", secure=True)
     assert r.status_code == 200 and b'data-md="bold"' in r.content and b"msg-md-preview" in r.content
     assert b'data-md-mode="split"' in r.content and b"msg-md-shell" in r.content
+    assert b'data-pop="emoji"' in r.content
     Message.objects.filter(conversation=conv, body=md_msg).delete()
     ok("markdown editor + preview")
+    # Wall compose shares the same editor chrome + album picker
+    r = c.get(f"/profile/{me.id}", secure=True)
+    assert r.status_code == 200
+    assert b"msg-md-shell" in r.content and b'data-pop="emoji"' in r.content
+    assert b"data-from-album-open" in r.content
+    ok("wall compose markdown + album picker")
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "typing"}, secure=True)
     assert r.status_code == 200 and r.json().get("ok")
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "voice"}, secure=True)

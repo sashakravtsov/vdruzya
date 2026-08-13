@@ -1,5 +1,5 @@
-{# Classic Markdown compose chrome — toolbar, modes, emoji/sticker panes (no npm). #}
-<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'inbox.preview' %}" data-md-max="4000">
+{# Shared Markdown compose chrome: toolbar + hover/click popovers (inbox / wall / group). #}
+<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'compose.preview' %}" data-md-max="4000"{% if sticker_input_id %} data-sticker-input="{{ sticker_input_id }}"{% endif %}{% if from_album %} data-from-album-url="{% url 'compose.albums' %}"{% endif %}>
     <div class="msg-md-bar">
         <span class="msg-md-tools" role="toolbar" aria-label="Markdown">
             <button type="button" class="msg-md-btn" data-md="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button>
@@ -15,6 +15,57 @@
             <button type="button" class="msg-md-btn" data-md="ol" title="Нумерованный">1.</button>
             <button type="button" class="msg-md-btn" data-md="quote" title="Цитата">«»</button>
             <button type="button" class="msg-md-btn" data-md="hr" title="Разделитель">―</button>
+            <span class="msg-md-sep" aria-hidden="true"></span>
+            <span class="msg-pop-wrap">
+                <button type="button" class="msg-md-btn msg-pop-btn" data-pop="emoji" title="Смайлы" aria-haspopup="true">☺</button>
+                <div class="msg-pop" data-pop-panel="emoji" hidden>
+                    <div class="msg-emoji-grid" role="listbox" aria-label="Смайлы">
+                        {% for e in emojis %}
+                        <button type="button" class="msg-emoji-btn" data-emoji="{{ e }}" title="{{ e }}">{{ e }}</button>
+                        {% endfor %}
+                    </div>
+                    <p class="msg-emoji-text muted">
+                        текст:
+                        {% for e in text_emotes %}
+                        <button type="button" class="linkish msg-emoji-btn" data-emoji="{{ e }}">{{ e }}</button>
+                        {% endfor %}
+                    </p>
+                </div>
+            </span>
+            {% if stickers and sticker_input_id %}
+            <span class="msg-pop-wrap">
+                <button type="button" class="msg-md-btn msg-pop-btn" data-pop="stickers" title="Стикеры" aria-haspopup="true">стикеры</button>
+                <div class="msg-pop msg-pop-stickers" data-pop-panel="stickers" hidden>
+                    <div class="msg-sticker-grid" data-sticker-input="{{ sticker_input_id }}">
+                        {% for s in stickers %}
+                        <button type="button" class="msg-sticker-btn gift-tile gift-tile-sm" data-sticker-id="{{ s.id }}" title="{{ s.title }}" style="--gift-bg:{{ s.bg }};--gift-fg:{{ s.fg }}">
+                            {% if s.image_url %}<img src="{{ s.image_url }}" alt="{{ s.title }}">{% else %}<span class="gift-tile-title">{{ s.title }}</span>{% endif %}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <p class="file-hint muted">
+                        Twemoji
+                        <span class="msg-sticker-clear" hidden>
+                            · <button type="button" class="linkish muted" data-sticker-clear="1">убрать</button>
+                        </span>
+                    </p>
+                </div>
+            </span>
+            {% endif %}
+            {% if from_album %}
+            <button type="button" class="msg-md-btn" data-from-album-open="1" title="Фото из альбома">альбом</button>
+            {% endif %}
+            <span class="msg-pop-wrap">
+                <button type="button" class="msg-md-btn msg-pop-btn" data-pop="help" title="Справка Markdown" aria-haspopup="true">?</button>
+                <div class="msg-pop msg-pop-help" data-pop-panel="help" hidden>
+                    <p class="msg-md-help">
+                        <code>**жирный**</code> · <code>*курсив*</code> · <code>~~зачёркнутый~~</code> ·
+                        <code>`код`</code> · <code>[текст](https://…)</code> ·
+                        список <code>-</code>/<code>1.</code> · цитата <code>&gt;</code>
+                        · Ctrl+B/I/E/K · Ctrl+Shift+P
+                    </p>
+                </div>
+            </span>
         </span>
         <span class="msg-md-mode muted">
             <button type="button" class="linkish msg-md-mode-btn is-on" data-md-mode="write">письмо</button>
@@ -23,51 +74,5 @@
             ·
             <button type="button" class="linkish msg-md-mode-btn" data-md-mode="preview">просмотр</button>
         </span>
-    </div>
-    <p class="msg-editor-tabs muted">
-        <button type="button" class="linkish msg-editor-tab is-on" data-pane="emoji">смайлы</button>
-        ·
-        <button type="button" class="linkish msg-editor-tab" data-pane="stickers">стикеры</button>
-        ·
-        <button type="button" class="linkish msg-editor-tab" data-pane="help">справка</button>
-        <span class="msg-sticker-clear muted" hidden>
-            · <button type="button" class="linkish muted" data-sticker-clear="1">убрать стикер</button>
-        </span>
-    </p>
-    <div class="msg-emoji-pane" data-pane-body="emoji">
-        <div class="msg-emoji-grid" role="listbox" aria-label="Смайлы">
-            {% for e in emojis %}
-            <button type="button" class="msg-emoji-btn" data-emoji="{{ e }}" title="{{ e }}">{{ e }}</button>
-            {% endfor %}
-        </div>
-        <p class="msg-emoji-text muted">
-            текст:
-            {% for e in text_emotes %}
-            <button type="button" class="linkish msg-emoji-btn" data-emoji="{{ e }}">{{ e }}</button>
-            {% endfor %}
-        </p>
-    </div>
-    <div class="msg-sticker-pane" data-pane-body="stickers" hidden>
-        {% if stickers %}
-        <div class="msg-sticker-grid" data-sticker-input="{{ sticker_input_id }}">
-            {% for s in stickers %}
-            <button type="button" class="msg-sticker-btn gift-tile gift-tile-sm" data-sticker-id="{{ s.id }}" title="{{ s.title }}" style="--gift-bg:{{ s.bg }};--gift-fg:{{ s.fg }}">
-                {% if s.image_url %}<img src="{{ s.image_url }}" alt="{{ s.title }}">{% else %}<span class="gift-tile-title">{{ s.title }}</span>{% endif %}
-            </button>
-            {% endfor %}
-        </div>
-        <p class="file-hint muted">Стикеры: Twemoji (CC-BY 4.0)</p>
-        {% else %}
-        <p class="muted">Стикеры пока не загружены.</p>
-        {% endif %}
-    </div>
-    <div class="msg-help-pane muted" data-pane-body="help" hidden>
-        <p class="msg-md-help">
-            <code>**жирный**</code> · <code>*курсив*</code> · <code>~~зачёркнутый~~</code> ·
-            <code>`код`</code> · <code>```блок```</code> · <code>[текст](https://…)</code> ·
-            <code>### заголовок</code> · список <code>-</code> / <code>1.</code> ·
-            цитата <code>&gt;</code> · линия <code>---</code>
-            · Ctrl+B/I/E/K · Ctrl+Shift+P · Tab · Enter продолжает список
-        </p>
     </div>
 </div>

@@ -92,6 +92,13 @@ class CommunityPostForm(ClassicForm, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["body"].required = False
+        self.fields["body"].widget.attrs.update({
+            "class": "inputtext msg-body-input",
+            "spellcheck": "true",
+            "maxlength": "4000",
+            "placeholder": "Сообщение — можно Markdown",
+            "rows": "5",
+        })
         inst = getattr(self, "instance", None)
         if inst and inst.pk and (inst.topic or "") != "wall" and not self.is_bound:
             self.fields["subject"].initial = inst.subject
@@ -102,7 +109,9 @@ class CommunityPostForm(ClassicForm, forms.ModelForm):
         board = data.get("board") or "discussion"
         body = (data.get("body") or "").strip()
         subject = (data.get("subject") or "").strip()
-        has_media = _has_media(self)
+        has_media = _has_media(self) or bool(
+            self.data.getlist("album_photo") if hasattr(self.data, "getlist") else []
+        )
         if board == "discussion":
             if not subject:
                 self.add_error("subject", "Укажите тему.")

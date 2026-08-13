@@ -38,7 +38,7 @@
     {{ form.reply_to }}
     {{ form.sticker }}
     <div class="msg-md-shell">
-        {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" %}
+        {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" from_album=0 %}
         {% include "social/_inbox_md_stage.html" with body_field=form.body %}
     </div>
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>

@@ -12,6 +12,7 @@ from apps.social.services import bump_news, now, profile_of
 
 def create_wall_post(request):
     from apps.social.attach import apply_wall_uploads
+    from apps.social.compose_ui import attach_album_photos_wall, parse_album_photo_ids
     from apps.social.profile_page import can_write_wall, wall_post_visibility
 
     me = profile_of(request.user)
@@ -37,6 +38,7 @@ def create_wall_post(request):
     post.created_at = post.updated_at = now()
     post.save()
     apply_wall_uploads(post, list(request.FILES.getlist("photo")), me, max_photos=5, blurb=text)
+    attach_album_photos_wall(post, parse_album_photo_ids(request), me, max_photos=5)
     bump_news()
     messages.success(request, "Запись опубликована.")
     return redirect(request.POST.get("next") or target)

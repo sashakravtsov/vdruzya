@@ -12,6 +12,7 @@ from apps.social.services import accepted_friends
 
 
 def _base(group, me, tab, access_row):
+    from apps.social.compose_ui import editor_context
     is_member, is_admin, can_view, can_post, join_pending = access_row
     return {
         "group": group, "me": me, "tab": tab,
@@ -25,6 +26,7 @@ def _base(group, me, tab, access_row):
         "docs": [],
         "comment_form": CommentForm(auto_id=False) if is_member else None,
         "event_form": EventForm() if is_admin else None,
+        **editor_context(stickers=False),
     }
 
 

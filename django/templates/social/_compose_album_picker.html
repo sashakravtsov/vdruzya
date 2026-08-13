@@ -1,0 +1,33 @@
+{# Classic FBDialog body — pick own album photos for wall/group compose. #}
+{% if error %}
+<p class="muted">Войдите, чтобы выбрать фото.</p>
+{% elif album %}
+<p class="muted stack-xs">
+    <a href="#" class="linkish" data-from-album-back="1">← альбомы</a>
+    · {{ album.title }}
+</p>
+{% if photos %}
+<div class="compose-from-grid" data-album-grid>
+    {% for p in photos %}
+    <button type="button" class="compose-from-photo" data-photo-id="{{ p.id }}" data-photo-url="{{ p.url }}" title="{{ p.title|default:album.title }}">
+        <img src="{{ p.url }}" alt="">
+    </button>
+    {% endfor %}
+</div>
+<p class="file-hint muted">Нажмите фото, чтобы прикрепить (до 5).</p>
+{% else %}
+<p class="muted">В альбоме пока нет фото.</p>
+{% endif %}
+{% else %}
+{% if albums %}
+<div class="compose-from-list">
+    {% for a in albums %}
+    <p class="stack-xs">
+        <a href="#" class="linkish" data-from-album-id="{{ a.id }}"><b>{{ a.title }}</b></a>
+    </p>
+    {% endfor %}
+</div>
+{% else %}
+<p class="muted">Нет альбомов. <a href="{% url 'albums' %}">Создать альбом</a></p>
+{% endif %}
+{% endif %}
