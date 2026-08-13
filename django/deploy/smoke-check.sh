@@ -393,6 +393,23 @@ if ! grep -q 'question-row' "${ROOT}/django/templates/social/questions.html" 2>/
 else
   echo "OK   questions/polls list-row chrome"
 fi
+if ! grep -q 'class="saves-page"' "${ROOT}/django/templates/social/saves.html" 2>/dev/null \
+   || ! grep -q 'class="og-page"' "${ROOT}/django/templates/social/og.html" 2>/dev/null \
+   || ! grep -q 'class="safety-page"' "${ROOT}/django/templates/social/safety.html" 2>/dev/null \
+   || ! grep -q 'class="trending-page"' "${ROOT}/django/templates/social/trending.html" 2>/dev/null \
+   || ! grep -q 'class="hashtag-page"' "${ROOT}/django/templates/social/hashtag.html" 2>/dev/null; then
+  echo "FAIL era browse pages missing pagebody class"; FAIL=1
+else
+  echo "OK   era browse pagebody classes"
+fi
+if ! grep -q 'list-row-body' "${ROOT}/django/templates/social/links.html" 2>/dev/null \
+   || ! grep -q 'list-row-body' "${ROOT}/django/templates/social/friend_lists.html" 2>/dev/null \
+   || ! grep -q '\.stack-sm' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+   || ! grep -q '\.input-city' "${ROOT}/django/static/css/classic.css" 2>/dev/null; then
+  echo "FAIL layout pass list-row / stack helpers incomplete"; FAIL=1
+else
+  echo "OK   layout pass list-row + stack helpers"
+fi
 if [[ -f "${ROOT}/django/templates/social/videos.html" ]]; then
   echo "FAIL duplicate videos.html still present"; FAIL=1
 else
