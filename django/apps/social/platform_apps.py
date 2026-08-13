@@ -219,9 +219,12 @@ PLATFORM_APPS = (
         "slug": "poker",
         "name": "Покер",
         "category": "games",
-        "featured": False,
-        "blurb": "Раздача карт — кто ближе к флешу.",
-        "detail": "Демо-покер: получите пять карт и сравните комбинацию.",
+        "featured": True,
+        "blurb": "Texas Hold'em с друзьями: фишки, обучение, банкролл.",
+        "detail": (
+            "Профессиональный heads-up Hold'em: лимиты, банк, обучение и задачи. "
+            "Старт 1 000 000 фишек. Банкротство — пауза 5 дней, затем сброс профиля."
+        ),
         "developer": "ВДрузья",
         "permissions": DEFAULT_PERMISSIONS,
     },

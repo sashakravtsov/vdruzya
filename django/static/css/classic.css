@@ -1450,6 +1450,68 @@ body.fb-dialog-open { overflow: hidden; }
 .poker-card {
   display: inline-block; border: 1px solid #3B5998; background: #fff;
   padding: 4px 6px; margin-right: 4px; font-weight: bold;
+  min-width: 1.6em; text-align: center; font: bold 12px/16px var(--font);
+}
+.poker-card.back { background: #edf2f8; color: #789; }
+.poker-card.mine { background: #fff8e1; }
+.poker-app .poker-lead { margin: 0 0 6px; }
+.poker-app .poker-strip {
+  margin: 0 0 10px; padding: 5px 8px; background: #edf2f8; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.poker-app .poker-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: #c00; color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.poker-app .poker-badge.soft { background: #390; }
+.poker-app .poker-bankrupt { color: #a40; font-weight: bold; }
+.poker-app .poker-path-card {
+  margin: 0 0 12px; padding: 7px 9px; background: #edf2f8; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.poker-app .poker-turn-banner {
+  margin: 0 0 10px; padding: 7px 9px; border: 1px solid #c3cde0; background: #f5f7fb;
+  font: bold 11px/15px var(--font);
+}
+.poker-app .poker-turn-banner.yours {
+  background: #e8f5e9; border-color: #8cbc8c;
+}
+.poker-app .poker-turn-banner.pending { background: #fff8e1; border-color: #e6d9a8; }
+.poker-app .poker-turn-banner.done { background: #edf2f8; }
+.poker-app .poker-table {
+  margin: 0 0 12px; padding: 12px; border: 1px solid #8cbc8c; background: #eef6ee;
+}
+.poker-app .poker-seat { margin: 0 0 8px; font: 11px/16px var(--font); }
+.poker-app .poker-hole { margin-top: 4px; }
+.poker-app .poker-board-wrap { text-align: center; margin: 10px 0; }
+.poker-app .poker-pot { margin: 0 0 6px; font: bold 11px/15px var(--font); }
+.poker-app .poker-actions { margin: 8px 0; }
+.poker-app .poker-actions form.inline { display: inline; margin-right: 6px; }
+.poker-app .poker-raise-form { margin: 6px 0 10px; }
+.poker-app .poker-simple-list { list-style: none; margin: 0; padding: 0; }
+.poker-app .poker-simple-list li {
+  margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
+}
+.poker-app .poker-row-hot td { background: #fff8e1; }
+.poker-app a.poker-cta { display: inline-block; padding: 1px 8px; text-decoration: none; }
+.poker-app .poker-xp-bar {
+  height: 8px; margin: 0 0 12px; background: #e0e0e0; border: 1px solid #ccc; overflow: hidden;
+}
+.poker-app .poker-xp-bar.thin { height: 5px; margin: 0 0 6px; }
+.poker-app .poker-xp-bar span { display: block; height: 100%; background: var(--fb); }
+.poker-app .poker-quiz-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.poker-app .poker-quiz-list li { margin: 0; padding: 3px 0; }
+.poker-app .poker-done { color: #390; font-weight: bold; margin-left: 4px; }
+.poker-app .poker-learn-progress { margin: 0 0 8px; font: 11px/15px var(--font); }
+.poker-app .poker-chapter { margin: 0 0 14px; }
+.poker-app .poker-theme-tabs { margin: 0 0 10px; font: 11px/16px var(--font); }
+.poker-app .poker-theme-tabs a.on { font-weight: bold; color: #333; text-decoration: none; }
+.poker-app .poker-hint-box { margin: 6px 0 10px; font: 11px/15px var(--font); }
+.poker-app .poker-hint-text { display: none; margin-left: 8px; color: #555; }
+.poker-app .poker-hint-check:checked ~ .poker-hint-text { display: inline; }
+.poker-app tr.is-me td { background: #edf2f8; }
+.poker-app h5 {
+  margin: 12px 0 6px; padding: 0; font: bold 11px/14px var(--font); color: #333;
 }
 #snav .snav-apps-label {
   display: block; margin-top: 8px; padding: 2px 0 1px;

@@ -827,4 +827,11 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-chess-modules.py \
 else
   echo "FAIL chess app"; FAIL=1
 fi
+echo "== Poker app probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-poker-modules.py \
+  && .venv/bin/python deploy/poker-check.py; then
+  echo "OK   poker app"
+else
+  echo "FAIL poker app"; FAIL=1
+fi
 exit "$FAIL"
