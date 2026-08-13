@@ -51,11 +51,17 @@
       bankrupt;
   }
 
+  function csrfHtml() {
+    return (window.VdLive && window.VdLive.csrfFieldHtml && window.VdLive.csrfFieldHtml()) || "";
+  }
+
   function plotActsHtml(pl, strip) {
     if (!strip || strip.bankrupt) return "";
+    var csrf = csrfHtml();
     if (pl.state === "empty") {
       return (
         '<form method="post" class="farm-plant-form" data-live-act="plant">' +
+        csrf +
         '<input type="hidden" name="action" value="plant">' +
         '<input type="hidden" name="plot_id" value="' +
         pl.id +
@@ -69,6 +75,7 @@
       if (!pl.watered) {
         html +=
           '<form method="post" class="inline" data-live-act="water">' +
+          csrf +
           '<input type="hidden" name="action" value="water">' +
           '<input type="hidden" name="plot_id" value="' +
           pl.id +
@@ -78,6 +85,7 @@
       if (!pl.fertilized && strip.fertilizer) {
         html +=
           '<form method="post" class="inline" data-live-act="fertilize">' +
+          csrf +
           '<input type="hidden" name="action" value="fertilize">' +
           '<input type="hidden" name="plot_id" value="' +
           pl.id +
@@ -87,6 +95,7 @@
       if (strip.boosts) {
         html +=
           '<form method="post" class="inline" data-live-act="boost">' +
+          csrf +
           '<input type="hidden" name="action" value="boost">' +
           '<input type="hidden" name="plot_id" value="' +
           pl.id +
@@ -98,6 +107,7 @@
     if (pl.state === "ready") {
       return (
         '<form method="post" class="inline" data-live-act="harvest">' +
+        csrf +
         '<input type="hidden" name="action" value="harvest">' +
         '<input type="hidden" name="plot_id" value="' +
         pl.id +
@@ -108,6 +118,7 @@
     if (pl.state === "withered") {
       return (
         '<form method="post" class="inline" data-live-act="clear">' +
+        csrf +
         '<input type="hidden" name="action" value="clear">' +
         '<input type="hidden" name="plot_id" value="' +
         pl.id +
@@ -220,16 +231,18 @@
   app.addEventListener("submit", function (ev) {
     var form = ev.target;
     if (!form || !form.getAttribute) return;
+    if (window.VdLive && window.VdLive.ensureCsrf) window.VdLive.ensureCsrf(form);
     var action =
       form.getAttribute("data-live-act") ||
       (form.querySelector('[name="action"]') && form.querySelector('[name="action"]').value);
     if (!action) return;
-    if (!client.ws || client.ws.readyState !== 1) return; // HTTP fallback
+    if (!client.ws || client.ws.readyState !== 1) return; // HTTP fallback (csrf ensured above)
     ev.preventDefault();
     var payload = {};
     Array.prototype.forEach.call(form.elements, function (el) {
       if (!el.name || el.disabled) return;
       if (el.type === "submit" || el.type === "button") return;
+      if (el.name === "csrfmiddlewaretoken") return;
       payload[el.name] = el.value;
     });
     client.act(action, payload);

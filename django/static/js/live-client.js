@@ -121,5 +121,44 @@
     el.classList.toggle("is-on", status === "live");
   }
 
-  global.VdLive = { Client: LiveClient, setBadge: setLiveBadge };
+  function csrfToken() {
+    var m = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
+    if (!m) return "";
+    try {
+      return decodeURIComponent(m[1]);
+    } catch (e) {
+      return m[1] || "";
+    }
+  }
+
+  function csrfFieldHtml() {
+    var t = csrfToken();
+    if (!t) return "";
+    return (
+      '<input type="hidden" name="csrfmiddlewaretoken" value="' +
+      t.replace(/"/g, "&quot;") +
+      '">'
+    );
+  }
+
+  /** Ensure a form has csrfmiddlewaretoken (for dynamically rebuilt LIVE forms). */
+  function ensureCsrf(form) {
+    if (!form || !form.querySelector) return;
+    if (form.querySelector('input[name="csrfmiddlewaretoken"]')) return;
+    var t = csrfToken();
+    if (!t) return;
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "csrfmiddlewaretoken";
+    input.value = t;
+    form.insertBefore(input, form.firstChild);
+  }
+
+  global.VdLive = {
+    Client: LiveClient,
+    setBadge: setLiveBadge,
+    csrfToken: csrfToken,
+    csrfFieldHtml: csrfFieldHtml,
+    ensureCsrf: ensureCsrf,
+  };
 })(window);

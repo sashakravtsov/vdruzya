@@ -70,6 +70,8 @@
       : '<span class="avatar dating-avatar-fallback">' +
         escapeHtml((card.name || "?").charAt(0)) +
         "</span>";
+    var csrf =
+      (window.VdLive && window.VdLive.csrfFieldHtml && window.VdLive.csrfFieldHtml()) || "";
     stage.innerHTML =
       '<div class="dating-hero">' +
       '<div class="dating-hero-photo"><a href="' +
@@ -96,6 +98,7 @@
       (prompts ? '<ul class="dating-prompts">' + prompts + "</ul>" : "") +
       '<div class="dating-acts">' +
       '<form method="post" data-live-act="swipe" class="inline">' +
+      csrf +
       '<input type="hidden" name="action" value="swipe">' +
       '<input type="hidden" name="target_id" value="' +
       card.id +
@@ -103,6 +106,7 @@
       '<input type="hidden" name="swipe_action" value="pass">' +
       '<button type="submit" class="inputbutton">Пропустить</button></form> ' +
       '<form method="post" data-live-act="swipe" class="inline">' +
+      csrf +
       '<input type="hidden" name="action" value="swipe">' +
       '<input type="hidden" name="target_id" value="' +
       card.id +
@@ -110,6 +114,7 @@
       '<input type="hidden" name="swipe_action" value="like">' +
       '<button type="submit" class="inputsubmit">Лайк</button></form> ' +
       '<form method="post" data-live-act="swipe" class="inline">' +
+      csrf +
       '<input type="hidden" name="action" value="swipe">' +
       '<input type="hidden" name="target_id" value="' +
       card.id +
@@ -161,6 +166,7 @@
   app.addEventListener("submit", function (ev) {
     var form = ev.target;
     if (!form || !form.querySelector) return;
+    if (window.VdLive && window.VdLive.ensureCsrf) window.VdLive.ensureCsrf(form);
     var actionEl = form.querySelector('[name="action"]');
     var action = (form.getAttribute("data-live-act") || (actionEl && actionEl.value) || "").trim();
     if (action !== "swipe") return;
@@ -170,6 +176,7 @@
     Array.prototype.forEach.call(form.elements, function (el) {
       if (!el.name || el.disabled) return;
       if (el.type === "submit" || el.type === "button") return;
+      if (el.name === "csrfmiddlewaretoken") return;
       payload[el.name] = el.value;
     });
     client.act("swipe", payload);

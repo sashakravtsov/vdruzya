@@ -12,7 +12,19 @@ _sk = env("SECRET_KEY")
 SECRET_KEY = _sk.removeprefix("base64:") if _sk.startswith("base64:") else _sk
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = ["vdruzya.ru", "www.vdruzya.ru", "127.0.0.1", "localhost", "testserver"]
-CSRF_TRUSTED_ORIGINS = [u for u in [env("CSRF_TRUSTED_ORIGIN", default="")] if u.startswith("http")]
+# Prefer CSRF_TRUSTED_ORIGINS (comma-list in .env); keep singular fallback for older envs.
+_csrf_origins = [
+    u.strip()
+    for u in env.list("CSRF_TRUSTED_ORIGINS", default=[])
+    if isinstance(u, str) and u.strip().startswith("http")
+]
+if not _csrf_origins:
+    _one = env("CSRF_TRUSTED_ORIGIN", default="").strip()
+    if _one.startswith("http"):
+        _csrf_origins = [_one]
+if not _csrf_origins:
+    _csrf_origins = ["https://vdruzya.ru", "https://www.vdruzya.ru"]
+CSRF_TRUSTED_ORIGINS = _csrf_origins
 
 INSTALLED_APPS = [
     "daphne",
