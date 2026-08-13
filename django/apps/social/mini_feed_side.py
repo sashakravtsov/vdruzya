@@ -1,7 +1,7 @@
 """Mini-Feed side stories (joins, photos, tags, gifts) — mini_feed imports."""
 from __future__ import annotations
 
-from django.db.models import Q
+from django.db.models import F, Q
 
 from apps.social.models import Community, CommunityMember, Friendship
 
@@ -41,6 +41,8 @@ def _side_items(profile, limit: int) -> list[dict]:
     for f in (
         Friendship.objects.filter(status="accepted")
         .filter(Q(user=profile) | Q(friend=profile))
+        # Bidirectional edges (A↔B) — one story per pair, same as news_stories.
+        .filter(user_id__lt=F("friend_id"))
         .select_related("user", "friend")
         .order_by("-updated_at", "-id")[:limit]
     ):
