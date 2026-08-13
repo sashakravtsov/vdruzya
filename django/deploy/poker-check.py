@@ -147,8 +147,9 @@ def main():
     assert room_api.status_code == 200
     assert room_api.json().get("type") == "room"
     room_html = c.get(f"/apps/poker/canvas?tab=room&id={room.id}", secure=True).content
-    assert b"poker-realtime.js" in room_html
+    assert b"poker-realtime" in room_html  # hashed static name ok
     assert b"/ws/poker/room/" in room_html
+    assert b"data-poker-rt=\"room\"" in room_html or b"data-poker-rt='room'" in room_html
     if dealt is not None:
         snap = rt.serialize_table(dealt, me)
         assert snap["type"] == "table" and "board_slots" in snap
@@ -156,7 +157,7 @@ def main():
         assert api.status_code == 200
         assert api.json().get("type") == "table"
         table_html = c.get(f"/apps/poker/canvas?tab=table&id={dealt.id}", secure=True).content
-        assert b"poker-realtime.js" in table_html
+        assert b"poker-realtime" in table_html
         assert b"data-ws-url" in table_html
         assert b"/ws/poker/game/" in table_html
         ok("poker JSON API + LIVE canvas hooks")
