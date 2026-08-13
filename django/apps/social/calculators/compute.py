@@ -6,6 +6,7 @@ from datetime import timedelta
 from decimal import Decimal, ROUND_CEILING
 
 from . import helpers as H
+from . import law
 from .catalog import get_tool
 
 
@@ -45,19 +46,23 @@ def calc_vacation(data):
     earn = H.D(data.get("earnings_12m"))
     days = H.D(data.get("days"))
     months = H.D(data.get("months_worked"), "12")
+    if earn < 0:
+        raise H.CalcError("Заработок не может быть отрицательным")
     if days <= 0 or months <= 0:
         raise H.CalcError("Дни и месяцы должны быть > 0")
     if months > 12:
         months = Decimal("12")
-    avg_day = earn / months / Decimal("29.3")
+    avg_day = earn / months / law.VACATION_AVG_DAYS
     pay = avg_day * days
     return H.ok(
         "Отпускные",
         [
-            f"Средний дневной заработок: {H.money(avg_day)} ₽",
             f"К выплате за {H.num(days, H.TWOPLACES)} дн.: {H.money(pay)} ₽",
+            f"Средний дневной заработок: {H.money(avg_day)} ₽",
+            f"База: {H.money(earn)} ₽ / {H.num(months, H.TWOPLACES)} мес. / 29,3",
         ],
-        ["Формула: заработок / отработанные месяцы / 29,3 × дни отпуска (ст. 139 ТК РФ)."],
+        ["ст. 139 ТК РФ: среднемесячное число календарных дней — 29,3. Без исключённых периодов (больничные и т.п.)."],
+        primary=f"К выплате: {H.money(pay)} ₽",
     )
 
 
@@ -143,6 +148,8 @@ def calc_sick(data):
     earn = H.D(data.get("earnings_2y"))
     days = H.D(data.get("days"))
     years = H.D(data.get("seniority_years"))
+    if earn < 0:
+        raise H.CalcError("Заработок не может быть отрицательным")
     if days <= 0:
         raise H.CalcError("Дни должны быть > 0")
     if years < 5:
@@ -151,32 +158,82 @@ def calc_sick(data):
         pct = Decimal("80")
     else:
         pct = Decimal("100")
-    avg = earn / Decimal("730")
+    avg = earn / law.SICK_DAY_DIVISOR
     benefit = avg * days * pct / Decimal("100")
     return H.ok(
         "Больничный",
         [
-            f"СДЗ: {H.money(avg)} ₽",
-            f"% оплаты по стажу: {H.num(pct, H.TWOPLACES)}%",
             f"Пособие: {H.money(benefit)} ₽",
+            f"СДЗ: {H.money(avg)} ₽ (заработок / 730)",
+            f"% оплаты по стажу: {H.num(pct, H.TWOPLACES)}% (<5 лет — 60%, 5–8 — 80%, ≥8 — 100%)",
         ],
-        ["Без учёта предельной базы ФСС/СФР и районных коэффициентов — ориентир для оценки."],
+        [
+            "ст. 7, 14 Федерального закона № 255-ФЗ. Без предельной базы СФР и районных коэффициентов — ориентир.",
+        ],
+        primary=f"Пособие: {H.money(benefit)} ₽",
     )
 
 
 def calc_vat(data):
     amount = H.D(data.get("amount"))
-    rate = H.D(data.get("rate"), "20")
+    if amount < 0:
+        raise H.CalcError("Сумма не может быть отрицательной")
+    rate_raw = (data.get("rate") or "22").strip()
     mode = (data.get("mode") or "extract").strip()
-    if rate < 0:
-        raise H.CalcError("Ставка некорректна")
+    ship = H.parse_date(data.get("ship_date"), allow_empty=True)
+    if rate_raw == "custom":
+        rate = H.D(data.get("custom_rate"))
+    else:
+        rate = H.D(rate_raw, "22")
+        # soft hint: if user left default 22 but ship_date is pre-2026, still use chosen rate
+        # (rate is explicit from form)
+    if rate < 0 or rate >= 100:
+        raise H.CalcError("Ставка НДС должна быть от 0 до 100%")
+    frac = law.vat_fraction_label(rate)
+    notes = [law.VAT_LAW_NOTE]
+    if ship:
+        suggested = law.vat_default_rate(ship)
+        if suggested != rate and rate_raw != "custom":
+            notes.append(
+                f"Дата отгрузки {ship.isoformat()}: типичная основная ставка на эту дату — "
+                f"{H.num(suggested, H.TWOPLACES)}% (выбрано {H.num(rate, H.TWOPLACES)}%)."
+            )
+        else:
+            notes.append(f"Дата отгрузки: {ship.isoformat()}.")
     if mode == "add":
         vat = amount * rate / Decimal("100")
         total = amount + vat
-        return H.ok("НДС начислен", [f"НДС: {H.money(vat)} ₽", f"Сумма с НДС: {H.money(total)} ₽"])
+        return H.ok(
+            "НДС начислен",
+            [
+                f"НДС ({H.num(rate, H.TWOPLACES)}%): {H.money(vat)} ₽",
+                f"Сумма с НДС: {H.money(total)} ₽",
+                f"Без НДС: {H.money(amount)} ₽",
+                f"Расчётная ставка: {frac}",
+            ],
+            notes,
+            primary=f"НДС: {H.money(vat)} ₽",
+        )
+    if rate == 0:
+        return H.ok(
+            "НДС выделен",
+            [f"НДС: {H.money(Decimal('0'))} ₽", f"Без НДС: {H.money(amount)} ₽", "Расчётная ставка: 0/100"],
+            notes,
+            primary=f"НДС: {H.money(Decimal('0'))} ₽",
+        )
     vat = amount * rate / (Decimal("100") + rate)
     net = amount - vat
-    return H.ok("НДС выделен", [f"НДС: {H.money(vat)} ₽", f"Без НДС: {H.money(net)} ₽"])
+    return H.ok(
+        "НДС выделен",
+        [
+            f"НДС ({frac}): {H.money(vat)} ₽",
+            f"Без НДС: {H.money(net)} ₽",
+            f"Сумма с НДС: {H.money(amount)} ₽",
+            f"Ставка: {H.num(rate, H.TWOPLACES)}%",
+        ],
+        notes,
+        primary=f"НДС: {H.money(vat)} ₽",
+    )
 
 
 def calc_mortgage(data):
@@ -236,10 +293,26 @@ def calc_severance(data):
 def calc_penalty(data):
     amount = H.D(data.get("amount"))
     days = H.D(data.get("days"))
-    base = H.D(data.get("base"), "365")
-    rate_year = H.D(data.get("rate_year"), "0")
+    kind = (data.get("kind") or "contract").strip()
     if days < 0 or amount < 0:
         raise H.CalcError("Сумма и дни не могут быть отрицательными")
+    if kind == "tax":
+        key = H.D(data.get("key_rate"), "16")
+        if key < 0:
+            raise H.CalcError("Ключевая ставка некорректна")
+        # ст. 75 НК РФ: 1/300 ключевой ставки ЦБ за каждый день просрочки (базовая модель)
+        pen = amount * key * days / Decimal("300") / Decimal("100")
+        return H.ok(
+            "Налоговые пени",
+            [
+                f"Пени: {H.money(pen)} ₽",
+                f"Формула: сумма × {H.num(key, H.TWOPLACES)}% × {H.num(days, H.TWOPLACES)} / 300",
+            ],
+            ["ст. 75 НК РФ (модель 1/300). Для части периодов физлиц/организаций могут применяться иные доли — сверяйте актуальную редакцию."],
+            primary=f"Пени: {H.money(pen)} ₽",
+        )
+    base = H.D(data.get("base"), "365")
+    rate_year = H.D(data.get("rate_year"), "0")
     if rate_year > 0:
         pen = amount * rate_year * days / base / Decimal("100")
         note = f"годовая {H.num(rate_year)}% / {H.num(base, H.TWOPLACES)}"
@@ -247,7 +320,11 @@ def calc_penalty(data):
         rate_day = H.D(data.get("rate_day"))
         pen = amount * rate_day * days / Decimal("100")
         note = f"{H.num(rate_day)}% в день"
-    return H.ok("Пени", [f"Пени: {H.money(pen)} ₽", f"Параметры: {note}, {H.num(days, H.TWOPLACES)} дн."])
+    return H.ok(
+        "Пени",
+        [f"Пени: {H.money(pen)} ₽", f"Параметры: {note}, {H.num(days, H.TWOPLACES)} дн."],
+        primary=f"Пени: {H.money(pen)} ₽",
+    )
 
 
 _LENGTH = {
@@ -421,19 +498,75 @@ def calc_early_payoff(data):
     )
 
 
+def _ndfl_tax(income: Decimal) -> tuple[Decimal, list[str]]:
+    """Progressive NDFL on annual base; returns tax + bracket breakdown lines."""
+    if income < 0:
+        raise H.CalcError("База не может быть отрицательной")
+    tax = Decimal("0")
+    prev = Decimal("0")
+    parts: list[str] = []
+    for cap, rate in law.NDFL_BRACKETS:
+        chunk_top = income if cap is None else min(income, cap)
+        if chunk_top <= prev:
+            break
+        chunk = chunk_top - prev
+        chunk_tax = chunk * rate
+        tax += chunk_tax
+        pct = (rate * 100).quantize(H.TWOPLACES)
+        hi = "∞" if cap is None else H.money(cap)
+        parts.append(
+            f"{H.money(prev)}–{hi}: {H.money(chunk)} ₽ × {H.num(pct, H.TWOPLACES)}% = {H.money(chunk_tax)} ₽"
+        )
+        prev = chunk_top
+        if cap is None or income <= cap:
+            break
+    return tax, parts
+
+
 def calc_salary(data):
     amount = H.D(data.get("amount"))
     rate = H.D(data.get("rate"), "13")
     mode = (data.get("mode") or "gross_to_net").strip()
+    tax_mode = (data.get("tax_mode") or "flat").strip()
+    if amount < 0:
+        raise H.CalcError("Сумма не может быть отрицательной")
+    if tax_mode == "progressive":
+        if mode == "net_to_gross":
+            raise H.CalcError("Для прогрессии используйте режим «Оклад → на руки» (оценка с месяца × 12)")
+        year_gross = amount * 12
+        year_tax, parts = _ndfl_tax(year_gross)
+        month_tax = year_tax / 12
+        net = amount - month_tax
+        return H.ok(
+            "Зарплата (прогрессия, оценка)",
+            [
+                f"На руки/мес. (оценка): {H.money(net)} ₽",
+                f"НДФЛ/мес. (год÷12): {H.money(month_tax)} ₽",
+                f"Оклад/мес.: {H.money(amount)} ₽ · база за год: {H.money(year_gross)} ₽",
+                f"НДФЛ за год: {H.money(year_tax)} ₽",
+            ],
+            [law.NDFL_LAW_NOTE, "Оценка равномерного дохода 12 месяцев без вычетов."] + parts[:3],
+            primary=f"На руки: {H.money(net)} ₽",
+        )
     if rate < 0 or rate >= 100:
         raise H.CalcError("Ставка НДФЛ некорректна")
     if mode == "net_to_gross":
         gross = amount / (1 - rate / 100)
         tax = gross - amount
-        return H.ok("Зарплата", [f"Оклад (gross): {H.money(gross)} ₽", f"НДФЛ: {H.money(tax)} ₽"])
+        return H.ok(
+            "Зарплата",
+            [f"Оклад (gross): {H.money(gross)} ₽", f"НДФЛ {H.num(rate, H.TWOPLACES)}%: {H.money(tax)} ₽", f"На руки: {H.money(amount)} ₽"],
+            ["Плоская ставка — удобна при доходе в пределах первой ступени (до 2,4 млн ₽/год)."],
+            primary=f"Оклад: {H.money(gross)} ₽",
+        )
     tax = amount * rate / 100
     net = amount - tax
-    return H.ok("Зарплата", [f"На руки: {H.money(net)} ₽", f"НДФЛ: {H.money(tax)} ₽"])
+    return H.ok(
+        "Зарплата",
+        [f"На руки: {H.money(net)} ₽", f"НДФЛ {H.num(rate, H.TWOPLACES)}%: {H.money(tax)} ₽", f"Оклад: {H.money(amount)} ₽"],
+        ["Плоская ставка — удобна при доходе в пределах первой ступени (до 2,4 млн ₽/год)."],
+        primary=f"На руки: {H.money(net)} ₽",
+    )
 
 
 def calc_deposit(data):
@@ -623,35 +756,29 @@ def calc_triangle(data):
 
 def calc_ndfl(data):
     income = H.D(data.get("income"))
-    if income < 0:
-        raise H.CalcError("База не может быть отрицательной")
-    # Progressive RU personal income tax brackets (2025+)
-    brackets = [
-        (Decimal("2400000"), Decimal("0.13")),
-        (Decimal("5000000"), Decimal("0.15")),
-        (Decimal("20000000"), Decimal("0.18")),
-        (Decimal("50000000"), Decimal("0.20")),
-        (None, Decimal("0.22")),
+    deduction = H.D(data.get("deduction"), "0")
+    input_mode = (data.get("input_mode") or "year").strip()
+    if input_mode == "month":
+        income = income * 12
+    if deduction < 0:
+        raise H.CalcError("Вычеты не могут быть отрицательными")
+    base = income - deduction
+    if base < 0:
+        base = Decimal("0")
+    tax, parts = _ndfl_tax(base)
+    effective = (tax * 100 / base) if base else Decimal("0")
+    lines = [
+        f"Налог: {H.money(tax)} ₽",
+        f"База: {H.money(base)} ₽" + (f" (доход {H.money(income)} − вычеты {H.money(deduction)})" if deduction else ""),
+        f"После налога: {H.money(base - tax)} ₽",
+        f"Эффективная ставка: {H.num(effective)}%",
     ]
-    tax = Decimal("0")
-    prev = Decimal("0")
-    for cap, rate in brackets:
-        chunk_top = income if cap is None else min(income, cap)
-        if chunk_top <= prev:
-            break
-        tax += (chunk_top - prev) * rate
-        prev = chunk_top
-        if cap is None or income <= cap:
-            break
-    effective = (tax * 100 / income) if income else Decimal("0")
+    lines.extend(parts)
     return H.ok(
         "НДФЛ (прогрессия)",
-        [
-            f"Налог: {H.money(tax)} ₽",
-            f"На руки: {H.money(income - tax)} ₽",
-            f"Эффективная ставка: {H.num(effective)}%",
-        ],
-        ["Упрощённый расчёт по годовым порогам 13/15/18/20/22% без вычетов и особых баз."],
+        lines,
+        [law.NDFL_LAW_NOTE],
+        primary=f"НДФЛ: {H.money(tax)} ₽",
     )
 
 
@@ -659,23 +786,42 @@ def calc_tax_simple(data):
     mode = (data.get("mode") or "income").strip()
     income = H.D(data.get("income"))
     expense = H.D(data.get("expense"), "0")
+    if income < 0 or expense < 0:
+        raise H.CalcError("Суммы не могут быть отрицательными")
     if mode == "income":
-        tax = income * Decimal("0.06")
-        return H.ok("УСН доходы 6%", [f"Налог: {H.money(tax)} ₽"], ["Без учёта страховых взносов к вычету."])
+        rate = H.D(data.get("rate_income"), "6")
+        contrib = H.D(data.get("contrib"), "0")
+        raw = income * rate / 100
+        tax = raw - contrib
+        if tax < 0:
+            tax = Decimal("0")
+        return H.ok(
+            f"УСН доходы {H.num(rate, H.TWOPLACES)}%",
+            [
+                f"К уплате (оценка): {H.money(tax)} ₽",
+                f"Налог до вычета взносов: {H.money(raw)} ₽",
+                f"Вычет взносов: {H.money(contrib)} ₽",
+            ],
+            ["Вычет страховых взносов не может превысить налог; лимиты УСН и НДС для УСН не учитываются."],
+            primary=f"Налог: {H.money(tax)} ₽",
+        )
+    rate = H.D(data.get("rate_diff"), "15")
     base = income - expense
     if base < 0:
         base = Decimal("0")
-    tax = base * Decimal("0.15")
+    tax = base * rate / 100
     min_tax = income * Decimal("0.01")
     applied = max(tax, min_tax)
     return H.ok(
-        "УСН доходы−расходы 15%",
+        f"УСН доходы−расходы {H.num(rate, H.TWOPLACES)}%",
         [
-            f"База: {H.money(base)} ₽",
-            f"Налог 15%: {H.money(tax)} ₽",
-            f"Мин. налог 1%: {H.money(min_tax)} ₽",
             f"К уплате (оценка): {H.money(applied)} ₽",
+            f"База: {H.money(base)} ₽",
+            f"Налог {H.num(rate, H.TWOPLACES)}%: {H.money(tax)} ₽",
+            f"Мин. налог 1% от доходов: {H.money(min_tax)} ₽",
         ],
+        ["Если налог 15% меньше 1% от доходов — уплачивается минимальный налог."],
+        primary=f"К уплате: {H.money(applied)} ₽",
     )
 
 
@@ -826,18 +972,59 @@ def calc_expiry(data):
 
 def calc_contributions(data):
     payroll = H.D(data.get("payroll"))
-    ops = H.D(data.get("ops"), "22")
-    oms = H.D(data.get("oms"), "5.1")
-    vnim = H.D(data.get("vnim"), "2.9")
-    parts = [
-        ("ОПС", payroll * ops / 100),
-        ("ОМС", payroll * oms / 100),
-        ("ВНиМ", payroll * vnim / 100),
+    if payroll < 0:
+        raise H.CalcError("ФОТ не может быть отрицательным")
+    mode = (data.get("mode") or "general").strip()
+    injury = H.D(data.get("injury"), "0")
+    if injury < 0:
+        raise H.CalcError("Ставка травматизма некорректна")
+    injury_sum = payroll * injury / 100
+    if mode == "custom":
+        ops = H.D(data.get("ops"), "22")
+        oms = H.D(data.get("oms"), "5.1")
+        vnim = H.D(data.get("vnim"), "2.9")
+        parts = [
+            ("Часть 1", payroll * ops / 100),
+            ("Часть 2", payroll * oms / 100),
+            ("Часть 3", payroll * vnim / 100),
+        ]
+        main = sum((p for _, p in parts), Decimal("0"))
+        lines = [f"{name}: {H.money(val)} ₽" for name, val in parts]
+        lines.append(f"Единый/свои тарифы итого: {H.money(main)} ₽")
+        if injury_sum:
+            lines.append(f"Травматизм {H.num(injury, H.TWOPLACES)}%: {H.money(injury_sum)} ₽")
+        lines.append(f"Всего с травматизмом: {H.money(main + injury_sum)} ₽")
+        return H.ok(
+            "Страховые взносы (свои ставки)",
+            lines,
+            ["Без предельной базы. Для общего порядка 2026 выберите «Общий тариф»."],
+            primary=f"Взносы: {H.money(main + injury_sum)} ₽",
+        )
+    limit = law.CONTRIB_BASE_LIMIT_2026
+    within = min(payroll, limit)
+    over = payroll - within if payroll > limit else Decimal("0")
+    tax_within = within * law.CONTRIB_RATE_WITHIN / 100
+    tax_over = over * law.CONTRIB_RATE_OVER / 100
+    main = tax_within + tax_over
+    lines = [
+        f"Взносы (ОПС+ОМС+ВНиМ): {H.money(main)} ₽",
+        f"В пределах базы {H.money(limit)} ₽ × {H.num(law.CONTRIB_RATE_WITHIN, H.TWOPLACES)}%: {H.money(tax_within)} ₽",
     ]
-    total = sum((p for _, p in parts), Decimal("0"))
-    lines = [f"{name}: {H.money(val)} ₽" for name, val in parts]
-    lines.append(f"Итого: {H.money(total)} ₽")
-    return H.ok("Страховые взносы", lines, ["Без учёта предельных баз и льготных тарифов."])
+    if over > 0:
+        lines.append(
+            f"Сверх базы {H.money(over)} ₽ × {H.num(law.CONTRIB_RATE_OVER, H.TWOPLACES)}%: {H.money(tax_over)} ₽"
+        )
+    else:
+        lines.append(f"До предельной базы осталось: {H.money(limit - payroll)} ₽")
+    if injury_sum:
+        lines.append(f"Травматизм {H.num(injury, H.TWOPLACES)}%: {H.money(injury_sum)} ₽")
+    lines.append(f"Всего с травматизмом: {H.money(main + injury_sum)} ₽")
+    return H.ok(
+        "Страховые взносы 2026",
+        lines,
+        [law.CONTRIB_LAW_NOTE],
+        primary=f"Взносы: {H.money(main + injury_sum)} ₽",
+    )
 
 
 def calc_stairs(data):
@@ -882,20 +1069,27 @@ def calc_nmck(data):
 
 def calc_contract(data):
     amount = H.D(data.get("amount"))
-    vat_rate = H.D(data.get("vat_rate"), "20")
+    vat_rate = H.D(data.get("vat_rate"), "22")
     months = int(H.D(data.get("months"), "1"))
+    if amount < 0:
+        raise H.CalcError("Сумма не может быть отрицательной")
     if months <= 0:
         raise H.CalcError("Срок должен быть > 0")
+    if vat_rate < 0:
+        raise H.CalcError("Ставка НДС некорректна")
     vat = amount * vat_rate / 100
     total = amount + vat
     monthly = total / months
     return H.ok(
         "Договор",
         [
-            f"НДС: {H.money(vat)} ₽",
             f"Всего с НДС: {H.money(total)} ₽",
-            f"В месяц: {H.money(monthly)} ₽",
+            f"НДС {H.num(vat_rate, H.TWOPLACES)}% ({law.vat_fraction_label(vat_rate)}): {H.money(vat)} ₽",
+            f"Без НДС: {H.money(amount)} ₽",
+            f"В месяц ({months} мес.): {H.money(monthly)} ₽",
         ],
+        [law.VAT_LAW_NOTE] if vat_rate in (Decimal("22"), Decimal("20")) else None,
+        primary=f"С НДС: {H.money(total)} ₽",
     )
 
 

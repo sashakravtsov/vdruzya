@@ -349,12 +349,35 @@ def _canvas_truth(request, me, app):
 
 
 def _canvas_calculator(request, me, app):
-    from apps.social.calculators import get_tool, run_tool, tools_by_topic, TOOLS
+    from apps.social.calculators import (
+        get_tool, run_tool, tools_by_topic, TOOLS, popular_tools, related_tools,
+    )
+    from apps.social.calculators import law as calc_law
 
     tool_slug = (request.GET.get("tool") or request.POST.get("tool") or "").strip()
     tool = get_tool(tool_slug) if tool_slug else None
     result = None
     form_fields = []
+    q = (request.GET.get("q") or "").strip()[:80]
+    topics = tools_by_topic()
+    if q and not tool:
+        ql = q.lower()
+        filtered = {}
+        for topic, items in topics.items():
+            hit = [
+                t for t in items
+                if ql in t["name"].lower() or ql in t["blurb"].lower() or ql in t["slug"]
+            ]
+            if hit:
+                filtered[topic] = hit
+        topics = filtered
+    law_note = ""
+    if tool and tool.get("law") == "vat":
+        law_note = calc_law.VAT_LAW_NOTE
+    elif tool and tool.get("law") == "ndfl":
+        law_note = calc_law.NDFL_LAW_NOTE
+    elif tool and tool.get("law") == "contrib":
+        law_note = calc_law.CONTRIB_LAW_NOTE
     if tool:
         raw = {}
         if request.method == "POST":
@@ -364,6 +387,17 @@ def _canvas_calculator(request, me, app):
         else:
             for field in tool["fields"]:
                 raw[field["name"]] = str(field.get("default") or "")
+            # example preset via ?demo=1
+            if request.GET.get("demo") == "1":
+                demos = {
+                    "vat": {"amount": "122000", "rate": "22", "mode": "extract"},
+                    "ndfl": {"income": "3000000", "input_mode": "year", "deduction": "0"},
+                    "vacation": {"earnings_12m": "600000", "days": "14", "months_worked": "12"},
+                    "credit": {"principal": "500000", "rate_year": "18", "months": "36"},
+                    "contributions": {"payroll": "3000000", "mode": "general", "injury": "0.2"},
+                }
+                raw.update(demos.get(tool["slug"], {}))
+                result = run_tool(tool["slug"], raw)
         for field in tool["fields"]:
             row = dict(field)
             current = raw.get(field["name"], "")
@@ -376,7 +410,11 @@ def _canvas_calculator(request, me, app):
             form_fields.append(row)
     return render(request, "social/apps/canvas_calculator.html", {
         "me": me, "app": app, "tool": tool, "tools": TOOLS,
-        "topics": tools_by_topic(), "form_fields": form_fields, "result": result,
+        "topics": topics, "form_fields": form_fields, "result": result,
+        "popular": popular_tools(),
+        "related": related_tools(tool["slug"]) if tool else [],
+        "law_note": law_note,
+        "q": q,
         "nav": "apps", "installed": True,
     })
 

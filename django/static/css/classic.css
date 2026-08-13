@@ -1473,26 +1473,53 @@ body.fb-dialog-open { overflow: hidden; }
 #snav .snav-more-cb:checked ~ .snav-more-panel { display: block; }
 #snav .snav-more-panel a { width: 114px; }
 .app-canvas-page .classic-page-lead { margin-bottom: 10px; }
-/* Calculators suite */
-.calc-suite .calc-topics { margin: 0 0 12px; }
-.calc-suite .calc-topic { margin: 0 0 14px; }
+/* Calculators suite — classic profile-box chrome, clear hierarchy */
+.calc-suite .calc-lead { margin: 0 0 10px; }
+.calc-suite .calc-blurb { margin: 0 0 8px; color: #333; }
+.calc-suite .calc-law {
+  margin: 0 0 10px; padding: 6px 8px;
+  background: #edf2f8; border: 1px solid #c6d2e3; color: #333;
+  font: 11px/15px var(--font);
+}
+.calc-suite .calc-search { margin: 0 0 12px; }
+.calc-suite .calc-search .inputtext { margin: 0 4px; }
+.calc-suite .calc-popular { margin: 0 0 12px; }
+.calc-suite .calc-popular h5,
+.calc-suite .calc-related h5,
 .calc-suite .calc-topic h5 {
   margin: 0 0 6px; padding: 0; font: bold 11px/14px var(--font); color: #333;
 }
+.calc-suite .calc-popular-links { margin: 0; line-height: 1.6; }
+.calc-suite .calc-topic-nav { margin: 0 0 12px; line-height: 1.5; }
+.calc-suite .calc-topics { margin: 0 0 12px; }
+.calc-suite .calc-topic { margin: 0 0 14px; }
 .calc-suite .calc-tool-list { list-style: none; margin: 0; padding: 0; }
-.calc-suite .calc-tool-list li { margin: 0; padding: 0; }
-.calc-suite .calc-tool-list a {
-  display: block; padding: 3px 0; border-bottom: 1px solid #eee;
+.calc-suite .calc-tool-list li {
+  margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
 }
-.calc-suite .calc-tool-list a.is-on { font-weight: bold; }
+.calc-suite .calc-tool-list a { font-weight: bold; }
+.calc-suite .calc-form .calc-hint { margin-top: 2px; max-width: 320px; }
+.calc-suite .calc-reset { margin-left: 8px; }
 .calc-suite .calc-result {
-  margin-top: 10px; padding: 8px 10px; background: #f7f7f7;
+  margin-top: 12px; padding: 8px 10px; background: #f7f7f7;
   border: 1px solid var(--line);
 }
-.calc-suite .calc-result b { font-size: 13px; }
-.calc-suite .calc-notes { margin: 8px 0 0; color: #666; }
-.calc-suite .calc-notes li { margin: 2px 0; }
+.calc-suite .calc-result-err { background: #fff5f5; border-color: #e0b4b4; }
+.calc-suite .calc-primary {
+  margin: 0 0 6px; font: bold 14px/18px var(--font); color: #111;
+}
+.calc-suite .calc-result-title { font-size: 12px; color: #333; }
+.calc-suite .calc-lines { margin: 6px 0 0; padding-left: 18px; }
+.calc-suite .calc-lines li { margin: 2px 0; }
+.calc-suite .calc-notes { margin: 8px 0 0; padding-left: 18px; color: #666; }
+.calc-suite .calc-notes li { margin: 3px 0; }
+.calc-suite .calc-error { margin: 6px 0 0; color: #a00; }
 .calc-suite .calc-back { margin: 0 0 10px; }
+.calc-suite .calc-related { margin-top: 14px; padding-top: 8px; border-top: 1px solid #eee; }
+.calc-suite .calc-related-list { list-style: none; margin: 0; padding: 0; }
+.calc-suite .calc-related-list li { display: inline; margin: 0; }
+.calc-suite .calc-related-list li:not(:last-child)::after { content: " · "; color: #999; }
+.calc-suite .calc-foot { margin-top: 14px; }
 
 /* OSM maps — classic profile-box, Leaflet owns its own layout */
 .osm-box .osm-map {

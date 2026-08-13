@@ -87,11 +87,24 @@ TOOLS: list[dict[str, Any]] = [
         "slug": "vat",
         "name": "НДС",
         "topic": "Налоги / бухгалтерия",
-        "blurb": "Выделить или начислить НДС (ставки 20% / 10% / 0%).",
+        "blurb": "Выделить или начислить НДС по ставкам 2026: 22% / 20% (до 2026) / 10% / 0%.",
+        "law": "vat",
         "fields": [
-            {"name": "amount", "label": "Сумма, ₽", "type": "money"},
-            {"name": "rate", "label": "Ставка, %", "type": "choice", "choices": [("20", "20%"), ("10", "10%"), ("0", "0%")], "default": "20"},
-            {"name": "mode", "label": "Режим", "type": "choice", "choices": [("extract", "Выделить из суммы"), ("add", "Начислить сверху")]},
+            {"name": "amount", "label": "Сумма, ₽", "type": "money", "hint": "Для «выделить» — сумма с НДС; для «начислить» — без НДС"},
+            {"name": "rate", "label": "Ставка", "type": "choice", "choices": [
+                ("22", "22% — основная с 01.01.2026"),
+                ("20", "20% — до 31.12.2025"),
+                ("10", "10% — льготная (п. 2 ст. 164 НК РФ)"),
+                ("0", "0%"),
+                ("custom", "Своя ставка"),
+            ], "default": "22"},
+            {"name": "custom_rate", "label": "Своя ставка, %", "type": "decimal", "default": "", "required": False, "hint": "Если выбрана «Своя ставка»"},
+            {"name": "mode", "label": "Режим", "type": "choice", "choices": [
+                ("extract", "Выделить из суммы (в т.ч. НДС)"),
+                ("add", "Начислить сверху"),
+            ], "default": "extract"},
+            {"name": "ship_date", "label": "Дата отгрузки (необяз.)", "type": "date", "required": False,
+             "hint": "Если ставка не задана вручную как «своя» — подсказка по периоду (до/после 01.01.2026)"},
         ],
     },
     {
@@ -134,13 +147,19 @@ TOOLS: list[dict[str, Any]] = [
         "slug": "penalty",
         "name": "Пени / неустойка",
         "topic": "Право / бухгалтерия",
-        "blurb": "Пени = сумма × ставка/100 × дни / база (365 или 360).",
+        "blurb": "Договорные пени или налоговые пени 1/300 ключевой ставки ЦБ за день.",
         "fields": [
-            {"name": "amount", "label": "Сумма долга, ₽", "type": "money"},
-            {"name": "rate_day", "label": "Ставка, % в день", "type": "decimal", "default": "0.1"},
+            {"name": "kind", "label": "Тип", "type": "choice", "choices": [
+                ("contract", "Договорная неустойка"),
+                ("tax", "Налоговые пени (1/300 ст. реф. ЦБ × дни)"),
+            ], "default": "contract"},
+            {"name": "amount", "label": "Сумма долга / недоимки, ₽", "type": "money"},
             {"name": "days", "label": "Дней просрочки", "type": "number"},
-            {"name": "base", "label": "База года", "type": "choice", "choices": [("365", "365"), ("360", "360")], "default": "365", "hint": "Если ставка годовая — укажите её и дни; формула: сумма×ставка×дни/база/100"},
-            {"name": "rate_year", "label": "Или годовая ставка, % (если >0 — вместо дневной)", "type": "decimal", "default": "0", "required": False},
+            {"name": "key_rate", "label": "Ключевая ставка ЦБ, %", "type": "decimal", "default": "16",
+             "hint": "Для налоговых пеней; актуальную ставку смотрите на cbr.ru"},
+            {"name": "rate_day", "label": "Ставка, % в день (договор)", "type": "decimal", "default": "0.1", "required": False},
+            {"name": "base", "label": "База года (договор, годовая ставка)", "type": "choice", "choices": [("365", "365"), ("360", "360")], "default": "365"},
+            {"name": "rate_year", "label": "Годовая ставка, % (договор, если >0)", "type": "decimal", "default": "0", "required": False},
         ],
     },
     {
@@ -248,13 +267,19 @@ TOOLS: list[dict[str, Any]] = [
         "slug": "salary",
         "name": "Зарплата",
         "topic": "HR / бухгалтерия",
-        "blurb": "Оклад ↔ сумма «на руки» при плоском НДФЛ 13% (для оценки).",
+        "blurb": "Оклад ↔ «на руки»: плоский % или оценка по прогрессии НДФЛ 2025–2026.",
+        "law": "ndfl",
         "fields": [
             {"name": "mode", "label": "Режим", "type": "choice", "choices": [
                 ("gross_to_net", "Оклад → на руки"), ("net_to_gross", "На руки → оклад"),
             ]},
-            {"name": "amount", "label": "Сумма, ₽", "type": "money"},
-            {"name": "rate", "label": "НДФЛ, %", "type": "decimal", "default": "13"},
+            {"name": "amount", "label": "Сумма за месяц, ₽", "type": "money"},
+            {"name": "tax_mode", "label": "НДФЛ", "type": "choice", "choices": [
+                ("flat", "Плоская ставка"),
+                ("progressive", "Прогрессия за год (месяц × 12)"),
+            ], "default": "flat"},
+            {"name": "rate", "label": "Плоская ставка, %", "type": "decimal", "default": "13",
+             "hint": "Для большинства — 13% при доходе до 2,4 млн ₽/год"},
         ],
     },
     {
@@ -373,22 +398,33 @@ TOOLS: list[dict[str, Any]] = [
         "slug": "ndfl",
         "name": "НДФЛ",
         "topic": "Налоги / бухгалтерия",
-        "blurb": "Прогрессивный НДФЛ 2025+: 13/15/18/20/22% по годовой базе (упрощённо).",
+        "blurb": "Прогрессия 13/15/18/20/22% по годовой основной базе (2025–2026).",
+        "law": "ndfl",
         "fields": [
-            {"name": "income", "label": "Налоговая база за год, ₽", "type": "money"},
+            {"name": "input_mode", "label": "Ввод", "type": "choice", "choices": [
+                ("year", "База за год"),
+                ("month", "Доход за месяц × 12"),
+            ], "default": "year"},
+            {"name": "income", "label": "Сумма, ₽", "type": "money"},
+            {"name": "deduction", "label": "Вычеты за год, ₽ (необяз.)", "type": "money", "required": False, "default": "0",
+             "hint": "Уменьшают базу до расчёта ступеней"},
         ],
     },
     {
         "slug": "tax_simple",
         "name": "Налоги (УСН оценка)",
         "topic": "Налоги / бухгалтерия",
-        "blurb": "Оценка налога УСН «доходы» / «доходы−расходы».",
+        "blurb": "Оценка налога УСН «доходы» / «доходы−расходы» (ставки региона могут отличаться).",
         "fields": [
             {"name": "mode", "label": "Режим", "type": "choice", "choices": [
-                ("income", "УСН доходы 6%"), ("income_expense", "УСН доходы−расходы 15%"),
+                ("income", "УСН доходы"), ("income_expense", "УСН доходы−расходы"),
             ]},
             {"name": "income", "label": "Доходы, ₽", "type": "money"},
             {"name": "expense", "label": "Расходы, ₽", "type": "money", "required": False, "default": "0"},
+            {"name": "rate_income", "label": "Ставка «доходы», %", "type": "decimal", "default": "6",
+             "hint": "Федеральный максимум 6%; в регионе может быть ниже"},
+            {"name": "rate_diff", "label": "Ставка «доходы−расходы», %", "type": "decimal", "default": "15"},
+            {"name": "contrib", "label": "Страховые взносы к вычету (УСН доходы), ₽", "type": "money", "required": False, "default": "0"},
         ],
     },
     {
@@ -525,12 +561,18 @@ TOOLS: list[dict[str, Any]] = [
         "slug": "contributions",
         "name": "Страховые взносы",
         "topic": "Налоги / бухгалтерия",
-        "blurb": "Оценка взносов с ФОТ: ПФР/ОПС + ОМС + ВНиМ (ставки задаёте).",
+        "blurb": "Единый тариф 2026: 30% до базы 2 979 000 ₽, 15,1% сверх (нарастающим итогом).",
+        "law": "contrib",
         "fields": [
-            {"name": "payroll", "label": "ФОТ за период, ₽", "type": "money"},
-            {"name": "ops", "label": "ОПС, %", "type": "decimal", "default": "22"},
-            {"name": "oms", "label": "ОМС, %", "type": "decimal", "default": "5.1"},
-            {"name": "vnim", "label": "ВНиМ, %", "type": "decimal", "default": "2.9"},
+            {"name": "payroll", "label": "Выплаты нарастающим итогом с начала года, ₽", "type": "money"},
+            {"name": "mode", "label": "Тариф", "type": "choice", "choices": [
+                ("general", "Общий тариф 2026 (30% / 15,1%)"),
+                ("custom", "Свои ставки (без предельной базы)"),
+            ], "default": "general"},
+            {"name": "injury", "label": "Травматизм, % (отдельно)", "type": "decimal", "default": "0.2", "required": False},
+            {"name": "ops", "label": "Своя ставка 1, %", "type": "decimal", "default": "22", "required": False},
+            {"name": "oms", "label": "Своя ставка 2, %", "type": "decimal", "default": "5.1", "required": False},
+            {"name": "vnim", "label": "Своя ставка 3, %", "type": "decimal", "default": "2.9", "required": False},
         ],
     },
     {
@@ -560,10 +602,13 @@ TOOLS: list[dict[str, Any]] = [
         "slug": "contract",
         "name": "Расчёты по договорам",
         "topic": "Право / финансы",
-        "blurb": "Сумма договора с НДС и помесячная разбивка.",
+        "blurb": "Сумма договора с НДС (по умолчанию 22% с 2026) и помесячная разбивка.",
+        "law": "vat",
         "fields": [
             {"name": "amount", "label": "Сумма без НДС, ₽", "type": "money"},
-            {"name": "vat_rate", "label": "НДС, %", "type": "decimal", "default": "20"},
+            {"name": "vat_rate", "label": "НДС, %", "type": "choice", "choices": [
+                ("22", "22%"), ("20", "20%"), ("10", "10%"), ("0", "0%"),
+            ], "default": "22"},
             {"name": "months", "label": "Срок оплаты, мес.", "type": "number", "default": "1"},
         ],
     },
@@ -606,6 +651,24 @@ TOOLS: list[dict[str, Any]] = [
 
 TOOL_BY_SLUG = {t["slug"]: t for t in TOOLS}
 
+POPULAR_SLUGS = (
+    "vat", "ndfl", "vacation", "credit", "mortgage", "salary",
+    "sick", "contributions", "bmi", "percent",
+)
+
+_RELATED = {
+    "vat": ("contract", "tax_simple", "ndfl", "contributions"),
+    "ndfl": ("salary", "vat", "contributions", "vacation"),
+    "salary": ("ndfl", "contributions", "vacation", "sick"),
+    "vacation": ("sick", "severance", "salary", "ndfl"),
+    "sick": ("vacation", "benefits", "salary", "contributions"),
+    "credit": ("mortgage", "early_payoff", "loan", "deposit"),
+    "mortgage": ("credit", "early_payoff", "deposit", "percent"),
+    "contributions": ("ndfl", "salary", "tax_simple", "vat"),
+    "contract": ("vat", "penalty", "nmck", "tax_simple"),
+    "penalty": ("contract", "deadlines", "loan", "vat"),
+}
+
 
 def get_tool(slug: str):
     return TOOL_BY_SLUG.get((slug or "").strip())
@@ -616,3 +679,35 @@ def tools_by_topic():
     for t in TOOLS:
         groups.setdefault(t["topic"], []).append(t)
     return groups
+
+
+def popular_tools(limit: int = 10):
+    out = []
+    for slug in POPULAR_SLUGS:
+        t = TOOL_BY_SLUG.get(slug)
+        if t:
+            out.append(t)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def related_tools(slug: str, limit: int = 4):
+    out = []
+    for s in _RELATED.get(slug or "", ()):
+        t = TOOL_BY_SLUG.get(s)
+        if t:
+            out.append(t)
+        if len(out) >= limit:
+            break
+    if len(out) < limit:
+        tool = TOOL_BY_SLUG.get(slug or "")
+        topic = (tool or {}).get("topic")
+        for t in TOOLS:
+            if t["slug"] == slug:
+                continue
+            if topic and t.get("topic") == topic and t not in out:
+                out.append(t)
+            if len(out) >= limit:
+                break
+    return out

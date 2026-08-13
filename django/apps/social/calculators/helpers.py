@@ -85,9 +85,31 @@ def years_months_days(start: date, end: date) -> tuple[int, int, int]:
     return y, m, d
 
 
-def ok(title: str, lines: list[str], notes: list[str] | None = None) -> dict:
-    return {"ok": True, "title": title, "lines": lines, "notes": notes or []}
+def ok(
+    title: str,
+    lines: list[str],
+    notes: list[str] | None = None,
+    *,
+    primary: str | None = None,
+    extras: list[str] | None = None,
+) -> dict:
+    return {
+        "ok": True,
+        "title": title,
+        "lines": lines,
+        "notes": notes or [],
+        "primary": primary or (lines[0] if lines else ""),
+        "extras": extras or [],
+    }
 
 
 def fail(msg: str) -> dict:
-    return {"ok": False, "error": msg, "title": "", "lines": [], "notes": []}
+    return {
+        "ok": False,
+        "error": msg,
+        "title": "",
+        "lines": [],
+        "notes": [],
+        "primary": "",
+        "extras": [],
+    }
