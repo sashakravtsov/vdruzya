@@ -141,7 +141,7 @@ def create_oauth_code(app, profile, redirect_uri: str):
         social_user=profile,
         code=code,
         redirect_uri=redirect_uri[:255],
-        created_at=now(),
+        created_at=_utc_naive(),
     )
     return code
 
@@ -155,8 +155,10 @@ def exchange_code(app, code: str, redirect_uri: str):
     )
     if not row:
         return None, "invalid_code"
-    tnow = now()
+    tnow = _utc_naive()
     created = row.created_at or tnow
+    if timezone.is_aware(created):
+        created = timezone.make_naive(created, timezone.utc)
     if (tnow - created) > timedelta(minutes=10):
         return None, "expired_code"
     if (row.redirect_uri or "") and redirect_uri and row.redirect_uri != redirect_uri:
@@ -189,8 +191,12 @@ def token_profile(token: str):
     )
     if not row:
         return None, None
-    if row.expires_at and row.expires_at < now():
-        return None, None
+    if row.expires_at:
+        exp = row.expires_at
+        if timezone.is_aware(exp):
+            exp = timezone.make_naive(exp, timezone.utc)
+        if exp < _utc_naive():
+            return None, None
     return row, row.social_user
 
 
