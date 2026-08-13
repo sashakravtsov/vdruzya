@@ -13,7 +13,20 @@
             · серия задач <b>{{ strip.puzzle_streak }}</b>
             {% if strip.week_rank %} · неделя #{{ strip.week_rank }} ({{ strip.week_points }} очк.){% endif %}
             · {{ champ.title }}
+            <button type="button" class="linkish chess-mute" id="chess-mute" title="Звук">звук</button>
         </p>
+        {% if strip.goals %}
+        <p class="chess-daily-goals">
+            Сегодня:
+            {% for g in strip.goals.items %}
+            <span class="chess-goal{% if g.done %} on{% endif %}">{% if g.done %}✓{% else %}○{% endif %} {{ g.label }}</span>{% if not forloop.last %} · {% endif %}
+            {% endfor %}
+            {% if strip.goals.complete %}<span class="chess-done">день закрыт</span>{% endif %}
+        </p>
+        {% endif %}
+        {% if strip.badges %}
+        <p class="chess-badges muted">Значки: {% for b in strip.badges %}<span class="chess-badge soft">{{ b.title }}</span>{% if not forloop.last %} {% endif %}{% endfor %}</p>
+        {% endif %}
 
         <div class="subtabs chess-tabs">
             <div class="{% if tab == 'play' %}activetab{% else %}inactivetab{% endif %}">
@@ -48,7 +61,7 @@
             {% for g in hub.incoming %}
             <tr class="chess-row-hot">
                 <td>{{ g|chess_opp_name:me }}</td>
-                <td class="muted">{% if g.time_control_sec %}контроль{% else %}без лимита{% endif %}</td>
+                <td class="muted">{{ g.time_control_sec|chess_tc_label }}</td>
                 <td>
                     <a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">открыть</a>
                     ·
@@ -180,9 +193,15 @@
             <div class="chess-game-main">
                 <div class="chess-players">
                     <div class="chess-player top">
+                        {% if flip %}
+                        <b>{{ game.white.name }}</b> <span class="muted">белые</span>
+                        {% if material.white_captured %}<span class="chess-caps">{{ material.white_captured }}</span>{% endif %}
+                        {% if material.advantage > 0 %}<span class="chess-adv muted">{{ material.advantage_label }}</span>{% endif %}
+                        {% else %}
                         <b>{{ game.black.name }}</b> <span class="muted">чёрные</span>
                         {% if material.black_captured %}<span class="chess-caps">{{ material.black_captured }}</span>{% endif %}
                         {% if material.advantage < 0 %}<span class="chess-adv muted">{{ material.advantage_label }}</span>{% endif %}
+                        {% endif %}
                     </div>
                 </div>
                 {% if clock.enabled %}
@@ -192,6 +211,17 @@
                      data-turn="{{ clock.turn }}"
                      data-white-ms="{{ clock.white_ms }}"
                      data-black-ms="{{ clock.black_ms }}">
+                    {% if flip %}
+                    <div class="chess-clock-side{% if clock.turn == 'w' and clock.active %} is-running{% endif %}">
+                        <span class="chess-clock-name">белые</span>
+                        <span class="chess-clock-time" data-clock-side="w">--:--</span>
+                    </div>
+                    <div class="chess-clock-meta muted">{{ clock.label }}</div>
+                    <div class="chess-clock-side{% if clock.turn == 'b' and clock.active %} is-running{% endif %}">
+                        <span class="chess-clock-name">чёрные</span>
+                        <span class="chess-clock-time" data-clock-side="b">--:--</span>
+                    </div>
+                    {% else %}
                     <div class="chess-clock-side{% if clock.turn == 'b' and clock.active %} is-running{% endif %}">
                         <span class="chess-clock-name">чёрные</span>
                         <span class="chess-clock-time" data-clock-side="b">--:--</span>
@@ -201,6 +231,7 @@
                         <span class="chess-clock-name">белые</span>
                         <span class="chess-clock-time" data-clock-side="w">--:--</span>
                     </div>
+                    {% endif %}
                 </div>
                 {% if game.result == '*' and not is_pending %}
                 <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" id="chess-flag-form" class="hide">{% csrf_token %}
@@ -232,7 +263,7 @@
 
                 {{ legal_map|json_script:"chess-legal-map" }}
                 <div class="chess-board-wrap{% if can_move %} can-move{% endif %}">
-                    <table class="chess-board chess-board-lg"
+                    <table class="chess-board chess-board-lg chess-board-coords"
                            cellspacing="0" cellpadding="0"
                            data-chess-live="1"
                            data-can-move="{% if can_move %}1{% else %}0{% endif %}"
@@ -243,6 +274,7 @@
                            data-waiting="{% if waiting_refresh %}1{% else %}0{% endif %}">
                         {% for row in board_rows %}
                         <tr>
+                            <th class="chess-coord rank">{{ row.0.rank }}</th>
                             {% for cell in row %}
                             <td class="{% if cell.light %}light{% else %}dark{% endif %}{% if cell.sq == from_sq %} selected{% endif %}{% if cell.sq in legal_hint %} hint{% endif %}{% if last_move and cell.sq == last_move.from_sq %} last-from{% endif %}{% if last_move and cell.sq == last_move.to_sq %} last-to{% endif %}{% if check_sq and cell.sq == check_sq %} in-check{% endif %}"
                                 data-sq="{{ cell.sq }}"
@@ -252,14 +284,24 @@
                             {% endfor %}
                         </tr>
                         {% endfor %}
+                        <tr class="chess-files-row">
+                            <th class="chess-coord"></th>
+                            {% for f in board_files %}<th class="chess-coord file">{{ f }}</th>{% endfor %}
+                        </tr>
                     </table>
                 </div>
 
                 <div class="chess-players">
                     <div class="chess-player bot">
+                        {% if flip %}
+                        <b>{{ game.black.name }}</b> <span class="muted">чёрные</span>
+                        {% if material.black_captured %}<span class="chess-caps">{{ material.black_captured }}</span>{% endif %}
+                        {% if material.advantage < 0 %}<span class="chess-adv muted">{{ material.advantage_label }}</span>{% endif %}
+                        {% else %}
                         <b>{{ game.white.name }}</b> <span class="muted">белые</span>
                         {% if material.white_captured %}<span class="chess-caps">{{ material.white_captured }}</span>{% endif %}
                         {% if material.advantage > 0 %}<span class="chess-adv muted">{{ material.advantage_label }}</span>{% endif %}
+                        {% endif %}
                     </div>
                 </div>
 
@@ -342,6 +384,7 @@
             <tr><td class="label">Партий:</td><td>{{ stats.rating.games }}</td></tr>
             <tr><td class="label">Победы / поражения / ничьи:</td><td>{{ stats.rating.wins }} / {{ stats.rating.losses }} / {{ stats.rating.draws }}</td></tr>
             <tr><td class="label">Задачи (серия):</td><td>{{ stats.rating.puzzle_solved }} решено · серия {{ stats.rating.puzzle_streak }} (рекорд {{ stats.rating.best_puzzle_streak }})</td></tr>
+            <tr><td class="label">Обучение:</td><td>{{ stats.rating.learn_xp }} XP · навык ур. {{ strip.skill.level }}</td></tr>
         </table>
         {% if stats.active %}
         <h5>Незаконченные</h5>
@@ -441,11 +484,24 @@
         <p class="chess-learn-progress">
             Путь: <b>{{ learn_meta.done }}</b>/{{ learn_meta.total }} ({{ learn_meta.pct }}%)
             · навык <b>ур. {{ learn_meta.skill.level }}</b> — {{ learn_meta.skill.into }}/100 XP до следующего
+            {% if learn_meta.remain_min %} · осталось ~{{ learn_meta.remain_min }} мин.{% endif %}
             {% if learn_meta.next_lesson and not lesson %}
             · <a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ learn_meta.next_lesson.slug }}">продолжить: {{ learn_meta.next_lesson.title }}</a>
             {% endif %}
         </p>
         <div class="chess-xp-bar" title="{{ learn_meta.skill.into }} / 100"><span style="width:{{ learn_meta.skill.into }}%"></span></div>
+        {% if learn_meta.goals and not lesson %}
+        <div class="chess-path-card">
+            <b>План на сегодня</b>
+            {% for g in learn_meta.goals.items %}
+            · <span class="{% if g.done %}chess-done{% else %}muted{% endif %}">{% if g.done %}✓{% else %}○{% endif %} {{ g.label }}</span>
+            {% endfor %}
+            {% if learn_meta.next_lesson %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ learn_meta.next_lesson.slug }}">к уроку</a>
+            {% endif %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;daily=1">задача дня</a>
+        </div>
+        {% endif %}
         {% endif %}
         {% if lesson %}
         <p><a href="{% url 'apps.canvas' 'chess' %}?tab=learn">← все уроки</a></p>
@@ -461,14 +517,19 @@
         <h5>Диаграмма</h5>
         {% if lesson.diagram_caption %}<p class="muted">{{ lesson.diagram_caption }}</p>{% endif %}
         <div class="chess-board-wrap chess-diagram">
-            <table class="chess-board" cellspacing="0" cellpadding="0">
+            <table class="chess-board chess-board-coords" cellspacing="0" cellpadding="0">
                 {% for row in lesson_diagram %}
                 <tr>
+                    <th class="chess-coord rank">{{ row.0.rank }}</th>
                     {% for cell in row %}
-                    <td class="{% if cell.light %}light{% else %}dark{% endif %}"><span class="chess-sq">{{ cell.glyph|default:"&nbsp;" }}</span></td>
+                    <td class="{% if cell.light %}light{% else %}dark{% endif %}"><span class="chess-sq" title="{{ cell.sq }}">{{ cell.glyph|default:"&nbsp;" }}</span></td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
+                <tr class="chess-files-row">
+                    <th class="chess-coord"></th>
+                    {% for f in lesson_diagram_files %}<th class="chess-coord file">{{ f }}</th>{% endfor %}
+                </tr>
             </table>
         </div>
         {% endif %}
@@ -500,10 +561,9 @@
         <p class="chess-done">Тренажёр выполнен. {{ lesson.drill.explain }}</p>
         {% else %}
         <p>{{ lesson.drill.prompt }}</p>
-        <p class="muted">{{ lesson.drill.hint }}</p>
         {{ lesson_drill_legal|json_script:"chess-drill-legal" }}
         <div class="chess-board-wrap">
-            <table class="chess-board chess-board-lg"
+            <table class="chess-board chess-board-lg chess-board-coords"
                    cellspacing="0" cellpadding="0"
                    data-chess-live="1"
                    data-mode="puzzle"
@@ -513,6 +573,7 @@
                    data-legal-script="chess-drill-legal">
                 {% for row in lesson_drill_board %}
                 <tr>
+                    <th class="chess-coord rank">{{ row.0.rank }}</th>
                     {% for cell in row %}
                     <td class="{% if cell.light %}light{% else %}dark{% endif %}" data-sq="{{ cell.sq }}" data-piece="{{ cell.piece }}">
                         <span class="chess-sq" title="{{ cell.sq }}">{{ cell.glyph|default:"&nbsp;" }}</span>
@@ -520,8 +581,16 @@
                     {% endfor %}
                 </tr>
                 {% endfor %}
+                <tr class="chess-files-row">
+                    <th class="chess-coord"></th>
+                    {% for f in lesson_drill_files %}<th class="chess-coord file">{{ f }}</th>{% endfor %}
+                </tr>
             </table>
         </div>
+        <p class="chess-hint-box">
+            <button type="button" class="linkish chess-hint-toggle" data-hint-target="drill-hint">Показать подсказку</button>
+            <span id="drill-hint" class="chess-hint-text{% if show_hint %} is-open{% endif %}">{% if show_hint %}{{ lesson.drill.hint }}{% else %}{{ lesson.drill.hint }}{% endif %}</span>
+        </p>
         <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}" id="chess-drill-form">{% csrf_token %}
             <input type="hidden" name="action" value="lesson_drill">
             <input type="hidden" name="lesson" value="{{ lesson.slug }}">
@@ -539,10 +608,10 @@
         </form>
         {% endif %}
         {% endif %}
-        {% if lesson.related_puzzles %}
+        {% if lesson_related %}
         <p class="muted">Закрепить:
-            {% for pid in lesson.related_puzzles %}
-            <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ pid }}">задача</a>{% if not forloop.last %} · {% endif %}
+            {% for pz in lesson_related %}
+            <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ pz.id }}">{{ pz.title }}</a>{% if not forloop.last %} · {% endif %}
             {% endfor %}
         </p>
         {% endif %}
@@ -553,26 +622,8 @@
                 <input type="hidden" name="lesson" value="{{ lesson.slug }}">
                 <input type="submit" class="inputsubmit" value="Отметить как пройденный">
             </form>
-            {% elif lesson_row and lesson_row.quiz_ok and lesson_row.drill_ok %}
-            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
-                <input type="hidden" name="action" value="lesson_done">
-                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
-                <input type="submit" class="inputsubmit" value="Завершить урок">
-            </form>
-            {% elif lesson_row and lesson_row.quiz_ok and not lesson.drill %}
-            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
-                <input type="hidden" name="action" value="lesson_done">
-                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
-                <input type="submit" class="inputsubmit" value="Завершить урок">
-            </form>
-            {% elif lesson_row and lesson_row.drill_ok and not lesson.quiz %}
-            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
-                <input type="hidden" name="action" value="lesson_done">
-                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
-                <input type="submit" class="inputsubmit" value="Завершить урок">
-            </form>
             {% else %}
-            <p class="muted">Чтобы пройти урок, выполните тест и/или тренажёр выше — они дают XP.</p>
+            <p class="muted">Чтобы пройти урок, выполните тест и/или тренажёр выше — они дают XP и закрывают урок сами.</p>
             {% endif %}
         {% endif %}
         <p class="chess-lesson-nav">
@@ -582,7 +633,7 @@
         </p>
         {% else %}
         <h5>Система обучения</h5>
-        <p class="muted">Путь с диаграммами, тестами и тренажёрами на доске. XP растёт за уроки и задачи — открывайте главы по порядку.</p>
+        <p class="muted">Полный путь: диаграммы, тесты, тренажёры на доске и задачи. XP за уроки и тактику — идите по главам по порядку.</p>
         {% for ch in chapters %}
         <div class="chess-chapter">
             <h5>{{ ch.title }} <span class="muted">{{ ch.done }}/{{ ch.count }} · {{ ch.pct }}%</span></h5>
@@ -612,11 +663,14 @@
             {% else %}<a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;daily=1">{{ puzzle_meta.daily.title }}</a> · +25 XP{% endif %}
             · решено <b>{{ puzzle_meta.solved }}</b>/{{ puzzle_meta.total }}
             · серия <b>{{ puzzle_meta.streak }}</b>
+            {% if puzzle_meta.next_unsolved and puzzle_meta.next_unsolved.id != puzzle.id %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ puzzle_meta.next_unsolved.id }}">следующая нерешённая</a>
+            {% endif %}
         </div>
         <p class="chess-theme-tabs">
             <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;theme=все" class="{% if puzzle_meta.theme == 'все' %}on{% endif %}">все</a>
-            {% for th in puzzle_meta.themes %}
-            · <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;theme={{ th }}" class="{% if puzzle_meta.theme == th %}on{% endif %}">{{ th }}</a>
+            {% for tp in puzzle_meta.theme_progress %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;theme={{ tp.theme }}" class="{% if puzzle_meta.theme == tp.theme %}on{% endif %}">{{ tp.theme }} <span class="muted">{{ tp.solved }}/{{ tp.total }}</span></a>
             {% endfor %}
         </p>
         {% endif %}
@@ -625,7 +679,7 @@
         <p class="muted">{{ puzzle.goal }} · {{ puzzle.level }} · ход {% if puzzle.side == 'w' %}белых{% else %}чёрных{% endif %}. Клик или перетаскивание.</p>
         {{ puzzle_legal|json_script:"chess-puzzle-legal" }}
         <div class="chess-board-wrap">
-            <table class="chess-board chess-board-lg"
+            <table class="chess-board chess-board-lg chess-board-coords"
                    cellspacing="0" cellpadding="0"
                    data-chess-live="1"
                    data-mode="puzzle"
@@ -635,6 +689,7 @@
                    data-legal-script="chess-puzzle-legal">
                 {% for row in puzzle_board %}
                 <tr>
+                    <th class="chess-coord rank">{{ row.0.rank }}</th>
                     {% for cell in row %}
                     <td class="{% if cell.light %}light{% else %}dark{% endif %}"
                         data-sq="{{ cell.sq }}" data-piece="{{ cell.piece }}">
@@ -643,6 +698,10 @@
                     {% endfor %}
                 </tr>
                 {% endfor %}
+                <tr class="chess-files-row">
+                    <th class="chess-coord"></th>
+                    {% for f in puzzle_files %}<th class="chess-coord file">{{ f }}</th>{% endfor %}
+                </tr>
             </table>
         </div>
         <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ puzzle.id }}" id="chess-puzzle-form">{% csrf_token %}
@@ -660,13 +719,16 @@
                 </div>
             </div>
         </form>
-        <p class="muted">Подсказка: {{ puzzle.hint }}</p>
-        <h5>Все задачи</h5>
+        <p class="chess-hint-box">
+            <button type="button" class="linkish chess-hint-toggle" data-hint-target="puzzle-hint">Показать подсказку</button>
+            <span id="puzzle-hint" class="chess-hint-text{% if show_hint %} is-open{% endif %}">{{ puzzle.hint }}</span>
+        </p>
+        <h5>Задачи{% if puzzle_meta.theme != 'все' %} · {{ puzzle_meta.theme }}{% endif %}</h5>
         <ul class="chess-simple-list">
             {% for pz in puzzles %}
-            <li>{% if pz.id == puzzle.id %}<b>{{ pz.title }}</b>{% else %}<a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ pz.id }}">{{ pz.title }}</a>{% endif %}
+            <li>{% if pz.id == puzzle.id %}<b>{{ pz.title }}</b>{% else %}<a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ pz.id }}{% if puzzle_meta.theme != 'все' %}&amp;theme={{ puzzle_meta.theme }}{% endif %}">{{ pz.title }}</a>{% endif %}
                 {% if pz.id|puzzle_done:puzzle_meta.solved_ids %}<span class="chess-done">✓</span>{% endif %}
-                <span class="muted">· {{ pz.level }}</span></li>
+                <span class="muted">· {{ pz.level }} · {{ pz.theme }}</span></li>
             {% endfor %}
         </ul>
         {% endif %}

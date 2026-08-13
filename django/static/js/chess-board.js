@@ -23,8 +23,22 @@
   }
 
   var audioCtx = null;
+  var muted = false;
+  try { muted = window.localStorage.getItem("chess-muted") === "1"; } catch (e) {}
+
+  function setMuted(on) {
+    muted = !!on;
+    try { window.localStorage.setItem("chess-muted", muted ? "1" : "0"); } catch (e) {}
+    var btn = $("#chess-mute");
+    if (btn) {
+      btn.classList.toggle("is-off", muted);
+      btn.textContent = muted ? "звук выкл" : "звук";
+    }
+  }
+
   function beep(kind) {
     try {
+      if (muted) return;
       if (!window.AudioContext && !window.webkitAudioContext) return;
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       var o = audioCtx.createOscillator();
@@ -205,10 +219,36 @@
     setInterval(tick, 250);
   }
 
+  function bindHints() {
+    $all(".chess-hint-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-hint-target");
+        var el = id ? document.getElementById(id) : null;
+        if (!el) return;
+        var open = !el.classList.contains("is-open");
+        el.classList.toggle("is-open", open);
+        btn.textContent = open ? "Скрыть подсказку" : "Показать подсказку";
+      });
+    });
+    $all(".chess-hint-text.is-open").forEach(function (el) {
+      var btn = document.querySelector('.chess-hint-toggle[data-hint-target="' + el.id + '"]');
+      if (btn) btn.textContent = "Скрыть подсказку";
+    });
+  }
+
   function init() {
     $all("[data-chess-live]").forEach(bindBoard);
     var clocks = $("#chess-clocks");
     if (clocks) bindClocks(clocks);
+    bindHints();
+    setMuted(muted);
+    var muteBtn = $("#chess-mute");
+    if (muteBtn) {
+      muteBtn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        setMuted(!muted);
+      });
+    }
     var app = $("#chess-app");
     if (app) {
       var sfx = app.getAttribute("data-sfx") || "";

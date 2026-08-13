@@ -34,6 +34,8 @@ def render_chess_canvas(request, me, app):
     moves = []
     move_pairs = []
     board_rows = []
+    board_files = chess_engine.board_files(False)
+    flip = False
     legal_hint = []
     legal_map = {}
     clock = {"enabled": False}
@@ -46,10 +48,13 @@ def render_chess_canvas(request, me, app):
     waiting_refresh = False
     from_sq = (request.GET.get("from") or "").strip().lower()
     lesson = None
+    lesson_related = []
     puzzle = None
     puzzle_board = []
+    puzzle_files = chess_engine.board_files(False)
     puzzle_legal = {}
     puzzle_meta = None
+    show_hint = (request.GET.get("hint") or "") in ("1", "yes", "true")
     start_form = StartGameForm(friends=friends)
     move_form = MoveForm()
     puzzle_form = PuzzleAnswerForm()
@@ -271,14 +276,20 @@ def render_chess_canvas(request, me, app):
                         extra = f" Серия: {meta['streak']}."
                         if meta.get("xp_gain"):
                             extra += f" +{meta['xp_gain']} XP."
+                    nxt = meta.get("next_puzzle")
+                    if nxt:
+                        extra += f" Дальше: {nxt['title']}."
                     messages.success(request, f"Верно! {pz['explain']}{extra}")
                     sfx = "puzzle"
-                else:
-                    messages.error(request, "Пока не то. Подсказка: " + pz["hint"])
-                    sfx = "wrong"
+                    target = nxt["id"] if nxt else pz["id"]
+                    return redirect(
+                        reverse("apps.canvas", args=["chess"])
+                        + f"?tab=puzzles&puzzle={target}&sfx={sfx}"
+                    )
+                messages.error(request, "Пока не то. Откройте подсказку под доской.")
                 return redirect(
                     reverse("apps.canvas", args=["chess"])
-                    + f"?tab=puzzles&puzzle={pz['id']}&sfx={sfx}"
+                    + f"?tab=puzzles&puzzle={pz['id']}&sfx=wrong&hint=1"
                 )
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -299,6 +310,7 @@ def render_chess_canvas(request, me, app):
                 sound_event = sound_event or "end"
             flip = me.id == game.black_id
             board_rows = chess_engine.board_rows(game.fen, flip=flip)
+            board_files = chess_engine.board_files(flip=flip)
             moves = list(ChessMove.objects.filter(game=game).order_by("ply")[:120])
             move_pairs = chess_engine.pair_moves(moves)
             last_move = moves[-1] if moves else None
@@ -355,7 +367,9 @@ def render_chess_canvas(request, me, app):
     chapters = []
     prev_lesson = next_lesson = None
     lesson_diagram = []
+    lesson_diagram_files = chess_engine.board_files(False)
     lesson_drill_board = []
+    lesson_drill_files = chess_engine.board_files(False)
     lesson_drill_legal = {}
     lesson_row = None
     quiz_form = None
@@ -366,11 +380,15 @@ def render_chess_canvas(request, me, app):
         if lesson:
             prev_lesson, next_lesson = chess_lessons.CATALOG.neighbors(lesson["slug"])
             lesson_row = (learn_meta or {}).get("progress", {}).get(lesson["slug"])
+            lesson_related = chess_puzzles.related_puzzles(lesson.get("related_puzzles"))
             if lesson.get("diagram"):
                 lesson_diagram = chess_engine.board_rows(lesson["diagram"])
+                lesson_diagram_files = chess_engine.board_files(False)
             if lesson.get("drill"):
                 d = lesson["drill"]
-                lesson_drill_board = chess_engine.board_rows(d["fen"], flip=(d["side"] == "b"))
+                dflip = d["side"] == "b"
+                lesson_drill_board = chess_engine.board_rows(d["fen"], flip=dflip)
+                lesson_drill_files = chess_engine.board_files(flip=dflip)
                 try:
                     lesson_drill_legal = chess_engine.legal_moves_map(d["fen"], d["side"])
                 except Exception:
@@ -387,7 +405,9 @@ def render_chess_canvas(request, me, app):
         else:
             pid = (request.GET.get("puzzle") or puzzle_meta["daily"]["id"]).strip()
         puzzle = chess_puzzles.puzzle_by_id(pid) or puzzle_meta["daily"]
-        puzzle_board = chess_engine.board_rows(puzzle["fen"], flip=(puzzle["side"] == "b"))
+        pflip = puzzle["side"] == "b"
+        puzzle_board = chess_engine.board_rows(puzzle["fen"], flip=pflip)
+        puzzle_files = chess_engine.board_files(flip=pflip)
         puzzle_form = PuzzleAnswerForm(initial={"puzzle_id": puzzle["id"]})
         try:
             puzzle_legal = chess_engine.legal_moves_map(puzzle["fen"], puzzle["side"])
@@ -399,7 +419,8 @@ def render_chess_canvas(request, me, app):
     return render(request, "social/apps/canvas_chess.html", {
         "me": me, "app": app, "friends": friends, "tab": tab,
         "champ": champ, "my_rating": my_rating, "strip": strip, "hub": hub,
-        "game": game, "board_rows": board_rows, "moves": moves, "move_pairs": move_pairs,
+        "game": game, "board_rows": board_rows, "board_files": board_files,
+        "flip": flip, "moves": moves, "move_pairs": move_pairs,
         "legal_hint": legal_hint, "legal_map": legal_map,
         "from_sq": from_sq, "my_side": my_side, "can_move": can_move,
         "is_pending": is_pending, "waiting_refresh": waiting_refresh,
@@ -411,14 +432,16 @@ def render_chess_canvas(request, me, app):
         "standings": standings, "past_champs": past_champs,
         "lesson": lesson, "chapters": chapters,
         "prev_lesson": prev_lesson, "next_lesson": next_lesson,
-        "learn_meta": learn_meta,
-        "lesson_diagram": lesson_diagram,
-        "lesson_drill_board": lesson_drill_board,
+        "learn_meta": learn_meta, "lesson_related": lesson_related,
+        "lesson_diagram": lesson_diagram, "lesson_diagram_files": lesson_diagram_files,
+        "lesson_drill_board": lesson_drill_board, "lesson_drill_files": lesson_drill_files,
         "lesson_drill_legal": lesson_drill_legal,
         "lesson_row": lesson_row,
         "quiz_form": quiz_form, "drill_form": drill_form,
         "puzzle": puzzle, "puzzles": (puzzle_meta or {}).get("theme_list") or chess_puzzles.PUZZLES,
-        "puzzle_board": puzzle_board, "puzzle_form": puzzle_form,
+        "puzzle_board": puzzle_board, "puzzle_files": puzzle_files,
+        "puzzle_form": puzzle_form,
         "puzzle_legal": puzzle_legal, "puzzle_meta": puzzle_meta,
+        "show_hint": show_hint,
         "nav": "apps", "installed": True,
     })

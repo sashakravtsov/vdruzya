@@ -379,9 +379,21 @@ def board_rows(fen: str, flip: bool = False) -> list[list[dict]]:
                 "piece": p if p != "." else "",
                 "glyph": PIECE_UNI.get(p, ""),
                 "light": light,
+                "file": FILES[c],
+                "rank": str(8 - r),
             })
         rows.append(row)
     return rows
+
+
+def board_files(flip: bool = False) -> list[str]:
+    files = list(FILES)
+    return files[::-1] if flip else files
+
+
+def board_ranks(flip: bool = False) -> list[str]:
+    # Visual top→bottom ranks for the current orientation.
+    return [str(i) for i in (range(1, 9) if flip else range(8, 0, -1))]
 
 
 def legal_moves_map(fen: str, side: str | None = None) -> dict[str, list[str]]:

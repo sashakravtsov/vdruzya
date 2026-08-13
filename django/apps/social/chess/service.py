@@ -127,12 +127,12 @@ def clock_snapshot(game: ChessGame, at=None) -> dict:
         "turn": game.turn,
         "active": game.result == "*" and not pending,
         "pending": pending,
-        "label": _time_control_label(game.time_control_sec),
+        "label": time_control_label(game.time_control_sec),
         "increment_sec": int(game.increment_sec or 0),
     }
 
 
-def _time_control_label(sec: int) -> str:
+def time_control_label(sec: int) -> str:
     for value, label in TIME_CONTROL_CHOICES:
         if value == sec:
             return label
@@ -616,7 +616,7 @@ def submit_lesson_quiz(user: SocialProfile, slug: str, choice: str) -> dict:
         add_learn_xp(user, 10)
         newly = _maybe_complete_lesson(user, row, lesson)
     elif not ok:
-        raise ValueError("Пока неверно. " + quiz.get("explain", "Попробуйте ещё раз."))
+        raise ValueError("Пока неверно. Подумайте ещё раз по тексту урока.")
     return {
         "ok": True,
         "explain": quiz.get("explain", ""),
@@ -641,7 +641,7 @@ def submit_lesson_drill(user: SocialProfile, slug: str, frm: str, to: str) -> di
         add_learn_xp(user, 20)
         newly = _maybe_complete_lesson(user, row, lesson)
     elif not ok:
-        raise ValueError("Не тот ход. Подсказка: " + drill.get("hint", ""))
+        raise ValueError("Не тот ход. Откройте подсказку под доской и попробуйте снова.")
     return {
         "ok": True,
         "explain": drill.get("explain", ""),
@@ -662,6 +662,62 @@ def lesson_done_slugs(user: SocialProfile) -> set[str]:
     )
 
 
+def daily_goals(user: SocialProfile) -> dict:
+    """Lightweight daily engagement: lesson / puzzle / move."""
+    from datetime import date, datetime, time, timedelta
+
+    today = date.today()
+    start = datetime.combine(today, time.min)
+    end = start + timedelta(days=1)
+    lesson_done = ChessLessonProgress.objects.filter(
+        social_user=user, completed_at__gte=start, completed_at__lt=end,
+    ).exists()
+    rating = get_or_create_rating(user)
+    puzzle_done = getattr(rating, "last_puzzle_on", None) == today
+    move_done = ChessMove.objects.filter(
+        game__white=user, created_at__gte=start, created_at__lt=end,
+    ).exists() or ChessMove.objects.filter(
+        game__black=user, created_at__gte=start, created_at__lt=end,
+    ).exists()
+    items = [
+        {"key": "lesson", "label": "урок", "done": lesson_done},
+        {"key": "puzzle", "label": "задача", "done": puzzle_done},
+        {"key": "move", "label": "ход в партии", "done": move_done},
+    ]
+    done_n = sum(1 for i in items if i["done"])
+    return {
+        "items": items,
+        "done": done_n,
+        "total": len(items),
+        "complete": done_n >= len(items),
+        "pct": int(round(100 * done_n / len(items))) if items else 0,
+    }
+
+
+def achievement_badges(user: SocialProfile) -> list[dict]:
+    """Soft badges from existing progress (no extra table)."""
+    rating = get_or_create_rating(user)
+    done = lesson_done_slugs(user)
+    badges = []
+    if int(rating.wins or 0) >= 1:
+        badges.append({"id": "first_win", "title": "Первая победа"})
+    if int(getattr(rating, "puzzle_streak", 0) or 0) >= 3:
+        badges.append({"id": "streak3", "title": "Серия ×3"})
+    if int(getattr(rating, "puzzle_streak", 0) or 0) >= 7:
+        badges.append({"id": "streak7", "title": "Серия ×7"})
+    if int(getattr(rating, "puzzle_solved", 0) or 0) >= 10:
+        badges.append({"id": "tactics10", "title": "10 задач"})
+    if len(done) >= 5:
+        badges.append({"id": "student", "title": "Ученик (5 уроков)"})
+    if len(done) >= 15:
+        badges.append({"id": "club", "title": "Клубный уровень"})
+    if skill_level(getattr(rating, "learn_xp", 0) or 0)["level"] >= 5:
+        badges.append({"id": "skill5", "title": "Навык 5+"})
+    if int(rating.games or 0) >= 10:
+        badges.append({"id": "veteran", "title": "10 партий"})
+    return badges[:6]
+
+
 def learn_stats(user: SocialProfile) -> dict:
     from .lessons import CATALOG
     from . import puzzles as chess_puzzles
@@ -677,6 +733,12 @@ def learn_stats(user: SocialProfile) -> dict:
     daily_solved = ChessPuzzleProgress.objects.filter(
         social_user=user, puzzle_id=daily["id"], solved_at__isnull=False,
     ).exists()
+    goals = daily_goals(user)
+    remain_min = 0
+    for ch in chapters:
+        for les in ch.get("lessons") or []:
+            if les["slug"] not in done:
+                remain_min += int(les.get("minutes") or 0)
     return {
         "done": len(done),
         "total": total,
@@ -688,6 +750,9 @@ def learn_stats(user: SocialProfile) -> dict:
         "skill": skill,
         "daily": daily,
         "daily_solved": daily_solved,
+        "goals": goals,
+        "remain_min": remain_min,
+        "badges": achievement_badges(user),
     }
 
 
@@ -761,6 +826,7 @@ def engagement_strip(user: SocialProfile, champ: ChessChampionship | None = None
                 championship=champ, points__gt=entry.points,
             ).count()
             week_rank = better + 1
+    goals = daily_goals(user)
     return {
         **hub,
         "rating": r.rating,
@@ -770,6 +836,8 @@ def engagement_strip(user: SocialProfile, champ: ChessChampionship | None = None
         "skill": skill_level(getattr(r, "learn_xp", 0) or 0),
         "week_rank": week_rank,
         "week_points": week_points,
+        "goals": goals,
+        "badges": achievement_badges(user),
     }
 
 
@@ -815,6 +883,12 @@ def record_puzzle_attempt(user: SocialProfile, puzzle_id: str, solved: bool) -> 
         ChessPuzzleProgress.objects.filter(social_user=user, solved_at__isnull=False)
         .values_list("puzzle_id", flat=True)
     )
+    nxt = None
+    try:
+        from . import puzzles as chess_puzzles
+        nxt = chess_puzzles.next_unsolved(solved_ids, after_id=puzzle_id)
+    except Exception:
+        nxt = None
     return {
         "first_solve": first_solve,
         "attempts": row.attempts,
@@ -822,6 +896,7 @@ def record_puzzle_attempt(user: SocialProfile, puzzle_id: str, solved: bool) -> 
         "solved_ids": solved_ids,
         "solved_total": int(rating.puzzle_solved or 0),
         "xp_gain": xp_gain,
+        "next_puzzle": nxt,
     }
 
 
@@ -836,6 +911,17 @@ def puzzle_stats(user: SocialProfile, theme: str | None = None) -> dict:
     theme_list = chess_puzzles.puzzles_by_theme(theme)
     total = len(chess_puzzles.PUZZLES)
     daily = chess_puzzles.daily_puzzle()
+    counts = chess_puzzles.theme_counts()
+    theme_progress = []
+    for th in chess_puzzles.THEMES:
+        ids = {p["id"] for p in chess_puzzles.puzzles_by_theme(th)}
+        sol = len(ids & solved_ids)
+        theme_progress.append({
+            "theme": th,
+            "solved": sol,
+            "total": len(ids),
+        })
+    nxt = chess_puzzles.next_unsolved(solved_ids, theme=theme if theme and theme != "все" else None)
     return {
         "solved_ids": solved_ids,
         "solved": len(solved_ids),
@@ -846,7 +932,11 @@ def puzzle_stats(user: SocialProfile, theme: str | None = None) -> dict:
         "themes": chess_puzzles.THEMES,
         "theme": theme or "все",
         "theme_list": theme_list,
+        "theme_counts": counts,
+        "theme_progress": theme_progress,
         "daily": daily,
         "daily_solved": daily["id"] in solved_ids,
         "skill": skill_level(getattr(rating, "learn_xp", 0) or 0),
+        "next_unsolved": nxt,
+        "goals": daily_goals(user),
     }

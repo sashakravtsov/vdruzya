@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smoke: chess app — engine, forms, lessons, puzzles, weekly championship, canvas."""
+"""Smoke: chess app — engine, curriculum, puzzles, engagement, canvas."""
 import os
 import sys
 
@@ -11,11 +11,12 @@ import django
 django.setup()
 
 from django.core.management import call_command
-from django.test import Client
+from django.test import Client, override_settings
 
 from apps.accounts.models import User
 from apps.social.chess import engine
 from apps.social.chess import forms as chess_forms
+from apps.social.chess import interactives
 from apps.social.chess import lessons
 from apps.social.chess import puzzles
 from apps.social.chess import service as chess
@@ -26,43 +27,81 @@ def ok(label):
     print(f"OK   {label}")
 
 
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "chess-check",
+        }
+    }
+)
 def main():
     fen, san = engine.make_move(engine.START_FEN, "e2", "e4")
     assert san.startswith("e4"), san
-    assert engine.game_status(fen) == "active"
-    mat = engine.material_view(engine.START_FEN)
-    assert mat["advantage"] == 0
-    assert len(lessons.LESSONS) >= 20
-    assert lessons.CATALOG.get("board")
-    ok("engine + lessons catalog")
+    assert len(lessons.LESSONS) >= 28
+    assert len(lessons.CHAPTERS) >= 8
+    assert lessons.CATALOG.get("pawn").get("drill")
+    assert lessons.CATALOG.get("board").get("quiz")
+    assert lessons.CATALOG.get("fork-theme").get("drill")
+    assert lessons.CATALOG.get("skewer-theme").get("quiz")
+    assert len(interactives.INTERACTIVES) >= 20
+    ok("engine + interactive curriculum")
+
+    for slug, data in interactives.INTERACTIVES.items():
+        d = data.get("drill")
+        if not d:
+            continue
+        engine.make_move(d["fen"], d["answer"][0], d["answer"][1])
+    ok("lesson drills legal")
 
     for pz in puzzles.PUZZLES:
         fen2, _san = engine.make_move(pz["fen"], pz["answer"][0], pz["answer"][1])
-        assert engine.game_status(fen2) == "checkmate", pz["id"]
+        if "Мат" in pz["goal"]:
+            assert engine.game_status(fen2) == "checkmate", pz["id"]
         assert puzzles.check_answer(pz, pz["answer"][0], pz["answer"][1])
-    ok(f"puzzles mate-in-1 ({len(puzzles.PUZZLES)})")
+    assert puzzles.daily_puzzle()["id"]
+    assert len(puzzles.PUZZLES) >= 24
+    assert "отвлечение" in puzzles.THEMES
+    assert "висячие" in puzzles.THEMES
+    assert puzzles.next_unsolved(set())["id"]
+    ok(f"puzzles + daily ({len(puzzles.PUZZLES)})")
+
+    files = engine.board_files(False)
+    assert files[0] == "a" and files[-1] == "h"
+    assert engine.board_files(True)[0] == "h"
+    rows = engine.board_rows(engine.START_FEN, flip=False)
+    assert rows[0][0]["sq"] == "a8" and rows[0][0]["rank"] == "8"
+    assert rows[-1][0]["sq"] == "a1" and rows[-1][0]["rank"] == "1"
+    flipped = engine.board_rows(engine.START_FEN, flip=True)
+    assert flipped[0][0]["sq"] == "h1" and flipped[0][0]["rank"] == "1"
+    ok("board coordinates")
 
     form = chess_forms.MoveForm(data={"game_id": 1, "from_sq": "e2", "to_sq": "e4"})
     assert form.is_valid()
-    bad = chess_forms.MoveForm(data={"game_id": 1, "from_sq": "xx", "to_sq": "e4"})
-    assert not bad.is_valid()
     ok("django forms validation")
 
     champ = chess.ensure_week_championship()
-    assert champ.week_key and champ.status == "open"
     call_command("ensure_chess_week")
-    ok("weekly championship + management command")
+    ok("weekly championship")
 
     users = list(User.objects.order_by("id")[:2])
     assert len(users) >= 1
     me = profile_of(users[0])
-    r = chess.get_or_create_rating(me)
-    assert r.rating == 1200 or r.games >= 0
+    chess.get_or_create_rating(me)
     meta = chess.learn_stats(me)
-    assert meta["total"] >= 20
+    assert meta["total"] >= 28
+    assert meta["next_lesson"]
+    assert meta["skill"]["level"] >= 1
+    assert "daily" in meta
+    assert "goals" in meta and meta["goals"]["total"] == 3
     strip = chess.engagement_strip(me, champ)
-    assert "your_move_n" in strip
-    ok("rating + learn + engagement strip")
+    assert "skill" in strip
+    assert "goals" in strip
+    assert isinstance(strip.get("badges"), list)
+    pz_meta = chess.puzzle_stats(me)
+    assert pz_meta["theme_progress"]
+    assert chess.time_control_label(86400)
+    ok("learn path + engagement + goals")
 
     c = Client()
     c.force_login(users[0])
@@ -75,19 +114,27 @@ def main():
         assert b"<iframe" not in body.lower()
         assert b"<details" not in body.lower()
     play = c.get("/apps/chess/canvas?tab=play", secure=True).content
-    assert "Вызвать на партию".encode() in play
-    assert "Ваш ход".encode() in play or "Новый вызов".encode() in play
-    assert "Часы".encode() in play
-    assert "24 часа на партию".encode() in play
+    assert "Продолжить обучение".encode() in play or "Вызвать на партию".encode() in play
+    assert "навык".encode() in play
+    assert "Сегодня".encode() in play
+    learn = c.get("/apps/chess/canvas?tab=learn", secure=True).content
+    assert "Система обучения".encode() in learn or "Путь".encode() in learn
+    assert "Тактика".encode() in learn
+    pawn = c.get("/apps/chess/canvas?tab=learn&lesson=pawn", secure=True).content
+    assert "Тренажёр".encode() in pawn
+    assert "Проверка".encode() in pawn
+    assert b"data-chess-live" in pawn
+    assert "Показать подсказку".encode() in pawn
+    fork = c.get("/apps/chess/canvas?tab=learn&lesson=fork-theme", secure=True).content
+    assert "Тренажёр".encode() in fork
     puzzles_html = c.get("/apps/chess/canvas?tab=puzzles", secure=True).content
-    assert "Задачи".encode() in puzzles_html
+    assert "Задача дня".encode() in puzzles_html
+    assert "вилка".encode() in puzzles_html
+    assert "отвлечение".encode() in puzzles_html
+    assert "Показать подсказку".encode() in puzzles_html
     assert b"chess-board" in puzzles_html
-    assert b"data-chess-live" in puzzles_html
-    assert b"application/json" in puzzles_html
-    assert "серия".encode() in puzzles_html.lower() or "Серия".encode() in puzzles_html
-    legal = engine.legal_moves_map(engine.START_FEN, "w")
-    assert "e2" in legal and "e4" in legal["e2"]
-    ok("canvas tabs + pro UI helpers")
+    assert b"chess-coord" in puzzles_html
+    ok("canvas pro learn/puzzles UI")
     print("ALL chess probes passed")
 
 

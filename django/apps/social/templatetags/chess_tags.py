@@ -2,6 +2,7 @@
 from django import template
 
 from apps.social.chess import engine
+from apps.social.chess import service as chess_service
 
 register = template.Library()
 
@@ -55,3 +56,11 @@ def chess_opp_name(game, me):
     if game.white_id == me.id:
         return game.black.name
     return game.white.name
+
+
+@register.filter
+def chess_tc_label(sec) -> str:
+    try:
+        return chess_service.time_control_label(int(sec or 0))
+    except (TypeError, ValueError):
+        return "контроль"
