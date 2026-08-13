@@ -374,6 +374,25 @@ if ! grep -q 'event_going\|_add_market' "${ROOT}/django/apps/social/news_stories
 else
   echo "OK   event/market news stories"
 fi
+# Browse modules share left #tabs (not centered about-page chrome)
+if ! grep -q 'questions-page' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+   || ! grep -q 'polls-page' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+   || ! grep -q 'notes-page' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+   || ! grep -q 'market-page' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+   || ! grep -q 'links-page' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+   || ! grep -A6 'questions-page, .polls-page' "${ROOT}/django/static/css/classic.css" 2>/dev/null \
+        | grep -q 'text-align: left'; then
+  echo "FAIL browse #tabs not left-aligned for questions/polls/notes"; FAIL=1
+else
+  echo "OK   browse #tabs left-aligned (questions/polls/notes/market/links)"
+fi
+if ! grep -q 'question-row' "${ROOT}/django/templates/social/questions.html" 2>/dev/null \
+   || ! grep -q 'list-row-body' "${ROOT}/django/templates/social/questions.html" 2>/dev/null \
+   || ! grep -q 'poll-row' "${ROOT}/django/templates/social/polls.html" 2>/dev/null; then
+  echo "FAIL questions/polls list rows missing classic list-row chrome"; FAIL=1
+else
+  echo "OK   questions/polls list-row chrome"
+fi
 if [[ -f "${ROOT}/django/templates/social/videos.html" ]]; then
   echo "FAIL duplicate videos.html still present"; FAIL=1
 else
