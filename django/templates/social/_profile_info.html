@@ -1,7 +1,7 @@
 {% load vd %}
 {% if not info_boxes %}
 <div class="profile-box">
-    <h4>Информация{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>{% endif %}</h4>
+    <h4>Информация{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}">ред.</a>{% endif %}</h4>
     <div class="profile-box-body">
         <p class="muted">{% if is_own %}Заполните <a href="{% url 'profile.edit' %}">профиль</a>.{% else %}Информация пока не заполнена.{% endif %}</p>
     </div>
@@ -9,7 +9,7 @@
 {% else %}
 {% for box in info_boxes %}
 <div class="profile-box">
-    <h4>{{ box.title }}{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}?section={{ box.section }}">[ред.]</a>{% endif %}</h4>
+    <h4>{{ box.title }}{% if is_own %} <a class="edit" href="{% url 'profile.edit' %}?section={{ box.section }}">ред.</a>{% endif %}</h4>
     <div class="profile-box-body">
         {% if box.subsections %}
         {% for sub in box.subsections %}

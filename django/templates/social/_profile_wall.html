@@ -60,7 +60,7 @@
 
 {% if gifts %}
 <div class="profile-box">
-    <h4>Подарки ({{ gifts|length }}){% if is_own %} <a class="edit" href="{% url 'gifts' %}?tab=received">[все]</a>{% endif %}</h4>
+    <h4>Подарки <span class="tl-count">{{ gifts|length }}</span>{% if is_own %} <a class="edit" href="{% url 'gifts' %}?tab=received">все</a>{% endif %}</h4>
     <div class="profile-box-body">
         <div class="gift-grid gift-grid-profile">
             {% for p in gifts %}
