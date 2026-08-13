@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 
+from django.contrib.auth.decorators import login_not_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
@@ -29,6 +30,7 @@ def _load_app_by_key(client_id: str):
     return DevApp.objects.filter(api_key=client_id, published=True).first()
 
 
+@login_not_required
 @csrf_exempt
 @require_http_methods(["POST", "GET"])
 def oauth_access_token(request):
@@ -56,6 +58,7 @@ def oauth_access_token(request):
     return JsonResponse(data)
 
 
+@login_not_required
 @require_GET
 def api_me(request):
     token = _bearer(request)
@@ -67,6 +70,7 @@ def api_me(request):
     return JsonResponse(data)
 
 
+@login_not_required
 @require_GET
 def api_friends(request):
     token = _bearer(request)
@@ -76,6 +80,7 @@ def api_friends(request):
     return JsonResponse({"data": oauth.friends_public(profile)})
 
 
+@login_not_required
 @csrf_exempt
 @require_http_methods(["POST"])
 def api_verify_signed(request):

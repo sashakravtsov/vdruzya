@@ -141,16 +141,18 @@ def main():
     assert "code=vc_" in loc and "somneniya.ru/vd-callback" in loc
     from urllib.parse import urlparse, parse_qs
     code = parse_qs(urlparse(loc).query)["code"][0]
-    r = c.post("/api/oauth/access_token", {
+    # App servers call token/me without a browser session (LoginRequiredMiddleware).
+    anon = Client()
+    r = anon.post("/api/oauth/access_token", {
         "client_id": app.api_key, "client_secret": app.api_secret,
         "code": code, "redirect_uri": "https://somneniya.ru/vd-callback",
     }, secure=True)
-    assert r.status_code == 200
+    assert r.status_code == 200, r.content[:200]
     tok = r.json()["access_token"]
     assert tok.startswith("vat_")
-    r = c.get("/api/app/me", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
+    r = anon.get("/api/app/me", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
     assert r.status_code == 200 and r.json()["id"] == me.id
-    r = c.get("/api/app/friends", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
+    r = anon.get("/api/app/friends", HTTP_AUTHORIZATION=f"Bearer {tok}", secure=True)
     assert r.status_code == 200 and "data" in r.json()
     ok("developer OAuth-lite + signed launch + API")
 

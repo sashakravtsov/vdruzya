@@ -138,12 +138,13 @@ def create_oauth_code(app, profile, redirect_uri: str):
     from apps.social.models import AppOAuthCode
     ensure_app_credentials(app)
     code = new_oauth_code()
+    # services.now() is local-naive; USE_TZ stores it as UTC in timestamp-without-tz
     AppOAuthCode.objects.create(
         app_slug=app.slug,
         social_user=profile,
         code=code,
         redirect_uri=redirect_uri[:255],
-        created_at=_utc_naive(),
+        created_at=now(),
     )
     return code
 
@@ -157,6 +158,7 @@ def exchange_code(app, code: str, redirect_uri: str):
     )
     if not row:
         return None, "invalid_code"
+    # DB value is UTC-naive after USE_TZ write of local now()
     tnow = _utc_naive()
     created = row.created_at or tnow
     if timezone.is_aware(created):
@@ -165,15 +167,16 @@ def exchange_code(app, code: str, redirect_uri: str):
         return None, "expired_code"
     if (row.redirect_uri or "") and redirect_uri and row.redirect_uri != redirect_uri:
         return None, "redirect_mismatch"
-    row.used_at = tnow
+    row.used_at = now()
     row.save(update_fields=["used_at"])
     token = new_access_token()
-    expires = tnow + timedelta(days=30)
+    # expires stored the same way as created (local now → UTC in DB)
+    expires = now() + timedelta(days=30)
     AppAccessToken.objects.create(
         app_slug=app.slug,
         social_user=row.social_user,
         token=token,
-        created_at=tnow,
+        created_at=now(),
         expires_at=expires,
     )
     return {
@@ -197,6 +200,7 @@ def token_profile(token: str):
         exp = row.expires_at
         if timezone.is_aware(exp):
             exp = timezone.make_naive(exp, _UTC)
+        # expires was written via local now(); stored UTC-naive — compare UTC now
         if exp < _utc_naive():
             return None, None
     return row, row.social_user
