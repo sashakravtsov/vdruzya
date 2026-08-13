@@ -255,7 +255,7 @@ def _age_ok(p: DatingProfile, other: SocialProfile) -> bool:
 
 def _already_swiped_ids(me: SocialProfile) -> set[int]:
     return set(
-        DatingSwipe.objects.filter(from_user=me).values_list("to_id", flat=True)[:2000]
+        DatingSwipe.objects.filter(from_user=me).values_list("to_user_id", flat=True)[:2000]
     )
 
 
@@ -461,14 +461,16 @@ def likes_you(me: SocialProfile, limit: int = 20) -> list[dict]:
     matched = set()
     for a, b in DatingMatch.objects.filter(Q(user_a=me) | Q(user_b=me)).values_list("user_a_id", "user_b_id"):
         matched.add(a if b == me.id else b)
-    my_swipes = set(DatingSwipe.objects.filter(from_user=me).values_list("to_id", flat=True)[:2000])
+    my_swipes = set(
+        DatingSwipe.objects.filter(from_user=me).values_list("to_user_id", flat=True)[:2000]
+    )
     rows = []
     for s in (
         DatingSwipe.objects.filter(to_user=me, action__in=["like", "super"])
         .select_related("from_user")
         .order_by("-id")[:80]
     ):
-        if s.from_id in matched or s.from_id in my_swipes:
+        if s.from_user_id in matched or s.from_user_id in my_swipes:
             continue
         p = s.from_user
         comp = compatibility(me, p)
