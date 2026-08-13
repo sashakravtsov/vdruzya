@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Open Graph — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>Open Graph</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Что вы делаете</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'og.publish' %}" class="formtable">{% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'og' %}">
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Действие:</td><td>
+                            <select name="verb" class="inputtext">
+                                {% for v in verbs %}
+                                <option value="{{ v }}">{% if v == 'listening' %}слушает{% elif v == 'reading' %}читает{% else %}смотрит{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </td></tr>
+                        <tr><td class="label">Название:</td><td><input class="inputtext" type="text" name="title" size="40" maxlength="255"></td></tr>
+                        <tr><td class="label">Ссылка:</td><td><input class="inputtext" type="text" name="url" size="40" maxlength="255"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Опубликовать"></td></tr>
+                    </table>
+                </form>
+                <p class="muted">Слушаете музыку, читаете книгу или смотрите фильм — друзья увидят это в ленте и Ticker.</p>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Недавние</h4>
+            <div class="profile-box-body">
+                {% for row in recent %}
+                <div class="minifeed-item">
+                    вы {% if row.verb == 'listening' %}слушаете{% elif row.verb == 'reading' %}читаете{% else %}смотрите{% endif %}
+                    {% if row.object_url %}<a href="{{ row.object_url }}" rel="nofollow noopener"><b>«{{ row.object_title }}»</b></a>
+                    {% else %}<b>«{{ row.object_title }}»</b>{% endif %}
+                    {% if row.created_at %}<span class="muted"> · {{ row.created_at|fb_when }}</span>{% endif %}
+                </div>
+                {% empty %}<p class="muted">Пока пусто.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1294 @@
+/* VDruzya classic chrome — Facebook Blue #3B5998 / Light #D8DFEA (Nov 2005) */
+:root {
+  --fb: #3B5998;
+  --line: #D8DFEA;
+  --font: "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+body { background: #fff; margin: 0; padding: 0; }
+body, p { font: 11px/14px var(--font); text-align: left; color: #000; }
+a { color: var(--fb); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { border: 0; }
+form { margin: 0; padding: 0; }
+label { font-weight: bold; color: gray; }
+
+#book { width: 760px; margin: 0 auto; padding: 8px 0 0; text-align: left; }
+#pageheader {
+  position: relative; width: 760px; height: 33px; overflow: hidden;
+  background: var(--fb) url("../img/pageheaderbg.png") no-repeat left top;
+}
+/* Brand lives in pageheaderbg.png once — clickable hit area only */
+#homelink {
+  position: absolute; left: 0; top: 0; margin: 0; padding: 0;
+  width: 100px; height: 33px; font-size: 0; line-height: 0;
+}
+#homelink a { display: block; width: 100%; height: 100%; }
+.hide { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+#gnav form.gnav-logout { display: inline; margin: 0; padding: 0; }
+#gnav {
+  position: absolute; top: 1px; left: 120px; width: 630px;
+  margin: 0; padding: 3px 0; list-style: none; text-align: right; line-height: 25px;
+  white-space: nowrap;
+}
+#gnav li { display: inline; white-space: nowrap; }
+#gnav a, #gnav button.linkish {
+  margin: 0; padding: 2px 4px; color: #D8DFEA; text-decoration: none;
+  background: 0; border: 0; font: 11px var(--font); cursor: pointer;
+}
+#gnav a:hover, #gnav button.linkish:hover {
+  color: #fff; background: #526DA4; text-decoration: none;
+}
+
+/* FB 2006 float chrome */
+#sidebar { float: left; width: 120px; margin-top: 8px; }
+#snav { width: 114px; margin: 10px 0; padding: 0; border-bottom: solid 1px #fff; overflow: hidden; }
+#snav a {
+  display: block; float: left; width: 114px; margin: 0; padding: 2px 3px;
+  border-bottom: solid 1px var(--line); color: var(--fb);
+  box-sizing: border-box; font: 11px/14px var(--font); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+#snav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
+#snav a.is-on { color: #fff; background: var(--fb); font-weight: bold; }
+/* Profile + [ред.] share one 114px row — FB 2005 / classic snav */
+#snav .snav-profile {
+  display: block; float: left; width: 114px; overflow: hidden;
+  border-bottom: solid 1px var(--line);
+}
+#snav .snav-profile a { border-bottom: 0; }
+#snav a.hasedit, #snav .snav-profile a.hasedit { width: 74px; }
+#snav a.edit, #snav .snav-profile a.edit {
+  width: 40px; color: gray; text-align: center; padding-left: 0; padding-right: 0;
+}
+#snav a.edit:hover, #snav .snav-profile a.edit:hover { color: #fff; }
+#qsearch { width: 120px; margin: 0 0 8px; }
+#qsearch label { display:block; margin:0 0 2px; font-weight:bold; color:gray; font-size:11px; }
+#qsearch .inputtext { width: 115px; }
+#squicklogin { width: 120px; margin: 0 0 10px; padding: 0; }
+#squicklogin label {
+  display: block; margin: 0; padding: 0 0 2px; color: gray; font-weight: bold;
+}
+#squicklogin .inputtext { width: 115px; box-sizing: border-box; }
+#squicklogin .buttons { text-align: right; padding: 3px 0 0; white-space: nowrap; }
+#squicklogin .buttons .inputsubmit { margin: 0 0 0 2px; }
+
+#nav { list-style: none; margin: 1em 0; padding: 0; }
+#nav li { border-bottom: 1px solid var(--line); font-size: 1em; }
+#nav li a {
+  display: block; padding: 2px 3px; background: #fff; border: 0; color: var(--fb);
+}
+#nav li a:hover { background: var(--fb); color: #fff; text-decoration: none; }
+
+#pagebody {
+  float: left; width: 628px; margin-left: 12px; font-size: 11px; text-align: left;
+}
+#pagebody a:hover { text-decoration: underline; }
+#header {
+  margin: 0; padding: 0 10px; background: #6d84b4; color: #fff;
+  font: bold 14px/23px var(--font); border-bottom: solid 1px var(--fb);
+}
+#header h1 { margin: 0; padding: 0; font-size: 14px; color: #fff; }
+#header.withsubtitle { text-align: right; overflow: hidden; }
+#header.withsubtitle h1 { float: left; }
+#header.withsubtitle .subtitle {
+  float: right; font-weight: normal; font-size: 11px; line-height: 23px; white-space: nowrap;
+}
+#header.withsubtitle .subtitle a { color: #fff; }
+#header.withsubtitle .subtitle a:hover { text-decoration: underline; }
+#content {
+  padding: 10px; overflow: hidden;
+  border-left: solid 1px var(--line);
+  border-right: solid 1px var(--line);
+  border-bottom: solid 1px var(--fb);
+}
+.infocontent { margin: 10px 20px; }
+.infocontent h2 {
+  font-size: 11px; margin: 0 0 10px; padding: 0; font-weight: bold; line-height: 16px;
+}
+.infocontent p { margin: 0 0 10px; line-height: 16px; }
+ul.bulletpoints { padding-left: 20px; color: var(--fb); margin: 0 0 14px; }
+ul.bulletpoints li { padding: 1px 0; }
+ul.bulletpoints li span { color: #000; }
+.center { margin-left: auto; margin-right: auto; }
+.welcome-actions { width: 170px; margin: 8px auto 4px; text-align: center; }
+
+/* Auth / reset forms — FB login.css */
+#loginform { text-align: center; margin: 20px; }
+#loginform table { margin: 0 auto; }
+#loginform p { text-align: center; margin: 0 20px 10px; }
+.formtable { margin: 0; }
+.formtable td { border: none; margin: 0; padding: 3px 1px; text-align: left; }
+.formtable td.label { padding-right: 10px; font-weight: bold; color: gray; white-space: nowrap; }
+.formbuttons { text-align: center; margin: 10px; }
+.formbuttons .inputsubmit, .formbuttons .inputbutton { margin: 2px 4px; }
+#passwordnote { width: 300px; margin: 10px auto; text-align: left; }
+#confirmterm { width: 320px; margin: 10px auto; text-align: left; }
+#confirmterm .inputcheckbox { float: left; display: block; margin: 2px 5px 8px 0; border: 0; }
+.inputcheckbox { border: 0; }
+
+/* About page — info.css */
+.about #content { margin: 0; padding: 0 20px 20px; }
+.about #tabs { margin: 0 0 20px; padding-top: 20px; }
+.about .leftcolumn { float: left; padding-right: 20px; width: 283px; }
+.about .rightcolumn { float: left; width: 283px; }
+.about .halfwidth { margin: 0; float: none; width: auto; }
+.halfwidth h4, .about h4, .legal-content h4 {
+  border-bottom: solid 1px var(--line); margin: 0 0 6px; padding: 0 0 2px; font-size: 13px; color: #000;
+}
+.halfwidth table .title, .about td.title { color: #666; padding-left: 10px; }
+.clearfix:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+.clearfix { display: block; }
+#tabs { text-align: center; padding: 4px 0; margin: 10px 20px; border-bottom: solid 1px var(--fb); }
+#tabs div { display: inline; padding: 0; margin: 0; }
+#tabs a { margin: 0; padding: 4px; }
+#tabs .activetab a { color: #fff; background: var(--fb); }
+#tabs .activetab a:hover { text-decoration: none; }
+#tabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.legal-content #tabs { margin: 10px 0 16px; }
+.legal-content .infocontent { margin: 0 0 10px; }
+#loginform input[type="password"],
+#loginform input[type="text"],
+#loginform #loginform .inputtext,
+#loginform .inputpassword {
+  border: 1px solid #bdc7d8; padding: 3px; font: 11px var(--font);
+}
+
+.inputtext, .inputpassword, select, textarea,
+input[type="text"], input[type="password"] {
+  border: 1px solid #bdc7d8; padding: 3px; font: 11px var(--font);
+}
+textarea { font-family: var(--font); }
+.inputsubmit, .inputbutton, button.inputbutton,
+input[type="submit"], input[type="button"] {
+  background: #3b5998; color: #fff; font: 11px var(--font); cursor: pointer;
+  border-style: solid; border-width: 1px;
+  border-color: #D9DFEA #0e1f5b #0e1f5b #D9DFEA; padding: 1px 6px;
+}
+
+#pagefooter {
+  clear: both; font-size: 10px; line-height: 15px; padding: 10px 0;
+  border: 0; text-align: center; color: #777;
+}
+#pagebody > #pagefooter { clear: none; }
+#pagefooter p { margin: 0; padding: 0; text-align: center; }
+#fnav { list-style: none; margin: 0; padding: 0; text-align: center; font-size: 11px; }
+#fnav li { display: inline; }
+#fnav a { padding: 2px 5px; }
+#fnav a:hover { color: #fff; background: var(--fb); text-decoration: none; }
+
+.flash, .status { margin: 0 10px 10px; padding: 10px; border: 1px solid #ffe222; background: #fffbe2; }
+.error, #error { margin: 0 10px 10px; padding: 10px; border: 1px solid #dd3c10; background: #ffebe8; color: #dd3c10; }
+#error p { margin: 4px 0 0; }
+#error a { text-decoration: none; color: #dd3c10; }
+.auth-box { padding: 12px 20px; }
+
+/* Shared boxes / profile chrome (page layouts refine below) */
+img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
+.profile-box {
+  margin: 0 0 10px; border: 0; background: transparent;
+}
+.profile-box > h4 {
+  background: #D8DFEA; color: #3B5998; font: bold 11px/16px var(--font);
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.profile-box > h4 .edit {
+  float: right; color: #777; font-weight: normal; text-decoration: none;
+}
+.profile-box > h4 .edit:hover { color: var(--fb); }
+.profile-box-body { padding: 8px; }
+.profile-box-body p { margin: 0 0 6px; }
+/* FB 2005–06 status under picture (not in blue #header) */
+.profile #status.profile-status {
+  margin: 8px 0 0; padding: 0 2px; font: 11px/14px var(--font); color: #333;
+}
+.profile #status .profile-status-form { margin: 0; }
+.profile #status .profile-status-form .inputtext {
+  width: 170px; max-width: 100%; box-sizing: border-box;
+  border: 1px solid #bdc7d8; padding: 1px 3px; font: 11px var(--font); margin: 2px 0;
+}
+.profile #status .profile-status-form .inputbutton {
+  margin: 2px 0 0; font: 11px var(--font);
+}
+.profile #status .status-place {
+  margin: 2px 0; color: #555;
+}
+.profile #status .status-place select {
+  max-width: 170px; font: 11px var(--font); border: 1px solid #bdc7d8;
+}
+/* Edit My Profile — archive editprofile.css (Dec 2005): #tabs + wide .editor */
+.editprofile #content { padding: 12px 0 10px !important; overflow: hidden; }
+.editprofile #tabs {
+  text-align: left; margin: 0 10px 12px; padding: 0 0 1px;
+  border-bottom: solid 1px var(--fb); white-space: nowrap;
+}
+.editprofile #tabs .activetab,
+.editprofile #tabs .inactivetab {
+  display: inline-block; padding: 0; margin: 0 2px 0 0; vertical-align: bottom;
+}
+.editprofile #tabs a {
+  display: inline-block; margin: 0; padding: 3px 5px; font: 11px var(--font);
+}
+.editprofile #tabs .activetab a {
+  color: #fff; background: var(--fb); text-decoration: none;
+}
+.editprofile #tabs .inactivetab a:hover {
+  background: var(--line); text-decoration: none;
+}
+/* #pagebody 628 − borders ≈ 606; editor fills it */
+.editprofile .editor {
+  width: 600px; margin: 0; padding: 0 0 0 10px; float: none;
+}
+.editprofile .formtable.editor td.label,
+.editprofile table.editor td.label {
+  text-align: right; padding-right: 15px; width: 150px;
+  color: gray; font-weight: bold; white-space: nowrap; vertical-align: top;
+}
+.editprofile .formtable.editor td,
+.editprofile table.editor td { padding: 3px 0; vertical-align: top; }
+.editprofile .editor-buttons,
+.editprofile td.buttons {
+  text-align: left; margin: 10px 0 4px 165px; padding: 0;
+}
+.editprofile .profile_note {
+  background: #fff; padding: 10px; margin: 0 0 10px;
+  border: 1px solid #bdc7d8; color: #444; font-size: 11px; line-height: 14px;
+}
+.editprofile #infoarea { margin: 0 10px 12px 0; }
+.editprofile #infoarea > h4 {
+  border-bottom: solid 1px #D8DFEA;
+  margin: 0 0 10px; padding: 0 0 2px;
+  font: bold 13px var(--font); color: #000;
+  background: transparent; border-top: 0;
+}
+.editprofile .checkgrid ul {
+  list-style: none; margin: 0; padding: 0;
+}
+.editprofile .checkgrid li {
+  margin: 0 0 2px; padding: 0; font-weight: normal;
+}
+.editprofile .checkgrid label { font-weight: normal; color: #000; }
+.editprofile .bday select.inputtext { width: auto; margin-right: 2px; }
+/* Picture — side-by-side: 200 + gutter + ~360 ≤ 600 */
+.editprofile #picture { overflow: hidden; margin: 0 10px 0 0; }
+.editprofile #currentpicture {
+  float: left; width: 200px; margin: 0 20px 16px 0;
+}
+.editprofile #currentpicture h4 {
+  margin: 0; padding: 1px 0 4px; font-size: 11px; font-weight: bold;
+  border-bottom: none; color: #333;
+}
+.editprofile #uploadpicture h4 {
+  border-bottom: solid 1px #D8DFEA;
+  margin: 0; padding: 0 0 2px; font-size: 13px; font-weight: bold; color: #333;
+}
+.editprofile #currentpicture img {
+  width: 200px; height: 200px; border: 1px solid #B3B3B3; display: block; margin: 6px 0;
+}
+.editprofile #nopicture {
+  width: 200px; font-size: 12px; padding: 75px 0; text-align: center;
+  background: #f7f7f7; border: solid 1px #ddd; color: gray; margin: 6px 0;
+}
+.editprofile #uploadpicture {
+  float: left; width: 360px; margin: 0 0 16px 0;
+}
+.editprofile #uploadpicture small {
+  display: block; margin: 5px 0; color: gray; font-size: 10px;
+}
+.editprofile .avatar-clear { margin: 4px 0 0; }
+.editprofile .profile-box { margin: 0 10px 12px 0; }
+.editprofile .profile-box > h4 {
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px var(--font);
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.editprofile .profile-box-body { padding: 10px 8px 12px; line-height: 13px; }
+.editprofile .formtable textarea { width: 100%; max-width: 280px; }
+.editprofile .formtable .inputtext { max-width: 250px; }
+.editprofile .hometown .inputtext { width: 250px; max-width: 250px; }
+.profile-subsection { margin: 0 0 10px; }
+.profile-subsection h5 {
+  color: #3B5998; font: bold 12px var(--font); margin: 0 0 6px; padding: 2px 8px;
+  background: #eee; border-top: solid 1px #ccc; border-bottom: 0;
+}
+.infotable { width: 100%; border-collapse: collapse; }
+.infotable td { padding: 0 0 3px; vertical-align: top; font-size: 11px; }
+.infotable td.label {
+  color: gray; font-weight: bold; text-align: right; white-space: nowrap;
+  padding-right: 12px; width: 1%;
+}
+.infotable td a { color: var(--fb); }
+.album-title { display: block; color: var(--fb); font-weight: bold; }
+ul.plain { margin: 0; padding-left: 16px; }
+ul.plain li { margin: 0 0 2px; }
+.muted { color: #777; }
+.inline { display: inline; }
+button.linkish, .profile-box-body button.linkish {
+  background: 0; border: 0; color: var(--fb); font: 11px var(--font); cursor: pointer; padding: 0;
+}
+.wall-actions { margin: 4px 0; }
+/* Classic FB icons (comment bubble / thumb / feed glyphs) */
+.ico {
+  display: inline-block; width: 14px; height: 12px; vertical-align: -1px;
+  margin-right: 3px; background-color: transparent;
+  background-repeat: no-repeat; background-position: center; background-size: auto;
+}
+.ico-comment {
+  width: 13px; height: 11px;
+  background-image: url("../img/ico-comment.gif");
+}
+.ico-group {
+  width: 14px; height: 12px;
+  background-image: url("../img/ico-group.gif");
+}
+.ico-note {
+  width: 12px; height: 13px;
+  background-image: url("../img/ico-note.gif");
+}
+.ico-photo {
+  width: 13px; height: 11px;
+  background-image: url("../img/ico-photo.gif");
+}
+.ico-wall {
+  width: 12px; height: 12px;
+  background-image: url("../img/ico-wall.gif");
+}
+.wall-act .ico { margin-right: 2px; }
+button.linkish .ico { margin-right: 2px; }
+
+/* Classic FB flat comments (wall / group / photo) */
+.wall-comment {
+  overflow: hidden; margin: 0; padding: 4px 5px; font-size: 11px; line-height: 14px;
+  background: #eceff5; border-top: solid 1px #d8dfea;
+}
+.wall-comment .wc-ava { float: left; width: 32px; margin-right: 6px; }
+.wall-comment .wc-ava img,
+.wall-comment .wc-body { overflow: hidden; }
+.wall-comment .wc-time { margin-top: 2px; }
+.wall-comment .wc-del { float: right; margin-left: 6px; }
+.wall-comment-compose {
+  display: none; margin: 0; padding: 4px 5px; font-size: 11px;
+  background: #eceff5; border-top: solid 1px #d8dfea;
+}
+.wall-comment-compose:target,
+.wall-comment-compose.is-open { display: block; }
+.wall-comment-compose input[type="text"],
+.wall-comment-compose .inputtext { width: 80%; }
+.photo-comments .wall-comment:first-child,
+.photo-comments .wall-comment-compose:first-child { border-top: 0; }
+.wall-comments-more {
+  margin: 0; padding: 4px 5px; background: #eceff5; border-top: solid 1px #d8dfea; font-size: 11px;
+}
+.wall-comments-older { display: none; }
+.wall-comments-older:target { display: block; outline: 0; background: transparent; }
+.pager { padding-left: 4px; text-align: right; }
+.pager a:hover { color: #fff; background: var(--fb); text-decoration: none; padding: 3px; }
+
+/* Group page — FB 2005: main + right rail, white-on-blue section heads */
+.group-content, .feed-content {
+  overflow: hidden; padding: 10px !important;
+}
+.group-rail { float: left; width: 180px; margin: 0 10px 0 0; }
+.group-main { float: left; width: 400px; }
+/* #content ≈ 606px inner — keep main+rail ≤ that */
+.feed-main { float: left; width: 410px; }
+.feed-rail { float: right; width: 180px; }
+.feed-content::after, .group-content::after, .friends-content::after, .inbox-content::after {
+  content: ""; display: block; clear: both; height: 0; overflow: hidden;
+}
+.group-page .profile-box > h4,
+.feed-page .profile-box > h4 {
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.group-page .profile-box > h4 .edit,
+.feed-page .profile-box > h4 .edit { color: gray; float: right; font-weight: normal; text-decoration: none; }
+.group-page .profile-box > h4 .edit:hover,
+.feed-page .profile-box > h4 .edit:hover { color: #3B5998; }
+.group-picture { width: 180px; margin: 0 0 8px; }
+.group-picture img {
+  width: 180px; height: 180px; border: 1px solid #B3B3B3; display: block;
+}
+.group-cover-fallback { display:block; width:100%; height:auto; border:0; }
+.group-photo-grid,
+.wall-media { overflow: hidden; margin: 6px 0; }
+.group-photo-grid a,
+.wall-media a { float: left; margin: 0 6px 6px 0; }
+.group-photo-grid img {
+  width: 130px; height: 97px; border: 1px solid #B3B3B3; display: block;
+}
+.wall-media img {
+  width: 100px; height: 75px; border: 1px solid #B3B3B3; display: block;
+}
+.wall-media-single img, .wall-media-single .news-photo {
+  float: none; width: auto; height: auto; max-width: 100%; max-height: none;
+  border: 1px solid #B3B3B3; display: inline-block;
+}
+.wall-media-video { margin: 6px 0; }
+.wall-media-video video {
+  display: block; max-width: 100%; width: 400px; height: auto;
+  background: #000; border: 1px solid #B3B3B3;
+}
+.feed-main .wall-media-video video { width: 360px; }
+.discuss-table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; }
+.discuss-table th {
+  text-align: left; color: #777; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border-bottom: solid 1px #D8DFEA; padding: 2px 6px 4px 0; background: transparent;
+}
+.discuss-table td {
+  padding: 5px 6px 5px 0; border-bottom: solid 1px #D8DFEA;
+  vertical-align: top; font-size: 11px; line-height: 14px;
+}
+.discuss-table .col-topic { width: auto; }
+.discuss-table .col-n { width: 52px; text-align: center; white-space: nowrap; color: #777; }
+.discuss-table .col-author { width: 110px; }
+.discuss-table .col-when { width: 100px; white-space: nowrap; }
+.discuss-table tr.is-open td { background: #f7f7f7; }
+.discuss-table a { color: #3B5998; font-weight: bold; }
+.discuss-open {
+  margin: 10px 0 0; padding: 10px; background: #f7f7f7; border-top: solid 1px #3B5998;
+}
+.discuss-compose { margin: 0 0 12px; }
+.discuss-compose .formtable .inputtext,
+.discuss-compose .formtable textarea { width: 100%; max-width: 480px; box-sizing: border-box; }
+.discuss-subject {
+  margin: 0 0 8px; font: bold 13px "lucida grande", tahoma, verdana, arial, sans-serif; color: #333;
+}
+.discuss-op { margin: 0 0 12px; padding: 0 0 10px; border-bottom: solid 1px #D8DFEA; }
+.discuss-replies > h5 {
+  margin: 0 0 8px; font: bold 11px "lucida grande", tahoma, verdana, arial, sans-serif; color: #333;
+}
+.profile-action-links button.linkish {
+  display: block; width: 100%; text-align: left; padding: 1px 0;
+  color: var(--fb); background: 0; border: 0; font: 11px var(--font); cursor: pointer;
+}
+
+/* News Feed / Wall — FB 2006 */
+.news-item {
+  overflow: hidden; margin: 0 0 12px; padding: 0 0 10px; border-bottom: 1px solid #EEEFF3;
+}
+.news-item .news-ico { float: left; margin: 2px 6px 0 0; }
+.news-photo-row { margin: 4px 0; }
+.news-ico { margin-top: 2px; margin-right: 0; }
+.news-body { min-width: 0; position: relative; padding-right: 110px; }
+.news-time { position: absolute; right: 0; top: 0; white-space: nowrap; font-size: 10px; }
+.news-snippet { margin: 4px 0 0; }
+.news-photo { max-width: 100%; border: 1px solid #B3B3B3; }
+.req-row, .rail-row { margin: 0 0 6px; }
+
+
+.group-locked .profile-box-body{padding:12px}
+
+/* Groups index — FB 2005 directory (aligned with #header, no inset) */
+.groups-index #content { padding: 10px 12px 14px; }
+.groups-index .groups-search { margin: 0 0 10px; }
+.groups-index .groups-search label { margin-right: 6px; }
+.groups-index .groups-search .inputtext { width: 220px; }
+.groups-index .groups-cats { margin: 0 0 12px; }
+.groups-index .groups-cats a.is-active { font-weight: bold; color: #333; text-decoration: none; }
+.groups-index .formtable { width: 100%; max-width: 480px; }
+.groups-index .formtable .label {
+  width: 90px; color: #555; vertical-align: top; padding: 4px 8px 4px 0; white-space: nowrap;
+}
+.groups-index .formtable td { padding: 3px 0; vertical-align: top; }
+.groups-index .groups-create {
+  margin: 16px 0 0; padding: 0; border: 1px solid var(--line);
+}
+.groups-index .groups-create > h4 {
+  margin: 0; padding: 2px 8px; background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border-top: solid 1px #3B5998;
+}
+.groups-index .groups-create form,
+.groups-index .groups-create > p { margin: 0; padding: 10px; }
+.mygroups-table { width: 100%; border-collapse: collapse; margin: 4px 0 0; }
+.mygroups-table th {
+  text-align: left; color: gray; font: bold 11px var(--font);
+  border-bottom: 1px solid var(--line); padding: 2px 8px 4px 0;
+}
+.mygroups-table td {
+  padding: 8px 8px 8px 0; border-bottom: 1px solid #EEEFF3;
+  vertical-align: top; font-size: 11px;
+}
+.mygroups-table .col-name { width: auto; }
+.mygroups-table .col-type { width: 120px; white-space: nowrap; }
+.mygroups-table .col-n { width: 70px; text-align: center; white-space: nowrap; }
+.mygroups-table .col-act { width: 110px; white-space: nowrap; text-align: right; }
+.mygroups-table .col-name a { color: var(--fb); }
+
+/* Classic FB-2005 media upload (no drag-drop) + wallposter */
+.compose-table,.formtable{width:100%;max-width:520px}
+.formtable .label{width:100px;color:#555;vertical-align:top;padding:4px 8px 4px 0;white-space:nowrap}
+.formtable td{padding:4px 0;vertical-align:top}
+.inputfile{font:11px var(--font);max-width:100%}
+.file-hint{margin:2px 0 0;font-size:10px}
+.wallposter{
+  margin:0 0 12px;padding:0 0 10px;background:transparent;border:0;border-bottom:1px solid #D8DFEA;
+}
+.wallposter textarea{
+  width:100%;min-height:48px;box-sizing:border-box;font:11px var(--font);
+  border:1px solid #bdc7d8;padding:4px;resize:none;
+}
+.wallposter-tools{
+  overflow:hidden;margin:6px 0 0;
+}
+.wallposter-vis,.wallposter-file{float:left;font-size:11px;color:#555;margin-right:10px;line-height:20px}
+.wallposter-go{float:right}
+.avatar-edit-preview,.cover-edit-preview{width:80px;height:80px;border:1px solid #B3B3B3}
+.cover-edit-preview{width:120px;height:120px}
+.albums-page #content.albums-content { padding: 10px; }
+.classic-page-lead { margin: 0 0 10px; font-size: 11px; color: #555; }
+/* FB 2005 My Photos album index */
+.album-index { overflow: hidden; margin: 2px 0 0; }
+.album-index .album {
+  width: 180px; float: left; margin: 0 10px 12px 0; text-decoration: none; color: inherit; font-size: 11px;
+}
+.album-index .album-cover {
+  width: 75px; height: 56px; float: left; margin-right: 10px; border: 1px solid #B3B3B3; background: #D8DFEA;
+  overflow: hidden; display: block;
+}
+.album-index .album-cover img {
+  width: 75px; height: 56px; display: block; border: 0;
+}
+.album-index .album-title {
+  display: block; color: #3B5998; font: bold 11px/14px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.album-index .album-meta { display: block; color: gray; font-size: 11px; }
+.album-index .album-cover img.album-cover-fallback,
+.album-cover-fallback {
+  display: block; width: 75px; height: 56px; border: 0; background: #D8DFEA;
+}
+/* FB 2005 album photo thumbs ~130×97 */
+.photo-gallery { overflow: hidden; margin: 0; }
+.photo-gallery-item {
+  float: left; width: 130px; margin: 0 14px 12px 0; text-align: left; font-size: 10px;
+}
+.photo-gallery-item .photo-thumb {
+  display: block; width: 130px; height: 97px; border: 1px solid #B3B3B3;
+  overflow: hidden; background: #D8DFEA; text-decoration: none;
+}
+.photo-gallery-item img {
+  width: 130px; height: 97px; display: block; border: 0;
+}
+.photo-gallery-item .photo-cap { margin: 3px 0 0; line-height: 13px; }
+.photo-gallery-item .photo-cap a { color: var(--fb); font-weight: bold; font-size: 11px; }
+.photo-gallery-item form { margin: 2px 0 0; }
+.photo-nav {
+  overflow: hidden; margin: 0 0 10px; padding: 6px 8px;
+  background: #f7f7f7; border: 1px solid #ccc; font: 11px var(--font);
+}
+.photo-nav a { color: var(--fb); font-weight: bold; }
+.photo-nav-back { float: left; }
+.photo-nav-owner { float: right; }
+.photo-nav-mid { text-align: center; }
+.photo-nav-pos { margin: 0 10px; color: #555; font-weight: normal; }
+.photo-view { text-align: center; }
+.photo-view-stage {
+  margin: 0 auto 8px; padding: 8px; background: #fff;
+  border: solid 1px #ccc;
+}
+.photo-view-img {
+  max-width: 100%; width: auto; height: auto;
+  border: 1px solid #B3B3B3; display: inline-block; vertical-align: middle;
+  background: #eee;
+}
+.photo-view-full {
+  margin: 6px 0 0; font-size: 11px;
+}
+.photo-view-fallback { display:block; margin:0 auto; border:1px solid #B3B3B3; }
+.photo-caption {
+  margin: 8px auto 0; max-width: 480px; padding: 6px 8px;
+  background: #f7f7f7; border: 1px solid #ddd; font-size: 12px; color: #333; text-align: left;
+}
+.photo-caption-form { margin: 12px 0 0; text-align: left; }
+.photo-page .classic-page-lead a { color: var(--fb); }
+.photo-upload-form{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #EEEFF3}
+.group-page #content.group-content { padding: 10px; }
+.group-page #content:not(.group-content) { padding: 10px 12px 14px; }
+.group-join-panel{margin:6px 0 10px;padding:0 0 8px;border-bottom:1px solid var(--line)}
+.group-join-status{
+  margin:0 0 8px;padding:0 0 6px;border-bottom:1px solid var(--line);
+  font:11px var(--font);color:#333;
+}
+.group-join-status b{display:block;color:#333;font-size:11px;font-weight:bold}
+.group-join-status .label{display:block;margin:2px 0 0;color:#777;font-weight:normal;font-size:10px}
+.profile-action-links .group-join-status{width:100%;border-bottom:1px solid var(--line)}
+.member-row{display:block;overflow:hidden}
+.members-full .col-name{width:auto}
+.albums-page .profile-box > h4,
+.group-page .profile-box > h4,
+.feed-page .profile-box > h4{
+  background:#D8DFEA;color:#3B5998;
+  font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
+}
+.albums-page .profile-box > h4 .edit,
+.group-page .profile-box > h4 .edit,
+.feed-page .profile-box > h4 .edit{color:gray;float:right;font-weight:normal;text-decoration:none}
+.albums-page .profile-box > h4 .edit:hover,
+.group-page .profile-box > h4 .edit:hover,
+.feed-page .profile-box > h4 .edit:hover{color:#3B5998}
+
+/* People / Friends FB 2005 */
+.people-page #content.people-content{padding:10px}
+.people-lead{margin:0 0 8px;font:11px/16px var(--font);color:#333}
+.people-top-links{margin:0 0 10px;font:11px var(--font)}
+.people-top-links a{color:var(--fb)}
+.people-top-links span{margin:0 4px;color:#aaa}
+.people-search-form{margin:0 0 10px}
+/* directory tabs — classic #tabs */
+.people-page #tabs, .events-page #tabs, .group-page #tabs, .groups-index #tabs, .search-page #tabs {
+  text-align:left;padding:4px 0;margin:0 0 12px;border-bottom:solid 1px var(--fb);
+}
+.people-page #tabs .activetab, .people-page #tabs .inactivetab,
+.events-page #tabs .activetab, .events-page #tabs .inactivetab,
+.group-page #tabs .activetab, .group-page #tabs .inactivetab,
+.groups-index #tabs .activetab, .groups-index #tabs .inactivetab,
+.search-page #tabs .activetab, .search-page #tabs .inactivetab { display:inline;padding:0;margin:0; }
+.people-page #tabs a, .events-page #tabs a, .group-page #tabs a, .groups-index #tabs a, .search-page #tabs a { margin:0;padding:4px; }
+.people-page #tabs .activetab a, .events-page #tabs .activetab a,
+.group-page #tabs .activetab a, .groups-index #tabs .activetab a, .search-page #tabs .activetab a {
+  color:#fff;background:var(--fb);text-decoration:none;
+}
+.people-page #tabs .inactivetab a:hover, .events-page #tabs .inactivetab a:hover,
+.group-page #tabs .inactivetab a:hover, .groups-index #tabs .inactivetab a:hover,
+.search-page #tabs .inactivetab a:hover {
+  background:var(--line);text-decoration:none;
+}
+.classic-person-row{
+  margin:0 0 8px;padding:0 0 8px;border-bottom:1px solid #eee;
+  font:11px/14px var(--font);overflow:hidden;
+}
+.classic-person-row:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.classic-person-name{
+  display:block;overflow:hidden;max-width:70%;
+  color:var(--fb);text-decoration:none;vertical-align:top;
+}
+.classic-person-name:hover b{text-decoration:underline}
+.classic-person-name b{display:block;font-size:11px;color:var(--fb)}
+.classic-person-name img{
+  float:left;width:50px;height:50px;margin-right:8px;border:1px solid #B3B3B3;
+}
+.classic-person-name > span{display:block;overflow:hidden}
+.classic-person-sub{display:block;color:#777;font-size:10px;font-weight:normal;margin-top:1px}
+.classic-inline-actions{
+  float:right;margin:0;padding:2px 0 0;font:11px/16px var(--font);color:#777;text-align:right;
+}
+.classic-inline-actions form{display:inline;margin:0}
+.classic-inline-actions .inputsubmit{margin:0;padding:1px 6px;font-size:11px}
+.people-page .profile-box > h4{
+  background:#D8DFEA;color:#3B5998;
+  font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
+}
+/* Dedicated friends page — FB 2005 two columns (#pagebody 628px − borders/pad ≈ 606) */
+.friends-page #content.friends-content{
+  padding:10px;overflow:hidden;box-sizing:border-box;
+}
+.friends-page .friends-find{margin:0 0 10px}
+.friends-page .friends-find .inputtext{width:180px}
+.friends-main{float:left;width:400px}
+.friends-side{float:right;width:180px}
+.friends-page .profile-box{margin:0 0 10px}
+.friends-page .profile-box:last-child{margin-bottom:0}
+.friends-page .profile-box > h4{
+  background:#D8DFEA;color:#3B5998;
+  font:bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin:0;padding:2px 8px;border-top:solid 1px #3B5998;
+}
+.friends-page .profile-box > h4 .edit{color:gray;float:right;font-weight:normal;text-decoration:none}
+.friends-page .profile-box > h4 .edit:hover{color:#3B5998}
+
+.classic-person-row-side{
+  display:block;
+  overflow:hidden;
+}
+/* actions float first (via right), name fills leftover — keep max-width room */
+.classic-person-row-friend{overflow:hidden}
+.classic-person-row-friend .classic-inline-actions-friend{
+  float:right;white-space:nowrap;padding-top:2px;text-align:right;margin-left:8px;
+}
+.classic-person-row-friend .classic-person-name{
+  display:block;overflow:hidden;max-width:none;
+}
+.classic-person-row-side .classic-person-name{max-width:100%}
+.classic-person-row-side .classic-person-name img{width:32px;height:32px}
+.classic-person-row-side .classic-inline-actions{float:none;display:block;margin:3px 0 0 40px;text-align:left}
+.classic-inline-actions-stack{float:none;display:block;margin:4px 0 0 40px;text-align:left}
+.classic-inline-actions-stack form{display:inline;margin:0 6px 0 0}
+.friends-side-foot{margin:6px 0 0;font:11px var(--font)}
+
+/* Directory lists — flat FB Find Friends (no nested console chrome) */
+.dir-heading{
+  margin:0 0 8px;padding:0 0 2px;font:bold 11px/16px var(--font);color:#333;
+  border-bottom:solid 1px var(--line);
+}
+.dir-list{margin:0 0 12px}
+.people-page .people-search-form .formtable .label,
+.search-page .people-search-form .formtable .label{
+  font-weight:bold;color:gray;text-align:right;padding-right:8px;
+}
+.note-compose{margin:0 0 14px;padding:0 0 12px;border-bottom:solid 1px var(--line)}
+.note-compose .formtable{max-width:100%}
+.note-item{
+  margin:0 0 12px;padding:0 0 10px;border-bottom:solid 1px #EEEFF3;
+  font:11px/14px var(--font);
+}
+.note-item:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.note-head{margin:0 0 4px}
+.note-body{margin:0 0 4px;color:#333}
+
+
+/* ===== Profile FB Dec 2005 (profile.css) =====
+   #content only pads; #userprofile carries narrowleftbg so the rule
+   aligns with the 200px left column (not shifted by padding). */
+.profile #content {
+  padding: 10px 0 10px 10px !important;
+  overflow: hidden;
+  background: #fff;
+}
+.profile #userprofile {
+  background: #fff url("../img/narrowleftbg.gif") repeat-y left top;
+  overflow: hidden;
+}
+.profile #profilenarrowcolumn {
+  float: left;
+  width: 200px;
+  margin: 0 10px 0 0;
+  padding: 0;
+}
+.profile #profilewidecolumn {
+  float: left;
+  width: 394px;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+/* legacy class aliases (partials / smoke) */
+.profile-left { float: left; width: 200px; margin: 0 10px 0 0; }
+.profile-right { float: left; width: 394px; margin: 0; min-width: 0; }
+.profile #tabs {
+  text-align: left;
+  margin: 0 0 12px;
+  padding: 4px 0;
+  border-bottom: solid 1px var(--fb);
+}
+/* Classic subtabs — feed / apps / friends / timeline / profile */
+.subtabs {
+  text-align: left;
+  margin: 0 0 10px;
+  padding: 2px 0 6px;
+  border-bottom: solid 1px #D8DFEA;
+}
+.subtabs > div { display: inline; padding: 0; margin: 0; }
+.subtabs a { margin: 0; padding: 3px 5px; }
+.subtabs .activetab a { color: #fff; background: var(--fb); }
+.subtabs .activetab a:hover { text-decoration: none; }
+.subtabs .inactivetab a:hover { background: var(--line); text-decoration: none; }
+.profile .subtabs { margin: 0 0 10px; }
+.profile-tagged a { margin: 0 4px 4px 0; display: inline-block; vertical-align: top; }
+.profile-tagged img { width: 75px; height: 75px; border: 1px solid #B7B7B7; }
+.photo-tags { margin-top: 8px; }
+.photo-tag-form { margin-top: 6px; }
+.profile-picture {
+  width: 200px;
+  text-align: center;
+}
+.profile-picture img {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #B3B3B3;
+  display: block;
+  margin: 0 auto;
+}
+.profile-action-links {
+  margin: 0;
+  padding: 10px 0;
+  background: #fff;
+  border-bottom: 0;
+}
+.profile-action-links a,
+.profile-action-links button,
+.profile-action-links .muted {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 2px 3px;
+  border: 0;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+  color: #3B5998;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+}
+.profile-action-links form { margin: 0; }
+.profile-action-links a:hover,
+.profile-action-links button:hover {
+  color: #fff !important;
+  background: #3B5998 !important;
+  text-decoration: none !important;
+}
+.profile-action-links .muted,
+.profile-action-links button.muted { color: #777; cursor: default; }
+.profile-action-links button.muted:hover { color: #fff !important; background: #3B5998 !important; cursor: pointer; }
+
+.profile .profile-box {
+  margin: 0 0 10px;
+  border: 0;
+  background: transparent;
+}
+.profile .profile-box > h4 {
+  margin: 0;
+  padding: 2px 8px;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  color: #3B5998 !important;
+  background: #D8DFEA !important;
+  border-top: solid 1px #3B5998;
+  overflow: hidden;
+}
+.profile .profile-box > h4 .edit {
+  float: right;
+  color: gray !important;
+  font-weight: normal;
+  text-decoration: none;
+}
+.profile .profile-box > h4 .edit:hover { color: #3B5998 !important; }
+.profile .profile-box-body {
+  padding: 10px 8px 15px;
+  line-height: 13px;
+}
+.profile .profile-subsection h5 {
+  color: #3B5998;
+  font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0 0 6px;
+  padding: 2px 8px;
+  background: #eee;
+  border-top: solid 1px #ccc;
+  border-bottom: 0;
+}
+.profile .infotable { margin: 0 0 8px; width: 100%; border-collapse: collapse; }
+.profile .infotable td {
+  vertical-align: top;
+  font-size: 11px;
+  line-height: 13px;
+  padding: 1px 0;
+}
+.profile .infotable td.label {
+  width: 120px;
+  color: gray;
+  font-weight: bold;
+  text-align: right;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+/* Archive profile.css friendTable */
+.profile .friendTable {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  border-collapse: collapse;
+}
+.profile .friendTable td {
+  margin: 0;
+  padding: 3px 0;
+  vertical-align: bottom;
+  text-align: center;
+  width: 62px;
+  font-size: 11px;
+  line-height: 13px;
+}
+.profile .friendTable td a { color: #3B5998; text-decoration: none; }
+.profile .friendTable td a:hover { text-decoration: underline; }
+.profile .friendTable img,
+.profile .friendTable .avatar {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 4px;
+  border: 1px solid #B3B3B3;
+  display: block;
+}
+.profile .morefriends { margin: 5px 0 0; }
+
+/* Info / legal pages — about + FAQ */
+.about #content { margin: 0; padding: 0 20px 20px; }
+.about #tabs { margin: 0 0 20px; padding-top: 20px; }
+.about .fullwidth { margin: 0 0 10px; }
+.about .fullwidth h4,
+.about #faqanswers h4,
+.about #faqindex h4 {
+  border-bottom: solid 1px #D8DFEA;
+  margin: 12px 0 8px;
+  padding: 0 0 2px;
+  font-size: 13px;
+  color: #000;
+}
+.about #faqindex { line-height: 16px; padding: 0 0 10px; overflow: hidden; }
+.about #faqindex .faq-link { margin: 4px 0; }
+.about #faqanswers { line-height: 16px; padding: 0 0 10px; }
+.about #faqanswers p { margin: 0 0 12px; padding-right: 40px; }
+.about .halfwidth p { line-height: 16px; margin: 10px 0; }
+.legal-content, .profile-box { /* noop legacy */ }
+
+
+/* ===== Profile polish FB2005 wall ===== */
+.profile .profile-subsection h5 {
+  color: #3B5998 !important;
+  font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif !important;
+  margin: 8px 0 6px !important;
+  padding: 2px 8px !important;
+  background: #eee !important;
+  border-top: solid 1px #ccc !important;
+  border-bottom: 0 !important;
+}
+.profile .profile-subsection:first-child h5 { margin-top: 0 !important; }
+
+/* Photos on profile — shared .album-index */
+.profile #photos,
+.profile .profile-albums { overflow: hidden; }
+.profile .profile-photo-thumbs a { float: left; margin: 0 6px 6px 0; }
+.profile .profile-photo-thumbs img {
+  width: 75px; height: 75px; border: 1px solid #B3B3B3; display: block;
+}
+
+.profile .profilelinks { margin: 0; padding: 0 0 0 10px; list-style: disc; color: #3B5998; }
+.profile .profilelinks li { padding: 0 0 5px; }
+
+/* Wall — archive wall.css */
+.profile .profile-box.wall-box > .profile-box-body {
+  padding: 10px;
+  background: #f7f7f7;
+}
+.wallpost {
+  float: none; clear: both; width: 100%; margin: 0 0 15px; padding: 0;
+  box-sizing: border-box;
+  display: block;
+}
+.wallpost:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+.wallpost .wp-table { width: 100%; border-collapse: collapse; }
+.wallpost .wp-table td { padding: 0; vertical-align: top; }
+.wallpost td.image { width: 55px; text-align: left; }
+.wallpost td.image img {
+  width: 50px; height: 50px; border: 1px solid #B3B3B3; display: block;
+}
+.wallpost .info {
+  width: 100%;
+  border-top: solid 1px #3B5998;
+}
+.wallpost .info .header {
+  padding: 3px 5px;
+  background: #f7f7f7;
+  border-bottom: solid 1px #D8DFEA;
+  font-size: 11px;
+}
+.wallpost .info .header a.muted { color: #777; font-weight: normal; }
+.wallpost .info .header a.muted:hover { text-decoration: underline; }
+.wallpost .info .text { padding: 5px; background: #fff; font-size: 11px; line-height: 14px; }
+.wallpost .shared-note {
+  margin-top: 6px; padding: 8px; border: 1px solid #d8dfea; background: #f7f7f7;
+}
+.wallpost .shared-note .shared-head { margin-bottom: 4px; }
+.wallpost .share-blurb { margin-bottom: 4px; }
+.wallpost .info .actions {
+  padding: 3px 5px;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+  clear: right;
+  font-size: 11px;
+  color: #777;
+}
+.wallpost .info .actions a:hover { text-decoration: underline; }
+.profile .minifeed-item {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
+  font-size: 11px; line-height: 14px; overflow: hidden;
+}
+.profile .minifeed-item .news-ico { float: left; margin: 2px 6px 0 0; }
+.profile .minifeed-item:last-child { border-bottom: 0; }
+
+/* wallposter on profile wall */
+.profile .wall-box .wallposter {
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  border-bottom: solid 1px #D8DFEA;
+  background: transparent;
+}
+.profile .wall-box .wallposter textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #BDC7D8;
+  padding: 3px;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  resize: none;
+}
+.profile .wall-box .wallpost .info .header a { color: #3B5998; }
+.profile .wall-box .wallpost .info .actions .linkish,
+.profile .wall-box .wallpost .info .actions a { color: #3B5998; }
+.profile .wall-box .clearfix { height: 0; clear: both; overflow: hidden; }
+
+/* ===== Wall chrome global FB2005 ===== */
+.wall-box > .profile-box-body,
+.group-wall-box > .profile-box-body {
+  padding: 10px;
+  background: #f7f7f7;
+  overflow: hidden;
+}
+.wallposter textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #BDC7D8;
+  padding: 3px;
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  min-height: 48px;
+  resize: none;
+}
+.wallpost-edit { float: right; font-weight: normal; }
+.wallpost-edit a { color: #3B5998; }
+.wallpost .info .actions .linkish,
+.wallpost .info .actions a { color: #3B5998; }
+.news-item {
+  margin: 0 0 12px;
+  padding: 0 0 8px;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+}
+
+/* ===== Feed/group polish FB2005 ===== */
+.feed-page .profile-box,
+.group-page .profile-box {
+  margin: 0 0 10px;
+  border: 0;
+  background: transparent;
+}
+.feed-page .profile-box-body,
+.group-page .profile-box-body {
+  padding: 10px 8px 12px;
+  line-height: 13px;
+  background: #fff;
+}
+.feed-page .wall-box > .profile-box-body,
+.group-page .wall-box > .profile-box-body {
+  background: #f7f7f7;
+}
+.feed-page .news-item {
+  margin: 0 0 10px;
+  padding: 0 0 8px;
+  border-bottom: solid 1px #D8DFEA;
+  background: #fff;
+}
+.feed-filters.subtabs { margin: 0 0 8px; }
+.apps-index .subtabs { margin: 0 0 12px; }
+.feed-list-links { margin: 0 0 10px; }
+.feed-list-links a.is-on { font-weight: bold; }
+.feed-page .news-item .news-body { overflow: hidden; padding-right: 0; }
+.feed-page .news-item .news-time {
+  position: static; display: inline; margin-left: 4px; font-size: 11px;
+}
+.news-hide { margin: 2px 0 0 22px; font-size: 10px; }
+.news-hide form { display: inline; }
+.feed-main .wallpost, .feed-main .news-item { background: #fff; }
+.feed-page .news-snippet { margin: 4px 0 0; }
+.feed-page .news-ico { margin-top: 3px; }
+.feed-rail .profile-box-body,
+.group-rail .profile-box-body {
+  font-size: 11px;
+}
+.feed-rail .req-row,
+.feed-rail .rail-row {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA;
+}
+.feed-rail .req-row:last-child,
+.feed-rail .rail-row:last-child { border-bottom: 0; }
+
+
+/* ===== Utility pages FB2005 ===== */
+.clear { clear: both; height: 0; overflow: hidden; margin: 0; padding: 0; border: 0; }
+.profile .profile-albums .clear { clear: both; }
+
+.search-page .profile-box > h4,
+.events-page .profile-box > h4,
+.pokes-page .profile-box > h4,
+.inbox-page .profile-box > h4,
+.account-page .profile-box > h4 {
+  background: #D8DFEA; color: #3B5998;
+  font: bold 11px/16px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0; padding: 2px 8px; border-top: solid 1px #3B5998;
+}
+.search-page .profile-box-body,
+.events-page .profile-box-body,
+.pokes-page .profile-box-body,
+.inbox-page .profile-box-body,
+.account-page .profile-box-body {
+  padding: 10px 8px 12px; line-height: 13px;
+}
+.search-page #content,
+.events-page #content,
+.pokes-page #content,
+.account-page #content { padding: 10px; }
+.search-page .profilelinks { margin: 0; padding: 0 0 0 16px; list-style: disc; color: #3B5998; }
+.search-page .profilelinks li { padding: 0 0 4px; }
+.search-page .minifeed-item {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.events-page .event-list-row {
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px; overflow: hidden;
+}
+.events-page .event-list-row:last-child { border-bottom: 0; }
+.events-page .event-list-row .classic-inline-actions { float: right; }
+.list-thumb { float: left; margin: 0 8px 0 0; }
+.list-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
+.list-row-body { overflow: hidden; }
+.events-page .event-cover { margin: 0 0 8px; }
+.events-page .event-cover img { max-width: 100%; border: 1px solid #B3B3B3; }
+.events-page #content.events-content { padding: 10px; overflow: hidden; box-sizing: border-box; }
+.events-page .event-main { float: left; width: 400px; }
+.events-page .event-side { float: right; width: 180px; }
+.events-page .event-rsvp { margin-top: 10px; }
+.events-page .event-rsvp form.inline { margin-right: 4px; }
+.page-page .event-list-row {
+  margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.page-page .event-list-row:last-child { border-bottom: 0; }
+.gifts-page #content { padding: 10px; }
+.gift-grid { overflow: hidden; margin: 8px 0 0; }
+.gift-tile {
+  display: block; float: left; width: 90px; height: 90px; margin: 0 8px 8px 0;
+  border: solid 1px #B3B3B3; text-align: center; text-decoration: none;
+  box-sizing: border-box; position: relative; overflow: hidden;
+}
+.gift-tile img { display: block; width: 100%; height: 100%; border: 0; }
+.places-page .place-row { overflow: hidden; }
+.places-page .place-photo { margin: 0 0 8px; }
+.places-page .place-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
+.gift-tile:hover, .gift-tile.is-on { border-color: #3B5998; outline: 1px solid #3B5998; }
+.gift-tile-sm { width: 50px; height: 50px; float: left; margin: 0 8px 0 0; }
+.gift-tile-title {
+  display: block; padding: 18px 4px 0; font-size: 11px; font-weight: bold; line-height: 1.2;
+}
+.gift-tile-sm .gift-tile-title { padding-top: 14px; font-size: 9px; }
+.gift-tile-cap {
+  display: block; position: absolute; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35); color: #fff; font-size: 9px; padding: 2px 3px;
+}
+.gift-recv-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 6px; border-bottom: solid 1px #D8DFEA; font-size: 11px; }
+.gift-recv-row:last-child { border-bottom: 0; }
+.gift-recv-meta { overflow: hidden; }
+.gift-grid-profile .gift-recv-row { border-bottom: 0; padding: 0; margin: 0 0 6px; }
+.pokes-page .notify-row {
+  overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.pokes-page .notify-row form.inline { float: right; }
+.pokes-page .notify-row.is-unread .notify-body { font-weight: bold; }
+.pokes-page .profile-box > h4 .edit { float: right; font-weight: normal; }
+.inbox-content {
+  overflow: hidden; padding: 10px;
+}
+.inbox-pane { margin: 0; }
+.inbox-pane .msg-filter { margin: 0 0 8px; }
+.inbox-pane .msg-filter .inputtext { width: 70%; }
+.inbox-pane .msg-tabs { margin: 0 0 8px; font-size: 11px; }
+.inbox-pane .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
+.inbox-pane .msg-pager { margin: 8px 0 0; font-size: 11px; }
+.inbox-table { width: 100%; border-collapse: collapse; margin: 4px 0 0; }
+.inbox-table th {
+  text-align: left; color: gray; font: bold 11px var(--font);
+  border-bottom: 1px solid var(--line); padding: 2px 8px 4px 0;
+}
+.inbox-table td {
+  padding: 8px 8px 8px 0; border-bottom: 1px solid #EEEFF3;
+  vertical-align: top; font-size: 11px;
+}
+.inbox-table .col-from { width: 180px; }
+.inbox-table .col-from a { display: block; overflow: hidden; color: var(--fb); text-decoration: none; }
+.inbox-table .col-from img.avatar { float: left; margin-right: 6px; }
+.inbox-table .col-from b { display: block; overflow: hidden; padding-top: 8px; }
+.inbox-table .col-subj { width: auto; }
+.inbox-table .col-when { width: 110px; white-space: nowrap; text-align: right; color: gray; }
+.inbox-table tr.is-unread .col-from b,
+.inbox-table tr.is-unread .col-subj a { font-weight: bold; }
+.inbox-pane .msg-subj-h { font-weight: bold; }
+.inbox-pane .msg-log { margin: 0 0 10px; padding: 0 0 8px; }
+.inbox-pane .msg-line {
+  margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA;
+  font-size: 11px; line-height: 14px; overflow: hidden;
+}
+.inbox-pane .msg-line:last-child { border-bottom: 0; }
+.inbox-pane .msg-head { overflow: hidden; margin: 0 0 4px; }
+.inbox-pane .msg-av { float: left; margin: 0 8px 0 0; }
+.inbox-pane .msg-av img,
+.inbox-pane .msg-av .avatar { display: block; }
+.inbox-pane .msg-line .msg-del { float: right; margin-left: 6px; }
+.inbox-pane .msg-line .msg-body {
+  margin: 0 0 0 40px; clear: none; white-space: normal; word-wrap: break-word;
+}
+.inbox-pane .msg-older { margin: 0 0 8px; font-size: 11px; }
+.inbox-pane .msg-compose { margin: 0 0 8px; clear: both; }
+.inbox-pane .msg-compose textarea,
+.inbox-pane .msg-compose .inputtext {
+  width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.inbox-pane .compose-new .inputtext,
+.inbox-pane .compose-new textarea { width: 100%; max-width: 420px; }
+.inbox-pane > h4 .edit { float: right; font-weight: normal; }
+.inbox-pane .msg-actions form { display: inline; }
+.inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
+.market-page .market-row,
+.notes-page .note-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
+.market-page .market-row:last-child,
+.notes-page .note-row:last-child { border-bottom: 0; }
+.market-page .market-photo { margin: 0 0 8px; }
+.market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
+.note-photo { margin: 4px 0; }
+.note-photo img { border: 1px solid #B3B3B3; }
+.inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
+.inbox-pane .msg-video { margin-top: 4px; }
+.inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }
+.inbox-pane .msg-members { margin: 0 0 8px; font-size: 11px; }
+.account-page .formtable .inputtext,
+.account-page .formtable input[type="password"],
+.account-page .infotable .inputtext {
+  width: 220px; border: 1px solid #BDC7D8; padding: 2px; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+}
+.account-page .infotable .inputtext { width: 100%; max-width: 360px; }
+
+.group-page #content:not(.group-content) {
+  padding: 10px;
+}
+.group-page .event-row {
+  margin: 8px 0 0; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA; font-size: 11px;
+}
+.group-page .event-row:last-child { border-bottom: 0; }
+.group-page .profile-subsection h5 {
+  color: #3B5998; font: bold 12px "lucida grande", tahoma, verdana, arial, sans-serif;
+  margin: 0 0 6px; padding: 2px 8px; background: #eee; border-top: solid 1px #ccc; border-bottom: 0;
+}
+select.inputtext {
+  font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
+  border: 1px solid #BDC7D8; padding: 2px; background: #fff;
+}
+#loginform select.inputtext { width: auto; }
+
+.welcome .welcome-cta { margin: 16px 0 0; font-size: 11px; }
+.welcome .welcome-cta a { font-weight: bold; }
+
+.reg-wrap { margin: 10px 20px; max-width: 480px; }
+.reg-wrap .formtable { margin: 10px auto; }
+#squicklogin .file-hint { margin: 6px 0 0; }
+
+
+/* FB 2011 classic — Timeline cover + Ticker (float chrome, no flex/grid) */
+.profile-cover-img { display: block; max-width: 100%; height: auto; margin: 4px 0; }
+#currentcover { margin-top: 16px; clear: both; }
+.ticker-row {
+  padding: 4px 0;
+  border-bottom: 1px solid #d8dfea;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.ticker-row:last-child { border-bottom: 0; }
+.msg-reply {
+  margin: 0 0 4px;
+  padding: 2px 6px;
+  border-left: 3px solid #d8dfea;
+  background: #f7f7f7;
+}
