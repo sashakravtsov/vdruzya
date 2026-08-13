@@ -818,15 +818,49 @@
     ta.style.height = Math.min(280, Math.max(96, ta.scrollHeight)) + "px";
   }
 
+  function setPop(wrap, on) {
+    if (!wrap) return;
+    var panel = wrap.querySelector("[data-pop-panel]");
+    var btn = wrap.querySelector(".msg-pop-btn");
+    if (!panel) return;
+    if (on) closeAllPops(panel);
+    panel.hidden = !on;
+    if (btn) {
+      if (on) btn.classList.add("is-on");
+      else btn.classList.remove("is-on");
+      btn.setAttribute("aria-expanded", on ? "true" : "false");
+    }
+  }
+
   function closeAllPops(except) {
     var pops = document.querySelectorAll(".msg-pop");
     for (var i = 0; i < pops.length; i++) {
       if (except && pops[i] === except) continue;
-      pops[i].hidden = true;
-      var wrap = pops[i].closest(".msg-pop-wrap");
-      var btn = wrap && wrap.querySelector(".msg-pop-btn");
-      if (btn) btn.classList.remove("is-on");
+      setPop(pops[i].closest(".msg-pop-wrap"), false);
     }
+  }
+
+  function wirePop(wrap) {
+    var panel = wrap && wrap.querySelector("[data-pop-panel]");
+    var btn = wrap && wrap.querySelector(".msg-pop-btn");
+    if (!wrap || !panel || !btn) return;
+    var timer = 0;
+    function later(fn, ms) {
+      clearTimeout(timer);
+      timer = setTimeout(fn, ms);
+    }
+    btn.setAttribute("aria-expanded", "false");
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setPop(wrap, panel.hidden);
+    });
+    wrap.addEventListener("mouseenter", function () {
+      later(function () { setPop(wrap, true); }, 100);
+    });
+    wrap.addEventListener("mouseleave", function () {
+      later(function () { setPop(wrap, false); }, 320);
+    });
   }
 
   function wireFromAlbum(form) {
@@ -931,12 +965,13 @@
         var statusEl = shell && shell.querySelector(".msg-md-status");
         var countEl = statusEl && statusEl.querySelector("[data-md-count]");
         var maxEl = statusEl && statusEl.querySelector("[data-md-max]");
-        var hoverTimer = null;
         var previewTimer = null;
         var previewReq = 0;
         var mode = "write";
         if (maxEl && maxEl !== ed) maxEl.textContent = String(maxLen);
         if (form) wireFromAlbum(form);
+        var wraps = ed.querySelectorAll(".msg-pop-wrap");
+        for (var w = 0; w < wraps.length; w++) wirePop(wraps[w]);
 
         function getTa() {
           if (!ta || !ta.isConnected) ta = targetId ? document.getElementById(targetId) : null;
@@ -1009,46 +1044,6 @@
           if (mode !== "write") refreshPreview();
           if (field && mode !== "preview") { field.focus(); autosizeMd(field); }
         }
-        function openPop(name) {
-          var panel = ed.querySelector("[data-pop-panel=\"" + name + "\"]");
-          var btn = ed.querySelector(".msg-pop-btn[data-pop=\"" + name + "\"]");
-          if (!panel) return;
-          var was = !panel.hidden;
-          closeAllPops();
-          if (was) return;
-          panel.hidden = false;
-          if (btn) btn.classList.add("is-on");
-        }
-
-        var popBtns = ed.querySelectorAll(".msg-pop-btn");
-        for (var pb = 0; pb < popBtns.length; pb++) {
-          (function (btn) {
-            var name = btn.getAttribute("data-pop");
-            var wrap = btn.closest(".msg-pop-wrap");
-            var panel = wrap && wrap.querySelector("[data-pop-panel]");
-            btn.addEventListener("click", function (ev) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              openPop(name);
-            });
-            if (wrap && panel) {
-              wrap.addEventListener("mouseenter", function () {
-                if (hoverTimer) clearTimeout(hoverTimer);
-                hoverTimer = setTimeout(function () { openPop(name); }, 140);
-              });
-              wrap.addEventListener("mouseleave", function () {
-                if (hoverTimer) clearTimeout(hoverTimer);
-                hoverTimer = setTimeout(function () {
-                  if (!panel.matches(":hover") && !btn.matches(":hover")) {
-                    panel.hidden = true;
-                    btn.classList.remove("is-on");
-                  }
-                }, 220);
-              });
-            }
-          })(popBtns[pb]);
-        }
-
         for (var mb = 0; mb < modeBtns.length; mb++) {
           modeBtns[mb].addEventListener("click", function (ev) {
             ev.preventDefault();
@@ -1147,6 +1142,9 @@
       document.documentElement.setAttribute("data-md-pop-doc", "1");
       document.addEventListener("click", function (ev) {
         if (!ev.target.closest(".msg-pop-wrap")) closeAllPops();
+      });
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") closeAllPops();
       });
     }
   }

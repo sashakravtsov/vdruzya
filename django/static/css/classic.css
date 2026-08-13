@@ -1418,6 +1418,10 @@ button.linkish .ico { margin-right: 2px; }
   padding: 6px; border: 1px solid #3B5998; background: #fff;
   box-shadow: 2px 2px 0 rgba(59, 89, 152, 0.12);
 }
+/* Hit-bridge across the 4px gap so hover can reach the panel. */
+.msg-pop::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 8px;
+}
 .msg-pop[hidden] { display: none !important; }
 .msg-pop-stickers { min-width: 260px; max-width: 360px; }
 .msg-pop-help { min-width: 260px; max-width: 340px; background: #F7F7F7; }
