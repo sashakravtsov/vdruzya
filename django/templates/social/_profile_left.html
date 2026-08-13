@@ -1,0 +1,90 @@
+{% load static vd %}
+<div class="profile-picture">
+    {% if is_own %}<a href="{% url 'profile.edit' %}?section=picture">{% else %}<a href="?tab=photos">{% endif %}
+    <img src="{% if profile.avatar_url %}{{ profile.avatar_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" alt="" width="200" height="200">
+    </a>
+</div>
+
+{# FB 2005–06: status under picture — «Name is …» (+ optional Place, 2010) #}
+{% if not limited and is_own and status_form %}
+<div id="status" class="profile-status">
+    <form method="post" action="{% url 'profile.status' %}" class="profile-status-form">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <b>{{ profile.name }}</b> сейчас
+        {{ status_form.headline }}
+        <div class="status-place">в {{ status_form.place }}</div>
+        <input type="submit" class="inputbutton" value="Обновить">
+    </form>
+</div>
+{% elif not limited and profile.headline %}
+<div id="status" class="profile-status">
+    <b>{{ profile.name }}</b> сейчас {{ profile.headline }}.
+</div>
+{% endif %}
+
+<div class="profile-action-links">
+    {% if is_own %}
+        <a href="{% url 'albums' %}">Смотреть фотографии ({{ stats.photos }})</a>
+        <a href="{% url 'profile.edit' %}">Редактировать профиль</a>
+        <a href="{% url 'profile.edit' %}?section=picture">Изменить фото</a>
+    {% elif user.is_authenticated %}
+        {% if not limited %}<a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>{% endif %}
+        {% include "social/_profile_actions.html" %}
+        <form method="post" action="{% url 'profile.block' profile.id %}">{% csrf_token %}<button type="submit" class="muted">{% if blocked %}Разблокировать{% else %}Заблокировать{% endif %}</button></form>
+    {% else %}
+        {% if not limited %}<a href="{% url 'profile.albums' profile.id %}">Смотреть фотографии ({{ stats.photos }})</a>{% endif %}
+        <a href="{% url 'login' %}?next={{ request.path }}">Войти, чтобы добавить в друзья</a>
+    {% endif %}
+</div>
+
+{% if networks %}
+<div class="profile-box">
+    <h4>Сети</h4>
+    <div class="profile-box-body">
+        <ul class="plain">{% for n in networks %}<li><a href="{{ n.href }}">{{ n.label }}</a></li>{% endfor %}</ul>
+    </div>
+</div>
+{% endif %}
+
+{% if not limited and can_see_friends %}
+<div class="profile-box">
+    <h4>{% if friends_are_mutual %}Общие друзья ({{ mutual }}){% else %}Друзья ({{ stats.friends }}){% endif %}{% if is_own %} <a class="edit" href="{% url 'friends' %}">[ред.]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        {% if mutual and not friends_are_mutual %}<p class="muted"><a href="{% url 'profile.mutual' profile.id %}">{{ mutual_text }}</a></p>{% endif %}
+        {% include "social/_profile_friend_grid.html" with friends=friends compact=1 %}
+    </div>
+</div>
+{% endif %}
+
+{% if not limited and rail_photos %}
+<div class="profile-box">
+    <h4>Фото <a class="edit" href="?tab=photos">[все]</a></h4>
+    <div class="profile-box-body profile-photo-thumbs">
+        {% for ph in rail_photos %}
+        <a href="{% url 'albums.photos.show' ph.album_id ph.id %}" title="{{ ph.title }}">
+            {% if ph.url %}<img src="{{ ph.url }}" alt="">{% else %}<img src="{% static 'img/nophoto.gif' %}" alt="" width="50" height="50">{% endif %}
+        </a>
+        {% endfor %}
+        <div class="clear"></div>
+    </div>
+</div>
+{% endif %}
+
+{% if not limited %}
+<div class="profile-box">
+    <h4>Группы ({{ stats.groups }}){% if is_own %} <a class="edit" href="{% url 'groups' %}?mine=1">[ред.]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        {% if communities %}
+        <ul class="profilelinks">{% for c in communities %}<li><a href="{% url 'groups.show' c.id %}">{{ c.name }}</a></li>{% endfor %}</ul>
+        {% else %}<p class="muted">Пока ни в одной группе.</p>{% endif %}
+    </div>
+</div>
+<div class="profile-box">
+    <h4>Страницы ({{ stats.pages }}){% if is_own %} <a class="edit" href="{% url 'pages' %}?mine=1">[ред.]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        {% if pages %}
+        <ul class="profilelinks">{% for p in pages %}<li><a href="{% url 'pages.show' p.id %}">{{ p.name }}</a></li>{% endfor %}</ul>
+        {% else %}<p class="muted">Пока нет страниц.</p>{% endif %}
+    </div>
+</div>
+{% endif %}
