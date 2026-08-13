@@ -137,13 +137,20 @@ def main():
     from apps.social import pages_dir as pd
     from apps.social import ticker as tk
     from apps.social import note_edit as ne
+    from apps.social import search_dir as sd
+    from apps.social import people_search as ps
+    from apps.social import comment_thread as ct
+    from apps.social import page_show as pshow
     assert callable(gs.graph_search) and callable(gd.directory_ctx) and callable(ic.build_inbox_ctx)
     assert callable(pd.directory_ctx) and callable(tk.ticker_items) and callable(ne.save_note)
+    assert callable(sd.search_ctx) and callable(ps.find_people) and callable(ct.build_thread)
+    assert callable(pshow.build_page_show)
     r = c.get("/search?q=а&tab=groups", secure=True)
     assert r.status_code == 200, "search Q filter"
     ok("mini_feed slim + graph chrome")
     ok("wall/groups/graph/inbox/news slim modules")
     ok("pages/ticker/note_edit slim + search Q")
+    ok("search_dir/people_search/comment_thread/page_show slim")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()

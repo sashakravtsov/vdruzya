@@ -9,7 +9,6 @@ from apps.social.forms import CommentForm, PageForm, PagePostForm
 from apps.social.models import (
     POST_DEFER, Comment, Company, CompanyAdmin, CompanyFollower, Post, profile_related,
 )
-from apps.social.page_categories import label as industry_label
 from apps.social.services import bump_news, now, profile_of
 
 
@@ -71,50 +70,17 @@ def pages_home(request):
 @login_not_required
 @require_http_methods(["GET", "HEAD"])
 def page_show(request, pk):
-    page = get_object_or_404(
-        Company.objects.annotate(n_fans=Count("followers", distinct=True)),
-        pk=pk,
-    )
+    from apps.social.page_show import build_page_show, page_qs
+    page = get_object_or_404(page_qs(), pk=pk)
     me = profile_of(request.user) if request.user.is_authenticated else None
-    is_admin = _is_admin(me, page)
-    is_fan = _is_fan(me, page)
-    tab = (request.GET.get("tab") or "wall").lower()
-    if tab not in ("wall", "timeline", "info"):
-        tab = "wall"
-    posts = _page_posts(page, limit=80 if tab == "timeline" else 30, viewer=me)
-    fans = list(
-        CompanyFollower.objects.filter(company=page)
-        .select_related("social_user")
-        .order_by("-id")[:12]
+    return render(
+        request, "social/page.html",
+        build_page_show(
+            request, page, me,
+            is_admin=_is_admin(me, page), is_fan=_is_fan(me, page),
+            page_posts=_page_posts,
+        ),
     )
-    admins = list(
-        CompanyAdmin.objects.filter(company=page)
-        .select_related("social_user")
-        .order_by("id")[:8]
-    )
-    from apps.social import events as ev
-    from apps.social import era2012 as e12
-    from apps.social.forms import EventForm
-    page_events = ev.list_page_events(page, upcoming=True, limit=12)
-    timeline = {}
-    if tab == "timeline":
-        y = None
-        if (request.GET.get("y") or "").isdigit():
-            y = int(request.GET.get("y"))
-        timeline = e12.page_timeline_bundle(page, year=y, posts=posts)
-    return render(request, "social/page.html", {
-        "page": page, "me": me, "is_admin": is_admin, "is_fan": is_fan,
-        "posts": posts if tab == "wall" else [], "fans": fans, "admins": admins,
-        "industry_label": industry_label(page.industry),
-        "post_form": PagePostForm() if is_admin and tab == "wall" else None,
-        "event_form": EventForm() if is_admin and tab == "wall" else None,
-        "page_events": page_events if tab == "wall" else [],
-        "comment_form": CommentForm() if me and tab == "wall" else None,
-        "wall_owner": None,
-        "next": request.path,
-        "tab": tab,
-        **timeline,
-    })
 
 
 @login_required

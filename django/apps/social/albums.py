@@ -4,7 +4,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db.models import Count, Q
 
-from apps.social.media import save_image
+from apps.social.media import try_save_image
 from apps.social.models import Album, Photo, PhotoComment, profile_related
 from apps.social.services import friend_ids, now
 
@@ -66,9 +66,8 @@ def save_photos(album, files, title=""):
         if size > max_bytes * 4:  # allow TemporaryUploadedFile a bit over in-memory cap
             skipped += 1
             continue
-        try:
-            path = save_image(f, "photos")
-        except Exception:
+        path = try_save_image(f, "photos")
+        if not path:
             skipped += 1
             continue
         label = (label0 or Path(getattr(f, "name", "") or "photo").stem)[:120] or "Фото"

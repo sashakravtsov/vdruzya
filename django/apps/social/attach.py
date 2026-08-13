@@ -1,7 +1,7 @@
 """Attach photos/video to wall / group posts — shared helper, no duplicates."""
 from pathlib import Path
 
-from apps.social.media import save_image, save_video
+from apps.social.media import save_video
 from apps.social.models import CommunityPostMedia, PostMedia
 from apps.social.services import now
 
@@ -58,12 +58,12 @@ def apply_wall_uploads(post, files, me, *, max_photos=5, blurb: str = ""):
 
 def attach_wall(post, files, me, *, max_photos=5):
     """Profile wall note — classic chrome, up to max_photos (processed via Pillow)."""
+    from apps.social.media import try_save_image
     cap = max(0, int(max_photos))
     t, rows = now(), []
     for f in (files or [])[:cap]:
-        try:
-            path = save_image(f, "posts")
-        except Exception:
+        path = try_save_image(f, "posts")
+        if not path:
             continue
         rows.append(PostMedia(post=post, path=path, photo_id=None, sort_order=len(rows), created_at=t))
     if not rows:
@@ -106,11 +106,11 @@ def apply_group_uploads(post, files, me, *, blurb: str = ""):
 
 
 def attach_group(post, files, me):
+    from apps.social.media import try_save_image
     t, rows = now(), []
     for f in (files or [])[:_MAX_GROUP]:
-        try:
-            path = save_image(f, "groups")
-        except Exception:
+        path = try_save_image(f, "groups")
+        if not path:
             continue
         rows.append(CommunityPostMedia(
             post=post, path=path, photo_id=None,

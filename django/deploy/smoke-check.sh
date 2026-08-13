@@ -512,7 +512,8 @@ if grep -q 'album-cover-fallback">·' "${ROOT}/django/templates/social/_profile_
 else
   echo "OK   profile rail uses nophoto"
 fi
-if ! grep -q 'company_name__icontains' "${ROOT}/django/apps/social/friendship.py" 2>/dev/null; then
+if ! grep -q 'company_name__icontains' "${ROOT}/django/apps/social/people_search.py" 2>/dev/null \
+  && ! grep -q 'company_name__icontains' "${ROOT}/django/apps/social/friendship.py" 2>/dev/null; then
   echo "FAIL workplace search ignores Experience"; FAIL=1
 else
   echo "OK   workplace Find Friends uses Experience"

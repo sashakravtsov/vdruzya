@@ -1,6 +1,5 @@
 """Browse FBVs: people, groups, search — short only."""
 from django.contrib.auth.decorators import login_not_required, login_required
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.views.decorators.http import condition, require_http_methods
@@ -69,39 +68,9 @@ def group_show(request, pk):
 @login_required
 def search(request):
     """Global Search (gnav) — people / groups / pages. Find Friends stays on /people."""
-    from apps.social import friendship as fr
-    from apps.social.models import Company
-
-    q = (request.GET.get("q") or request.GET.get("name") or "").strip()
-    tab = (request.GET.get("tab") or "people").strip()
-    if tab not in ("people", "groups", "pages"):
-        tab = "people"
+    from apps.social.search_dir import search_ctx
     me = profile_of(request.user)
-    people = groups_qs = pages_qs = []
-    searched = bool(q)
-    if searched and me:
-        page = fr.find_people(me, q=q, page=1, per=20)
-        people = list(page)
-        rel = fr.relations_for(me, [p.id for p in people])
-        for p in people:
-            n = fr.mutual_count(me, p)
-            p.rel = rel.get(p.id)
-            p.mutual = fr.mutual_label(n) if n else ""
-        groups_qs = list(
-            Community.objects.filter(Q(name__icontains=q) | Q(slug__icontains=q)).order_by("name")[:20]
-        )
-        pages_qs = list(
-            Company.objects.filter(
-                Q(name__icontains=q) | Q(slug__icontains=q) | Q(city__icontains=q)
-            ).order_by("name")[:20]
-        )
-    return render(
-        request, "social/search.html",
-        {
-            "q": q, "tab": tab, "searched": searched,
-            "people": people, "groups": groups_qs, "pages": pages_qs, "me": me,
-        },
-    )
+    return render(request, "social/search.html", search_ctx(me, request))
 
 
 @login_not_required
