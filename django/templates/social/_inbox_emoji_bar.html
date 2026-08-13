@@ -1,5 +1,5 @@
 {# Shared Markdown compose chrome: toolbar + hover/click popovers (inbox / wall / group). #}
-<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'compose.preview' %}" data-md-max="4000"{% if sticker_input_id %} data-sticker-input="{{ sticker_input_id }}"{% endif %}{% if from_album %} data-from-album-url="{% url 'compose.albums' %}"{% endif %}>
+<div class="msg-editor" data-emoji-for="{{ target_id }}" data-preview-url="{% url 'compose.preview' %}" data-md-limit="4000"{% if sticker_input_id %} data-sticker-input="{{ sticker_input_id }}"{% endif %}{% if from_album %} data-from-album-url="{% url 'compose.albums' %}"{% endif %}>
     <div class="msg-md-bar">
         <span class="msg-md-tools" role="toolbar" aria-label="Markdown">
             <button type="button" class="msg-md-btn" data-md="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button>

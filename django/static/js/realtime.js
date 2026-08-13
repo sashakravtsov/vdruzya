@@ -917,7 +917,9 @@
         ed.setAttribute("data-wired", "1");
         var targetId = ed.getAttribute("data-emoji-for");
         var previewUrl = ed.getAttribute("data-preview-url") || "/compose/preview";
-        var maxLen = parseInt(ed.getAttribute("data-md-max") || "4000", 10) || 4000;
+        // data-md-limit on editor — never reuse data-md-max (status counter), or querySelector
+        // matches the editor itself and textContent wipes the whole toolbar.
+        var maxLen = parseInt(ed.getAttribute("data-md-limit") || ed.getAttribute("data-md-max") || "4000", 10) || 4000;
         var shell = ed.closest ? ed.closest(".msg-md-shell") : null;
         var form = ed.closest ? ed.closest("form") : null;
         var stage = (shell && shell.querySelector("[data-md-stage]")) || null;
@@ -926,14 +928,14 @@
         var preview = (stage && stage.querySelector("[data-md-preview]"))
           || (form && form.querySelector("[data-md-preview]"));
         var modeBtns = ed.querySelectorAll(".msg-md-mode-btn");
-        var countEl = shell && shell.querySelector("[data-md-count]");
-        var maxEl = shell && shell.querySelector("[data-md-max]");
         var statusEl = shell && shell.querySelector(".msg-md-status");
+        var countEl = statusEl && statusEl.querySelector("[data-md-count]");
+        var maxEl = statusEl && statusEl.querySelector("[data-md-max]");
         var hoverTimer = null;
         var previewTimer = null;
         var previewReq = 0;
         var mode = "write";
-        if (maxEl) maxEl.textContent = String(maxLen);
+        if (maxEl && maxEl !== ed) maxEl.textContent = String(maxLen);
         if (form) wireFromAlbum(form);
 
         function getTa() {
