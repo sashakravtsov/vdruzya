@@ -1,4 +1,4 @@
-/* Classic FB chrome — SSE nav badges + inbox thread bump + typing (no WS messenger UI). */
+/* Classic FB chrome — SSE nav badges + inbox thread bump + typing/voice (no WS messenger UI). */
 (function () {
   if (!window.EventSource) return;
 
@@ -96,6 +96,41 @@
     }).catch(function () {});
   }
 
+  function pickMime() {
+    if (!window.MediaRecorder) return "";
+    var cands = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
+    for (var i = 0; i < cands.length; i++) {
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(cands[i])) return cands[i];
+    }
+    return "";
+  }
+
+  function uploadVoice(blob, mime) {
+    var box = $("inbox-thread");
+    var form = $("inbox-compose");
+    if (!box || !form || !blob) return;
+    var url = box.getAttribute("data-message-url") || form.getAttribute("action");
+    if (!url) return;
+    var fd = new FormData(form);
+    var ext = (mime || "").indexOf("ogg") >= 0 ? "ogg" : ((mime || "").indexOf("mp4") >= 0 ? "m4a" : "webm");
+    fd.set("voice", blob, "voice." + ext);
+    fd.delete("photo");
+    fd.set("body", "");
+    var hint = $("inbox-voice-hint");
+    if (hint) hint.textContent = "отправляем…";
+    fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "X-CSRFToken": csrfToken() },
+      body: fd,
+      redirect: "follow",
+    }).then(function () {
+      window.location.href = "/inbox?c=" + encodeURIComponent(box.getAttribute("data-conv") || "");
+    }).catch(function () {
+      if (hint) hint.textContent = "не удалось отправить — попробуйте ещё раз";
+    });
+  }
+
   function wireComposer() {
     var form = $("inbox-compose");
     var box = $("inbox-thread");
@@ -112,19 +147,60 @@
       ta.addEventListener("input", onType);
       ta.addEventListener("keydown", onType);
     }
+
     var voiceBtn = $("inbox-voice-btn");
+    var hint = $("inbox-voice-hint");
     if (!voiceBtn) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      if (hint) hint.textContent = "запись недоступна в этом браузере — можно выбрать файл";
+      var file = $("id_voice_file");
+      if (file) file.style.display = "inline";
+      return;
+    }
+
+    var rec = null;
+    var chunks = [];
     var voiceTimer = null;
+    var mime = pickMime();
+
     voiceBtn.addEventListener("click", function () {
-      if (voiceTimer) {
-        clearInterval(voiceTimer);
-        voiceTimer = null;
-        voiceBtn.textContent = "● Голосовое";
+      if (rec) {
+        try { rec.stop(); } catch (e) {}
         return;
       }
-      pingTyping("voice");
-      voiceBtn.textContent = "● Запись… (стоп)";
-      voiceTimer = setInterval(function () { pingTyping("voice"); }, 3000);
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        chunks = [];
+        try {
+          rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        } catch (e) {
+          rec = new MediaRecorder(stream);
+        }
+        var used = rec.mimeType || mime || "audio/webm";
+        rec.ondataavailable = function (ev) {
+          if (ev.data && ev.data.size) chunks.push(ev.data);
+        };
+        rec.onstop = function () {
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          if (voiceTimer) { clearInterval(voiceTimer); voiceTimer = null; }
+          voiceBtn.textContent = "● Голосовое";
+          var blob = new Blob(chunks, { type: used });
+          rec = null;
+          if (blob.size < 64) {
+            if (hint) hint.textContent = "слишком короткая запись";
+            return;
+          }
+          uploadVoice(blob, used);
+        };
+        rec.start(250);
+        pingTyping("voice");
+        voiceBtn.textContent = "● Стоп и отправить";
+        if (hint) hint.textContent = "идёт запись…";
+        voiceTimer = setInterval(function () { pingTyping("voice"); }, 3000);
+      }).catch(function () {
+        if (hint) hint.textContent = "нет доступа к микрофону — выберите файл";
+        var file = $("id_voice_file");
+        if (file) file.style.display = "inline";
+      });
     });
   }
 

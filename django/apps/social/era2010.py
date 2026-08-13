@@ -153,6 +153,34 @@ def place_reviews(place, limit=40):
     )
 
 
+def place_checkin_delete(me, place, checkin) -> bool:
+    if not me or not place or not checkin or checkin.place_id != place.id:
+        return False
+    if checkin.social_user_id != me.id and not can_manage_place(me, place):
+        return False
+    from apps.social.cascade import purge_wall_posts
+    # Remove matching wall checkin post(s) for this author on this place.
+    pids = list(
+        Post.objects.filter(
+            topic=f"place:{place.id}", kind="checkin", social_user_id=checkin.social_user_id,
+        ).values_list("id", flat=True)
+    )
+    purge_wall_posts(pids)
+    checkin.delete()
+    bump_news()
+    return True
+
+
+def place_review_delete(me, place, review) -> bool:
+    if not me or not place or not review or review.place_id != place.id:
+        return False
+    if review.social_user_id != me.id and not can_manage_place(me, place):
+        return False
+    review.delete()
+    bump_news()
+    return True
+
+
 def place_review_upsert(me, place, *, stars: int, body="") -> PlaceReview | None:
     if not me or not place:
         return None
@@ -255,6 +283,17 @@ def question_answer(me, question, body: str):
     question.save(update_fields=["updated_at"])
     bump_news()
     return ans
+
+
+def question_answer_delete(me, question, answer) -> bool:
+    if not me or not question or not answer or answer.question_id != question.id:
+        return False
+    if answer.social_user_id != me.id and question.social_user_id != me.id:
+        return False
+    QuestionVote.objects.filter(answer=answer).delete()
+    answer.delete()
+    bump_news()
+    return True
 
 
 def question_answers(question, viewer=None):

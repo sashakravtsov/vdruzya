@@ -1246,6 +1246,9 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-older { margin: 0 0 8px; font-size: 11px; }
 .inbox-pane .msg-typing { min-height: 1.2em; margin: 0 0 6px; font-style: italic; }
 .inbox-pane .msg-voice-row { margin: 4px 0 6px; }
+.inbox-pane .msg-voice-row #id_voice_file { display: none; }
+.inbox-pane .msg-audio { max-width: 100%; height: 32px; margin: 4px 0; }
+.inbox-pane .msg-voice { margin: 4px 0 6px; }
 .inbox-pane .msg-compose { margin: 0 0 8px; clear: both; }
 .inbox-pane .msg-compose textarea,
 .inbox-pane .msg-compose .inputtext {

@@ -147,7 +147,17 @@ def main():
     assert r.status_code in (301, 302)
     q.refresh_from_db()
     assert q.body == edited_q
-    ok("question photo + answer vote + edit + feed")
+    r = c.get(f"/questions/{q.id}", secure=True)
+    assert "удалить".encode() in r.content
+    r = c.post(f"/questions/{q.id}/answers/{ans.id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not QuestionAnswer.objects.filter(pk=ans.id).exists()
+    # recreate answer for later cleanup path (question delete cascades)
+    r = c.post(f"/questions/{q.id}", {"body": "Начало again"}, secure=True)
+    assert r.status_code in (301, 302)
+    ans = QuestionAnswer.objects.filter(question=q, social_user=me).order_by("-id").first()
+    assert ans
+    ok("question photo + answer vote + edit + answer delete + feed")
 
     # Classic poll
     r = c.post(
@@ -459,6 +469,16 @@ def main():
     r = c.post(f"/questions/{q_id}/delete", {}, secure=True)
     assert r.status_code in (301, 302)
     assert not Question.objects.filter(pk=q_id).exists()
+    rev = PlaceReview.objects.filter(place=place, social_user=me).order_by("-id").first()
+    assert rev
+    r = c.post(f"/places/{place.id}/reviews/{rev.id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not PlaceReview.objects.filter(pk=rev.id).exists()
+    cin = PlaceCheckin.objects.filter(place=place, social_user=me).order_by("-id").first()
+    assert cin
+    r = c.post(f"/places/{place.id}/checkins/{cin.id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not PlaceCheckin.objects.filter(pk=cin.id).exists()
     r = c.get(f"/places/{place.id}/edit", secure=True)
     assert r.status_code == 200 and "Удалить место".encode() in r.content
     new_place = f"QA Cafe Edit {uuid.uuid4().hex[:5]}"
@@ -473,7 +493,7 @@ def main():
     assert r.status_code in (301, 302)
     assert not Place.objects.filter(pk=place_id).exists()
     assert not Post.objects.filter(topic=f"place:{place_id}").exists()
-    ok("place/question/poll edit+delete")
+    ok("place/question/poll edit+delete + review/checkin delete")
     print("ALL 2010 classic modules probes passed")
 
 

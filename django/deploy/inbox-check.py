@@ -107,7 +107,37 @@ def main():
     assert b"data:" in chunk and b"unread_messages" in chunk and b"typing" in chunk
     js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
     assert "pingTyping" in js and "записывает голосовое" in js
+    assert "MediaRecorder" in js and "uploadVoice" in js
     ok("realtime SSE + inbox since + typing")
+
+    # Voice note upload (tiny fake ogg/webm payload)
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    voice_blob = b"OggS" + b"\x00" * 200
+    r = c.post(
+        f"/inbox/{conv.id}/message",
+        {"body": "", "voice": SimpleUploadedFile("voice.ogg", voice_blob, content_type="audio/ogg")},
+        secure=True,
+    )
+    assert r.status_code in (301, 302)
+    vm = Message.objects.filter(conversation=conv, message_type="voice").order_by("-id").first()
+    assert vm and vm.attachment_path and vm.attachment_path.startswith("messages/")
+    r = c.get(f"/inbox?c={conv.id}", secure=True)
+    assert r.status_code == 200 and b"<audio" in r.content
+    ok("voice message upload")
+
+    # Archive folder + restore
+    r = c.post(f"/inbox/{conv.id}/leave", {}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.get("/inbox?folder=archive", secure=True)
+    assert r.status_code == 200 and "Архив".encode() in r.content
+    assert other.name.encode() in r.content or str(conv.id).encode() in r.content
+    r = c.get("/inbox?unread=1", secure=True)
+    assert r.status_code == 200 and "Непрочитанные".encode() in r.content
+    r = c.post(f"/inbox/{conv.id}/unarchive", {}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.get("/inbox", secure=True)
+    assert r.status_code == 200
+    ok("archive + unread folders")
 
     r = c.get("/birthdays", secure=True)
     assert r.status_code == 200 and "Дни рождения".encode() in r.content
@@ -118,6 +148,7 @@ def main():
     ok("apps lists birthdays")
 
     Message.objects.filter(conversation=conv, body__startswith=marker).delete()
+    Message.objects.filter(conversation=conv, message_type="voice").delete()
     ok("cleanup")
     print("ALL inbox/flash/birthdays probes passed")
 

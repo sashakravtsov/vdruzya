@@ -13,7 +13,7 @@ from apps.social.models import SocialProfile
 from apps.social.services import accepted_friends as friends_of, profile_of
 from apps.social.throttle import throttle
 
-FOLDERS = frozenset({"inbox", "sent"})
+FOLDERS = frozenset({"inbox", "sent", "archive"})
 
 
 def _me(request):
@@ -61,17 +61,20 @@ def message_send(request, me, conv):
     form = MessageForm(request.POST, request.FILES, stickers=catalog()[:40])
     go = _go(conv.id)
     if not form.is_valid():
-        messages.error(request, "Напишите текст, приложите фото / видео или выберите стикер.")
+        messages.error(request, "Напишите текст, приложите фото / видео / голосовое или выберите стикер.")
         return redirect(go)
+    voice = form.cleaned_data.get("voice") or request.FILES.get("voice")
+    photo = form.cleaned_data.get("photo") or request.FILES.get("photo")
     try:
         ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
-            upload=form.cleaned_data.get("photo") or request.FILES.get("photo"),
+            upload=voice or photo,
+            voice=bool(voice),
             reply_to_id=form.cleaned_data.get("reply_to"),
             sticker_id=form.cleaned_data.get("sticker") or None,
         )
     except ValueError:
-        messages.error(request, "Напишите текст, приложите фото / видео или выберите стикер.")
+        messages.error(request, "Напишите текст, приложите фото / видео / голосовое или выберите стикер.")
         return redirect(go)
     return redirect(go)
 
@@ -126,8 +129,15 @@ def inbox_compose(request):
 @ch.member_post
 def inbox_leave(request, me, conv):
     ch.leave(me, conv)
-    messages.info(request, "Сообщение удалено из входящих.")
+    messages.info(request, "Переписка перенесена в архив.")
     return redirect("inbox")
+
+
+@ch.member_post
+def inbox_unarchive(request, me, conv):
+    if ch.unarchive(me, conv):
+        messages.success(request, "Переписка возвращена во входящие.")
+    return redirect(_go(conv.id))
 
 
 @login_required

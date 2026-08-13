@@ -110,8 +110,9 @@ def main():
     assert r.status_code == 200 and b"<img" in r.content
     r = c.get("/notes?mine=1", secure=True)
     assert r.status_code == 200 and b"list-thumb" in r.content
+    assert "удалить".encode() in r.content and "редактировать".encode() in r.content
     nphoto.delete()
-    ok("notes photo attach")
+    ok("notes photo attach + mine manage chrome")
 
     # marketplace
     r = c.post("/marketplace", {
