@@ -88,6 +88,11 @@ def main():
     assert 'id="inbox-typing"' in html
     assert 'data-typing-url="' in html
     assert 'id="inbox-voice-btn"' in html
+    assert "msg-editor" in html and "msg-emoji-grid" in html
+    assert ("msg-sticker-grid" in html) or ("Стикеры пока".encode() in r.content)
+    assert ".msg-day" in (root / "static/css/classic.css").read_text()
+    assert "wireEmojiEditors" in (root / "static/js/realtime.js").read_text(encoding="utf-8")
+    assert "grid-template-columns: 40px" in (root / "static/css/classic.css").read_text()
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "typing"}, secure=True)
     assert r.status_code == 200 and r.json().get("ok")
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "voice"}, secure=True)

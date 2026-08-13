@@ -1244,18 +1244,35 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-table tr.is-unread .col-subj a { font-weight: bold; }
 .inbox-pane .msg-subj-h { font-weight: bold; }
 .inbox-pane .msg-log { margin: 0 0 10px; padding: 0 0 8px; }
+.inbox-pane .msg-day {
+  text-align: center; margin: 12px 0 10px; clear: both; font-size: 11px;
+}
+.inbox-pane .msg-day span {
+  display: inline-block; padding: 2px 10px;
+  background: #ECEFF5; border: 1px solid #D8DFEA; color: #555;
+}
 .inbox-pane .msg-line {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 8px; align-items: start;
   margin: 0 0 10px; padding: 0 0 8px; border-bottom: solid 1px #D8DFEA;
-  font-size: 11px; line-height: 14px; overflow: hidden;
+  font-size: 11px; line-height: 14px;
 }
 .inbox-pane .msg-line:last-child { border-bottom: 0; }
-.inbox-pane .msg-head { overflow: hidden; margin: 0 0 4px; }
-.inbox-pane .msg-av { float: left; margin: 0 8px 0 0; }
+.inbox-pane .msg-av { grid-column: 1; grid-row: 1; float: none; margin: 0; }
 .inbox-pane .msg-av img,
 .inbox-pane .msg-av .avatar { display: block; }
+.inbox-pane .msg-main { grid-column: 2; min-width: 0; }
+.inbox-pane .msg-head { overflow: hidden; margin: 0 0 3px; line-height: 16px; }
 .inbox-pane .msg-line .msg-del { float: right; margin-left: 6px; }
 .inbox-pane .msg-line .msg-body {
-  margin: 0 0 0 40px; clear: none; white-space: normal; word-wrap: break-word;
+  margin: 0; clear: both; white-space: normal; word-wrap: break-word;
+  overflow-wrap: anywhere; line-height: 1.35;
+}
+.inbox-pane .msg-line .msg-text { margin: 0; }
+.inbox-pane .msg-body .gift-tile,
+.inbox-pane .msg-body .gift-tile-sm {
+  float: none; display: inline-block; vertical-align: middle; margin: 0 6px 4px 0;
 }
 .inbox-pane .msg-older { margin: 0 0 8px; font-size: 11px; }
 .inbox-pane .msg-typing { min-height: 1.2em; margin: 0 0 6px; font-style: italic; }
@@ -1300,6 +1317,30 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-compose .inputtext {
   width: 70%; box-sizing: border-box; border: 1px solid #BDC7D8; font: 11px "lucida grande", tahoma, verdana, arial, sans-serif;
 }
+.inbox-pane .msg-editor { margin: 0 0 6px; max-width: 420px; }
+.inbox-pane .msg-editor-tabs { margin: 0 0 4px; font-size: 11px; }
+.inbox-pane .msg-editor-tab.is-on { font-weight: bold; color: #333; text-decoration: none; }
+.inbox-pane .msg-emoji-grid {
+  display: flex; flex-wrap: wrap; gap: 2px;
+  max-height: 88px; overflow: auto;
+  padding: 4px; border: 1px solid #D8DFEA; background: #F7F7F7;
+}
+.inbox-pane .msg-emoji-btn {
+  border: 0; background: transparent; cursor: pointer;
+  font-size: 16px; line-height: 1.2; padding: 2px 3px;
+}
+.inbox-pane .msg-emoji-btn:hover { background: #D8DFEA; }
+.inbox-pane .msg-emoji-text { margin: 4px 0 0; font-size: 11px; }
+.inbox-pane .msg-sticker-grid {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  max-height: 120px; overflow: auto;
+  padding: 4px; border: 1px solid #D8DFEA; background: #F7F7F7;
+}
+.inbox-pane .msg-sticker-btn {
+  cursor: pointer; padding: 0; float: none !important; margin: 0 !important;
+}
+.inbox-pane .msg-sticker-btn.is-on { outline: 2px solid #3B5998; border-color: #3B5998; }
+.inbox-pane .msg-body-input { display: block; margin-top: 4px; }
 .inbox-pane .compose-new .inputtext,
 .inbox-pane .compose-new textarea { width: 100%; max-width: 420px; }
 .inbox-pane > h4 .edit { float: right; font-weight: normal; }

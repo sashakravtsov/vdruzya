@@ -57,7 +57,12 @@ def main():
     assert b'id="tabs"' in r.content
     ok("gifts shop")
 
-    sticker = Sticker.objects.filter(is_active=True).first()
+    sticker = (
+        Sticker.objects.filter(is_active=True, image_path__isnull=False)
+        .exclude(image_path="")
+        .first()
+        or Sticker.objects.filter(is_active=True).first()
+    )
     assert sticker, "no stickers in catalog"
 
     r = c.get(f"/gifts/send?to={other.id}&gift={sticker.slug}", secure=True)

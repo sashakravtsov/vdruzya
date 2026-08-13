@@ -488,10 +488,107 @@
     });
   }
 
+  function insertAtCursor(ta, text) {
+    if (!ta || !text) return;
+    ta.focus();
+    var start = typeof ta.selectionStart === "number" ? ta.selectionStart : ta.value.length;
+    var end = typeof ta.selectionEnd === "number" ? ta.selectionEnd : start;
+    var before = ta.value.slice(0, start);
+    var after = ta.value.slice(end);
+    ta.value = before + text + after;
+    var pos = start + text.length;
+    try {
+      ta.selectionStart = pos;
+      ta.selectionEnd = pos;
+    } catch (e) {}
+    try {
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+    } catch (e2) {}
+  }
+
+  function wireEmojiEditors(root) {
+    root = root || document;
+    var editors = root.querySelectorAll ? root.querySelectorAll(".msg-editor") : [];
+    for (var i = 0; i < editors.length; i++) {
+      (function (ed) {
+        if (ed.getAttribute("data-wired") === "1") return;
+        ed.setAttribute("data-wired", "1");
+        var targetId = ed.getAttribute("data-emoji-for");
+        var ta = targetId ? document.getElementById(targetId) : null;
+        var tabs = ed.querySelectorAll(".msg-editor-tab");
+        var panes = ed.querySelectorAll("[data-pane-body]");
+        var clearWrap = ed.querySelector(".msg-sticker-clear");
+
+        function showPane(name) {
+          for (var t = 0; t < tabs.length; t++) {
+            if (tabs[t].getAttribute("data-pane") === name) tabs[t].classList.add("is-on");
+            else tabs[t].classList.remove("is-on");
+          }
+          for (var p = 0; p < panes.length; p++) {
+            panes[p].hidden = panes[p].getAttribute("data-pane-body") !== name;
+          }
+        }
+
+        for (var t = 0; t < tabs.length; t++) {
+          tabs[t].addEventListener("click", function (ev) {
+            ev.preventDefault();
+            showPane(this.getAttribute("data-pane") || "emoji");
+          });
+        }
+
+        var emojiBtns = ed.querySelectorAll(".msg-emoji-btn");
+        for (var e = 0; e < emojiBtns.length; e++) {
+          emojiBtns[e].addEventListener("click", function (ev) {
+            ev.preventDefault();
+            if (!ta) ta = document.getElementById(targetId);
+            insertAtCursor(ta, this.getAttribute("data-emoji") || "");
+          });
+        }
+
+        var stickerGrid = ed.querySelector(".msg-sticker-grid");
+        var stickerInput = null;
+        if (stickerGrid) {
+          var sid = stickerGrid.getAttribute("data-sticker-input");
+          stickerInput = sid ? document.getElementById(sid) : null;
+        }
+        function syncStickerUI() {
+          var val = stickerInput ? (stickerInput.value || "") : "";
+          var btns = ed.querySelectorAll(".msg-sticker-btn");
+          for (var b = 0; b < btns.length; b++) {
+            if (btns[b].getAttribute("data-sticker-id") === val) btns[b].classList.add("is-on");
+            else btns[b].classList.remove("is-on");
+          }
+          if (clearWrap) clearWrap.hidden = !val;
+        }
+        var sbtns = ed.querySelectorAll(".msg-sticker-btn");
+        for (var s = 0; s < sbtns.length; s++) {
+          sbtns[s].addEventListener("click", function (ev) {
+            ev.preventDefault();
+            if (!stickerInput) return;
+            var id = this.getAttribute("data-sticker-id") || "";
+            stickerInput.value = (stickerInput.value === id) ? "" : id;
+            syncStickerUI();
+            showPane("stickers");
+          });
+        }
+        var clearBtn = ed.querySelector("[data-sticker-clear]");
+        if (clearBtn) {
+          clearBtn.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            if (stickerInput) stickerInput.value = "";
+            syncStickerUI();
+          });
+        }
+        syncStickerUI();
+      })(editors[i]);
+    }
+  }
+
   wireBulkChecks();
   wireOlder();
   wireComposer();
   wireVoicePlayers(document);
+  wireEmojiEditors(document);
 
   if (!window.EventSource) return;
   var snav = $("snav");

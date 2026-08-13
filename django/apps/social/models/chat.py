@@ -75,6 +75,18 @@ class Message(models.Model):
         return (self.attachment_mime or "").lower().startswith("audio/")
 
     @property
+    def body_visible(self) -> bool:
+        """Hide placeholder bodies for media/sticker/voice lines."""
+        b = (self.body or "").strip()
+        if not b:
+            return False
+        if b in ("[фото]", "[видео]", "[стикер]", "[голосовое]"):
+            return False
+        if b.startswith("[голосовое "):
+            return False
+        return True
+
+    @property
     def waveform_bars(self) -> list[int]:
         from apps.social.media import parse_waveform_peaks
         peaks = parse_waveform_peaks(self.waveform)
