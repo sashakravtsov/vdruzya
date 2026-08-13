@@ -83,6 +83,38 @@ def create_posted_item(me, *, kind: str, title: str, url: str = "", blurb: str =
     )
 
 
+def update_posted_item(me, post, *, title: str, url: str = "", blurb: str = "",
+                       visibility="friends", upload=None):
+    """Edit own link/video Posted Item — keeps storage: body unless replaced."""
+    if not me or not post or post.social_user_id != me.id:
+        return None
+    kind = post.kind if post.kind in ("link", "video") else "link"
+    title = (title or "").strip()[:160] or post.media_label or ("Видео" if kind == "video" else "Ссылка")
+    old_url, _old_blurb = unpack_link_body(post.body)
+    body_url = normalize_url(url) if url else ""
+    media_path = post.media_path
+    if kind == "video" and upload is not None:
+        from apps.social.media import save_video
+        try:
+            video_path, poster = save_video(upload, "videos")
+        except ValueError:
+            return None
+        body_url = f"storage:{video_path}"
+        media_path = poster
+    elif not body_url:
+        body_url = old_url
+    if not body_url:
+        return None
+    t = now()
+    post.media_label = title
+    post.media_path = media_path
+    post.body = pack_link_body(body_url, blurb)
+    post.visibility = visibility or post.visibility or "friends"
+    post.updated_at = t
+    post.save(update_fields=["media_label", "media_path", "body", "visibility", "updated_at"])
+    return post
+
+
 def hydrate_posted(post):
     """Attach link_url / link_blurb / video_url / is_file_video for templates."""
     from apps.social.media import media_url

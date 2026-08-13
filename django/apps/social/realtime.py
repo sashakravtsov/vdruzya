@@ -176,10 +176,12 @@ def inbox_since(request, conversation_id):
     if rows and not ch.is_archived(me, conv):
         ch.mark_read(me, conv)
     peer_ts = ch.peer_read_at(me, conv)
+    from apps.social.services import accepted_friends as friends_of
+    friends = list(friends_of(me, limit=200))
     html = "".join(
         render_to_string(
             "social/_inbox_line.html",
-            {"m": m, "me": me, "active": conv, "folder": "inbox"},
+            {"m": m, "me": me, "active": conv, "folder": "inbox", "friends": friends},
             request=request,
         )
         for m in rows
@@ -190,4 +192,38 @@ def inbox_since(request, conversation_id):
         "unread_messages": _unread(me),
         "typing": typing_for(me, conversation_id),
         "peer_read_at": peer_ts.isoformat() if peer_ts else None,
+    })
+
+
+@login_required
+@require_GET
+def inbox_older(request, conversation_id):
+    """HTML fragment of earlier classic inbox lines before `before` id."""
+    me = profile_of(request.user)
+    if not me:
+        return JsonResponse({"error": "auth"}, status=403)
+    try:
+        conv = ch.require_member(me, conversation_id)
+    except Http404:
+        return JsonResponse({"error": "forbidden"}, status=403)
+    tq = (request.GET.get("tq") or "").strip()
+    rows, has_older = ch.older(conv, request.GET.get("before"), limit=40, q=tq)
+    from apps.social.services import accepted_friends as friends_of
+    friends = list(friends_of(me, limit=200))
+    html = "".join(
+        render_to_string(
+            "social/_inbox_line.html",
+            {"m": m, "me": me, "active": conv, "folder": "inbox", "friends": friends, "tq": tq},
+            request=request,
+        )
+        for m in rows
+    )
+    try:
+        before = int(request.GET.get("before") or 0)
+    except (TypeError, ValueError):
+        before = 0
+    return JsonResponse({
+        "html": html,
+        "first_id": rows[0].id if rows else before,
+        "has_older": has_older,
     })

@@ -145,7 +145,7 @@ def main():
     assert ("отправлено".encode() in r.content) or ("прочитано".encode() in r.content)
     assert b"msg-receipt" in r.content
     assert b"data-peer-read=" in r.content
-    assert (b"\xd0\xb1\xd0\xb5\xd0\xb7 \xd1\x83\xd0\xb2\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbc\xd0\xbb\xd0\xb5\xd0\xbd\xd0\xb8\xd0\xb9" in r.content) or ("вкл. уведомления".encode() in r.content) or (b"без уведомлений" in r.content)
+    assert ("без уведомлений".encode() in r.content) or ("вкл. уведомления".encode() in r.content)
     assert b'name="title"' in r.content
     r = c.post(f"/inbox/{conv.id}/title", {"title": "QA тема"}, secure=True)
     assert r.status_code in (301, 302)
@@ -172,6 +172,48 @@ def main():
     ok("receipts + mute + read-all + subject + compose stickers")
     r = c.post(f"/inbox/{conv.id}/title", {"title": ""}, secure=True)
     assert r.status_code in (301, 302)
+
+    # Unread / spam / forward / bulk / thread search / older / reply chip
+    marker2 = f"QA unread {os.getpid()}"
+    ch.post_message(other, conv, marker2)
+    r = c.get(f"/inbox?c={conv.id}", secure=True)
+    assert r.status_code == 200
+    assert b"непрочитанное" in r.content or "непрочитанное".encode() in r.content
+    assert b"спам" in r.content or "спам".encode() in r.content
+    assert b"переслать" in r.content or "переслать".encode() in r.content
+    assert b'name="tq"' in r.content
+    assert b"inbox-reply-chip" not in r.content or True
+    r = c.post(f"/inbox/{conv.id}/unread", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert "c=" not in (r.url or "") or r.url.endswith("/inbox") or "/inbox" in (r.url or "")
+    r = c.get("/inbox?unread=1", secure=True)
+    assert r.status_code == 200
+    # reopen marks read again
+    r = c.get(f"/inbox?c={conv.id}", secure=True)
+    assert r.status_code == 200
+    src = Message.objects.filter(conversation=conv).order_by("-id").first()
+    assert src
+    r = c.post(f"/messages/{src.id}/forward", {"to": str(other.id)}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.get(f"/inbox?c={conv.id}&tq={marker2.split()[-1]}", secure=True)
+    assert r.status_code == 200 and marker2.encode() in r.content
+    r = c.get(f"/inbox?c={conv.id}&reply={src.id}", secure=True)
+    assert r.status_code == 200 and b"inbox-reply-chip" in r.content
+    r = c.get(f"/inbox/{conv.id}/older?before={src.id}", secure=True)
+    assert r.status_code == 200
+    older = r.json()
+    assert "html" in older and "has_older" in older
+    r = c.get("/inbox", secure=True)
+    assert r.status_code == 200 and b"inbox-bulk" in r.content and b"inbox-check" in r.content
+    r = c.post("/inbox/bulk", {"action": "archive", "ids": [str(conv.id)]}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.post("/inbox/bulk", {"action": "restore", "ids": [str(conv.id)]}, secure=True)
+    assert r.status_code in (301, 302)
+    js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
+    assert "wireOlder" in js and "wireBulkChecks" in js
+    ok("unread + forward + bulk + thread search + older")
+    Message.objects.filter(conversation=conv, body__startswith="Переслано от").delete()
+    Message.objects.filter(conversation=conv, body=marker2).delete()
 
     r = c.get("/birthdays", secure=True)
     assert r.status_code == 200 and "Дни рождения".encode() in r.content

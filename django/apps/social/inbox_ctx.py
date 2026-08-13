@@ -5,6 +5,7 @@ from django.http import Http404
 
 from apps.social import chat as ch
 from apps.social.forms import MessageForm
+from apps.social.models import Message
 from apps.social.services import accepted_friends as friends_of
 
 FOLDERS = frozenset({"inbox", "sent", "archive"})
@@ -22,7 +23,7 @@ def _folder(request) -> str:
     return folder if folder in FOLDERS else "inbox"
 
 
-def _load_active(me, active_id, conversations, show_all):
+def _load_active(me, active_id, conversations, show_all, *, tq=""):
     """Return (active, members, thread_messages, has_older, err_redirect)."""
     if not active_id:
         return None, [], [], False, None
@@ -36,7 +37,7 @@ def _load_active(me, active_id, conversations, show_all):
     active.is_muted = ch.is_muted(me, active)
     active.peer_read_at = ch.peer_read_at(me, active)
     members = ch.others(active, me)
-    thread_messages, has_older = ch.thread(active, all_messages=show_all)
+    thread_messages, has_older = ch.thread(active, q=tq, all_messages=show_all)
     if not active.is_archived:
         ch.mark_read(me, active)
     for c in conversations:
@@ -47,6 +48,7 @@ def _load_active(me, active_id, conversations, show_all):
 
 def build_inbox_ctx(request, me, *, compose_form):
     q = (request.GET.get("q") or "").strip()
+    tq = (request.GET.get("tq") or "").strip()
     folder = _folder(request)
     unread_only = request.GET.get("unread") == "1" and folder == "inbox"
     compose = request.GET.get("compose") or request.GET.get("new")
@@ -61,14 +63,24 @@ def build_inbox_ctx(request, me, *, compose_form):
     )
     active_id = request.GET.get("c")
     active, members, thread_messages, has_older, err_redirect = _load_active(
-        me, active_id, conversations, show_all,
+        me, active_id, conversations, show_all, tq=tq,
     )
     friends = list(friends_of(me, limit=200))
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
     from apps.social.gifts import catalog
     stickers = catalog()[:40]
     reply_id = request.GET.get("reply")
-    form = MessageForm(stickers=stickers, initial={"reply_to": reply_id} if reply_id else None)
+    reply_preview = None
+    if reply_id and str(reply_id).isdigit() and active:
+        reply_preview = (
+            Message.objects.filter(pk=int(reply_id), conversation=active)
+            .select_related("social_user")
+            .first()
+        )
+    form = MessageForm(
+        stickers=stickers,
+        initial={"reply_to": reply_preview.id} if reply_preview else None,
+    )
     return err_redirect, {
         "conversations": conversations,
         "active": active,
@@ -82,10 +94,12 @@ def build_inbox_ctx(request, me, *, compose_form):
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
         "q": q,
+        "tq": tq,
         "folder": folder,
         "unread_only": unread_only,
         "page": page,
         "has_more": has_more,
         "nav": "inbox",
         "stickers": stickers,
+        "reply_preview": reply_preview,
     }
