@@ -38,7 +38,7 @@
             {% elif item.kind == 'video' %}
             добавил(а) видео{% if item.post.link_url %} <a href="{{ item.post.link_url }}" rel="nofollow noopener">«{{ item.post.media_label|default:"Видео" }}»</a>{% endif %}
             {% elif item.kind == 'wall' %}
-            написал(а) на стену{% if item.wall_name %} <a href="{% url 'profile' item.wall_id %}">{{ item.wall_name }}</a>{% endif %}: {{ item.post.body|truncatewords:12 }}
+            написал(а) на стену{% if item.wall_name %} <a href="{% url 'profile' item.wall_id %}">{{ item.wall_name }}</a>{% endif %}{% if item.post.snippet_text %}: {{ item.post.snippet_text|truncatewords:12 }}{% endif %}
             {% elif item.kind == 'fan' and item.page %}
             стал(а) поклонником <a href="{% url 'pages.show' item.page.id %}">{{ item.page.name }}</a>
             {% elif item.kind == 'gift_sent' %}
@@ -46,7 +46,7 @@
             {% elif item.kind == 'gift_got' %}
             получил(а) подарок{% if item.from %} от <a href="{% url 'profile' item.from.id %}">{{ item.from.name }}</a>{% endif %}{% if item.sticker %} «{{ item.sticker.title }}»{% endif %}
             {% else %}
-            написал(а): {{ item.post.body|truncatewords:16 }}
+            написал(а){% if item.post.snippet_text %}: {{ item.post.snippet_text|truncatewords:16 }}{% endif %}
             {% endif %}
             {% if item.at %}<span class="muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>

@@ -49,6 +49,12 @@ def main():
     assert data and ext in (".png", ".jpg", ".gif")
     ok("pillow process")
 
+    # snippet_text never surfaces storage: paths in classic chrome lists.
+    probe = Post(kind="video", body="storage:videos/x.mp4\n\nпривет ролик", media_label="")
+    assert probe.snippet_text == "привет ролик"
+    assert "storage:" not in probe.snippet_text
+    ok("post.snippet_text")
+
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
     assert u
     me = profile_of(u)

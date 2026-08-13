@@ -78,7 +78,12 @@ def hashtag_posts(viewer, name: str, limit=40):
         .order_by("-id")
         .distinct()
     )
-    return tag, list(qs[:limit])
+    from apps.social.classic_extra import hydrate_posted
+    posts = list(qs[:limit])
+    for p in posts:
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
+    return tag, posts
 
 
 def trending_topics(viewer, limit=8, hours=72):
@@ -183,6 +188,7 @@ def graph_search(me, *, q="", city="", like="", tag="", limit=40):
             )
             by_id = SocialProfile.objects.in_bulk(author_ids)
             people = [by_id[i] for i in author_ids if i in by_id]
+            from apps.social.classic_extra import hydrate_posted
             posts = list(
                 Post.objects.filter(hashtag_links__hashtag=tag_row, social_user_id__in=fids)
                 .filter(post_visible_q(me))
@@ -190,6 +196,9 @@ def graph_search(me, *, q="", city="", like="", tag="", limit=40):
                 .defer(*POST_DEFER, *profile_related("social_user__"))
                 .order_by("-id")[:limit]
             )
+            for p in posts:
+                if getattr(p, "kind", None) in ("link", "video"):
+                    hydrate_posted(p)
     else:
         name_q = (parsed["q"] or q or "").strip()
         if name_q and not name_q.lower().startswith(("друзья", "friends")):

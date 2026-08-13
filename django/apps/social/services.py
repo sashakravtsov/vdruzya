@@ -1086,12 +1086,7 @@ def page_updates(viewer, limit=6):
             continue
         if getattr(p, "kind", None) in ("link", "video"):
             hydrate_posted(p)
-            # Classic rail line — never show raw storage: paths.
-            p.rail_text = (getattr(p, "link_blurb", None) or p.media_label or (
-                "Видео" if p.kind == "video" else "Ссылка"
-            ))
-        else:
-            p.rail_text = (p.body or "").strip()
+        p.rail_text = p.snippet_text
         out.append(p)
     return out
 

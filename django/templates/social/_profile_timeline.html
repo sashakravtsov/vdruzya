@@ -77,7 +77,7 @@
             {% elif item.kind == 'friend' and item.other %}теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
             {% elif item.kind == 'joined' %}вступил(а) в <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
             {% elif item.kind == 'photo' %}добавил(а) фото
-            {% else %}написал(а){% if item.post %}: {{ item.post.body|truncatewords:12 }}{% endif %}
+            {% else %}написал(а){% if item.post and item.post.snippet_text %}: {{ item.post.snippet_text|truncatewords:12 }}{% endif %}
             {% endif %}
             {% if item.at %}<span class="muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>

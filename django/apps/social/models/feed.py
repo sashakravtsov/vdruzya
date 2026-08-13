@@ -34,6 +34,20 @@ class Post(models.Model):
         from apps.social.media import media_url
         return media_url(self.media_path)
 
+    @property
+    def snippet_text(self) -> str:
+        """Short classic chrome text — never expose raw storage: video paths."""
+        kind = (self.kind or "").strip()
+        body = (self.body or "").strip()
+        if kind in ("link", "video") or body.startswith("storage:"):
+            from apps.social.classic_extra import unpack_link_body
+            url, blurb = unpack_link_body(body)
+            if url.startswith("storage:") or kind == "video":
+                return (blurb or self.media_label or "Видео").strip()
+            if kind == "link" or url.startswith(("http://", "https://")):
+                return (blurb or self.media_label or url or "Ссылка").strip()
+        return body
+
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse("posts.show", args=[self.id])

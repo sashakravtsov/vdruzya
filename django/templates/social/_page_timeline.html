@@ -72,7 +72,7 @@
         {% for post in timeline_posts %}
         <div class="minifeed-item">
             <span class="ico ico-note news-ico"></span>
-            {% if post.body %}{{ post.body|truncatewords:20 }}{% else %}фото / запись{% endif %}
+            {% if post.snippet_text %}{{ post.snippet_text|truncatewords:20 }}{% else %}фото / запись{% endif %}
             {% if post.created_at %}<span class="muted"> · {{ post.created_at|fb_when }}</span>{% endif %}
         </div>
         {% empty %}<p class="muted">Нет записей за {{ timeline_year }}.</p>{% endfor %}

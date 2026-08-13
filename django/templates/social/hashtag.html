@@ -20,7 +20,12 @@
                 <div class="minifeed-item">
                     <a href="{% url 'profile' post.social_user_id %}"><b>{{ post.social_user.name }}</b></a>
                     {% if post.created_at %}<span class="muted"> · {{ post.created_at|fb_when }}</span>{% endif %}
-                    <div class="wall-body">{{ post.body|truncatewords:50|linebreaksbr }}</div>
+                    {% if post.kind == 'video' or post.kind == 'link' %}
+                    {% include "social/_news_post_body.html" with post=post %}
+                    {% else %}
+                    {% if post.snippet_text %}<div class="wall-body">{{ post.snippet_text|truncatewords:50|linebreaksbr }}</div>{% endif %}
+                    {% include "social/_post_media.html" with post=post %}
+                    {% endif %}
                     <div class="wall-actions muted">
                         <a href="{% url 'posts.show' post.id %}"><span class="ico ico-comment"></span>Комментировать</a>
                     </div>
