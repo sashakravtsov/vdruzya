@@ -185,13 +185,25 @@ def reset_after_bankruptcy(user: SocialProfile) -> FarmProfile:
     return p
 
 
+def _as_naive(dt: datetime | None) -> datetime | None:
+    if not dt:
+        return None
+    if timezone.is_aware(dt):
+        return timezone.make_naive(dt, timezone.get_current_timezone())
+    return dt
+
+
 def _refresh_plot(pl: FarmPlot) -> FarmPlot:
-    if pl.state == "growing" and pl.ready_at and pl.ready_at <= _now():
+    now = _now()
+    ready_at = _as_naive(pl.ready_at)
+    wither_at = _as_naive(pl.wither_at)
+    if pl.state == "growing" and ready_at and ready_at <= now:
         pl.state = "ready"
-        if not pl.wither_at:
-            pl.wither_at = pl.ready_at + timedelta(hours=6)
-        pl.save(update_fields=["state", "wither_at"])
-    if pl.state == "ready" and pl.wither_at and pl.wither_at <= _now():
+        pl.ready_at = ready_at
+        if not wither_at:
+            pl.wither_at = ready_at + timedelta(hours=6)
+        pl.save(update_fields=["state", "ready_at", "wither_at"])
+    if pl.state == "ready" and wither_at and wither_at <= now:
         pl.state = "withered"
         pl.save(update_fields=["state"])
     return pl

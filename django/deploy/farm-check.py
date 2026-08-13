@@ -50,12 +50,24 @@ def main():
     assert p.chips >= 1000
     plots = farm.plots_view(me)
     assert len(plots) >= catalog.START_PLOTS
+    # isolate a plot for the probe
+    FarmPlot.objects.filter(owner=me).update(
+        state="empty", crop_slug="", watered=False, fertilized=False,
+        stolen=False, planted_at=None, ready_at=None, wither_at=None, helper_id=None,
+    )
+    plots = farm.plots_view(me)
     empty = next(x for x in plots if x["state"] == "empty")
     pl = farm.plant(me, empty["id"], "wheat")
-    assert pl.state == "growing"
-    farm.water_plot(me, pl.id)
-    # force ready
     pl = FarmPlot.objects.get(pk=pl.id)
+    assert pl.state == "growing", pl.state
+    # keep firmly in growing window for water
+    pl.ready_at = timezone.now().replace(tzinfo=None) + timedelta(minutes=5)
+    pl.wither_at = pl.ready_at + timedelta(hours=6)
+    pl.watered = False
+    pl.save(update_fields=["ready_at", "wither_at", "watered", "state"])
+    farm.water_plot(me, pl.id)
+    pl = FarmPlot.objects.get(pk=pl.id)
+    assert pl.watered
     pl.ready_at = timezone.now().replace(tzinfo=None) - timedelta(seconds=1)
     pl.state = "growing"
     pl.save(update_fields=["ready_at", "state"])
