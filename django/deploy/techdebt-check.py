@@ -127,10 +127,16 @@ def main():
     r = c.get("/graph", secure=True)
     assert r.status_code == 200
     assert b"_news_post_body" not in r.content
-    from apps.social.services import mini_feed
+    from apps.social.services import mini_feed, wall_posts_for, feed_rail, news_items as ni
     feed = mini_feed(me, limit=5, viewer=me)
     assert isinstance(feed, list)
+    assert callable(wall_posts_for) and callable(feed_rail)
+    from apps.social import graph_search as gs
+    from apps.social import groups_dir as gd
+    from apps.social import inbox_ctx as ic
+    assert callable(gs.graph_search) and callable(gd.directory_ctx) and callable(ic.build_inbox_ctx)
     ok("mini_feed slim + graph chrome")
+    ok("wall/groups/graph/inbox/news slim modules")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()

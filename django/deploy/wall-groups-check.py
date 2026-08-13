@@ -152,21 +152,23 @@ def main():
         fail("my groups")
     ok("my groups table")
 
+    import uuid
     created = None
+    gname = f"QA Group Pic {uuid.uuid4().hex[:6]}"
     r = post("/groups", {
-        "name": "QA Group Pic",
-        "category": "general",
+        "name": gname,
+        "category": "other",
         "privacy": "public",
         "short_description": "with picture",
         "picture": SimpleUploadedFile("g.png", PNG, content_type="image/png"),
     })
     if r.status_code != 200:
         fail("group create with picture")
-    created = Community.objects.filter(name="QA Group Pic", creator=me).order_by("-id").first()
+    created = Community.objects.filter(name=gname, creator=me).order_by("-id").first()
     if not created or not created.cover_path or not created.cover_path.startswith("groups/"):
         fail(f"group cover_path {getattr(created, 'cover_path', None)}")
     r = get(f"/groups/{created.id}")
-    if r.status_code != 200 or created.cover_url.encode() not in r.content:
+    if r.status_code != 200 or (created.cover_url or "").encode() not in r.content:
         fail("group show cover")
     ok("group create picture")
 

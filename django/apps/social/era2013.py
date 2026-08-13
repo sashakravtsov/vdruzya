@@ -142,74 +142,9 @@ def _parse_graph_q(raw: str) -> dict:
 
 
 def graph_search(me, *, q="", city="", like="", tag="", limit=40):
-    """Friend-network Graph Search — city / likes / hashtags + plain name."""
-    if not me:
-        return {"people": [], "posts": [], "parsed": {}}
-    parsed = _parse_graph_q(q)
-    city = (city or parsed["city"] or "").strip()
-    like = (like or parsed["like"] or "").strip()
-    tag = normalize_tag(tag or parsed["tag"] or "")
-    fids = friend_ids(me)
-    people = []
-    posts = []
-    qs = SocialProfile.objects.filter(id__in=fids).defer(*profile_related()).order_by("name")
-    if city:
-        people = list(qs.filter(Q(city__icontains=city) | Q(hometown__icontains=city))[:limit])
-    elif like:
-        from apps.social.models.legacy import Reaction
-        author_ids = set(
-            Reaction.objects.filter(type="like", social_user_id__in=fids)
-            .filter(
-                Q(post__body__icontains=like)
-                | Q(post__media_label__icontains=like)
-            )
-            .values_list("social_user_id", flat=True)[:200]
-        )
-        # also profile interest fields
-        interest_ids = set(
-            qs.filter(
-                Q(interests__icontains=like)
-                | Q(favorite_music__icontains=like)
-                | Q(favorite_movies__icontains=like)
-                | Q(favorite_books__icontains=like)
-            ).values_list("id", flat=True)[:limit]
-        )
-        ids = list(author_ids | interest_ids)[:limit]
-        by_id = SocialProfile.objects.in_bulk(ids)
-        people = [by_id[i] for i in ids if i in by_id]
-    elif tag:
-        tag_row = hashtag_get(tag)
-        if tag_row:
-            from apps.social.models import POST_DEFER
-            author_ids = list(
-                PostHashtag.objects.filter(hashtag=tag_row, post__social_user_id__in=fids)
-                .values_list("post__social_user_id", flat=True)
-                .distinct()[:limit]
-            )
-            by_id = SocialProfile.objects.in_bulk(author_ids)
-            people = [by_id[i] for i in author_ids if i in by_id]
-            from apps.social.classic_extra import hydrate_posted
-            posts = list(
-                Post.objects.filter(hashtag_links__hashtag=tag_row, social_user_id__in=fids)
-                .filter(post_visible_q(me))
-                .select_related("social_user")
-                .defer(*POST_DEFER, *profile_related("social_user__"))
-                .order_by("-id")[:limit]
-            )
-            for p in posts:
-                if getattr(p, "kind", None) in ("link", "video"):
-                    hydrate_posted(p)
-    else:
-        name_q = (parsed["q"] or q or "").strip()
-        if name_q and not name_q.lower().startswith(("друзья", "friends")):
-            people = list(qs.filter(name__icontains=name_q)[:limit])
-        else:
-            people = list(qs[:limit])
-    return {
-        "people": people,
-        "posts": posts,
-        "parsed": {"city": city, "like": like, "tag": tag, "q": q},
-    }
+    """Friend-network Graph Search — builders in graph_search.graph_search."""
+    from apps.social.graph_search import graph_search as build
+    return build(me, q=q, city=city, like=like, tag=tag, limit=limit)
 
 
 def _add_hashtag_stories(items, blocked, fids, limit):

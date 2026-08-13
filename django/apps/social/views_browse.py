@@ -1,15 +1,13 @@
 """Browse FBVs: people, groups, search — short only."""
 from django.contrib.auth.decorators import login_not_required, login_required
-from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.views.decorators.http import condition, require_http_methods
 
-from apps.social.forms import CreateGroupForm
 from apps.social.models import (
     Community, CommunityJoinRequest, CommunityMember, CommunityPost, SocialProfile,
 )
-from apps.social.services import now as _now, profile_of
+from apps.social.services import profile_of
 
 
 # Bump when group.html / rail markup changes (avoids stale 304 HTML in browsers).
@@ -40,73 +38,22 @@ def _group_etag(request, pk):
 @require_http_methods(["GET", "HEAD", "POST"])
 def groups(request):
     """FB 2005 groups directory — browse is public; create/mine need login."""
-    from django.core.paginator import Paginator
+    from apps.social.groups_dir import directory_ctx
     me = profile_of(request.user) if request.user.is_authenticated else None
-    form = CreateGroupForm(request.POST or None, request.FILES or None)
-    if request.method == "POST":
-        if not me:
-            return redirect(f"/login?next=/groups")
-        if form.is_valid():
-            from apps.social.media import try_save_image
-            from apps.social.slugs import unique_slug
-            d = form.cleaned_data
-            blurb = (d.get("short_description") or "").strip()
-            g = Community(
-                name=d["name"].strip(), slug=unique_slug(Community, d["name"]),
-                category=d["category"], privacy=d["privacy"], short_description=blurb or None,
-                description=blurb or d["name"].strip(),
-                cover_color="#3B5998",
-                cover_path=try_save_image(d.get("picture"), "groups"),
-                join_mode="request" if d["privacy"] == "closed" else "open",
-                posting_policy="members",
-                creator=me, created_at=_now(), updated_at=_now(),
-            )
-            g.save()
-            CommunityMember.objects.create(community=g, social_user=me, role="admin", created_at=_now())
-            messages.success(request, "Группа создана.")
-            return redirect(g)
-
-    q = (request.GET.get("q") or "").strip()
-    mine = request.GET.get("mine") == "1"
-    category = (request.GET.get("category") or "").strip()
-    if mine and not me:
+    if request.method == "POST" and not me:
+        return redirect("/login?next=/groups")
+    data = directory_ctx(request, me)
+    if data["need_login_mine"]:
         return redirect("/login?next=/groups?mine=1")
-
-    qs = Community.objects.annotate(n_members=Count("memberships", distinct=True))
-    if me:
-        qs = qs.annotate(
-            joined=Exists(CommunityMember.objects.filter(community_id=OuterRef("pk"), social_user=me)),
-            join_pending=Exists(
-                CommunityJoinRequest.objects.filter(community_id=OuterRef("pk"), social_user=me, status="pending")
-            ),
-        )
-    if mine and me:
-        qs = qs.filter(memberships__social_user=me).distinct()
-    if category:
-        qs = qs.filter(category=category)
-    if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(slug__icontains=q) | Q(short_description__icontains=q))
-    page = Paginator(qs.order_by("name"), 20).get_page(request.GET.get("p"))
-    cats = (
-        Community.objects.exclude(category="")
-        .values_list("category", flat=True).distinct().order_by("category")
-    )
-    invites = []
-    if mine and me:
-        from apps.social.models import Notification
-        invites = list(
-            Notification.objects.filter(social_user=me, type="group_invite", seen=False).order_by("-id")[:20]
-        )
-        if invites:
-            Notification.objects.filter(pk__in=[n.id for n in invites]).update(seen=True)
-    return render(
-        request, "social/groups.html",
-        {
-            "page": page, "communities": page, "me": me, "form": form,
-            "q": q, "mine": mine, "category": category, "categories": list(cats),
-            "invites": invites,
-        },
-    )
+    if data["created"]:
+        messages.success(request, "Группа создана.")
+        return redirect(data["created"])
+    return render(request, "social/groups.html", {
+        "page": data["page"], "communities": data["communities"], "me": me,
+        "form": data["form"], "q": data["q"], "mine": data["mine"],
+        "category": data["category"], "categories": data["categories"],
+        "invites": data["invites"],
+    })
 
 
 @login_not_required

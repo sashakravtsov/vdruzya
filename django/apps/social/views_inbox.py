@@ -43,69 +43,15 @@ def _go(conv_id=None, *, compose=False, folder="inbox"):
 @login_required
 @never_cache
 def inbox_home(request):
+    from apps.social.inbox_ctx import build_inbox_ctx
     me = _me(request)
     if not me:
         return redirect("home")
-
-    q = (request.GET.get("q") or "").strip()
-    folder = request.GET.get("folder") or "inbox"
-    if folder not in FOLDERS:
-        folder = "inbox"
-    compose = request.GET.get("compose") or request.GET.get("new")
-    to_id = request.GET.get("to")
-    page = _page(request)
-    show_all = request.GET.get("all") == "1"
-    conversations, has_more = ch.inbox(
-        me, limit=40, offset=(page - 1) * 40, q=q,
-        sent_only=folder == "sent",
-    )
-
-    active = None
-    members, thread_messages, has_older = [], [], False
-    active_id = request.GET.get("c")
-    if active_id:
-        try:
-            active = ch.require_member(me, int(active_id))
-        except (Http404, TypeError, ValueError):
-            messages.error(request, "Сообщение недоступно.")
-            return redirect("inbox")
-
-    if active:
-        active.display_name = ch.label(active, me)
-        active.peer = ch.peer(active, me)
-        members = ch.others(active, me)
-        thread_messages, has_older = ch.thread(active, all_messages=show_all)
-        if not ch.is_archived(me, active):
-            ch.mark_read(me, active)
-        for c in conversations:
-            if c.id == active.id:
-                c.unread = False
-
-    friends = list(friends_of(me, limit=200))
-    preselect = int(to_id) if to_id and str(to_id).isdigit() else None
-    from apps.social.gifts import catalog
-    stickers = catalog()[:40]
-    reply_id = request.GET.get("reply")
-    form = MessageForm(stickers=stickers, initial={"reply_to": reply_id} if reply_id else None)
-    return render(request, "social/inbox.html", {
-        "conversations": conversations,
-        "active": active,
-        "members": members,
-        "thread_messages": thread_messages,
-        "has_older": has_older,
-        "show_all": show_all,
-        "me": me,
-        "form": form,
-        "compose_form": _compose_form(friends, to=preselect),
-        "compose_mode": bool(compose) or (bool(preselect) and not active_id),
-        "friends": friends,
-        "q": q,
-        "folder": folder,
-        "page": page,
-        "has_more": has_more,
-        "nav": "inbox",
-        "stickers": stickers,
-    })
+    err, ctx = build_inbox_ctx(request, me, compose_form=_compose_form)
+    if err:
+        messages.error(request, "Сообщение недоступно.")
+        return redirect(err)
+    return render(request, "social/inbox.html", ctx)
 
 
 @ch.member_post

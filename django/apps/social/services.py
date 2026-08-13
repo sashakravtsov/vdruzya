@@ -174,75 +174,9 @@ def can_manage_photo_comment(me, comment, album) -> bool:
 
 
 def wall_posts_for(profile, limit=20, viewer=None, wall_filter="all"):
-    """Notes on this wall (`wall:{id}`). Legacy own posts without wall topic still listed."""
-    key = f"wall:{profile.id}"
-    qs = (
-        Post.objects.filter(
-            Q(topic=key)
-            | (
-                Q(social_user=profile)
-                & ~Q(topic__startswith="wall:")
-                & ~Q(topic__startswith="page:")
-                & ~Q(topic__startswith="gift:")
-            )
-        )
-        .exclude(kind__in=("status", "picture", "poll", "note", "gift", "checkin"))
-        .exclude(topic__in=("status", "picture", "note"))
-        .exclude(topic__startswith="page:")
-        .exclude(topic__startswith="gift:")
-        .exclude(topic__startswith="place:")
-        .exclude(topic__startswith="event:")
-        .select_related("social_user", "shared_post", "shared_post__social_user")
-        .defer(*POST_DEFER, *profile_related("social_user__"), *profile_related("shared_post__social_user__"))
-        .prefetch_related(
-            "media",
-            Prefetch(
-                "comments",
-                queryset=Comment.objects.select_related("social_user")
-                .defer(*profile_related("social_user__")).order_by("id"),
-            ),
-        )
-        .annotate(n_comments=Count("comments", distinct=True))
-    )
-    wf = (wall_filter or "all").lower()
-    if wf == "photos":
-        qs = qs.filter(kind="photo")
-    elif wf == "links":
-        qs = qs.filter(kind="link")
-    elif wf == "videos":
-        qs = qs.filter(kind="video")
-    elif wf == "shares":
-        qs = qs.filter(kind="share")
-    elif wf == "friends":
-        qs = qs.exclude(social_user=profile)
-    elif wf == "mine":
-        qs = qs.filter(social_user=profile)
-    if viewer and viewer.id == profile.id:
-        pass  # owner sees private notes too
-    else:
-        qs = qs.filter(post_visible_q(viewer))
-        if viewer:
-            qs = qs.exclude(social_user_id__in=Block.objects.filter(blocker=viewer).values("blocked_id"))
-    from apps.social.likes import attach_likes
-    from apps.social.shares import attach_share_flags
-    from apps.social import post_tags as ptags
-    from apps.social.classic_extra import hydrate_posted
-    posts = attach_likes(list(qs.order_by("-id")[:limit]), viewer)
-    attach_share_flags(posts, viewer)
-    ptags.tags_for_posts(posts)
-    for p in posts:
-        if getattr(p, "kind", None) in ("link", "video"):
-            hydrate_posted(p)
-        shared = getattr(p, "shared_post", None)
-        if shared and getattr(shared, "kind", None) in ("link", "video"):
-            hydrate_posted(shared)
-    if viewer:
-        for p in posts:
-            if ptags.can_tag(viewer, p):
-                p.tag_candidates = ptags.tag_candidates(viewer, p)
-            else:
-                p.tag_candidates = []
-    return posts
+    """Notes on this wall — builders in wall_posts.wall_posts_for."""
+    from apps.social.wall_posts import wall_posts_for as build
+    return build(profile, limit=limit, viewer=viewer, wall_filter=wall_filter)
 
 
 def notes_for(profile, limit=20, viewer=None):
@@ -894,59 +828,9 @@ def page_updates(viewer, limit=6):
 
 
 def feed_rail(viewer):
-    """Home right column — requests, pokes, events, groups, pages, birthdays (FB 2006)."""
-    from django.db.models import Count, Q
-
-    from apps.social import events as ev
-    from apps.social import friendship as fr
-    from apps.social import feed_hide as fh
-    from apps.social import era2011 as e11
-    from apps.social import era2013 as e13
-    from apps.social import era2014 as e14
-    from apps.social import photo_tags as ptags
-    from apps.social.models import Community, Company, Notification
-
-    pending = fr.annotate_mutuals(viewer, list(fr.pending_to(viewer)[:8])) if viewer else []
-    popular = list(
-        Community.objects.annotate(n=Count("memberships", distinct=True))
-        .filter(Q(privacy="public") | Q(privacy=""))
-        .order_by("-n", "name")[:6]
-    )
-    popular_pages = list(
-        Company.objects.annotate(n=Count("followers", distinct=True))
-        .order_by("-n", "name")[:6]
-    )
-    pokes = []
-    if viewer:
-        from apps.social.notify import attach_poker_ids
-        pokes = attach_poker_ids(list(
-            Notification.objects.filter(social_user=viewer, type="poke", seen=False)
-            .order_by("-id")[:6]
-        ))
-    rail_events = list(ev.list_events(viewer, "upcoming")[:5]) if viewer else []
-    event_invites = (
-        Notification.objects.filter(social_user=viewer, type="event_invite", seen=False).count()
-        if viewer else 0
-    )
-    return {
-        "requests": pending,
-        "pokes": pokes,
-        "rail_events": rail_events,
-        "event_invites": event_invites,
-        "popular_groups": popular,
-        "popular_pages": popular_pages,
-        "group_posts": group_updates(viewer),
-        "page_posts": page_updates(viewer),
-        "birthdays": upcoming_birthdays(viewer),
-        "anniversaries": fr.upcoming_anniversaries(viewer, days=14, limit=6) if viewer else [],
-        "pending_photo_tags": ptags.pending_for(viewer, 6) if viewer else [],
-        "feed_hidden_people": fh.hidden_people(viewer, 8) if viewer else [],
-        "ticker": e11.ticker_items(viewer, 12) if viewer else [],
-        "trending": e13.trending_topics(viewer, 8) if viewer else [],
-        "nearby_rail": (e13.nearby_friends(viewer, limit=6)[0] if viewer else []),
-        "saved_rail": e14.list_saves(viewer, limit=5) if viewer else [],
-        "safety_rail": e14.active_safety_events(3) if viewer else [],
-    }
+    """Home right column — builders in feed_rail.build_feed_rail."""
+    from apps.social.feed_rail import build_feed_rail
+    return build_feed_rail(viewer)
 
 
 def upcoming_birthdays(viewer=None, days=14, limit=12):

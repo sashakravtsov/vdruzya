@@ -14,7 +14,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
-from apps.social.media import VIDEO_MAX_BYTES, save_image, save_video
+from apps.social.media import VIDEO_MAX_BYTES, save_video
 from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile
 from apps.social.services import friend_ids, now, profile_of
 
@@ -381,9 +381,9 @@ def _save_attach(upload):
         return path, name, mime, "video"
     if size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
         return None, None, None, None
-    try:
-        path = save_image(upload, "messages")
-    except Exception:
+    from apps.social.media import try_save_image
+    path = try_save_image(upload, "messages")
+    if not path:
         return None, None, None, None
     name = (Path(getattr(upload, "name", "") or "photo").name)[:120]
     mime = (getattr(upload, "content_type", None) or "image/jpeg")[:80]
