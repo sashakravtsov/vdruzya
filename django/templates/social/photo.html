@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}{{ photo.title }} — {{ album.title }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page photo-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ album.title }}</h1>
+        <div class="subtitle">фото {{ pos }} из {{ n }}</div>
+    </div>
+    <div id="content" class="albums-content">
+        {% include "partials/flash.html" %}
+
+        <div class="photo-nav">
+            <span class="photo-nav-back"><a href="{% url 'albums.show' album.id %}">← {{ album.title }}</a></span>
+            <span class="photo-nav-mid">
+                {% if prev_id %}<a href="{% url 'albums.photos.show' album.id prev_id %}">« предыдущее</a>{% else %}<span class="muted">« предыдущее</span>{% endif %}
+                <span class="photo-nav-pos">фото {{ pos }} из {{ n }}</span>
+                {% if next_id %}<a href="{% url 'albums.photos.show' album.id next_id %}">следующее »</a>{% else %}<span class="muted">следующее »</span>{% endif %}
+            </span>
+            <span class="photo-nav-owner"><a href="{% url 'profile' album.social_user.id %}">{{ album.social_user.name }}</a></span>
+        </div>
+
+        <div class="profile-box">
+            <h4>{{ photo.title|default:"Фото" }}</h4>
+            <div class="profile-box-body photo-view">
+                {% if photo.url %}
+                <div class="photo-view-stage">
+                  {% if next_id %}<a href="{% url 'albums.photos.show' album.id next_id %}">{% endif %}
+                    <img class="photo-view-img" src="{{ photo.url }}" alt="{{ photo.title }}">
+                  {% if next_id %}</a>{% endif %}
+                </div>
+                <p class="photo-view-full"><a href="{{ photo.url }}">полный размер</a></p>
+                {% else %}
+                <p><img src="{% static 'img/nophoto.gif' %}" alt="" width="200" height="200"></p>
+                {% endif %}
+                {% if photo.title %}<p class="photo-caption">{{ photo.title }}</p>{% endif %}
+                {% if photo.created_at %}<p class="muted">Добавлено {{ photo.created_at|date:"j E Y" }}</p>{% endif %}
+
+                <div class="photo-actions" style="margin:8px 0">
+                    {% if me %}
+                    <form method="post" action="{% url 'albums.photos.like' album.id photo.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">{% if photo.liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
+                    </form>
+                    {% if photo.n_likes %} <span class="muted">({{ photo.n_likes }})</span>{% endif %}
+                    {% elif photo.n_likes %}
+                    <span class="muted">{{ photo.n_likes }} нравится</span>
+                    {% endif %}
+                </div>
+
+                <div class="photo-tags">
+                    <p><b>На фото:</b>
+                        {% for t in tags %}
+                        <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if t.is_pending %} <span class="muted">(ожидает)</span>{% endif %}{% if is_owner or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
+                        <form method="post" action="{% url 'albums.photos.tag.delete' album.id photo.id t.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted" title="Убрать отметку">×</button>
+                        </form>{% endif %}{% if me and me.id == t.social_user_id and t.is_pending %}
+                        <form method="post" action="{% url 'albums.photos.tag.approve' album.id photo.id t.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish">подтвердить</button>
+                        </form>
+                        <form method="post" action="{% url 'albums.photos.tag.decline' album.id photo.id t.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted">отклонить</button>
+                        </form>{% endif %}{% if not forloop.last %}, {% endif %}
+                        {% empty %}<span class="muted">никого не отметили</span>
+                        {% endfor %}
+                    </p>
+                    {% if can_tag and tag_candidates %}
+                    <form method="post" action="{% url 'albums.photos.tag' album.id photo.id %}" class="photo-tag-form">{% csrf_token %}
+                        <table class="formtable" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="label">Отметить:</td>
+                                <td>
+                                    <select name="person">
+                                        {% for p in tag_candidates %}
+                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="submit" class="inputsubmit" value="Отметить">
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                    {% endif %}
+                </div>
+
+                {% if is_owner %}
+                <form method="post" action="{% url 'albums.photos.caption' album.id photo.id %}" class="photo-caption-form">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="label">Название:</td>
+                            <td><input class="inputtext" name="title" value="{{ photo.title }}" maxlength="120" style="width:100%"></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                ·
+                                <button type="submit" class="linkish" form="photo-cover-form">Сделать обложкой</button>
+                                ·
+                                <button type="submit" class="linkish muted" form="photo-del-form"
+                                    onclick="return confirm('Удалить это фото?');">Удалить</button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+                <form id="photo-cover-form" method="post" action="{% url 'albums.photos.cover' album.id photo.id %}">{% csrf_token %}</form>
+                <form id="photo-del-form" method="post" action="{% url 'albums.photos.delete' album.id photo.id %}">{% csrf_token %}</form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-box photo-comments">
+            <h4>Комментарии{% if comments %} ({{ comments|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% if comments %}
+                {% comment_thread comments preview=0 kind="photo" album=album photo=photo %}
+                {% else %}
+                <p class="muted">Комментариев пока нет.</p>
+                {% endif %}
+
+                {% if me %}
+                {% url 'albums.photos.comment' album.id photo.id as c_action %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id form=comment_form open=1 %}
+                {% else %}
+                <p class="muted"><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы комментировать.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

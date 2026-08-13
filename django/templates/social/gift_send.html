@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Отправить подарок — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="gifts-page">
+    <div id="header" class="withsubtitle">
+        <h1>Отправить подарок</h1>
+        <div class="subtitle"><a href="{% url 'gifts' %}">← витрина</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+
+        <div class="profile-box">
+            <h4>Подарок другу</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Кому:</td><td>{{ form.to }}</td></tr>
+                        <tr>
+                            <td class="label">Подарок:</td>
+                            <td>
+                                {{ form.gift }}
+                                {% if sticker_preview %}
+                                {% include "social/_gift_tile.html" with sticker=sticker_preview sm=1 %}
+                                <span class="muted">{{ sticker_preview.phrase }}</span>
+                                {% else %}
+                                <span class="muted">Выберите ниже</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr><td class="label">Сообщение:</td><td>{{ form.message }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Отправить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-box">
+            <h4>Каталог</h4>
+            <div class="profile-box-body">
+                <div class="gift-grid">
+                    {% for g in catalog %}
+                    <a class="gift-tile{% if sticker_preview and sticker_preview.slug == g.slug %} is-on{% endif %}"
+                       href="?gift={{ g.slug }}{% if form.to.value %}&amp;to={{ form.to.value }}{% endif %}"
+                       style="background:{{ g.bg }};color:{{ g.fg }}">
+                        {% if g.image_url %}<img src="{{ g.image_url }}" alt="">{% else %}<span class="gift-tile-title">{{ g.title }}</span>{% endif %}
+                        <span class="gift-tile-cap">{{ g.phrase|default:g.title }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
