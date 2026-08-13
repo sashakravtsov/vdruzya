@@ -25,7 +25,8 @@ from apps.accounts.models import User
 from apps.social import chat as ch
 from apps.social.media import process_image_bytes, save_video
 from apps.social.models import (
-    Album, Community, CommunityMember, CommunityPost, Friendship, Message, Photo, Post,
+    Album, Community, CommunityMember, CommunityPost, Company, CompanyAdmin,
+    Friendship, Message, Photo, Post,
 )
 from apps.social.services import bump_news, news_items, now, profile_of
 
@@ -154,6 +155,36 @@ def main():
     else:
         ok("group wall video skipped (no membership)")
 
+    # Page wall video (admin compose) + hydrate on page show.
+    ppage = None
+    pp_post = None
+    admin_row = (
+        CompanyAdmin.objects.filter(social_user=me)
+        .select_related("company").order_by("-id").first()
+    )
+    if admin_row:
+        ppage = admin_row.company
+        pbody = f"pvid-{uuid.uuid4().hex[:5]}"
+        vidp = SimpleUploadedFile("page.mp4", _tiny_mp4(), content_type="video/mp4")
+        r = c.post(f"/pages/{ppage.id}/posts", {
+            "body": pbody,
+            "photo": vidp,
+        }, secure=True)
+        assert r.status_code in (301, 302), r.status_code
+        pp_post = (
+            Post.objects.filter(
+                social_user=me, kind="video", topic=ppage.topic_key,
+            ).order_by("-id").first()
+        )
+        assert pp_post and (pp_post.body or "").startswith("storage:"), pp_post
+        r = c.get(f"/pages/{ppage.id}", secure=True)
+        assert r.status_code == 200
+        assert b"<video" in r.content
+        assert b"page-tabs" not in r.content
+        ok("page wall video + player")
+    else:
+        ok("page wall video skipped (no admin page)")
+
     # Classic Inbox — video attachment (not live Messenger).
     inbox_msg = None
     rel = (
@@ -209,6 +240,8 @@ def main():
     wpost.delete()
     if gpost:
         gpost.delete()
+    if pp_post:
+        pp_post.delete()
     if inbox_msg:
         inbox_msg.delete()
     ok("cleanup")

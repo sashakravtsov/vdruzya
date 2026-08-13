@@ -14,7 +14,7 @@
 <form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.reply_to }}
     {{ form.body }}
-    <p class="wallposter-file">Фото: {{ form.photo }}</p>
+    <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
     {% if form.sticker %}<p class="wallposter-file">Стикер: {{ form.sticker }}</p>{% endif %}
     <input type="submit" class="inputsubmit" value="Отправить">
 </form>

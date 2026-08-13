@@ -49,9 +49,13 @@ def _event_posts(event, *, photos_only=False, limit=30, viewer=None):
     from apps.social.likes import attach_likes
     from apps.social.shares import attach_share_flags
     from apps.social import post_tags as ptags
+    from apps.social.classic_extra import hydrate_posted
     attach_likes(posts, viewer)
     attach_share_flags(posts, viewer)
     ptags.tags_for_posts(posts)
+    for p in posts:
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
     if viewer:
         for p in posts:
             p.tag_candidates = ptags.tag_candidates(viewer, p) if ptags.can_tag(viewer, p) else []

@@ -128,8 +128,9 @@ def save_video(upload, folder: str = "videos") -> tuple[str, str | None]:
     poster_path = None
     try:
         poster_path = _poster_from_bytes(raw, folder=folder)
-    except Exception:
-        log.exception("video poster failed for %s", video_path)
+    except Exception as exc:
+        # Fake/corrupt uploads (smoke probes) often fail decode — not fatal.
+        log.warning("video poster skipped for %s: %s", video_path, exc)
     return video_path, poster_path
 
 

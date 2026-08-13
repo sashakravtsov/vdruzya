@@ -22,8 +22,8 @@ def _is_fan(me, page) -> bool:
     return bool(me and CompanyFollower.objects.filter(company=page, social_user=me).exists())
 
 
-def _page_posts(page, limit=30):
-    return list(
+def _page_posts(page, limit=30, viewer=None):
+    posts = list(
         Post.objects.filter(topic=page.topic_key)
         .exclude(kind__in=("status", "picture", "poll", "share", "note"))
         .select_related("social_user")
@@ -39,6 +39,13 @@ def _page_posts(page, limit=30):
         .annotate(n_comments=Count("comments", distinct=True))
         .order_by("-id")[:limit]
     )
+    from apps.social.classic_extra import hydrate_posted
+    from apps.social.likes import attach_likes
+    attach_likes(posts, viewer)
+    for p in posts:
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
+    return posts
 
 
 @login_not_required
@@ -118,7 +125,7 @@ def page_show(request, pk):
     tab = (request.GET.get("tab") or "wall").lower()
     if tab not in ("wall", "timeline", "info"):
         tab = "wall"
-    posts = _page_posts(page, limit=80 if tab == "timeline" else 30)
+    posts = _page_posts(page, limit=80 if tab == "timeline" else 30, viewer=me)
     fans = list(
         CompanyFollower.objects.filter(company=page)
         .select_related("social_user")

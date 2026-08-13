@@ -20,17 +20,17 @@ def _ta(rows=3, **attrs):
 def _file(**attrs):
     return forms.FileInput(attrs={
         "class": "inputfile",
-        "accept": "image/jpeg,image/png,image/gif,image/webp",
+        "accept": "image/jpeg,image/png,image/gif",
         **attrs,
     })
 
 
 def _media_file(**attrs):
-    """Single file: photos (incl. WebP) or one video — classic Inbox / compose."""
+    """Single file: classic photos or one video — Inbox / compose."""
     return forms.FileInput(attrs={
         "class": "inputfile",
         "accept": (
-            "image/jpeg,image/png,image/gif,image/webp,"
+            "image/jpeg,image/png,image/gif,"
             "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
         ),
         **attrs,
@@ -60,7 +60,7 @@ def _files(**attrs):
     return _MultiFile(attrs={
         "class": "inputfile",
         "accept": (
-            "image/jpeg,image/png,image/gif,image/webp,"
+            "image/jpeg,image/png,image/gif,"
             "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
         ),
         **attrs,
@@ -450,7 +450,7 @@ class AlbumForm(ClassicForm, forms.ModelForm):
 class PhotoUploadForm(ClassicForm, forms.Form):
     """Album upload — multi-select; files read via request.FILES.getlist('photo')."""
     photo = MultiFileField(label="Файлы", required=False, widget=_files(
-        accept="image/jpeg,image/png,image/gif,image/webp",
+        accept="image/jpeg,image/png,image/gif",
     ))
     title = forms.CharField(
         max_length=120, required=False, label="Название",
