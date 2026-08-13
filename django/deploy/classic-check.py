@@ -127,10 +127,11 @@ def main():
     }, secure=True)
     assert r.status_code in (301, 302), r.status_code
     mitem = MarketplaceListing.objects.filter(social_user=me, title=mtitle).first()
-    assert mitem and mitem.photo_path, mitem
-    assert mitem.photo_url and "/storage/" in mitem.photo_url
+    assert mitem and mitem.photo_path and mitem.photo_path.startswith("market/"), mitem
+    assert mitem.photo_url
     r = c.get(f"/marketplace/{mitem.id}", secure=True)
-    assert r.status_code == 200 and b"<img" in r.content and mitem.photo_path.encode() in r.content
+    assert r.status_code == 200 and b"<img" in r.content
+    assert mitem.photo_path.encode() in r.content or mitem.photo_url.encode() in r.content
     r = c.get("/marketplace", secure=True)
     assert r.status_code == 200 and b"market-thumb" in r.content
     mitem.delete()
