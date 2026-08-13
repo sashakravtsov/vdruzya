@@ -233,6 +233,9 @@ def wall_posts_for(profile, limit=20, viewer=None, wall_filter="all"):
     for p in posts:
         if getattr(p, "kind", None) in ("link", "video"):
             hydrate_posted(p)
+        shared = getattr(p, "shared_post", None)
+        if shared and getattr(shared, "kind", None) in ("link", "video"):
+            hydrate_posted(shared)
     if viewer:
         for p in posts:
             if ptags.can_tag(viewer, p):
@@ -308,7 +311,13 @@ def mini_feed(profile, limit=8, viewer=None):
 
     items = []
     wall_ids = set()
-    for p in Post.objects.filter(social_user=profile).order_by("-id")[:limit]:
+    gift_sent_posts = []
+    # Keep sticker undeferred so gift_sent can resolve tiles without DeferredAttribute.
+    for p in (
+        Post.objects.filter(social_user=profile)
+        .defer("mood", "emoji", "search_vector")
+        .order_by("-id")[:limit]
+    ):
         if not own:
             vis = p.visibility or "public"
             if vis == "private":
@@ -342,6 +351,7 @@ def mini_feed(profile, limit=8, viewer=None):
                     wall_ids.add(rid)  # reuse name lookup as gift_to
                     row["gift_to_id"] = rid
                 items.append(row)
+                gift_sent_posts.append(p)
             continue
         else:
             kind = "post"
@@ -354,6 +364,12 @@ def mini_feed(profile, limit=8, viewer=None):
             from apps.social.classic_extra import hydrate_posted
             hydrate_posted(p)
         items.append(row)
+    if gift_sent_posts:
+        from apps.social.gifts import attach_stickers
+        attach_stickers(gift_sent_posts)
+        for it in items:
+            if it.get("kind") == "gift_sent":
+                it["sticker"] = getattr(it["post"], "gift_sticker", None)
     if friends or own:
         from apps.social.models import CompanyFollower, PhotoTag
         for m in CommunityMember.objects.filter(social_user=profile).select_related("community").order_by("-id")[:limit]:

@@ -92,9 +92,16 @@ class CommunityPost(models.Model):
 
     @property
     def body_text(self) -> str:
-        """Message body without subject line (discussion) or full wall body."""
+        """Message body without subject line (discussion) or full wall body.
+
+        Wall video posts pack storage:<path>\\n\\nblurb — never surface the path.
+        """
         body = self.body or ""
         if (self.topic or "") == "wall":
+            if (self.kind or "") == "video" or body.startswith("storage:"):
+                from apps.social.classic_extra import unpack_link_body
+                _url, blurb = unpack_link_body(body)
+                return (blurb or "").strip()
             return body
         if "\n\n" in body:
             return body.split("\n\n", 1)[1]

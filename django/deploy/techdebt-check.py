@@ -118,6 +118,18 @@ def main():
     assert checkin_stories[0].get("story_key") == f"checkin:{cin.id}"
     ok("checkin feed dedupe + key")
 
+    # Shared video permalink + group body_text: no storage: leak
+    from apps.social.models import CommunityPost
+    gprobe = CommunityPost(topic="wall", kind="video", body="storage:videos/t.mp4\n\nгруппа")
+    assert gprobe.body_text == "группа" and "storage:" not in gprobe.body_text
+    ok("group wall video body_text")
+
+    r = c.get("/graph", secure=True)
+    assert r.status_code == 200
+    # Graph post rows include media partial (same chrome as hashtag)
+    assert b"_news_post_body" not in r.content  # template name not in HTML
+    ok("graph chrome ok")
+
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()
     if created_place:

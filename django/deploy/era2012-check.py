@@ -76,6 +76,21 @@ def main():
     }, secure=True)
     assert r.status_code in (301, 302)
     assert CollectionItem.objects.filter(collection=col, kind="link").exists()
+    # Video post item title must use snippet_text (never storage:)
+    from apps.social.models import Post
+    t = now()
+    vpost = Post.objects.create(
+        social_user=me, kind="video", topic="video",
+        body="storage:videos/qa-col.mp4\n\nколлекция клип",
+        media_label="Col Clip", visibility="friends",
+        created_at=t, updated_at=t,
+    )
+    item = e12.add_item(me, col, kind="post", post_id=vpost.id)
+    assert item and "storage:" not in (item.title or "")
+    assert "коллекция" in (item.title or "") or "Col Clip" in (item.title or "")
+    r = c.get(f"/collections/{col.id}", secure=True)
+    assert r.status_code == 200 and b"storage:" not in r.content
+    vpost.delete()
     bump_news()
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "collection" and i.get("collection") and i["collection"].id == col.id for i in feed)

@@ -11,6 +11,7 @@ import django
 
 django.setup()
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
 from apps.accounts.models import User
@@ -21,6 +22,11 @@ from apps.social.models import (
 )
 from apps.social.models.legacy import Reaction
 from apps.social.services import bump_news, news_items, now, profile_of, wall_posts_for
+
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+)
 
 
 def ok(label):
@@ -42,6 +48,13 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), f"missing {t}"
+        for table, col in (("places", "photo_path"), ("place_checkins", "photo_path")):
+            cur.execute(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name=%s AND column_name=%s",
+                [table, col],
+            )
+            assert cur.fetchone(), f"{table}.{col}"
     ok("schema 2010")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
@@ -62,14 +75,29 @@ def main():
         assert b"placeholder=" not in r.content
     ok("places/questions/polls pages")
 
-    # Place + checkin + review
+    # Place + checkin + review (+ optional photos on same media disk)
     name = f"QA Cafe {uuid.uuid4().hex[:5]}"
-    r = c.post("/places", {"name": name, "city": "Москва", "address": "Тверская"}, secure=True)
+    r = c.post("/places", {
+        "name": name, "city": "Москва", "address": "Тверская",
+        "photo": SimpleUploadedFile("place.png", PNG, content_type="image/png"),
+    }, secure=True)
     assert r.status_code in (301, 302)
     place = Place.objects.filter(name=name).order_by("-id").first()
-    assert place
-    r = c.post(f"/places/{place.id}", {"action": "checkin", "message": "кофе"}, secure=True)
+    assert place and place.photo_path and place.photo_path.startswith("places/"), place
+    r = c.get("/places", secure=True)
+    assert r.status_code == 200 and b"place-thumb" in r.content
+    r = c.post(f"/places/{place.id}", {
+        "action": "checkin", "message": "кофе",
+        "photo": SimpleUploadedFile("cin.png", PNG, content_type="image/png"),
+    }, secure=True)
     assert r.status_code in (301, 302)
+    cin = PlaceCheckin.objects.filter(place=place, social_user=me).order_by("-id").first()
+    assert cin and cin.photo_path and cin.photo_path.startswith("checkins/"), cin
+    cpost = Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place.id}").order_by("-id").first()
+    assert cpost and cpost.media_path == cin.photo_path
+    r = c.get(f"/places/{place.id}", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content
+    ok("place + checkin photos")
     assert PlaceCheckin.objects.filter(place=place, social_user=me).exists()
     assert Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place.id}").exists()
     r = c.post(

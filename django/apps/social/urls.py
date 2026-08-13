@@ -167,6 +167,7 @@ urlpatterns = [
     path("profile/<int:pk>/albums", albums.profile_albums, name="profile.albums"),
     path("events", events.events_home, name="events"),
     path("events/<int:event_id>/edit", events.event_edit, name="events.edit"),
+    path("events/<int:event_id>/cover/clear", events.event_cover_clear, name="events.cover.clear"),
     path("events/<int:event_id>/delete", events.event_delete, name="events.delete"),
     path("events/<int:event_id>", events.event_show, name="events.show"),
     path("events/<int:event_id>/rsvp", events.event_rsvp, name="events.rsvp"),

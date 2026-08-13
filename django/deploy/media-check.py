@@ -26,7 +26,7 @@ from apps.social import chat as ch
 from apps.social.media import process_image_bytes, save_video
 from apps.social.models import (
     Album, Community, CommunityMember, CommunityPost, Company, CompanyAdmin,
-    Friendship, MarketplaceListing, Message, Photo, Post,
+    Friendship, MarketplaceListing, Message, Photo, Place, PlaceCheckin, Post,
 )
 from apps.social.services import bump_news, news_items, now, profile_of
 
@@ -237,6 +237,53 @@ def main():
         ok("inbox video attachment + player")
     else:
         ok("inbox video skipped (no friend)")
+
+    # Group wall video body_text never surfaces storage:
+    gprobe = CommunityPost(topic="wall", kind="video", body="storage:videos/x.mp4\n\nролик группы")
+    assert gprobe.body_text == "ролик группы"
+    assert "storage:" not in gprobe.body_text
+    ok("group body_text hides storage")
+
+    # Place + check-in photos
+    pname = f"QA PlaceMedia {uuid.uuid4().hex[:5]}"
+    r = c.post("/places", {
+        "name": pname, "city": "Казань", "address": "",
+        "photo": SimpleUploadedFile("pl.png", PNG, content_type="image/png"),
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    prow = Place.objects.filter(name=pname).order_by("-id").first()
+    assert prow and prow.photo_path and prow.photo_path.startswith("places/")
+    r = c.post(f"/places/{prow.id}", {
+        "action": "checkin", "message": "тут",
+        "photo": SimpleUploadedFile("ci.png", PNG, content_type="image/png"),
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    cin = PlaceCheckin.objects.filter(place=prow, social_user=me).order_by("-id").first()
+    assert cin and cin.photo_path and cin.photo_path.startswith("checkins/")
+    PlaceCheckin.objects.filter(pk=cin.id).delete()
+    Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{prow.id}").delete()
+    prow.delete()
+    ok("place + checkin photos")
+
+    # Shared video permalink never dumps storage:
+    from apps.social.shares import share_to_wall
+    vtitle = f"QA ShareVid {uuid.uuid4().hex[:5]}"
+    vid = SimpleUploadedFile("share.mp4", _tiny_mp4(), content_type="video/mp4")
+    r = c.post("/videos", {
+        "title": vtitle, "url": "", "blurb": "share blurb", "visibility": "friends", "video": vid,
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    vsrc = Post.objects.filter(social_user=me, kind="video", media_label=vtitle).order_by("-id").first()
+    assert vsrc
+    shared = share_to_wall(me, vsrc, blurb="перепост")
+    assert shared
+    r = c.get(f"/posts/{shared.id}", secure=True)
+    assert r.status_code == 200
+    assert b"storage:" not in r.content
+    assert b"<video" in r.content or b"share blurb" in r.content or "перепост".encode() in r.content
+    shared.delete()
+    vsrc.delete()
+    ok("shared video no storage leak")
 
     # Notes photo (same media disk; keeps kind=note).
     ntitle = f"QA NoteMedia {uuid.uuid4().hex[:5]}"

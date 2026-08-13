@@ -81,9 +81,12 @@ def post_show(request, post_id):
     me = profile_of(request.user) if request.user.is_authenticated else None
     post = get_object_or_404(feed_queryset(me), pk=post_id)
     attach_wall_notes([post])
+    from apps.social.classic_extra import hydrate_posted
     if getattr(post, "kind", "") in ("link", "video"):
-        from apps.social.classic_extra import hydrate_posted
         hydrate_posted(post)
+    shared = getattr(post, "shared_post", None)
+    if shared and getattr(shared, "kind", "") in ("link", "video"):
+        hydrate_posted(shared)
     from apps.social.likes import attach_likes
     from apps.social.shares import attach_share_flags
     from apps.social import post_tags as ptags

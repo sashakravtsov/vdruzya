@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS places (
   name varchar(160) NOT NULL,
   city varchar(120) NOT NULL DEFAULT '',
   address varchar(255) NOT NULL DEFAULT '',
+  photo_path varchar(255) NULL,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS place_checkins (
   place_id bigint NOT NULL,
   social_user_id bigint NOT NULL,
   message varchar(500) NOT NULL DEFAULT '',
+  photo_path varchar(255) NULL,
   created_at timestamp without time zone
 );
 CREATE INDEX IF NOT EXISTS place_checkins_place_idx ON place_checkins (place_id);
@@ -236,10 +238,16 @@ CREATE INDEX IF NOT EXISTS family_links_to_idx
   ON family_links (to_user_id, status);
 """
 
+ALTER = """
+ALTER TABLE places ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
+ALTER TABLE place_checkins ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
+"""
+
 
 def main():
     with connection.cursor() as cur:
         cur.execute(SQL)
+        cur.execute(ALTER)
         for t in (
             "reactions", "places", "place_checkins", "place_reviews",
             "questions", "question_answers", "question_votes",
@@ -252,6 +260,14 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
+        for col in ("places.photo_path", "place_checkins.photo_path"):
+            table, name = col.split(".")
+            cur.execute(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name=%s AND column_name=%s",
+                [table, name],
+            )
+            assert cur.fetchone(), col
     print("OK   2010 classic schema (likes/places/polls/tags/docs/rel)")
 
 

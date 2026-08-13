@@ -228,6 +228,24 @@ def event_edit(request, event_id):
 
 @login_required
 @require_POST
+def event_cover_clear(request, event_id):
+    me = profile_of(request.user)
+    event = ev.get_event(event_id)
+    if not me or event.host_id != me.id:
+        messages.error(request, "Обложку может снять только организатор.")
+        return redirect(event)
+    if event.cover_path:
+        from apps.social.services import bump_news, now
+        event.cover_path = None
+        event.updated_at = now()
+        event.save(update_fields=["cover_path", "updated_at"])
+        bump_news()
+        messages.info(request, "Обложка удалена.")
+    return redirect(request.POST.get("next") or f"/events/{event.id}/edit")
+
+
+@login_required
+@require_POST
 def event_delete(request, event_id):
     me = profile_of(request.user)
     event = ev.get_event(event_id)

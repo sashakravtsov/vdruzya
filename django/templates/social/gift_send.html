@@ -21,9 +21,7 @@
                             <td>
                                 {{ form.gift }}
                                 {% if sticker_preview %}
-                                <span class="gift-tile gift-tile-sm" style="background:{{ sticker_preview.bg }};color:{{ sticker_preview.fg }}">
-                                    <span class="gift-tile-title">{{ sticker_preview.title }}</span>
-                                </span>
+                                {% include "social/_gift_tile.html" with sticker=sticker_preview sm=1 %}
                                 <span class="muted">{{ sticker_preview.phrase }}</span>
                                 {% else %}
                                 <span class="muted">Выберите ниже</span>
@@ -45,7 +43,7 @@
                     <a class="gift-tile{% if sticker_preview and sticker_preview.slug == g.slug %} is-on{% endif %}"
                        href="?gift={{ g.slug }}{% if form.to.value %}&amp;to={{ form.to.value }}{% endif %}"
                        style="background:{{ g.bg }};color:{{ g.fg }}">
-                        <span class="gift-tile-title">{{ g.title }}</span>
+                        {% if g.image_url %}<img src="{{ g.image_url }}" alt="">{% else %}<span class="gift-tile-title">{{ g.title }}</span>{% endif %}
                         <span class="gift-tile-cap">{{ g.phrase|default:g.title }}</span>
                     </a>
                     {% endfor %}

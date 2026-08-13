@@ -17,7 +17,7 @@ from apps.social.services import profile_of
 @require_http_methods(["GET", "POST"])
 def places_home(request):
     me = profile_of(request.user)
-    form = PlaceForm(request.POST or None)
+    form = PlaceForm(request.POST or None, request.FILES or None)
     if request.method == "POST":
         if form.is_valid():
             place = e10.place_create(
@@ -25,6 +25,7 @@ def places_home(request):
                 name=form.cleaned_data["name"],
                 city=form.cleaned_data.get("city") or "",
                 address=form.cleaned_data.get("address") or "",
+                photo=form.cleaned_data.get("photo"),
             )
             if place:
                 messages.success(request, "Место добавлено.")
@@ -63,9 +64,13 @@ def place_show(request, pk):
                 return redirect(place)
             messages.error(request, "Укажите оценку.")
         else:
-            checkin_form = CheckinForm(request.POST)
+            checkin_form = CheckinForm(request.POST, request.FILES)
             if checkin_form.is_valid():
-                e10.place_checkin(me, place, checkin_form.cleaned_data.get("message") or "")
+                e10.place_checkin(
+                    me, place,
+                    checkin_form.cleaned_data.get("message") or "",
+                    photo=checkin_form.cleaned_data.get("photo"),
+                )
                 messages.success(request, "Вы отметились здесь.")
                 return redirect(place)
             messages.error(request, "Не удалось отметиться.")

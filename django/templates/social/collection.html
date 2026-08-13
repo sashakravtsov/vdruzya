@@ -49,7 +49,10 @@
                     {% if it.kind == 'page' and it.company %}
                     страница: <a href="{% url 'pages.show' it.company.id %}"><b>{{ it.title|default:it.company.name }}</b></a>
                     {% elif it.kind == 'post' and it.post %}
-                    запись: <a href="{% url 'posts.show' it.post.id %}"><b>{{ it.title|default:"Запись" }}</b></a>
+                    {% if it.post.media_url %}
+                    <a class="place-thumb" href="{% url 'posts.show' it.post.id %}"><img src="{{ it.post.media_url }}" alt="" width="50" height="50"></a>
+                    {% endif %}
+                    запись: <a href="{% url 'posts.show' it.post.id %}"><b>{{ it.title|default:it.post.snippet_text|default:"Запись" }}</b></a>
                     {% elif it.url %}
                     ссылка: <a href="{{ it.url }}" rel="nofollow noopener"><b>{{ it.title|default:it.url }}</b></a>
                     {% else %}

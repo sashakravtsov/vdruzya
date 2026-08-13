@@ -786,6 +786,7 @@ class PlaceForm(ClassicForm, forms.Form):
     name = forms.CharField(max_length=160, widget=_in(style="width:100%"))
     city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
     address = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%"))
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
     def clean_name(self):
         return (self.cleaned_data.get("name") or "").strip()[:160]
@@ -793,6 +794,7 @@ class PlaceForm(ClassicForm, forms.Form):
 
 class CheckinForm(ClassicForm, forms.Form):
     message = forms.CharField(max_length=500, required=False, widget=_ta(2, style="width:100%"))
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
 
 class QuestionForm(ClassicForm, forms.Form):

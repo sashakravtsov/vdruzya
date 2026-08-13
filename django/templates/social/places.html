@@ -9,11 +9,12 @@
         <div class="profile-box">
             <h4>Добавить место</h4>
             <div class="profile-box-body">
-                <form method="post">{% csrf_token %}
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
                         <tr><td class="label">Город:</td><td>{{ form.city }}</td></tr>
                         <tr><td class="label">Адрес:</td><td>{{ form.address }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>{{ form.photo }}</td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Добавить"></td></tr>
                     </table>
                 </form>
@@ -34,9 +35,14 @@
                     </table>
                 </form>
                 {% for p in places %}
-                <div class="event-list-row">
-                    <b><a href="{% url 'places.show' p.id %}">{{ p.name }}</a></b>
-                    <div class="muted">{% if p.city %}{{ p.city }}{% endif %}{% if p.address %} · {{ p.address }}{% endif %}</div>
+                <div class="event-list-row place-row">
+                    {% if p.photo_url %}
+                    <a class="place-thumb" href="{% url 'places.show' p.id %}"><img src="{{ p.photo_url }}" alt="" width="50" height="50"></a>
+                    {% endif %}
+                    <div class="place-row-body">
+                        <b><a href="{% url 'places.show' p.id %}">{{ p.name }}</a></b>
+                        <div class="muted">{% if p.city %}{{ p.city }}{% endif %}{% if p.address %} · {{ p.address }}{% endif %}</div>
+                    </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет мест. Добавьте первое выше.</p>{% endfor %}
             </div>

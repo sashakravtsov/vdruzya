@@ -34,11 +34,7 @@
             <div class="profile-box-body">
                 {% for p in received %}
                 <div class="gift-recv-row">
-                    {% if p.gift_sticker %}
-                    <span class="gift-tile gift-tile-sm" style="background:{{ p.gift_sticker.bg }};color:{{ p.gift_sticker.fg }}">
-                        <span class="gift-tile-title">{{ p.gift_sticker.title }}</span>
-                    </span>
-                    {% endif %}
+                    {% include "social/_gift_tile.html" with sticker=p.gift_sticker sm=1 %}
                     <div class="gift-recv-meta">
                         <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
                         прислал(а) {% if p.gift_sticker %}«{{ p.gift_sticker.title }}»{% else %}подарок{% endif %}
@@ -55,11 +51,7 @@
             <div class="profile-box-body">
                 {% for p in sent %}
                 <div class="gift-recv-row">
-                    {% if p.gift_sticker %}
-                    <span class="gift-tile gift-tile-sm" style="background:{{ p.gift_sticker.bg }};color:{{ p.gift_sticker.fg }}">
-                        <span class="gift-tile-title">{{ p.gift_sticker.title }}</span>
-                    </span>
-                    {% endif %}
+                    {% include "social/_gift_tile.html" with sticker=p.gift_sticker sm=1 %}
                     <div class="gift-recv-meta">
                         {% if p.gift_to %}
                         для <a href="{% url 'profile' p.gift_to.id %}"><b>{{ p.gift_to.name }}</b></a>

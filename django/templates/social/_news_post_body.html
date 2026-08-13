@@ -7,6 +7,6 @@
     {% if post.link_url %}<div class="muted"><a href="{{ post.link_url }}" rel="nofollow noopener">{{ post.link_url|truncatechars:80 }}</a></div>{% endif %}
     {% include "social/_post_media.html" with post=post %}
 {% else %}
-    {% if post.body %}<div class="wall-body">{{ post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
+    {% if post.snippet_text %}<div class="wall-body">{{ post.snippet_text|truncatewords:40|linebreaksbr }}</div>{% endif %}
     {% include "social/_post_media.html" with post=post %}
 {% endif %}

@@ -21,6 +21,15 @@
             <div class="profile-box-body">
                 {% for s in items %}
                 <div class="classic-person-row">
+                    {% if s.post and s.post.media_url %}
+                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.post.media_url }}" alt="" width="50" height="50"></a>
+                    {% elif s.event and s.event.cover_url %}
+                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.event.cover_url }}" alt="" width="50" height="50"></a>
+                    {% elif s.place and s.place.photo_url %}
+                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.place.photo_url }}" alt="" width="50" height="50"></a>
+                    {% elif s.company and s.company.cover_url %}
+                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.company.cover_url }}" alt="" width="50" height="50"></a>
+                    {% endif %}
                     <span>
                         <a href="{{ s.get_absolute_url }}"><b>{{ s.title|default:"Без названия" }}</b></a>
                         <span class="muted"> · {{ s.kind }}</span>

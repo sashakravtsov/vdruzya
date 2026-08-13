@@ -266,7 +266,9 @@ def add_item(me, col, *, kind, post_id=None, company_id=None, url="", title="") 
         if not post:
             return None
         kwargs["post"] = post
-        kwargs["title"] = kwargs["title"] or (post.body or "")[:80] or f"Запись #{post.id}"
+        label = (getattr(post, "media_label", None) or "").strip()
+        snip = (getattr(post, "snippet_text", None) or "").strip()
+        kwargs["title"] = kwargs["title"] or label or snip[:80] or f"Запись #{post.id}"
     elif kind == "page":
         page = Company.objects.filter(pk=company_id).first()
         if not page:

@@ -148,9 +148,7 @@
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
             {% if item.sticker %}
             <div class="news-snippet">
-                <span class="gift-tile gift-tile-sm" style="background:{{ item.sticker.bg }};color:{{ item.sticker.fg }}">
-                    <span class="gift-tile-title">{{ item.sticker.title }}</span>
-                </span>
+                {% include "social/_gift_tile.html" with sticker=item.sticker sm=1 %}
                 {% if item.post.body %}<span class="muted">{{ item.post.body|truncatewords:16 }}</span>{% endif %}
             </div>
             {% endif %}
@@ -221,6 +219,11 @@
             <a href="{% url 'places.show' item.place.id %}"><b>{{ item.place.name }}</b></a>
             {% if item.checkin.message %} — {{ item.checkin.message|truncatewords:12 }}{% endif %}
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.checkin.photo_url %}
+            <div class="news-photo-row"><a href="{% url 'places.show' item.place.id %}"><img src="{{ item.checkin.photo_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% elif item.place.photo_url %}
+            <div class="news-photo-row"><a href="{% url 'places.show' item.place.id %}"><img src="{{ item.place.photo_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% endif %}
         </div>
     {% elif item.kind == 'question' %}
         <span class="ico ico-note news-ico"></span>

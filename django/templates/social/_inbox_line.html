@@ -19,11 +19,7 @@
             <a href="#m-{{ m.reply_to.id }}">{{ m.reply_to.social_user.name }}: {{ m.reply_to.body|truncatewords:12 }}</a>
         </div>
         {% endif %}
-        {% if m.sticker %}
-        <span class="gift-tile gift-tile-sm" style="background:{{ m.sticker.bg }};color:{{ m.sticker.fg }}">
-            <span class="gift-tile-title">{{ m.sticker.title }}</span>
-        </span>
-        {% endif %}
+        {% if m.sticker %}{% include "social/_gift_tile.html" with sticker=m.sticker sm=1 %}{% endif %}
         {% if m.body and m.body != '[фото]' and m.body != '[видео]' and m.body != '[стикер]' %}{{ m.body|linebreaksbr }}{% endif %}
         {% if m.attachment_url %}
             {% if m.attachment_is_video %}

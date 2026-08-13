@@ -116,7 +116,8 @@ def main():
     }, secure=True)
     page = Company.objects.filter(name=name).first()
     assert page
-    starts = (datetime.now() + timedelta(days=14)).strftime("%d.%m.%Y 19:00")
+    from apps.social.services import now as svc_now
+    starts = (svc_now() + timedelta(days=14)).strftime("%d.%m.%Y 19:00")
     r = c.post(f"/pages/{page.id}/events", {
         "title": "QA Page Concert",
         "place": "Клуб",
