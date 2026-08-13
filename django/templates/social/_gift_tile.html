@@ -1,0 +1,5 @@
+{% if sticker %}
+<span class="gift-tile{% if sm %} gift-tile-sm{% endif %}" style="background:{{ sticker.bg }};color:{{ sticker.fg }}"{% if sticker.title %} title="{{ sticker.title }}"{% endif %}>
+    {% if sticker.image_url %}<img src="{{ sticker.image_url }}" alt="">{% else %}<span class="gift-tile-title">{{ sticker.title }}</span>{% endif %}
+</span>
+{% endif %}
