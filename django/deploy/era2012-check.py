@@ -205,11 +205,20 @@ def main():
     assert r.status_code in (301, 302)
     col.refresh_from_db()
     assert not col.cover_path
+    new_title = f"QA Col Edit {uuid.uuid4().hex[:6]}"
+    r = c.post(f"/collections/{col.id}/edit", {
+        "title": new_title, "description": "edited probe", "visibility": "friends",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    col.refresh_from_db()
+    assert col.title == new_title and col.description == "edited probe" and col.visibility == "friends"
+    r = c.get(f"/collections/{col.id}", secure=True)
+    assert r.status_code == 200 and "Редактировать".encode() in r.content and new_title.encode() in r.content
     vpost.delete()
     bump_news()
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "collection" and i.get("collection") and i["collection"].id == col.id for i in feed)
-    ok("collections + cover + feed")
+    ok("collections + cover + edit + feed")
 
     page = Company.objects.filter(admins__social_user=me).order_by("id").first()
     if not page:

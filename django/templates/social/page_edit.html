@@ -48,6 +48,15 @@
                 </form>
             </div>
         </div>
+        <div class="profile-box">
+            <h4>Удалить страницу</h4>
+            <div class="profile-box-body">
+                <p class="muted">Страница, стена, события и подписчики будут удалены без возможности восстановления.</p>
+                <form method="post" action="{% url 'pages.delete' page.id %}" onsubmit="return confirm('Удалить страницу «{{ page.name|escapejs }}» навсегда?');">{% csrf_token %}
+                    <input type="submit" class="inputsubmit" value="Удалить страницу">
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

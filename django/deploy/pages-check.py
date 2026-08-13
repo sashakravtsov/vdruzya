@@ -39,7 +39,8 @@ def main():
     assert r.status_code == 200 and "Приложения".encode() in r.content
     # Platform App Center (first-party canvas) — not site-module directory
     assert "Дела".encode() in r.content or "Викторины".encode() in r.content
-    assert "Избранные".encode() in r.content
+    assert "Рекомендуемые".encode() in r.content or "Избранные".encode() in r.content
+    assert "В закладки".encode() in r.content or "Мои приложения".encode() in r.content
     ok("apps catalog")
 
     r = c.get("/pages", secure=True)
@@ -97,18 +98,19 @@ def main():
 
     r = c.get(f"/pages/{page.id}/edit", secure=True)
     assert r.status_code == 200 and "Редактировать".encode() in r.content
+    assert "Удалить страницу".encode() in r.content
     ok("page edit")
 
     r = c.get(f"/search?q={name}&tab=pages", secure=True)
     assert r.status_code == 200 and name.encode() in r.content
     ok("search finds page")
 
-    # cleanup
-    Post.objects.filter(topic=f"page:{page.id}").delete()
-    CompanyFollower.objects.filter(company=page).delete()
-    CompanyAdmin.objects.filter(company=page).delete()
-    page.delete()
-    ok("cleanup")
+    page_id = page.id
+    r = c.post(f"/pages/{page_id}/delete", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not Company.objects.filter(pk=page_id).exists()
+    assert not Post.objects.filter(topic=f"page:{page_id}").exists()
+    ok("page delete")
     print("ALL pages/apps probes passed")
 
 

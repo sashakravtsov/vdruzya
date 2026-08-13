@@ -134,6 +134,23 @@ def collection_show(request, pk):
 
 @login_required
 @require_POST
+def collection_edit(request, pk):
+    me = profile_of(request.user)
+    col = get_object_or_404(Collection, pk=pk, social_user=me)
+    if e12.update_collection(
+        me, col,
+        title=request.POST.get("title") or "",
+        description=request.POST.get("description") or "",
+        visibility=request.POST.get("visibility") or col.visibility or "friends",
+    ):
+        messages.success(request, "Коллекция сохранена.")
+    else:
+        messages.error(request, "Укажите название.")
+    return redirect(col)
+
+
+@login_required
+@require_POST
 def collection_delete(request, pk):
     me = profile_of(request.user)
     if e12.delete_collection(me, pk):
