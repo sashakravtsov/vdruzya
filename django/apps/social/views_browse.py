@@ -42,11 +42,12 @@ def groups(request):
     """FB 2005 groups directory — browse is public; create/mine need login."""
     from django.core.paginator import Paginator
     me = profile_of(request.user) if request.user.is_authenticated else None
-    form = CreateGroupForm(request.POST or None)
+    form = CreateGroupForm(request.POST or None, request.FILES or None)
     if request.method == "POST":
         if not me:
             return redirect(f"/login?next=/groups")
         if form.is_valid():
+            from apps.social.media import try_save_image
             from apps.social.slugs import unique_slug
             d = form.cleaned_data
             blurb = (d.get("short_description") or "").strip()
@@ -55,6 +56,7 @@ def groups(request):
                 category=d["category"], privacy=d["privacy"], short_description=blurb or None,
                 description=blurb or d["name"].strip(),
                 cover_color="#3B5998",
+                cover_path=try_save_image(d.get("picture"), "groups"),
                 join_mode="request" if d["privacy"] == "closed" else "open",
                 posting_policy="members",
                 creator=me, created_at=_now(), updated_at=_now(),

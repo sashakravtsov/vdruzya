@@ -13,6 +13,9 @@
             <h4>{{ question.social_user.name }} спрашивает</h4>
             <div class="profile-box-body">
                 <p><b>{{ question.body }}</b></p>
+                {% if question.photo_url %}
+                <p class="event-cover"><img src="{{ question.photo_url }}" alt="" class="news-photo"></p>
+                {% endif %}
                 {% if question.created_at %}<p class="muted">{{ question.created_at|fb_when }}</p>{% endif %}
             </div>
         </div>

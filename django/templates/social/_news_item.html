@@ -232,6 +232,9 @@
             спросил(а):
             <a href="{% url 'questions.show' item.question.id %}"><b>{{ item.question.body|truncatewords:16 }}</b></a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.question.photo_url %}
+            <div class="news-photo-row"><a href="{% url 'questions.show' item.question.id %}"><img src="{{ item.question.photo_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% endif %}
         </div>
     {% elif item.kind == 'like' and item.post %}
         <span class="ico ico-note news-ico"></span>

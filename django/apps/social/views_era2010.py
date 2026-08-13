@@ -88,11 +88,13 @@ def place_show(request, pk):
 @require_http_methods(["GET", "POST"])
 def questions_home(request):
     me = profile_of(request.user)
-    form = QuestionForm(request.POST or None)
+    form = QuestionForm(request.POST or None, request.FILES or None)
     mine = request.GET.get("mine") == "1"
     if request.method == "POST":
         if form.is_valid():
-            q = e10.question_create(me, form.cleaned_data["body"])
+            q = e10.question_create(
+                me, form.cleaned_data["body"], photo=form.cleaned_data.get("photo"),
+            )
             if q:
                 messages.success(request, "Вопрос задан.")
                 return redirect(q)

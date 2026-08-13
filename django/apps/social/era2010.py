@@ -124,12 +124,17 @@ def questions_feed(viewer, *, mine=False, limit=40):
     return list(qs[:limit])
 
 
-def question_create(me, body: str):
+def question_create(me, body: str, photo=None):
+    from apps.social.media import try_save_image
     body = (body or "").strip()[:500]
     if not me or not body:
         return None
     t = now()
-    q = Question.objects.create(social_user=me, body=body, created_at=t, updated_at=t)
+    q = Question.objects.create(
+        social_user=me, body=body,
+        photo_path=try_save_image(photo, "questions"),
+        created_at=t, updated_at=t,
+    )
     bump_news()
     return q
 

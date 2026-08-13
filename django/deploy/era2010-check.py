@@ -48,7 +48,11 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), f"missing {t}"
-        for table, col in (("places", "photo_path"), ("place_checkins", "photo_path")):
+        for table, col in (
+            ("places", "photo_path"),
+            ("place_checkins", "photo_path"),
+            ("questions", "photo_path"),
+        ):
             cur.execute(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_name=%s AND column_name=%s",
@@ -112,11 +116,19 @@ def main():
     assert any(i.get("kind") == "review" and i.get("place") and i["place"].id == place.id for i in feed)
     ok("place checkin + review + feed")
 
-    # Question + answer + vote
-    r = c.post("/questions", {"body": "QA: любимый фильм 2010?"}, secure=True)
+    # Question + answer + vote (+ optional photo)
+    r = c.post("/questions", {
+        "body": "QA: любимый фильм 2010?",
+        "photo": SimpleUploadedFile("q.png", PNG, content_type="image/png"),
+    }, secure=True)
     assert r.status_code in (301, 302)
     q = Question.objects.filter(social_user=me, body__startswith="QA:").order_by("-id").first()
     assert q
+    assert q.photo_path and q.photo_path.startswith("questions/"), q.photo_path
+    r = c.get(f"/questions/{q.id}", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content and q.photo_url.encode() in r.content
+    r = c.get("/questions?mine=1", secure=True)
+    assert r.status_code == 200 and b"list-thumb" in r.content
     r = c.post(f"/questions/{q.id}", {"body": "Начало"}, secure=True)
     assert r.status_code in (301, 302)
     ans = QuestionAnswer.objects.filter(question=q, social_user=me).first()
@@ -126,7 +138,7 @@ def main():
     assert QuestionVote.objects.filter(answer=ans, social_user=me).exists()
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "question" and i.get("question") and i["question"].id == q.id for i in feed)
-    ok("question answer vote + feed")
+    ok("question photo + answer vote + feed")
 
     # Classic poll
     r = c.post(

@@ -52,6 +52,7 @@ class Question(models.Model):
     id = models.BigAutoField(primary_key=True)
     social_user = models.ForeignKey(SocialProfile, models.DO_NOTHING, related_name="questions")
     body = models.CharField(max_length=500)
+    photo_path = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
@@ -62,6 +63,11 @@ class Question(models.Model):
 
     def get_absolute_url(self):
         return f"/questions/{self.pk}"
+
+    @property
+    def photo_url(self):
+        from apps.social.media import media_url
+        return media_url(self.photo_path)
 
 
 class QuestionAnswer(models.Model):

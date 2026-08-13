@@ -10,10 +10,16 @@ import django
 
 django.setup()
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from apps.accounts.models import User
 from apps.social.models import Community, CommunityPost, Post
 from apps.social.services import profile_of
+
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+)
 
 
 def fail(msg):
@@ -136,6 +142,8 @@ def main():
         fail("groups browse table")
     if "classic-group-row" in body:
         fail("classic-group-row leftover")
+    if "Картинка" not in body:
+        fail("group create picture field")
     ok("groups index")
 
     r = get("/groups?mine=1")
@@ -143,6 +151,24 @@ def main():
     if "mygroups-table" not in body and "Мои группы" not in body:
         fail("my groups")
     ok("my groups table")
+
+    created = None
+    r = post("/groups", {
+        "name": "QA Group Pic",
+        "category": "general",
+        "privacy": "public",
+        "short_description": "with picture",
+        "picture": SimpleUploadedFile("g.png", PNG, content_type="image/png"),
+    })
+    if r.status_code != 200:
+        fail("group create with picture")
+    created = Community.objects.filter(name="QA Group Pic", creator=me).order_by("-id").first()
+    if not created or not created.cover_path or not created.cover_path.startswith("groups/"):
+        fail(f"group cover_path {getattr(created, 'cover_path', None)}")
+    r = get(f"/groups/{created.id}")
+    if r.status_code != 200 or created.cover_url.encode() not in r.content:
+        fail("group show cover")
+    ok("group create picture")
 
     g = Community.objects.filter(memberships__social_user=me).first() or Community.objects.first()
     if not g:
@@ -248,6 +274,10 @@ def main():
 
     CommunityPost.objects.filter(body__startswith="probe ").delete()
     Post.objects.filter(body__startswith="probe ").delete()
+    if created:
+        from apps.social.models import CommunityMember
+        CommunityMember.objects.filter(community=created).delete()
+        created.delete()
     ok("cleanup")
     print("ALL wall/groups probes passed")
 

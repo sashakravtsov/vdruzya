@@ -162,12 +162,13 @@
         <div class="groups-create" id="create">
             <h4>Создать группу</h4>
             {% if me %}
-            <form method="post">{% csrf_token %}
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}
                 <table class="formtable" cellpadding="0" cellspacing="0">
                     <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
                     <tr><td class="label">Тип:</td><td>{{ form.category }}</td></tr>
                     <tr><td class="label">Доступ:</td><td>{{ form.privacy }}</td></tr>
                     <tr><td class="label">Описание:</td><td>{{ form.short_description }}</td></tr>
+                    <tr><td class="label">Картинка:</td><td>{{ form.picture }}</td></tr>
                     <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать группу"></td></tr>
                 </table>
             </form>

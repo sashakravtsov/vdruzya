@@ -471,6 +471,7 @@ class CreateGroupForm(ClassicForm, forms.Form):
         required=False, max_length=200,
         widget=_ta(2),
     )
+    picture = forms.ImageField(required=False, label="Картинка", widget=_file())
 
 
 class GroupForm(ClassicForm, forms.ModelForm):
@@ -800,6 +801,7 @@ class CheckinForm(ClassicForm, forms.Form):
 
 class QuestionForm(ClassicForm, forms.Form):
     body = forms.CharField(max_length=500, widget=_ta(3, style="width:100%"))
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
     def clean_body(self):
         body = (self.cleaned_data.get("body") or "").strip()
