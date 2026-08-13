@@ -1064,6 +1064,7 @@ def page_updates(viewer, limit=6):
     """Right-rail: recent posts from fanned Pages."""
     if not viewer:
         return []
+    from apps.social.classic_extra import hydrate_posted
     from apps.social.models import CompanyFollower
     page_ids = list(
         CompanyFollower.objects.filter(social_user=viewer).values_list("company_id", flat=True)
@@ -1079,7 +1080,20 @@ def page_updates(viewer, limit=6):
         .order_by("-id")[:limit]
     )
     attach_pages(posts)
-    return [p for p in posts if getattr(p, "page", None)]
+    out = []
+    for p in posts:
+        if not getattr(p, "page", None):
+            continue
+        if getattr(p, "kind", None) in ("link", "video"):
+            hydrate_posted(p)
+            # Classic rail line — never show raw storage: paths.
+            p.rail_text = (getattr(p, "link_blurb", None) or p.media_label or (
+                "Видео" if p.kind == "video" else "Ссылка"
+            ))
+        else:
+            p.rail_text = (p.body or "").strip()
+        out.append(p)
+    return out
 
 
 def feed_rail(viewer):

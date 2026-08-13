@@ -306,7 +306,7 @@
                         {% for s in page_posts %}
                         <div class="rail-row">
                             <a href="{% url 'pages.show' s.page.id %}">{{ s.page.name }}</a>
-                            <div class="muted">{{ s.body|truncatewords:12 }}</div>
+                            <div class="muted">{{ s.rail_text|default:s.body|truncatewords:12 }}</div>
                         </div>
                         {% endfor %}
                     {% else %}
