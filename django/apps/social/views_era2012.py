@@ -224,4 +224,6 @@ def app_show(request, slug):
         "me": me, "app": app, "nav": "apps",
         "categories": pa.APP_CATEGORIES,
         "installed": installed,
+        "app_permissions": pa.permissions_for(app),
+        "install_dialog_message": pa.install_dialog_message(app),
     })

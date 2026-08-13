@@ -146,6 +146,7 @@ urlpatterns = [
     path("albums/<int:album_id>/edit", albums.album_edit, name="albums.edit"),
     path("albums/<int:album_id>/photos", albums.photo_upload, name="albums.photos"),
     path("albums/<int:album_id>/photos/<int:photo_id>", albums.photo_show, name="albums.photos.show"),
+    path("albums/<int:album_id>/photos/<int:photo_id>/modal", albums.photo_modal, name="albums.photos.modal"),
     path("albums/<int:album_id>/photos/<int:photo_id>/comment", albums.photo_comment, name="albums.photos.comment"),
     path("albums/<int:album_id>/photos/<int:photo_id>/like", albums.photo_like, name="albums.photos.like"),
     path("albums/<int:album_id>/photos/<int:photo_id>/tag", albums.photo_tag, name="albums.photos.tag"),

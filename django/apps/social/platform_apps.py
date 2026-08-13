@@ -5,6 +5,9 @@ These apps live in Django and mimic 2007–08 Applications + 2012 App Center UX.
 """
 from __future__ import annotations
 
+import hashlib
+import random
+
 from django.db.models import Count
 
 from apps.social.models import SocialProfile
@@ -15,6 +18,11 @@ APP_CATEGORIES = (
     ("games", "Игры"),
     ("lifestyle", "Образ жизни"),
     ("utilities", "Утилиты"),
+)
+
+DEFAULT_PERMISSIONS = (
+    "Основная информация профиля",
+    "Список друзей",
 )
 
 PLATFORM_APPS = (
@@ -29,6 +37,11 @@ PLATFORM_APPS = (
             "присоединитесь и расскажите друзьям на стене."
         ),
         "developer": "ВДрузья",
+        "permissions": (
+            "Основная информация профиля",
+            "Список друзей",
+            "Публикация на стене",
+        ),
     },
     {
         "slug": "quiz",
@@ -41,6 +54,11 @@ PLATFORM_APPS = (
             "при желании опубликуйте результат на стене."
         ),
         "developer": "ВДрузья",
+        "permissions": (
+            "Основная информация профиля",
+            "Список друзей",
+            "Публикация на стене",
+        ),
     },
     {
         "slug": "superpoke",
@@ -53,6 +71,11 @@ PLATFORM_APPS = (
             "он получит уведомление во входящих."
         ),
         "developer": "ВДрузья",
+        "permissions": (
+            "Основная информация профиля",
+            "Список друзей",
+            "Отправка уведомлений",
+        ),
     },
     {
         "slug": "compare",
@@ -65,6 +88,7 @@ PLATFORM_APPS = (
             "classic utility app без стороннего кода."
         ),
         "developer": "ВДрузья",
+        "permissions": DEFAULT_PERMISSIONS,
     },
     {
         "slug": "truth",
@@ -77,6 +101,122 @@ PLATFORM_APPS = (
             "оставить на стене приложения."
         ),
         "developer": "ВДрузья",
+        "permissions": (
+            "Основная информация профиля",
+            "Список друзей",
+            "Отправка уведомлений",
+        ),
+    },
+    # Sample first-party apps by Александр (App Center demos)
+    {
+        "slug": "calculator",
+        "name": "Калькулятор",
+        "category": "utilities",
+        "featured": True,
+        "blurb": "Простой калькулятор на стене приложений.",
+        "detail": (
+            "Утилита Александра: сложение, вычитание, умножение и деление "
+            "прямо в canvas — как мини-приложение Facebook Platform."
+        ),
+        "developer": "Александр",
+        "permissions": ("Основная информация профиля",),
+    },
+    {
+        "slug": "weather",
+        "name": "Погода",
+        "category": "lifestyle",
+        "featured": True,
+        "blurb": "Погода по городу — демо-прогноз для друзей.",
+        "detail": (
+            "Приложение Александра: укажите город и получите демо-прогноз "
+            "(без внешнего API — как учебный canvas-пример)."
+        ),
+        "developer": "Александр",
+        "permissions": DEFAULT_PERMISSIONS,
+    },
+    {
+        "slug": "horoscope",
+        "name": "Гороскопы",
+        "category": "lifestyle",
+        "featured": False,
+        "blurb": "Ежедневный гороскоп по знаку зодиака.",
+        "detail": (
+            "Гороскопы от Александра: выберите знак и прочитайте короткий "
+            "прогноз дня — classic lifestyle app."
+        ),
+        "developer": "Александр",
+        "permissions": ("Основная информация профиля",),
+    },
+    {
+        "slug": "dating",
+        "name": "Знакомства",
+        "category": "lifestyle",
+        "featured": True,
+        "blurb": "Совместимость с друзьями — лёгкий демо-матч.",
+        "detail": (
+            "Знакомства от Александра: покажет совпадения среди друзей "
+            "с процентом совместимости (демо, без стороннего хостинга)."
+        ),
+        "developer": "Александр",
+        "permissions": (
+            "Основная информация профиля",
+            "Список друзей",
+            "Город и интересы",
+        ),
+    },
+    {
+        "slug": "farm",
+        "name": "Ферма",
+        "category": "games",
+        "featured": True,
+        "blurb": "Посадите урожай и соберите его с друзьями.",
+        "detail": "Мини-ферма в духе FarmVille: посадите, подождите, соберите.",
+        "developer": "ВДрузья",
+        "permissions": (
+            "Основная информация профиля",
+            "Список друзей",
+            "Публикация на стене",
+        ),
+    },
+    {
+        "slug": "billiards",
+        "name": "Бильярд",
+        "category": "games",
+        "featured": False,
+        "blurb": "Партия бильярда — бросок и счёт.",
+        "detail": "Простая canvas-игра: удар по шару и подсчёт очков.",
+        "developer": "ВДрузья",
+        "permissions": DEFAULT_PERMISSIONS,
+    },
+    {
+        "slug": "chess",
+        "name": "Шахматы",
+        "category": "games",
+        "featured": False,
+        "blurb": "Шахматная доска для партии с другом.",
+        "detail": "Доска и ход фигурой — учебная партия без движка.",
+        "developer": "ВДрузья",
+        "permissions": DEFAULT_PERMISSIONS,
+    },
+    {
+        "slug": "tetris",
+        "name": "Тетрис",
+        "category": "games",
+        "featured": False,
+        "blurb": "Классические линии — наберите очки.",
+        "detail": "Короткий тетрис-раунд: соберите линии и сохраните счёт.",
+        "developer": "ВДрузья",
+        "permissions": ("Основная информация профиля",),
+    },
+    {
+        "slug": "poker",
+        "name": "Покер",
+        "category": "games",
+        "featured": False,
+        "blurb": "Раздача карт — кто ближе к флешу.",
+        "detail": "Демо-покер: получите пять карт и сравните комбинацию.",
+        "developer": "ВДрузья",
+        "permissions": DEFAULT_PERMISSIONS,
     },
 )
 
@@ -297,3 +437,163 @@ def compare_profiles(a: SocialProfile, b: SocialProfile) -> list[dict]:
          "same": bool(aa["hometown"] and aa["hometown"].lower() == bb["hometown"].lower())},
         {"label": "Общие интересы", "a": ", ".join(shared) or "—", "b": "", "same": bool(shared)},
     ]
+
+
+def permissions_for(app: dict | None) -> tuple:
+    if not app:
+        return DEFAULT_PERMISSIONS
+    return tuple(app.get("permissions") or DEFAULT_PERMISSIONS)
+
+
+def install_dialog_html(app: dict) -> str:
+    """HTML body for 2006 install permissions dialog."""
+    name = app.get("name") or "приложение"
+    perms = permissions_for(app)
+    items = "".join(f"<li>{p}</li>" for p in perms)
+    return (
+        f"<p>Разрешить «{name}» доступ к вашим данным?</p>"
+        f"<p class=\"muted\">Приложение запрашивает:</p>"
+        f"<ul class=\"fb-dialog-perms\">{items}</ul>"
+        f"<p class=\"muted\">Разработчик: {app.get('developer') or 'ВДрузья'}</p>"
+    )
+
+
+def install_dialog_message(app: dict) -> str:
+    """Plain-text fallback for install confirm (data-fb-dialog-message)."""
+    name = app.get("name") or "приложение"
+    perms = "; ".join(permissions_for(app))
+    dev = app.get("developer") or "ВДрузья"
+    return (
+        f"Разрешить «{name}» доступ? Запрашивает: {perms}. "
+        f"Разработчик: {dev}."
+    )
+
+
+ZODIAC = (
+    ("aries", "Овен"),
+    ("taurus", "Телец"),
+    ("gemini", "Близнецы"),
+    ("cancer", "Рак"),
+    ("leo", "Лев"),
+    ("virgo", "Дева"),
+    ("libra", "Весы"),
+    ("scorpio", "Скорпион"),
+    ("sagittarius", "Стрелец"),
+    ("capricorn", "Козерог"),
+    ("aquarius", "Водолей"),
+    ("pisces", "Рыбы"),
+)
+
+HOROSCOPE_LINES = (
+    "Хороший день для короткого сообщения другу.",
+    "Не торопитесь с решениями — сначала посмотрите стену.",
+    "Вечер подойдёт для фото и тёплого комментария.",
+    "Общие друзья подскажут неожиданную встречу.",
+    "Спокойный темп: заметка важнее ленты.",
+)
+
+
+def weather_for_city(city: str) -> dict:
+    city = (city or "").strip() or "Москва"
+    seed = int(hashlib.md5(city.lower().encode("utf-8")).hexdigest()[:8], 16)
+    rng = random.Random(seed)
+    temps = list(range(-12, 32))
+    temp = temps[seed % len(temps)]
+    skies = ("ясно", "облачно", "небольшой дождь", "пасмурно", "снег")
+    return {
+        "city": city,
+        "temp": temp,
+        "sky": skies[seed % len(skies)],
+        "wind": 1 + rng.randint(0, 8),
+        "hint": "Демо-прогноз (без внешнего API).",
+    }
+
+
+def horoscope_for(sign: str) -> dict:
+    labels = dict(ZODIAC)
+    sign = (sign or "").strip().lower()
+    if sign not in labels:
+        sign = "aries"
+    seed = int(hashlib.md5(sign.encode()).hexdigest()[:8], 16)
+    return {
+        "sign": sign,
+        "label": labels[sign],
+        "line": HOROSCOPE_LINES[seed % len(HOROSCOPE_LINES)],
+        "mood": ("удача", "спокойствие", "общение", "дело")[seed % 4],
+    }
+
+
+def dating_matches(me, limit=8) -> list[dict]:
+    friends = friends_for_app(me, limit=40)
+    out = []
+    for p in friends[:limit]:
+        seed = int(hashlib.md5(f"{me.id}:{p.id}".encode()).hexdigest()[:8], 16)
+        score = 55 + (seed % 41)
+        shared_city = bool(
+            (me.city or "").strip()
+            and (me.city or "").strip().lower() == (p.city or "").strip().lower()
+        )
+        out.append({
+            "profile": p,
+            "score": score,
+            "note": "один город" if shared_city else "по интересам и кругу друзей",
+        })
+    out.sort(key=lambda x: -x["score"])
+    return out
+
+
+def calc_eval(a: str, op: str, b: str) -> str:
+    try:
+        x = float((a or "0").replace(",", "."))
+        y = float((b or "0").replace(",", "."))
+    except ValueError:
+        return "ошибка"
+    if op == "+":
+        r = x + y
+    elif op == "-":
+        r = x - y
+    elif op == "*":
+        r = x * y
+    elif op == "/":
+        if y == 0:
+            return "деление на ноль"
+        r = x / y
+    else:
+        return "ошибка"
+    if abs(r - int(r)) < 1e-9:
+        return str(int(r))
+    return f"{r:.4g}"
+
+
+FARM_CROPS = (
+    ("wheat", "пшеница", 3),
+    ("carrot", "морковь", 2),
+    ("apple", "яблоня", 5),
+)
+
+POKER_RANKS = "A23456789TJQK"
+POKER_SUITS = ("♠", "♥", "♦", "♣")
+
+
+def poker_deal(seed: str | None = None) -> list[str]:
+    rng = random.Random(seed or now().isoformat())
+    deck = [f"{r}{s}" for r in POKER_RANKS for s in POKER_SUITS]
+    rng.shuffle(deck)
+    return deck[:5]
+
+
+def poker_rank_label(cards: list[str]) -> str:
+    ranks = [c[0] for c in cards]
+    suits = [c[1] for c in cards]
+    if len(set(suits)) == 1:
+        return "флеш"
+    from collections import Counter
+    cnt = Counter(ranks)
+    vals = sorted(cnt.values(), reverse=True)
+    if vals[0] == 3:
+        return "тройка"
+    if vals[0] == 2 and vals[1] == 2:
+        return "две пары"
+    if vals[0] == 2:
+        return "пара"
+    return "старшая карта"

@@ -108,7 +108,8 @@
                     <tbody>
                         {% for app in apps %}
                         <tr>
-                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a>
+                                <div class="muted">{{ app.developer|default:"ВДрузья" }}</div></td>
                             <td class="col-type">{{ app.blurb }}</td>
                             <td class="col-act">
                                 {% if app.slug in installed %}

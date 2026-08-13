@@ -7,7 +7,7 @@
             <input class="inputtext" type="text" name="q" id="qsearch_q" size="15" autocomplete="off">
         </form>
     </div>
-    {% cache 30 snav me.id unread_messages nav %}
+    {% cache 30 snav me.id unread_messages nav sidebar_apps_key %}
     <div id="snav" data-rt="{% url 'realtime.stream' %}">
         <span class="snav-profile">
             <a class="hasedit" href="{% url 'profile' me.id %}">Мой профиль</a><a class="edit" href="{% url 'profile.edit' %}">[ред.]</a>
@@ -36,7 +36,13 @@
         <a href="{% url 'birthdays' %}"{% if nav == 'birthdays' %} class="is-on"{% endif %}>Дни рождения</a>
         <a href="{% url 'anniversaries' %}"{% if nav == 'anniversaries' %} class="is-on"{% endif %}>Годовщины</a>
         <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
-        <a href="{% url 'apps' %}"{% if nav == 'apps' %} class="is-on"{% endif %}>Приложения</a>
+        <a href="{% url 'apps' %}"{% if nav == 'apps' or nav == 'apps.show' or nav == 'apps.canvas' %} class="is-on"{% endif %}>Приложения</a>
+        {% if sidebar_apps %}
+        <span class="snav-apps-label">Закладки приложений</span>
+        {% for app in sidebar_apps %}
+        <a class="snav-app{% if nav == 'apps.canvas' %} is-on{% endif %}" href="{% url 'apps.canvas' app.slug %}">{{ app.name }}</a>
+        {% endfor %}
+        {% endif %}
         <a href="{% url 'collections' %}"{% if nav == 'collections' %} class="is-on"{% endif %}>Коллекции</a>
         <a id="nav-inbox" href="{% url 'inbox' %}"{% if nav == 'inbox' %} class="is-on"{% endif %}>Входящие{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
         <a id="nav-notifications" href="{% url 'notifications' %}"{% if nav == 'notifications' %} class="is-on"{% endif %}>Уведомления</a>

@@ -28,9 +28,17 @@
     return root;
   }
 
+  function setWide(root, wide) {
+    var dlg = $(".fb-dialog", root);
+    dlg.className = "fb-dialog";
+    if (wide === "photo") dlg.classList.add("fb-dialog-photo");
+    else if (wide) dlg.classList.add("fb-dialog-wide");
+  }
+
   function open(opts) {
     opts = opts || {};
     var root = ensureRoot();
+    setWide(root, opts.wide);
     $(".fb-dialog-title-text", root).textContent = opts.title || "ВДрузья";
     var body = $(".fb-dialog-body", root);
     body.innerHTML = "";
@@ -38,6 +46,8 @@
     else body.textContent = opts.message || "";
     var foot = $(".fb-dialog-footer", root);
     foot.innerHTML = "";
+    var hideFoot = opts.hideFooter;
+    foot.style.display = hideFoot ? "none" : "";
     (opts.buttons || [{ label: "OK", primary: true, close: true }]).forEach(function (btn) {
       var el;
       if (btn.href) {
@@ -67,6 +77,7 @@
     if (!root) return;
     root.classList.remove("is-open");
     document.body.classList.remove("fb-dialog-open");
+    setWide(root, null);
   }
 
   function confirm(opts) {
@@ -90,16 +101,68 @@
     });
   }
 
+  function photoModalUrlFromHref(href) {
+    if (!href) return null;
+    var m = String(href).match(/^(\/albums\/\d+\/photos\/\d+)\/?(?:[?#].*)?$/);
+    return m ? m[1] + "/modal" : null;
+  }
+
+  function openPhotoModal(url) {
+    fetch(url, {
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html" },
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("photo modal");
+        return r.text();
+      })
+      .then(function (html) {
+        open({
+          title: "Фотография",
+          html: html,
+          wide: "photo",
+          buttons: [{ label: "Закрыть", primary: true, close: true }],
+        });
+      })
+      .catch(function () {
+        window.location = url.replace(/\/modal\/?$/, "");
+      });
+  }
+
   function bindDataApi() {
     document.addEventListener("click", function (ev) {
+      var photoLink = ev.target.closest("a[data-fb-photo-modal], a[href]");
+      if (photoLink && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey && !ev.altKey) {
+        var modalUrl = photoLink.getAttribute("data-fb-photo-modal");
+        if (!modalUrl) {
+          // Auto-open album photo pages in 2006 dialog (wall / gallery thumbs).
+          var raw = photoLink.getAttribute("href") || "";
+          if (photoLink.closest(".photo-modal-full")) {
+            /* keep full-page link inside modal */
+          } else {
+            modalUrl = photoModalUrlFromHref(raw);
+          }
+        }
+        if (modalUrl) {
+          ev.preventDefault();
+          if (photoLink.closest("#classic-dialog-root") && photoLink.getAttribute("data-fb-photo-modal")) {
+            openPhotoModal(modalUrl);
+            return;
+          }
+          openPhotoModal(modalUrl);
+          return;
+        }
+      }
+
       var t = ev.target.closest("[data-fb-dialog]");
       if (!t) return;
       ev.preventDefault();
       var title = t.getAttribute("data-fb-dialog-title") || "ВДрузья";
       var msg = t.getAttribute("data-fb-dialog-message") || "";
+      var html = t.getAttribute("data-fb-dialog-html") || "";
       var href = t.getAttribute("href");
       var formSel = t.getAttribute("data-fb-dialog-form");
-      confirm({ title: title, message: msg }).then(function (ok) {
+      confirm({ title: title, message: msg, html: html || undefined }).then(function (ok) {
         if (!ok) return;
         if (formSel) {
           var form = document.querySelector(formSel);
@@ -111,7 +174,7 @@
     });
   }
 
-  window.FBDialog = { open: open, close: close, confirm: confirm };
+  window.FBDialog = { open: open, close: close, confirm: confirm, openPhotoModal: openPhotoModal };
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bindDataApi);
   } else {

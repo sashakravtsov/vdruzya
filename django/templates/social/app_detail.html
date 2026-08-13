@@ -35,10 +35,18 @@
                         <form method="post" action="{% url 'apps.install' app.slug %}" class="inline" id="app-inst">{% csrf_token %}
                             <button type="submit" class="inputsubmit"
                                     data-fb-dialog
-                                    data-fb-dialog-title="Добавить приложение?"
-                                    data-fb-dialog-message="Разрешить «{{ app.name }}» доступ к базовому профилю и друзьям (как в Facebook Platform)?"
+                                    data-fb-dialog-title="Разрешения приложения"
+                                    data-fb-dialog-message="{{ install_dialog_message }}"
                                     data-fb-dialog-form="#app-inst">Добавить приложение</button>
                         </form>
+                        <div class="stack-md">
+                            <p class="muted">При установке запрашиваются разрешения:</p>
+                            <ul>
+                                {% for p in app_permissions %}
+                                <li>{{ p }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                         {% endif %}
                     {% else %}
                         <a href="{% url 'login' %}">Войдите</a>, чтобы добавить приложение.

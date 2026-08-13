@@ -58,6 +58,15 @@ def app_canvas(request, slug):
         "superpoke": _canvas_superpoke,
         "compare": _canvas_compare,
         "truth": _canvas_truth,
+        "calculator": _canvas_calculator,
+        "weather": _canvas_weather,
+        "horoscope": _canvas_horoscope,
+        "dating": _canvas_dating,
+        "farm": _canvas_farm,
+        "billiards": _canvas_billiards,
+        "chess": _canvas_chess,
+        "tetris": _canvas_tetris,
+        "poker": _canvas_poker,
     }
     handler = handlers.get(slug)
     if not handler:
@@ -245,5 +254,148 @@ def _canvas_truth(request, me, app):
     return render(request, "social/apps/canvas_truth.html", {
         "me": me, "app": app, "friends": friends,
         "incoming": incoming, "outgoing": outgoing,
+        "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_calculator(request, me, app):
+    result = None
+    a = b = "0"
+    op = "+"
+    if request.method == "POST":
+        a = (request.POST.get("a") or "0")[:40]
+        b = (request.POST.get("b") or "0")[:40]
+        op = (request.POST.get("op") or "+")[:1]
+        result = pa.calc_eval(a, op, b)
+    return render(request, "social/apps/canvas_calculator.html", {
+        "me": me, "app": app, "a": a, "b": b, "op": op, "result": result,
+        "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_weather(request, me, app):
+    city = (me.city or "").strip() or "Москва"
+    forecast = None
+    if request.method == "POST":
+        city = (request.POST.get("city") or city)[:80]
+        forecast = pa.weather_for_city(city)
+    elif request.method == "GET" and request.GET.get("city"):
+        city = request.GET.get("city")[:80]
+        forecast = pa.weather_for_city(city)
+    return render(request, "social/apps/canvas_weather.html", {
+        "me": me, "app": app, "city": city, "forecast": forecast,
+        "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_horoscope(request, me, app):
+    sign = (request.POST.get("sign") or request.GET.get("sign") or "aries").strip().lower()
+    reading = pa.horoscope_for(sign) if request.method == "POST" or request.GET.get("sign") else None
+    return render(request, "social/apps/canvas_horoscope.html", {
+        "me": me, "app": app, "signs": pa.ZODIAC, "sign": sign,
+        "reading": reading, "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_dating(request, me, app):
+    matches = pa.dating_matches(me)
+    return render(request, "social/apps/canvas_dating.html", {
+        "me": me, "app": app, "matches": matches,
+        "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_farm(request, me, app):
+    crop = None
+    planted = harvested = None
+    if request.method == "POST":
+        action = (request.POST.get("action") or "plant").strip()
+        slug = (request.POST.get("crop") or "wheat").strip()
+        crops = {c[0]: c for c in pa.FARM_CROPS}
+        crop = crops.get(slug) or pa.FARM_CROPS[0]
+        if action == "harvest":
+            harvested = crop[1]
+            Post.objects.create(
+                social_user=me,
+                body=f"собрал(а) урожай «{harvested}» в приложении Ферма",
+                kind="text", visibility="friends",
+                created_at=now(), updated_at=now(),
+            )
+            bump_news()
+            messages.success(request, f"Урожай «{harvested}» собран.")
+            return redirect("apps.canvas", slug="farm")
+        planted = crop[1]
+        messages.info(request, f"Посажено: {planted}. Загляните позже за сбором.")
+    return render(request, "social/apps/canvas_farm.html", {
+        "me": me, "app": app, "crops": pa.FARM_CROPS,
+        "planted": planted, "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_billiards(request, me, app):
+    score = None
+    if request.method == "POST":
+        import random
+        score = random.randint(1, 15)
+        messages.success(request, f"Удар! Забито шаров: {score}.")
+    return render(request, "social/apps/canvas_billiards.html", {
+        "me": me, "app": app, "score": score, "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_chess(request, me, app):
+    friends = pa.friends_for_app(me)
+    move = None
+    peer = None
+    if request.method == "POST":
+        try:
+            fid = int(request.POST.get("friend_id") or 0)
+        except (TypeError, ValueError):
+            fid = 0
+        piece = (request.POST.get("piece") or "пешка").strip()[:20]
+        square = (request.POST.get("square") or "e4").strip()[:4]
+        if fid in friend_ids(me):
+            peer = SocialProfile.objects.filter(pk=fid).first()
+            move = f"{piece} → {square}"
+            if peer:
+                notify.push(
+                    peer.id,
+                    title="Шахматы",
+                    body=f"{me.name}: {move}",
+                    type="message",
+                    url=reverse("apps.canvas", args=["chess"]),
+                )
+                messages.success(request, f"Ход отправлен {peer.name}: {move}")
+        else:
+            messages.error(request, "Выберите друга.")
+    return render(request, "social/apps/canvas_chess.html", {
+        "me": me, "app": app, "friends": friends, "move": move, "peer": peer,
+        "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_tetris(request, me, app):
+    score = None
+    if request.method == "POST":
+        try:
+            lines = int(request.POST.get("lines") or 0)
+        except (TypeError, ValueError):
+            lines = 0
+        lines = max(0, min(lines, 40))
+        score = lines * 100
+        messages.success(request, f"Счёт: {score} ({lines} линий).")
+    return render(request, "social/apps/canvas_tetris.html", {
+        "me": me, "app": app, "score": score, "nav": "apps", "installed": True,
+    })
+
+
+def _canvas_poker(request, me, app):
+    cards = None
+    label = None
+    if request.method == "POST":
+        cards = pa.poker_deal()
+        label = pa.poker_rank_label(cards)
+    return render(request, "social/apps/canvas_poker.html", {
+        "me": me, "app": app, "cards": cards, "label": label,
         "nav": "apps", "installed": True,
     })

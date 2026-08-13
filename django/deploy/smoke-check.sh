@@ -770,10 +770,13 @@ else
   echo "FAIL platform apps schema"; FAIL=1
 fi
 if ! grep -q 'name="apps.canvas"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
-  || ! grep -q 'classic-dialog.js' "${ROOT}/django/templates/layout.html" 2>/dev/null; then
-  echo "FAIL platform canvas / dialog missing"; FAIL=1
+  || ! grep -q 'classic-dialog.js' "${ROOT}/django/templates/layout.html" 2>/dev/null \
+  || ! grep -q 'name="albums.photos.modal"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'snav-apps-label' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null \
+  || ! grep -q 'calculator' "${ROOT}/django/apps/social/platform_apps.py" 2>/dev/null; then
+  echo "FAIL platform canvas / photo modal / bookmarks missing"; FAIL=1
 else
-  echo "OK   platform canvas + classic dialog"
+  echo "OK   platform canvas + photo modal + app bookmarks"
 fi
 echo "== FB 2012 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2012-modules.py \

@@ -1,0 +1,56 @@
+{% load static vd %}
+{# Fragment for 2006 FBDialog — left photo / right comments #}
+<div class="photo-modal" data-photo-modal="1">
+    <div class="photo-modal-left">
+        {% if photo.url %}
+        <img src="{{ photo.url }}" alt="{{ photo.title }}" class="photo-modal-img">
+        {% else %}
+        <img src="{% static 'img/nophoto.gif' %}" alt="" width="200" height="200">
+        {% endif %}
+        <div class="photo-modal-nav muted">
+            {% if prev_id %}
+            <a href="{% url 'albums.photos.show' album.id prev_id %}"
+               data-fb-photo-modal="{% url 'albums.photos.modal' album.id prev_id %}">« пред.</a>
+            {% else %}<span>« пред.</span>{% endif %}
+            · фото {{ pos }} из {{ n }} ·
+            {% if next_id %}
+            <a href="{% url 'albums.photos.show' album.id next_id %}"
+               data-fb-photo-modal="{% url 'albums.photos.modal' album.id next_id %}">след. »</a>
+            {% else %}<span>след. »</span>{% endif %}
+        </div>
+    </div>
+    <div class="photo-modal-right">
+        <div class="photo-modal-head">
+            <a href="{% url 'profile' album.social_user.id %}"><b>{{ album.social_user.name }}</b></a>
+            <div class="muted">{{ album.title }}{% if photo.title %} · {{ photo.title }}{% endif %}</div>
+        </div>
+        {% if me %}
+        <form method="post" action="{% url 'albums.photos.like' album.id photo.id %}" class="inline photo-modal-like">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'albums.photos.show' album.id photo.id %}">
+            <button type="submit" class="linkish">{% if photo.liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
+            {% if photo.n_likes %} <span class="muted">({{ photo.n_likes }})</span>{% endif %}
+        </form>
+        {% elif photo.n_likes %}
+        <span class="muted">{{ photo.n_likes }} нравится</span>
+        {% endif %}
+        <div class="photo-modal-comments">
+            <b>Комментарии{% if comments %} ({{ comments|length }}){% endif %}</b>
+            {% if comments %}
+            {% comment_thread comments preview=0 kind="photo" album=album photo=photo %}
+            {% else %}
+            <p class="muted">Комментариев пока нет.</p>
+            {% endif %}
+            {% if me %}
+            {% url 'albums.photos.comment' album.id photo.id as c_action %}
+            {% url 'albums.photos.show' album.id photo.id as photo_next %}
+            {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id form=comment_form open=1 next=photo_next %}
+            {% else %}
+            <p class="muted"><a href="{% url 'login' %}">Войдите</a>, чтобы комментировать.</p>
+            {% endif %}
+        </div>
+        <p class="photo-modal-full muted">
+            <a href="{% url 'albums.photos.show' album.id photo.id %}">открыть страницу фото</a>
+            {% if photo.url %} · <a href="{{ photo.url }}">полный размер</a>{% endif %}
+        </p>
+    </div>
+</div>

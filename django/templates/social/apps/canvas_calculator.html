@@ -1,0 +1,30 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Калькулятор</h4>
+    <div class="profile-box-body">
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Выражение:</td>
+                    <td>
+                        <input class="inputtext" name="a" value="{{ a }}" size="10">
+                        <select name="op">
+                            <option value="+" {% if op == '+' %}selected{% endif %}>+</option>
+                            <option value="-" {% if op == '-' %}selected{% endif %}>−</option>
+                            <option value="*" {% if op == '*' %}selected{% endif %}>×</option>
+                            <option value="/" {% if op == '/' %}selected{% endif %}>÷</option>
+                        </select>
+                        <input class="inputtext" name="b" value="{{ b }}" size="10">
+                        <input type="submit" class="inputsubmit" value="=">
+                    </td>
+                </tr>
+                {% if result is not None %}
+                <tr><td class="label">Результат:</td><td><b>{{ result }}</b></td></tr>
+                {% endif %}
+            </table>
+        </form>
+        <p class="muted">Разработчик: Александр</p>
+    </div>
+</div>
+{% endblock %}

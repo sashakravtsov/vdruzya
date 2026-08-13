@@ -13,7 +13,7 @@
         <div class="profile-box">
             <h4>Подарок другу</h4>
             <div class="profile-box-body">
-                <form method="post">{% csrf_token %}
+                <form method="post" id="gift-send-form">{% csrf_token %}
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr><td class="label">Кому:</td><td>{{ form.to }}</td></tr>
                         <tr>
@@ -29,7 +29,16 @@
                             </td>
                         </tr>
                         <tr><td class="label">Сообщение:</td><td>{{ form.message }}</td></tr>
-                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Отправить"></td></tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button type="submit" class="inputsubmit"
+                                        data-fb-dialog
+                                        data-fb-dialog-title="Отправить подарок?"
+                                        data-fb-dialog-message="Подарок появится у друга на стене и во входящих."
+                                        data-fb-dialog-form="#gift-send-form">Отправить</button>
+                            </td>
+                        </tr>
                     </table>
                 </form>
             </div>

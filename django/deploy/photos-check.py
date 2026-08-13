@@ -102,6 +102,15 @@ def main():
     assert "Мне нравится".encode() in r.content
     ok("photo show (full size chrome)")
 
+    r = c.get(f"/albums/{a.id}/photos/{ph.id}/modal", secure=True)
+    assert r.status_code == 200
+    assert b"photo-modal" in r.content
+    assert b"photo-modal-left" in r.content and b"photo-modal-right" in r.content
+    assert "Комментарии".encode() in r.content
+    assert b"lightbox" not in r.content.lower()
+    assert b"theater" not in r.content.lower()
+    ok("photo modal 2006 dialog fragment")
+
     r = c.post(f"/albums/{a.id}/photos/{ph.id}/like", {}, secure=True, follow=True)
     assert r.status_code == 200
     from apps.social.models.legacy import PhotoReaction

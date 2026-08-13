@@ -23,9 +23,13 @@
                         <a href="{% url 'posts.edit' post.id %}{% if next %}?next={{ next|urlencode }}{% endif %}">ред.</a>
                         ·
                         {% endif %}
-                        <form method="post" action="{% url 'posts.delete' post.id %}" class="inline">{% csrf_token %}
+                        <form method="post" action="{% url 'posts.delete' post.id %}" class="inline" id="del-post-{{ post.id }}">{% csrf_token %}
                             <input type="hidden" name="next" value="{{ next }}">
-                            <button type="submit" class="linkish muted">удалить</button>
+                            <button type="submit" class="linkish muted"
+                                    data-fb-dialog
+                                    data-fb-dialog-title="Удалить запись?"
+                                    data-fb-dialog-message="Убрать эту запись со стены?"
+                                    data-fb-dialog-form="#del-post-{{ post.id }}">удалить</button>
                         </form>
                     </span>
                     {% endif %}
@@ -105,9 +109,13 @@
                     <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
                     {% if post.can_share %}
                     ·
-                    <form method="post" action="{% url 'posts.share' post.id %}" class="inline">{% csrf_token %}
+                    <form method="post" action="{% url 'posts.share' post.id %}" class="inline" id="share-post-{{ post.id }}">{% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
-                        <button type="submit" class="linkish wall-act">Поделиться</button>
+                        <button type="submit" class="linkish wall-act"
+                                data-fb-dialog
+                                data-fb-dialog-title="Поделиться записью?"
+                                data-fb-dialog-message="Опубликовать эту запись у себя на стене?"
+                                data-fb-dialog-form="#share-post-{{ post.id }}">Поделиться</button>
                     </form>
                     {% endif %}
                     ·

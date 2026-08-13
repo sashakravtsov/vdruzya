@@ -1413,6 +1413,38 @@ select.inputtext {
 }
 .fb-dialog-footer .fb-dialog-btn { margin-left: 6px; }
 body.fb-dialog-open { overflow: hidden; }
+.fb-dialog-wide { width: 520px; margin-left: -260px; }
+.fb-dialog-photo {
+  width: 720px; margin-left: -360px; top: 8%;
+}
+.fb-dialog-photo .fb-dialog-body { padding: 0; }
+.fb-dialog-perms { margin: 6px 0 8px 18px; padding: 0; }
+.fb-dialog-perms li { margin: 2px 0; }
+.photo-modal { display: table; width: 100%; table-layout: fixed; }
+.photo-modal-left {
+  display: table-cell; width: 58%; vertical-align: middle;
+  background: #111; color: #ccc; text-align: center; padding: 10px 8px;
+}
+.photo-modal-right {
+  display: table-cell; width: 42%; vertical-align: top;
+  padding: 8px 10px; background: #fff;
+}
+.photo-modal-img { max-width: 100%; max-height: 420px; vertical-align: middle; }
+.photo-modal-nav { margin-top: 8px; font-size: 11px; }
+.photo-modal-nav a { color: #fff; }
+.photo-modal-head { margin-bottom: 6px; }
+.photo-modal-comments { margin-top: 8px; max-height: 280px; overflow: auto; }
+.photo-modal-full { margin-top: 8px; }
+.photo-modal-like { margin-bottom: 4px; }
+.poker-card {
+  display: inline-block; border: 1px solid #3B5998; background: #fff;
+  padding: 4px 6px; margin-right: 4px; font-weight: bold;
+}
+#snav .snav-apps-label {
+  display: block; margin-top: 8px; padding: 2px 0 1px;
+  color: #333; font-weight: bold; font-size: 11px;
+}
+#snav a.snav-app { padding-left: 8px; }
 .app-canvas-page .classic-page-lead { margin-bottom: 10px; }
 
 /* OSM maps — classic profile-box, Leaflet owns its own layout */

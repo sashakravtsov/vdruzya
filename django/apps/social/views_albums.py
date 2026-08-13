@@ -139,31 +139,44 @@ def photo_upload(request, album_id):
     return redirect("albums.show", album_id=album_id)
 
 
-@login_not_required
-def photo_show(request, album_id, photo_id):
+def _photo_ctx(request, album_id, photo_id):
     from apps.social import photo_tags as pt
     from apps.social.likes import attach_photo_likes
 
     album = get_object_or_404(Album.objects.select_related("social_user"), pk=album_id)
     me = profile_of(request.user) if request.user.is_authenticated else None
     if not can_view(album, me):
-        return _forbid(request, album)
+        return None, _forbid(request, album)
     photo = get_object_or_404(Photo, pk=photo_id, album=album)
     attach_photo_likes([photo], me)
     prev_id, next_id, n, pos = neighbors(album, photo.id)
     tagging = bool(me and pt.can_tag(me, album))
-    return render(
-        request, "social/photo.html",
-        {
-            "album": album, "photo": photo, "me": me, "is_owner": can_edit(album, me),
-            "prev_id": prev_id, "next_id": next_id, "n": n, "pos": pos,
-            "comments": comments_for(photo),
-            "comment_form": CommentForm() if me else None,
-            "tags": pt.tags_for(photo),
-            "tag_candidates": pt.tag_candidates(me, photo) if tagging else [],
-            "can_tag": tagging,
-        },
-    )
+    return {
+        "album": album, "photo": photo, "me": me, "is_owner": can_edit(album, me),
+        "prev_id": prev_id, "next_id": next_id, "n": n, "pos": pos,
+        "comments": comments_for(photo),
+        "comment_form": CommentForm() if me else None,
+        "tags": pt.tags_for(photo),
+        "tag_candidates": pt.tag_candidates(me, photo) if tagging else [],
+        "can_tag": tagging,
+    }, None
+
+
+@login_not_required
+def photo_show(request, album_id, photo_id):
+    ctx, err = _photo_ctx(request, album_id, photo_id)
+    if err:
+        return err
+    return render(request, "social/photo.html", ctx)
+
+
+@login_not_required
+def photo_modal(request, album_id, photo_id):
+    """2006 FBDialog fragment: photo left, comments right (not modern theater)."""
+    ctx, err = _photo_ctx(request, album_id, photo_id)
+    if err:
+        return err
+    return render(request, "social/photo_modal.html", ctx)
 
 
 @login_required
@@ -181,6 +194,9 @@ def photo_like(request, album_id, photo_id):
         messages.success(request, "Вам это нравится.")
     elif out == "unliked":
         messages.info(request, "Отметка снята.")
+    nxt = request.POST.get("next")
+    if nxt and nxt.startswith("/"):
+        return redirect(nxt)
     return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
 
 
@@ -263,6 +279,9 @@ def photo_comment(request, album_id, photo_id):
     form = CommentForm(request.POST)
     if not (form.is_valid() and add_comment(me, photo, album, form.cleaned_data["body"])):
         messages.error(request, "Не удалось добавить комментарий.")
+    nxt = request.POST.get("next")
+    if nxt and nxt.startswith("/"):
+        return redirect(nxt)
     return redirect("albums.photos.show", album_id=album_id, photo_id=photo_id)
 
 

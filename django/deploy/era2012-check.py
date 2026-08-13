@@ -81,6 +81,28 @@ def main():
     assert "Выберите дело".encode() in r.content or "дело".encode() in r.content
     ok("platform canvas causes")
 
+    for slug, needle in (
+        ("calculator", "Калькулятор"),
+        ("weather", "Погода"),
+        ("horoscope", "Гороскоп"),
+        ("dating", "Знакомства"),
+        ("farm", "Ферма"),
+        ("poker", "Покер"),
+    ):
+        r = c.get(f"/apps/{slug}", secure=True)
+        assert r.status_code == 200 and needle.encode() in r.content, slug
+        assert "Александр".encode() in r.content or slug in ("farm", "poker")
+        r = c.post(f"/apps/{slug}/install", {}, secure=True)
+        assert r.status_code in (301, 302), slug
+        r = c.get(f"/apps/{slug}/canvas", secure=True)
+        assert r.status_code == 200 and needle.encode() in r.content, slug
+    ok("alexander apps + extra games canvas")
+
+    r = c.get("/feed", secure=True)
+    assert r.status_code == 200
+    assert "Закладки приложений".encode() in r.content or b"snav-app" in r.content
+    ok("sidebar app bookmarks")
+
     r = c.get("/collections", secure=True)
     assert r.status_code == 200
     assert "Коллекции".encode() in r.content

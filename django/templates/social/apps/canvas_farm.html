@@ -1,0 +1,31 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Ферма</h4>
+    <div class="profile-box-body">
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Культура:</td>
+                    <td>
+                        <select name="crop">
+                            {% for slug, title, days in crops %}
+                            <option value="{{ slug }}">{{ title }} ({{ days }} дн.)</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <button type="submit" name="action" value="plant" class="inputsubmit">Посадить</button>
+                        ·
+                        <button type="submit" name="action" value="harvest" class="inputbutton">Собрать урожай</button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        {% if planted %}<p class="muted">Сейчас растёт: {{ planted }}</p>{% endif %}
+    </div>
+</div>
+{% endblock %}

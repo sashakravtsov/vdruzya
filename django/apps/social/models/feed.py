@@ -72,7 +72,7 @@ class PostMedia(models.Model):
 
     @property
     def href(self):
-        """Album photo page when linked; else parent post page (FB 2006: no lightbox)."""
+        """Album photo page when linked; else parent post (JS may open 2006 photo dialog)."""
         if self.photo_id:
             from django.urls import reverse
             from apps.social.models import Photo

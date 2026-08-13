@@ -61,7 +61,8 @@
                 <div class="photo-gallery">
                     {% for p in photos %}
                     <div class="photo-gallery-item">
-                        <a class="photo-thumb" href="{% url 'albums.photos.show' album.id p.id %}">
+                        <a class="photo-thumb" href="{% url 'albums.photos.show' album.id p.id %}"
+                           data-fb-photo-modal="{% url 'albums.photos.modal' album.id p.id %}">
                             {% if p.url %}
                             <img src="{{ p.url }}" alt="{{ p.title }}">
                             {% else %}
