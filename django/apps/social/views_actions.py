@@ -164,43 +164,12 @@ def family_remove(request, pk):
 @login_required
 @require_POST
 def post_create(request):
-    from django.db.models import Q
-    from apps.social.models import Friendship
-    from apps.social.profile_page import can_write_wall
     from apps.social.throttle import throttle
-    from apps.social.attach import apply_wall_uploads
+    from apps.social.wall_compose import create_wall_post
 
     @throttle("posts", 20, 60)
     def _go(req):
-        from apps.social.profile_page import wall_post_visibility
-
-        me = profile_of(req.user)
-        form = PostForm(req.POST, req.FILES, simple=True)
-        if not (form.is_valid() and me):
-            return redirect(req.POST.get("next") or "feed")
-        target = get_object_or_404(SocialProfile, pk=req.POST.get("wall_to") or me.id)
-        rel = None
-        if target.id != me.id:
-            rel = Friendship.objects.filter(
-                Q(user=me, friend=target) | Q(user=target, friend=me)
-            ).first()
-        if not can_write_wall(me, target, rel):
-            messages.error(req, "Писать на стену нельзя.")
-            return redirect(target)
-        post = form.save(commit=False)
-        post.social_user = me
-        text = (post.body or "").strip()
-        post.body = text
-        post.topic = f"wall:{target.id}"
-        post.visibility = wall_post_visibility(target)
-        files = list(req.FILES.getlist("photo"))
-        post.kind = "text"
-        post.created_at = post.updated_at = _now()
-        post.save()
-        apply_wall_uploads(post, files, me, max_photos=5, blurb=text)
-        bump_news()
-        messages.success(req, "Запись опубликована.")
-        return redirect(req.POST.get("next") or target)
+        return create_wall_post(req)
 
     return _go(request)
 
@@ -209,34 +178,12 @@ def post_create(request):
 @require_POST
 def note_create(request):
     """FB Notes publish — kind=note, title in media_label."""
-    from apps.social.forms import NoteForm
     from apps.social.throttle import throttle
+    from apps.social.wall_compose import create_note
 
     @throttle("posts", 20, 60)
     def _go(req):
-        me = profile_of(req.user)
-        form = NoteForm(req.POST, req.FILES)
-        go = req.POST.get("next") or (f"{me.get_absolute_url()}?tab=notes" if me else "feed")
-        if not (form.is_valid() and me):
-            messages.error(req, "Укажите заголовок и текст.")
-            return redirect(go)
-        d = form.cleaned_data
-        from apps.social.media import try_save_image
-        media_path = try_save_image(d.get("photo"), "notes")
-        Post.objects.create(
-            social_user=me,
-            body=d["body"],
-            kind="note",
-            topic="note",
-            media_label=d["title"],
-            media_path=media_path,
-            visibility=d["visibility"],
-            created_at=_now(),
-            updated_at=_now(),
-        )
-        bump_news()
-        messages.success(req, "Заметка опубликована.")
-        return redirect(go)
+        return create_note(req)
 
     return _go(request)
 
@@ -244,35 +191,8 @@ def note_create(request):
 @login_required
 @require_POST
 def status_update(request):
-    from apps.social.forms import StatusForm
-    from apps.social.models import Place
-    from apps.social import era2010 as e10
-
-    me = profile_of(request.user)
-    places = list(Place.objects.order_by("name")[:80]) if me else []
-    form = StatusForm(request.POST, places=places)
-    if me and form.is_valid():
-        headline = (form.cleaned_data.get("headline") or "").strip() or None
-        place_id = form.cleaned_data.get("place")
-        place = Place.objects.filter(pk=place_id).first() if place_id else None
-        display = headline or ""
-        if place:
-            suffix = f"в «{place.name}»"
-            display = f"{display} {suffix}".strip() if display else suffix
-        me.headline = display or None
-        me.updated_at = _now()
-        me.save(update_fields=["headline", "updated_at"])
-        if place:
-            e10.place_checkin(me, place, headline or "")
-        elif display:
-            Post.objects.create(
-                social_user=me, body=display, visibility="public",
-                kind="status", topic="status",
-                created_at=_now(), updated_at=_now(),
-            )
-        bump_news()
-        messages.success(request, "Статус обновлён.")
-    return redirect(request.POST.get("next") or me or "feed")
+    from apps.social.wall_compose import update_status
+    return update_status(request)
 
 
 @login_required

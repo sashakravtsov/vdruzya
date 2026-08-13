@@ -400,25 +400,19 @@ def _save_attach(upload):
     return path, name, mime, "photo"
 
 
-def post_message(
-    me, conv: Conversation, body: str = "", *,
-    message_type="text", upload=None, reply_to_id=None, sticker_id=None,
-) -> Message:
+def _sticker_id(sticker_id):
+    if not sticker_id:
+        return None
+    try:
+        sid = int(sticker_id)
+    except (TypeError, ValueError):
+        return None
+    from apps.social.models import Sticker
+    return sid if Sticker.objects.filter(pk=sid, is_active=True).exists() else None
+
+
+def _message_payload(body, path, akind, sid, message_type):
     body = (body or "").strip()
-    path, aname, amime, akind = _save_attach(upload)
-    reply = None
-    if reply_to_id:
-        reply = Message.objects.filter(pk=reply_to_id, conversation=conv).first()
-    sid = None
-    if sticker_id:
-        try:
-            sid = int(sticker_id)
-        except (TypeError, ValueError):
-            sid = None
-        if sid:
-            from apps.social.models import Sticker
-            if not Sticker.objects.filter(pk=sid, is_active=True).exists():
-                sid = None
     if not body and not path and not sid and message_type == "text":
         raise ValueError("empty")
     if sid and not body:
@@ -429,19 +423,26 @@ def post_message(
         message_type = "sticker"
     if not body and path:
         body = "[видео]" if message_type == "video" else "[фото]"
+    return body[:4000], message_type
+
+
+def post_message(
+    me, conv: Conversation, body: str = "", *,
+    message_type="text", upload=None, reply_to_id=None, sticker_id=None,
+) -> Message:
+    path, aname, amime, akind = _save_attach(upload)
+    sid = _sticker_id(sticker_id)
+    body, message_type = _message_payload(body, path, akind, sid, message_type)
+    reply = (
+        Message.objects.filter(pk=reply_to_id, conversation=conv).first()
+        if reply_to_id else None
+    )
     t = now()
     m = Message.objects.create(
-        conversation=conv,
-        social_user=me,
-        body=body[:4000],
-        message_type=message_type,
-        sticker_id=sid,
-        reply_to=reply,
-        attachment_path=path,
-        attachment_name=aname,
-        attachment_mime=amime,
-        created_at=t,
-        updated_at=t,
+        conversation=conv, social_user=me, body=body,
+        message_type=message_type, sticker_id=sid, reply_to=reply,
+        attachment_path=path, attachment_name=aname, attachment_mime=amime,
+        created_at=t, updated_at=t,
     )
     Conversation.objects.filter(pk=conv.pk).update(updated_at=t)
     _revive_dm(conv, me)

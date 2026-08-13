@@ -169,59 +169,9 @@ def info_boxes(profile, education, experiences) -> list[dict]:
 
 
 def build_edit_context(me, request):
-    """Context for classic Profile edit (sectioned)."""
-    from django.urls import reverse
-    from apps.social.forms import EducationForm, ExperienceForm, ProfileForm
-
-    section = (request.GET.get("section") or request.POST.get("section") or "basic").lower()
-    edu_id, exp_id = request.GET.get("edu"), request.GET.get("exp")
-    edu_row = Education.objects.filter(pk=edu_id, social_user=me).first() if edu_id else None
-    exp_row = Experience.objects.filter(pk=exp_id, social_user=me).first() if exp_id else None
-    if edu_row or exp_row:
-        section = "eduwork"
-    elif section not in EDIT_SECTIONS:
-        section = "basic"
-    form = ProfileForm(request.POST or None, instance=me, section=section)
-
-    education = list(Education.objects.filter(social_user=me)[:20])
-    experiences = list(Experience.objects.filter(social_user=me)[:20])
-    # Row editors: URLs resolved in Python — no fragile {% url name_var %} in templates
-    row_editors = [
-        {
-            "title": "Образование",
-            "kind": "edu",
-            "param": "edu",
-            "rows": education,
-            "edit_row": edu_row,
-            "form": EducationForm(instance=edu_row) if edu_row else EducationForm(),
-            "action": (
-                reverse("profile.education.edit", args=[edu_row.pk])
-                if edu_row else reverse("profile.education")
-            ),
-            "delete_name": "profile.education.delete",
-        },
-        {
-            "title": "Работа",
-            "kind": "exp",
-            "param": "exp",
-            "rows": experiences,
-            "edit_row": exp_row,
-            "form": ExperienceForm(instance=exp_row) if exp_row else ExperienceForm(),
-            "action": (
-                reverse("profile.experience.edit", args=[exp_row.pk])
-                if exp_row else reverse("profile.experience")
-            ),
-            "delete_name": "profile.experience.delete",
-        },
-    ]
-    return {
-        "form": form,
-        "me": me,
-        "section": section,
-        "section_title": EDIT_TITLES.get(section, "Основное"),
-        "edit_nav": EDIT_NAV,
-        "row_editors": row_editors,
-    }
+    """Context for classic Profile edit — builders in profile_edit."""
+    from apps.social.profile_edit import build_edit_context as build
+    return build(me, request)
 
 
 def build_context(profile, me, tab="wall", photos_view="albums", wall_filter="all"):
