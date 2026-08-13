@@ -112,14 +112,14 @@ CREATE TABLE IF NOT EXISTS poker_games (
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS room_id bigint;
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS championship_id bigint;
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS is_rated boolean NOT NULL DEFAULT true;
 CREATE INDEX IF NOT EXISTS poker_games_p1_idx ON poker_games (p1_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_p2_idx ON poker_games (p2_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_status_idx ON poker_games (status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS poker_games_room_idx ON poker_games (room_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_champ_idx ON poker_games (championship_id, id DESC);
-ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS room_id bigint;
-ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS championship_id bigint;
-ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS is_rated boolean NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS poker_actions (
   id bigserial PRIMARY KEY,
