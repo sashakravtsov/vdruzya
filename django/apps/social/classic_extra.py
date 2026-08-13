@@ -166,5 +166,6 @@ def notes_feed(viewer, *, mine=False, limit=40):
 
 from apps.social.market import market_create, market_list, market_update  # noqa: E402
 from apps.social.friend_lists import (  # noqa: E402
-    list_add, list_create, list_member_ids, list_members, list_remove, lists_for, owned_list,
+    list_add, list_create, list_member_ids, list_members, list_remove, list_rename,
+    lists_for, owned_list,
 )
