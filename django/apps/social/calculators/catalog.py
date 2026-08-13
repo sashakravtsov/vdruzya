@@ -95,6 +95,8 @@ TOOLS: list[dict[str, Any]] = [
                 ("22", "22% — основная с 01.01.2026"),
                 ("20", "20% — до 31.12.2025"),
                 ("10", "10% — льготная (п. 2 ст. 164 НК РФ)"),
+                ("7", "7% — УСН (пониженная)"),
+                ("5", "5% — УСН (пониженная)"),
                 ("0", "0%"),
                 ("custom", "Своя ставка"),
             ], "default": "22"},
@@ -607,7 +609,7 @@ TOOLS: list[dict[str, Any]] = [
         "fields": [
             {"name": "amount", "label": "Сумма без НДС, ₽", "type": "money"},
             {"name": "vat_rate", "label": "НДС, %", "type": "choice", "choices": [
-                ("22", "22%"), ("20", "20%"), ("10", "10%"), ("0", "0%"),
+                ("22", "22%"), ("20", "20%"), ("10", "10%"), ("7", "7% УСН"), ("5", "5% УСН"), ("0", "0%"),
             ], "default": "22"},
             {"name": "months", "label": "Срок оплаты, мес.", "type": "number", "default": "1"},
         ],
@@ -648,6 +650,58 @@ TOOLS: list[dict[str, Any]] = [
         ],
     },
 ]
+
+# Classic 16×16 GIF icons (static/img/calc/ico-*.gif), keyed by topic / slug.
+_TOPIC_ICON = {
+    "HR / бухгалтерия": "hr",
+    "Даты / математика": "date",
+    "Финансы": "money",
+    "Налоги / бухгалтерия": "tax",
+    "Право / бухгалтерия": "legal",
+    "Право / финансы": "legal",
+    "Право / даты": "legal",
+    "Конвертеры": "convert",
+    "Строительство / геометрия": "build",
+    "Строительство": "build",
+    "Геометрия": "build",
+    "Здоровье": "health",
+    "Быт / хобби": "calc",
+    "Быт": "calc",
+    "Авто": "auto",
+    "Авто / здоровье": "auto",
+    "Социальные выплаты": "hr",
+    "Закупки": "legal",
+    "Математика / финансы": "calc",
+}
+
+_SLUG_ICON = {
+    "vat": "tax", "ndfl": "tax", "tax_simple": "tax", "contributions": "tax",
+    "credit": "money", "mortgage": "home", "deposit": "money", "loan": "money",
+    "early_payoff": "money", "salary": "hr", "vacation": "hr", "sick": "hr",
+    "contract": "legal", "penalty": "legal", "bmi": "health", "calories": "health",
+    "roof": "home", "floor": "home", "walls": "home", "osago": "auto", "fuel": "auto",
+}
+
+
+def tool_icon(tool: dict[str, Any] | str) -> str:
+    if isinstance(tool, str):
+        if tool in _SLUG_ICON:
+            return _SLUG_ICON[tool]
+        known = next((t for t in TOOLS if t["slug"] == tool), None)
+        if known:
+            return _TOPIC_ICON.get(known.get("topic") or "", "calc")
+        return "calc"
+    slug = tool.get("slug") or ""
+    if slug in _SLUG_ICON:
+        return _SLUG_ICON[slug]
+    return _TOPIC_ICON.get(tool.get("topic") or "", "calc")
+
+
+# Attach icon key + static-relative path for templates.
+for _t in TOOLS:
+    key = tool_icon(_t)
+    _t["icon"] = key
+    _t["icon_src"] = f"img/calc/ico-{key}.gif"
 
 TOOL_BY_SLUG = {t["slug"]: t for t in TOOLS}
 

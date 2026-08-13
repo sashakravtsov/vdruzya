@@ -1473,6 +1473,20 @@ body.fb-dialog-open { overflow: hidden; }
 #snav .snav-more-cb:checked ~ .snav-more-panel { display: block; }
 #snav .snav-more-panel a { width: 114px; }
 .app-canvas-page .classic-page-lead { margin-bottom: 10px; }
+/* App Center / calculator classic 16px icons */
+.app-ico {
+  display: inline-block; width: 16px; height: 16px; vertical-align: -3px;
+  margin-right: 4px; border: 0;
+}
+.app-ico-lg { vertical-align: -2px; margin-right: 6px; }
+.calc-ico {
+  display: inline-block; width: 16px; height: 16px; vertical-align: -3px;
+  margin-right: 4px; border: 0;
+}
+.calc-suite h4 .calc-ico { margin-right: 5px; }
+.calc-suite .calc-tool-list .calc-ico { margin-right: 5px; }
+.calc-suite .calc-popular-links .calc-ico { margin-right: 2px; }
+.calc-suite .calc-related-list .calc-ico { margin-right: 3px; }
 /* Calculators suite — classic profile-box chrome, clear hierarchy */
 .calc-suite .calc-lead { margin: 0 0 10px; }
 .calc-suite .calc-blurb { margin: 0 0 8px; color: #333; }

@@ -1,7 +1,16 @@
 {% extends "social/apps/canvas_base.html" %}
+{% load static %}
 {% block canvas_body %}
 <div class="profile-box calc-suite">
-    <h4>{% if tool %}{{ tool.name }}{% else %}Калькуляторы{% endif %}</h4>
+    <h4>
+        <img class="calc-ico" src="{% static 'img/calc/ico-calc.gif' %}" alt="" width="16" height="16">
+        {% if tool %}
+        <img class="calc-ico" src="{% static tool.icon_src %}" alt="" width="16" height="16">
+        {{ tool.name }}
+        {% else %}
+        Калькуляторы
+        {% endif %}
+    </h4>
     <div class="profile-box-body">
         {% if tool %}
         <p class="calc-back">
@@ -70,13 +79,16 @@
             <h5>Смотрите также</h5>
             <ul class="calc-related-list">
                 {% for t in related %}
-                <li><a href="{% url 'apps.canvas' 'calculator' %}?tool={{ t.slug }}">{{ t.name }}</a></li>
+                <li>
+                    <img class="calc-ico" src="{% static t.icon_src %}" alt="" width="16" height="16">
+                    <a href="{% url 'apps.canvas' 'calculator' %}?tool={{ t.slug }}">{{ t.name }}</a>
+                </li>
                 {% endfor %}
             </ul>
         </div>
         {% endif %}
         {% else %}
-        <p class="calc-lead">50 точных калькуляторов по спросу Wordstat. Формулы на стороне ВДрузья, без стороннего iframe. Налоги — с учётом норм РФ на 2026 год (НДС 22%, прогрессия НДФЛ, единый тариф взносов).</p>
+        <p class="calc-lead">50 точных калькуляторов по спросу Wordstat. Формулы на стороне ВДрузья, без стороннего iframe. Налоги — с учётом норм РФ на 2026 год (НДС 22%, прогрессия НДФЛ, единый тариф взносов; для УСН — ставки НДС 5% и 7%).</p>
         <form method="get" action="{% url 'apps.canvas' 'calculator' %}" class="calc-search">
             <label for="calc_q">найти:</label>
             <input class="inputtext" type="text" name="q" id="calc_q" value="{{ q }}" size="28" placeholder="НДС, отпускные, ИМТ…">
@@ -88,7 +100,7 @@
             <h5>Часто ищут</h5>
             <p class="calc-popular-links">
                 {% for t in popular %}
-                <a href="{% url 'apps.canvas' 'calculator' %}?tool={{ t.slug }}">{{ t.name }}</a>{% if not forloop.last %} · {% endif %}
+                <a href="{% url 'apps.canvas' 'calculator' %}?tool={{ t.slug }}"><img class="calc-ico" src="{% static t.icon_src %}" alt="" width="16" height="16"> {{ t.name }}</a>{% if not forloop.last %} · {% endif %}
                 {% endfor %}
             </p>
         </div>
@@ -103,10 +115,14 @@
         <div class="calc-topics">
             {% for topic, items in topics.items %}
             <div class="calc-topic" id="topic-{{ forloop.counter }}">
-                <h5>{{ topic }} <span class="muted">({{ items|length }})</span></h5>
+                <h5>
+                    <img class="calc-ico" src="{% static items.0.icon_src %}" alt="" width="16" height="16">
+                    {{ topic }} <span class="muted">({{ items|length }})</span>
+                </h5>
                 <ul class="calc-tool-list">
                     {% for t in items %}
                     <li>
+                        <img class="calc-ico" src="{% static t.icon_src %}" alt="" width="16" height="16">
                         <a href="{% url 'apps.canvas' 'calculator' %}?tool={{ t.slug }}">{{ t.name }}</a>
                         <span class="muted"> — {{ t.blurb }}</span>
                     </li>
@@ -119,7 +135,7 @@
         <p>Ничего не найдено по запросу «{{ q }}». <a href="{% url 'apps.canvas' 'calculator' %}">Показать все</a></p>
         {% endif %}
         {% endif %}
-        <p class="muted calc-foot">Разработчик: ВДрузья · ориентиры для оценки, не заменяют учётную систему и консультацию специалиста</p>
+        <p class="muted calc-foot">Разработчик: ВДрузья · ориентиры для оценки, не заменяют учётную систему и консультацию специалиста · нормы РФ 2026</p>
     </div>
 </div>
 {% endblock %}

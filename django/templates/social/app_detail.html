@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load vd static %}
 {% block title %}{{ app.name }} — Приложения — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="apps-index">
     <div id="header" class="withsubtitle">
-        <h1>{{ app.name }}</h1>
+        <h1>{% if app.icon %}<img class="app-ico app-ico-lg" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}{{ app.name }}</h1>
         <div class="subtitle"><a href="{% url 'apps' %}">← приложения</a></div>
     </div>
     <div id="content">

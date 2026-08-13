@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% load vd %}
+{% load vd static %}
 {% block title %}Приложения — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="apps-index">
@@ -39,7 +39,7 @@
                     <tbody>
                         {% for app in mine_apps %}
                         <tr>
-                            <td class="col-name"><a href="{% url 'apps.canvas' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-name">{% if app.icon %}<img class="app-ico" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}<a href="{% url 'apps.canvas' app.slug %}"><b>{{ app.name }}</b></a></td>
                             <td class="col-type">{{ app.blurb }}</td>
                             <td class="col-act">
                                 <a href="{% url 'apps.canvas' app.slug %}">открыть</a>
@@ -78,7 +78,7 @@
                     <tbody>
                         {% for app in featured %}
                         <tr>
-                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
+                            <td class="col-name">{% if app.icon %}<img class="app-ico" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}<a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a></td>
                             <td class="col-type">{{ app.blurb }}</td>
                             <td class="col-act">
                                 {% if app.slug in installed %}
@@ -109,7 +109,7 @@
                     <tbody>
                         {% for app in apps %}
                         <tr>
-                            <td class="col-name"><a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a>
+                            <td class="col-name">{% if app.icon %}<img class="app-ico" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}<a href="{% url 'apps.show' app.slug %}"><b>{{ app.name }}</b></a>
                                 <div class="muted">{{ app.developer|default:"ВДрузья" }}</div></td>
                             <td class="col-type">{{ app.blurb }}</td>
                             <td class="col-act">
