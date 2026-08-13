@@ -1,6 +1,5 @@
 from __future__ import annotations
 from django.db import models
-from django.utils import timezone
 from django.utils.functional import cached_property
 from .fields import PgJSON
 
