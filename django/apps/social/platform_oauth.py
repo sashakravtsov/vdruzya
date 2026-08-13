@@ -17,6 +17,12 @@ from django.utils import timezone
 from apps.social.services import friend_ids, now
 
 
+def _utc_naive():
+    """UTC naive timestamps for OAuth rows (matches USE_TZ DB storage)."""
+    t = timezone.now()
+    return timezone.make_naive(t, timezone.utc) if timezone.is_aware(t) else t
+
+
 def new_api_key() -> str:
     return "vd_" + secrets.token_hex(12)
 

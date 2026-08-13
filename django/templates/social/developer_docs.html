@@ -7,6 +7,7 @@
         <div class="subtitle"><a href="{% url 'developers' %}">← кабинет</a></div>
     </div>
     <div id="content">
+        {% include "partials/flash.html" %}
         <p class="classic-page-lead">
             Платформа на Django: OAuth-lite, <code>signed_request</code>, JSON API.
             Сторонний iframe/canvas не используется — только редирект на ваш сайт.
