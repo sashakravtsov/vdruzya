@@ -15,7 +15,10 @@
                 <td>
                     {{ compose_form.sticker }}
                     {% include "social/_inbox_emoji_bar.html" with target_id="id_compose_body" sticker_input_id="id_compose_sticker" %}
-                    {{ compose_form.body }}
+                    <div class="msg-compose-fields">
+                        {{ compose_form.body }}
+                        <div class="msg-md-preview msg-text msg-md" data-md-preview hidden></div>
+                    </div>
                 </td>
             </tr>
             <tr><td class="label">Фото / видео:</td><td>{{ compose_form.photo }}</td></tr>

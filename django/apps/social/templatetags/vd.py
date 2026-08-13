@@ -80,6 +80,13 @@ def fb_when(dt):
 
 
 @register.filter
+def msg_md(text):
+    """Safe Inbox Markdown → HTML (bold/italic/code/lists/links)."""
+    from apps.social.markdown_msg import render_message_md_safe
+    return render_message_md_safe(text)
+
+
+@register.filter
 def storage_url(path):
     from apps.social.media import media_url
     return media_url(path) or ""

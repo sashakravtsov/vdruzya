@@ -25,7 +25,7 @@ class MessageForm(ClassicForm, forms.ModelForm):
     class Meta:
         model = Message
         fields = ("body",)
-        widgets = {"body": _ta(2, style="width:80%")}
+        widgets = {"body": _ta(5, style="width:80%")}
 
     def __init__(self, *args, stickers=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,7 +62,7 @@ class ComposeMessageForm(ClassicForm, forms.Form):
     )
     body = forms.CharField(
         required=False,
-        widget=_ta(4, style="width:100%"),
+        widget=_ta(5, style="width:100%"),
     )
     photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
     sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))

@@ -2,7 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
 from apps.social.friendship import block_user
+from apps.social.markdown_msg import render_message_md
 from apps.social.models import SocialProfile
 from apps.social.services import accepted_friends as friends_of, profile_of
 from apps.social.throttle import throttle
@@ -67,6 +68,23 @@ def inbox_home(request):
         messages.error(request, "Сообщение недоступно.")
         return redirect(err)
     return render(request, "social/inbox.html", ctx)
+
+
+@login_required
+@require_POST
+@throttle("msg", 60, 60)
+def inbox_preview(request):
+    """Server-side Markdown preview for the classic compose editor."""
+    me = _me(request)
+    if not me:
+        return JsonResponse({"error": "auth"}, status=403)
+    body = (request.POST.get("body") or "")[:4000]
+    html = render_message_md(body)
+    return JsonResponse({
+        "ok": True,
+        "html": html or "<p class=\"muted\">Пусто — напишите текст.</p>",
+        "empty": not bool(body.strip()),
+    })
 
 
 @ch.member_post
