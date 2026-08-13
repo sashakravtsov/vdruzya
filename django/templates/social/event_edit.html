@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Редактирование — {{ event.title }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="events-page">
+    <div id="header" class="withsubtitle">
+        <h1>Редактирование события</h1>
+        <div class="subtitle"><a href="{% url 'events.show' event.id %}">← {{ event.title }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Событие</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Где:</td><td>{{ form.place }}</td></tr>
+                        <tr><td class="label">Когда:</td><td>{{ form.starts_at }}{% if form.starts_at.help_text %} <span class="muted">{{ form.starts_at.help_text }}</span>{% endif %}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Обложка:</td><td>
+                            {% if event.cover_url %}<p class="event-cover"><img src="{{ event.cover_url }}" alt="" width="120"></p>{% endif %}
+                            {{ form.cover }}
+                        </td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

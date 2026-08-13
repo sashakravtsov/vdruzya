@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{{ poll.question|truncatewords:8 }} — Опросы — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="polls-page">
+    <div id="header" class="withsubtitle">
+        <h1>Опрос</h1>
+        <div class="subtitle"><a href="{% url 'polls' %}">← опросы</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>{{ poll.question }}</h4>
+            <div class="profile-box-body">
+                <p class="muted">
+                    <a href="{% url 'profile' poll.social_user.id %}">{{ poll.social_user.name }}</a>
+                    {% if poll.created_at %} · {{ poll.created_at|fb_when }}{% endif %}
+                    · {{ total }} гол.
+                </p>
+                <table class="formtable" cellpadding="0" cellspacing="0" style="width:100%">
+                    {% for o in options %}
+                    <tr>
+                        <td style="width:55%">
+                            {% if me %}
+                            <form method="post" action="{% url 'polls.vote' poll.id o.id %}" class="inline">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'polls.show' poll.id %}">
+                                <button type="submit" class="linkish">{% if o.voted_by_me %}<b>{{ o.body }}</b> ✓{% else %}{{ o.body }}{% endif %}</button>
+                            </form>
+                            {% else %}
+                            {{ o.body }}
+                            {% endif %}
+                        </td>
+                        <td class="muted">{{ o.n_votes }} ({{ o.pct }}%)</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td class="muted">Нет вариантов.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

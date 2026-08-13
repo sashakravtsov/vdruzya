@@ -1,0 +1,14 @@
+{# Classic FB: last `preview` comments visible; older behind a plain link (:target). #}
+{% if older_n %}
+<p class="wall-comments-more">
+    <a href="#wc-old-{{ uid }}"><span class="ico ico-comment"></span>Показать предыдущие комментарии ({{ older_n }})</a>
+</p>
+<div id="wc-old-{{ uid }}" class="wall-comments-older">
+    {% for item in older %}
+    {% include "social/_comment_row.html" with c=item.c can_delete=item.can_delete delete_url=item.delete_url next=next like_url=item.like_url me=item.me n_likes=item.n_likes liked_by_me=item.liked_by_me %}
+    {% endfor %}
+</div>
+{% endif %}
+{% for item in recent %}
+{% include "social/_comment_row.html" with c=item.c can_delete=item.can_delete delete_url=item.delete_url next=next like_url=item.like_url me=item.me n_likes=item.n_likes liked_by_me=item.liked_by_me %}
+{% endfor %}
