@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block title %}{{ page_title }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="links-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ page_title }}</h1>
+        <div class="subtitle">
+            <a href="{% if kind == 'video' %}{% url 'videos' %}{% else %}{% url 'links' %}{% endif %}?mine=1">← {% if kind == 'video' %}видео{% else %}ссылки{% endif %}</a>
+        </div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>{% if kind == 'video' %}Видео{% else %}Ссылка{% endif %}</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        {% if kind == 'video' and form.video %}
+                        <tr>
+                            <td class="label">Новый файл:</td>
+                            <td>
+                                {{ form.video }}
+                                <div class="file-hint muted">оставьте пустым, чтобы сохранить текущее видео</div>
+                            </td>
+                        </tr>
+                        <tr><td class="label">или ссылка:</td><td>{{ form.url }}</td></tr>
+                        {% else %}
+                        <tr><td class="label">Адрес:</td><td>{{ form.url }}</td></tr>
+                        {% endif %}
+                        <tr><td class="label">Описание:</td><td>{{ form.blurb }}</td></tr>
+                        <tr><td class="label">Кому:</td><td>{{ form.visibility }}</td></tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Сохранить">
+                                · <a href="{% if kind == 'video' %}{% url 'videos' %}{% else %}{% url 'links' %}{% endif %}?mine=1">Отмена</a>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

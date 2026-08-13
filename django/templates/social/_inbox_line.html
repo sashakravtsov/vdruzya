@@ -9,7 +9,22 @@
             <button type="submit" class="linkish muted">удалить</button>
         </form>
         {% endif %}
-        <a class="linkish muted" href="{% url 'inbox' %}?c={{ active.id }}&amp;reply={{ m.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">ответ</a>
+        <a class="linkish muted" href="{% url 'inbox' %}?c={{ active.id }}&amp;reply={{ m.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">ответ</a>
+        {% if friends %}
+        <details class="msg-fwd">
+            <summary class="linkish muted">переслать</summary>
+            <form method="post" action="{% url 'messages.forward' m.id %}" class="msg-fwd-form">{% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'inbox' %}?c={{ active.id }}{% if folder and folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">
+                <select name="to" class="inputtext">
+                    <option value="">— другу —</option>
+                    {% for f in friends %}
+                    <option value="{{ f.id }}">{{ f.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="submit" class="inputbutton" value="OK">
+            </form>
+        </details>
+        {% endif %}
         <a href="{% url 'profile' m.social_user.id %}"><b>{{ m.social_user.name }}</b></a>
         {% if m.created_at %}<span class="muted msg-time"> · {{ m.created_at|fb_when }}</span>{% endif %}
         {% if m.social_user_id == me.id %}

@@ -72,6 +72,53 @@ def videos_home(request):
 
 @login_required
 @require_http_methods(["GET", "POST"])
+def posted_edit(request, pk):
+    """Edit own link / video Posted Item (classic catalog)."""
+    from apps.social.models import Post
+    me = profile_of(request.user)
+    if not me:
+        return redirect("home")
+    post = get_object_or_404(Post, pk=pk, social_user=me, kind__in=("link", "video"))
+    kind = post.kind
+    allow_upload = kind == "video"
+    cx.hydrate_posted(post)
+    initial = {
+        "title": post.media_label or "",
+        "url": "" if getattr(post, "is_file_video", False) else (post.link_url or ""),
+        "blurb": post.link_blurb or "",
+        "visibility": post.visibility or "friends",
+    }
+    form = PostedItemForm(
+        request.POST or None, request.FILES or None,
+        allow_upload=allow_upload, require_source=False,
+        initial=None if request.method == "POST" else initial,
+    )
+    if request.method == "POST":
+        if form.is_valid():
+            row = cx.update_posted_item(
+                me, post,
+                title=form.cleaned_data.get("title") or "",
+                url=form.cleaned_data.get("url") or "",
+                blurb=form.cleaned_data.get("blurb") or "",
+                visibility=form.cleaned_data.get("visibility") or "friends",
+                upload=form.cleaned_data.get("video") if allow_upload else None,
+            )
+            if row:
+                bump_news()
+                messages.success(request, "Сохранено.")
+                return redirect("/videos?mine=1" if kind == "video" else "/links?mine=1")
+            messages.error(request, "Не удалось сохранить.")
+        else:
+            messages.error(request, "Проверьте поля формы.")
+    return render(request, "social/posted_edit.html", {
+        "me": me, "form": form, "post": post, "kind": kind,
+        "page_title": "Редактировать видео" if kind == "video" else "Редактировать ссылку",
+        "nav": "videos" if kind == "video" else "links",
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
 def notes_home(request):
     """Notes directory + create (POST shared with notes.store)."""
     if request.method == "POST":

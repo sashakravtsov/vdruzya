@@ -85,8 +85,20 @@ def main():
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "link" and i.get("post") and i["post"].id == link.id for i in feed)
     r = c.get("/links?mine=1", secure=True)
-    assert r.status_code == 200 and "удалить".encode() in r.content
-    ok("link in news feed + mine delete chrome")
+    assert r.status_code == 200 and "удалить".encode() in r.content and "ред.".encode() in r.content
+    r = c.get(f"/links/{link.id}/edit", secure=True)
+    assert r.status_code == 200 and "Редактировать ссылку".encode() in r.content
+    r = c.post(f"/links/{link.id}/edit", {
+        "title": "QA Link Edited",
+        "url": "https://example.com/qa-edited",
+        "blurb": "probe edited",
+        "visibility": "friends",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    link.refresh_from_db()
+    assert link.media_label == "QA Link Edited"
+    assert "qa-edited" in (link.body or "")
+    ok("link in news feed + mine edit/delete chrome")
 
     # notes browse create
     r = c.post("/notes", {

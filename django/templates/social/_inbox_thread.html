@@ -3,15 +3,33 @@
 {% if active.peer %}
 <p class="msg-members muted">{% if folder == 'sent' %}Кому{% else %}Переписка с{% endif %}: <a href="{% url 'profile' active.peer.id %}">{{ active.peer.name }}</a></p>
 {% endif %}
+<form method="get" class="msg-thread-filter" action="{% url 'inbox' %}">
+    <input type="hidden" name="c" value="{{ active.id }}">
+    {% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+    <label class="muted">В переписке:</label>
+    <input class="inputtext" type="text" name="tq" value="{{ tq }}" autocomplete="off">
+    <input type="submit" class="inputbutton" value="Найти">
+    {% if tq %}<a class="muted" href="?c={{ active.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">сбросить</a>{% endif %}
+</form>
 {% if has_older and not show_all %}
-<p class="msg-older"><a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
+<p class="msg-older">
+    <a href="#" id="inbox-older-link" data-older-url="{% url 'inbox.older' active.id %}" data-before="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-tq="{{ tq }}">← более ранние сообщения</a>
+    ·
+    <a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">загрузить все</a>
+</p>
 {% endif %}
-<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}" data-message-url="{% url 'inbox.message' active.id %}" data-peer-read="{% if active.peer_read_at %}{{ active.peer_read_at|date:'c' }}{% endif %}">
+<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}" data-message-url="{% url 'inbox.message' active.id %}" data-peer-read="{% if active.peer_read_at %}{{ active.peer_read_at|date:'c' }}{% endif %}" data-first="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}">
     {% for m in thread_messages %}
     {% include "social/_inbox_line.html" %}
-    {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}
+    {% empty %}<p class="muted">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
 </div>
 <p class="msg-typing muted" id="inbox-typing" aria-live="polite" hidden></p>
+{% if reply_preview %}
+<p class="msg-reply-chip muted" id="inbox-reply-chip">
+    Ответ на <b>{{ reply_preview.social_user.name }}</b>: {{ reply_preview.body|truncatewords:16 }}
+    · <a href="?c={{ active.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">отменить</a>
+</p>
+{% endif %}
 <form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" id="inbox-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.reply_to }}
     {{ form.body }}

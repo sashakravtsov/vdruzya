@@ -1,6 +1,7 @@
 """Classic Facebook Inbox — 1:1 HTTP messages (FB 2006)."""
 from __future__ import annotations
 
+from datetime import timedelta
 from functools import wraps
 from pathlib import Path
 
@@ -86,25 +87,74 @@ def mark_read(me, conv: Conversation):
     cache.delete(f"nav:{me.id}")
 
 
-def leave(me, conv: Conversation):
-    """Soft-archive (classic Remove from Inbox) — membership kept."""
+def mark_unread(me, conv: Conversation):
+    """Classic «оставить непрочитанным» — bump last_read before last peer message."""
+    last = (
+        Message.objects.filter(conversation=conv)
+        .exclude(social_user=me)
+        .order_by("-id")
+        .only("created_at")
+        .first()
+    )
+    t = (last.created_at - timedelta(seconds=1)) if last and last.created_at else None
+    ConversationMember.objects.filter(conversation=conv, social_user=me).update(last_read_at=t)
+    cache.delete(f"nav:{me.id}")
+
+
+def leave_many(me, conversation_ids: list[int]) -> int:
+    """Soft-archive several threads (classic Remove from Inbox)."""
+    ids = [int(x) for x in conversation_ids if str(x).isdigit() or isinstance(x, int)]
+    if not ids:
+        return 0
     t = now()
     n = ConversationMember.objects.filter(
-        social_user=me, conversation=conv, archived_at__isnull=True,
+        social_user=me, conversation_id__in=ids, archived_at__isnull=True,
     ).update(archived_at=t, updated_at=t)
     if n:
         cache.delete(f"nav:{me.id}")
+    return n
+
+
+def leave(me, conv: Conversation):
+    """Soft-archive (classic Remove from Inbox) — membership kept."""
+    leave_many(me, [conv.id])
+
+
+def restore_many(me, conversation_ids: list[int]) -> int:
+    ids = [int(x) for x in conversation_ids if str(x).isdigit() or isinstance(x, int)]
+    if not ids:
+        return 0
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation_id__in=ids, archived_at__isnull=False,
+    ).update(archived_at=None, updated_at=now())
+    if n:
+        cache.delete(f"nav:{me.id}")
+    return n
 
 
 def unarchive(me, conv: Conversation) -> bool:
     """Restore a soft-archived conversation to the Inbox list."""
-    t = now()
+    return bool(restore_many(me, [conv.id]))
+
+
+def purge_many(me, conversation_ids: list[int]) -> int:
+    """Hard-remove from mailbox — membership gone until revive on DM reply."""
+    ids = [int(x) for x in conversation_ids if str(x).isdigit() or isinstance(x, int)]
+    if not ids:
+        return 0
     n = ConversationMember.objects.filter(
-        social_user=me, conversation=conv, archived_at__isnull=False,
-    ).update(archived_at=None, updated_at=t)
+        social_user=me, conversation_id__in=ids,
+    ).delete()[0]
     if n:
         cache.delete(f"nav:{me.id}")
-    return bool(n)
+    return n
+
+
+def report_spam(me, conv: Conversation) -> SocialProfile | None:
+    """Classic Report as Spam: archive thread; return DM peer for optional block."""
+    p = peer(conv, me)
+    leave(me, conv)
+    return p
 
 
 def is_archived(me, conv: Conversation) -> bool:
@@ -355,6 +405,19 @@ def thread(conv: Conversation, limit=50, q="", *, all_messages=False):
     return rows, False
 
 
+def older(conv: Conversation, before_id, limit=40, q=""):
+    """Paginated earlier messages (classic «более ранние» without ?all=1)."""
+    try:
+        before = int(before_id)
+    except (TypeError, ValueError):
+        return [], False
+    rows = list(_msg_qs(conv, q).filter(id__lt=before).order_by("-id")[:limit])
+    rows.reverse()
+    has_older = bool(rows) and _msg_qs(conv, q).filter(id__lt=rows[0].id).exists()
+    attach_message_stickers(rows)
+    return rows, has_older
+
+
 def can_dm(me, other: SocialProfile) -> str | None:
     if not me or me.id == other.id:
         return "Нельзя написать себе."
@@ -526,10 +589,23 @@ def _message_payload(body, path, akind, sid, message_type):
 def post_message(
     me, conv: Conversation, body: str = "", *,
     message_type="text", upload=None, reply_to_id=None, sticker_id=None,
-    voice=False,
+    voice=False, copy_from: Message | None = None,
 ) -> Message:
     path, aname, amime, akind = _save_attach(upload, force_voice=bool(voice))
-    sid = _sticker_id(sticker_id)
+    if copy_from and copy_from.attachment_path and not path:
+        path = copy_from.attachment_path
+        aname = copy_from.attachment_name
+        amime = copy_from.attachment_mime
+        mt = (copy_from.message_type or "")
+        if mt in ("voice", "video", "photo"):
+            akind = mt
+        elif copy_from.attachment_is_audio:
+            akind = "voice"
+        elif copy_from.attachment_is_video:
+            akind = "video"
+        else:
+            akind = "photo"
+    sid = _sticker_id(sticker_id or (copy_from.sticker_id if copy_from else None))
     if voice and akind == "voice":
         message_type = "voice"
     body, message_type = _message_payload(body, path, akind, sid, message_type)
@@ -549,6 +625,27 @@ def post_message(
     _invalidate_members(conv.id)
     notify_peers(me, conv, m)
     return m
+
+
+def forward_message(me, message_id, other: SocialProfile) -> tuple[Message, Conversation]:
+    src = get_object_or_404(Message.objects.select_related("social_user"), pk=message_id)
+    require_member(me, src.conversation_id)
+    err = can_dm(me, other)
+    if err:
+        raise PermissionError(err)
+    conv = dm_find_or_create(me, other)
+    quote = (src.body or "").strip() or (
+        "[голосовое]" if src.attachment_is_audio
+        else "[видео]" if src.attachment_is_video
+        else ("[фото]" if src.attachment_path else ("[стикер]" if src.sticker_id else ""))
+    )
+    body = f"Переслано от {src.social_user.name}:\n{quote}"[:4000]
+    m = post_message(
+        me, conv, body,
+        copy_from=src if (src.attachment_path or src.sticker_id) else None,
+        sticker_id=src.sticker_id if src.sticker_id and not src.attachment_path else None,
+    )
+    return m, conv
 
 
 def delete_message(me, message_id) -> int:

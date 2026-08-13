@@ -9,9 +9,20 @@ from django.views.decorators.http import require_POST
 
 from apps.social import chat as ch
 from apps.social.forms import ComposeMessageForm, MessageForm
+from apps.social.friendship import block_user
 from apps.social.models import SocialProfile
 from apps.social.services import accepted_friends as friends_of, profile_of
 from apps.social.throttle import throttle
+
+
+def _int_ids(raw) -> list[int]:
+    out = []
+    for x in raw or []:
+        try:
+            out.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out
 
 FOLDERS = frozenset({"inbox", "sent", "archive"})
 
@@ -169,6 +180,31 @@ def inbox_title(request, me, conv):
     return redirect(_go(conv.id))
 
 
+@ch.member_post
+def inbox_unread(request, me, conv):
+    ch.mark_unread(me, conv)
+    messages.info(request, "Переписка отмечена как непрочитанная.")
+    return redirect("inbox")
+
+
+@ch.member_post
+def inbox_spam(request, me, conv):
+    peer = ch.report_spam(me, conv)
+    if peer and request.POST.get("block") == "1":
+        block_user(me, peer)
+        messages.info(request, f"Спам: {peer.name} заблокирован, переписка в архиве.")
+    else:
+        messages.info(request, "Переписка помечена как спам и перенесена в архив.")
+    return redirect("inbox")
+
+
+@ch.member_post
+def inbox_purge(request, me, conv):
+    ch.purge_many(me, [conv.id])
+    messages.info(request, "Переписка удалена из вашего ящика.")
+    return redirect("inbox")
+
+
 @login_required
 @require_POST
 @transaction.atomic
@@ -179,6 +215,71 @@ def inbox_read_all(request):
     ch.mark_all_read(me)
     messages.info(request, "Все входящие отмечены как прочитанные.")
     return redirect("inbox")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def inbox_bulk(request):
+    """List bulk: archive / restore / unread / purge."""
+    me = _me(request)
+    if not me:
+        return redirect("inbox")
+    ids = _int_ids(request.POST.getlist("ids"))
+    action = (request.POST.get("action") or "archive").strip()
+    if action == "restore":
+        n = ch.restore_many(me, ids)
+        if n:
+            messages.info(request, f"Возвращено во входящие: {n}.")
+        return redirect("/inbox?folder=archive")
+    if action == "unread":
+        n = 0
+        for cid in ids:
+            try:
+                ch.mark_unread(me, ch.require_member(me, cid))
+                n += 1
+            except Http404:
+                pass
+        if n:
+            messages.info(request, f"Непрочитанных: {n}.")
+        return redirect("inbox")
+    if action == "purge":
+        n = ch.purge_many(me, ids)
+        if n:
+            messages.info(request, f"Удалено из ящика: {n}.")
+        return redirect("/inbox?folder=archive")
+    n = ch.leave_many(me, ids)
+    if n:
+        messages.info(request, f"В архиве: {n}.")
+    return redirect("inbox")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+@throttle("msg", 20, 60)
+def message_forward(request, message_id):
+    me = _me(request)
+    if not me:
+        return redirect("inbox")
+    try:
+        tid = int(request.POST.get("to") or 0)
+    except (TypeError, ValueError):
+        tid = 0
+    other = SocialProfile.objects.filter(pk=tid).first()
+    if not other:
+        messages.error(request, "Выберите друга для пересылки.")
+        return redirect(request.POST.get("next") or "inbox")
+    try:
+        _m, conv = ch.forward_message(me, message_id, other)
+    except Http404:
+        messages.error(request, "Сообщение недоступно.")
+        return redirect("inbox")
+    except PermissionError as e:
+        messages.error(request, str(e) or "Нельзя переслать.")
+        return redirect(request.POST.get("next") or "inbox")
+    messages.success(request, "Сообщение переслано.")
+    return redirect(_go(conv.id))
 
 
 @login_required

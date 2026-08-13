@@ -1,7 +1,5 @@
 /* Classic FB chrome — SSE nav badges + inbox thread bump + typing/voice (no WS messenger UI). */
 (function () {
-  if (!window.EventSource) return;
-
   function $(id) { return document.getElementById(id); }
 
   function csrfToken() {
@@ -154,6 +152,54 @@
     });
   }
 
+  function wireOlder() {
+    var link = $("inbox-older-link");
+    var box = $("inbox-thread");
+    if (!link || !box) return;
+    link.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      var url = link.getAttribute("data-older-url");
+      var before = link.getAttribute("data-before") || box.getAttribute("data-first") || "0";
+      var tq = link.getAttribute("data-tq") || "";
+      if (!url || !before) return;
+      var q = url + (url.indexOf("?") >= 0 ? "&" : "?") + "before=" + encodeURIComponent(before);
+      if (tq) q += "&tq=" + encodeURIComponent(tq);
+      link.textContent = "загружаем…";
+      fetch(q, { credentials: "same-origin", headers: { "Accept": "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !data.html) {
+            link.textContent = "← более ранние сообщения";
+            return;
+          }
+          box.insertAdjacentHTML("afterbegin", data.html);
+          if (data.first_id) {
+            box.setAttribute("data-first", String(data.first_id));
+            link.setAttribute("data-before", String(data.first_id));
+          }
+          if (data.has_older) {
+            link.textContent = "← более ранние сообщения";
+          } else {
+            link.textContent = "это начало переписки";
+            link.removeAttribute("href");
+            link.onclick = function (e) { e.preventDefault(); };
+          }
+        })
+        .catch(function () {
+          link.textContent = "← более ранние сообщения";
+        });
+    });
+  }
+
+  function wireBulkChecks() {
+    var all = $("inbox-check-all");
+    if (!all) return;
+    all.addEventListener("change", function () {
+      var boxes = document.querySelectorAll(".inbox-check");
+      for (var i = 0; i < boxes.length; i++) boxes[i].checked = all.checked;
+    });
+  }
+
   function wireComposer() {
     var form = $("inbox-compose");
     var box = $("inbox-thread");
@@ -227,6 +273,11 @@
     });
   }
 
+  wireBulkChecks();
+  wireOlder();
+  wireComposer();
+
+  if (!window.EventSource) return;
   var snav = $("snav");
   var streamUrl = snav && snav.getAttribute("data-rt");
   if (!streamUrl) return;
@@ -235,8 +286,6 @@
   if (box && box.getAttribute("data-conv")) {
     streamUrl += (streamUrl.indexOf("?") >= 0 ? "&" : "?") + "c=" + encodeURIComponent(box.getAttribute("data-conv"));
   }
-
-  wireComposer();
 
   var es = new EventSource(streamUrl);
   es.onmessage = function (ev) {

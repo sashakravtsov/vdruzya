@@ -23,21 +23,27 @@ class PostedItemForm(ClassicForm, forms.Form):
         widget=forms.Select(attrs={"class": "inputtext"}),
     )
 
-    def __init__(self, *args, allow_upload=False, **kwargs):
+    def __init__(self, *args, allow_upload=False, require_source=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.allow_upload = allow_upload
+        self.require_source = require_source
         if not allow_upload:
             self.fields.pop("video", None)
 
     def clean_url(self):
         from apps.social.classic_extra import normalize_url
-        return normalize_url(self.cleaned_data.get("url") or "")
+        raw = (self.cleaned_data.get("url") or "").strip()
+        if raw.startswith("storage:"):
+            return raw[:500]
+        return normalize_url(raw)
 
     def clean_title(self):
         return (self.cleaned_data.get("title") or "").strip()[:160]
 
     def clean(self):
         data = super().clean()
+        if not self.require_source:
+            return data
         url = data.get("url") or ""
         video = data.get("video") if self.allow_upload else None
         if self.allow_upload:

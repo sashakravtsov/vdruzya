@@ -32,6 +32,10 @@
                 {{ active.display_name|default:"Сообщение" }}
                 {% endif %}
                 <span class="edit msg-actions">
+                    <form method="post" action="{% url 'inbox.unread' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted">непрочитанное</button>
+                    </form>
+                    ·
                     {% if active.is_muted %}
                     <form method="post" action="{% url 'inbox.unmute' active.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish">вкл. уведомления</button>
@@ -46,10 +50,25 @@
                     <form method="post" action="{% url 'inbox.unarchive' active.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish">вернуть во входящие</button>
                     </form>
+                    ·
+                    <form method="post" action="{% url 'inbox.purge' active.id %}" class="inline" onsubmit="return confirm('Удалить переписку из вашего ящика навсегда?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
                     {% else %}
                     <form method="post" action="{% url 'inbox.leave' active.id %}" class="inline" onsubmit="return confirm('Перенести переписку в архив?');">{% csrf_token %}
                         <button type="submit" class="linkish muted">в архив</button>
                     </form>
+                    ·
+                    <form method="post" action="{% url 'inbox.spam' active.id %}" class="inline" onsubmit="return confirm('Пометить как спам и убрать в архив?');">{% csrf_token %}
+                        <button type="submit" class="linkish muted">спам</button>
+                    </form>
+                    {% if active.peer %}
+                    ·
+                    <form method="post" action="{% url 'inbox.spam' active.id %}" class="inline" onsubmit="return confirm('Спам и заблокировать {{ active.peer.name }}?');">{% csrf_token %}
+                        <input type="hidden" name="block" value="1">
+                        <button type="submit" class="linkish muted">спам+блок</button>
+                    </form>
+                    {% endif %}
                     {% endif %}
                 </span>
             </h4>
@@ -89,9 +108,25 @@
                     </form>
                     {% endif %}
                 </p>
+                <form method="post" action="{% url 'inbox.bulk' %}" id="inbox-bulk">
+                    {% csrf_token %}
+                    {% if conversations %}
+                    <p class="msg-bulk muted">
+                        {% if folder == 'archive' %}
+                        <button type="submit" name="action" value="restore" class="linkish">вернуть выбранные</button>
+                        ·
+                        <button type="submit" name="action" value="purge" class="linkish muted" onclick="return confirm('Удалить выбранные из ящика?');">удалить выбранные</button>
+                        {% else %}
+                        <button type="submit" name="action" value="archive" class="linkish muted">в архив</button>
+                        ·
+                        <button type="submit" name="action" value="unread" class="linkish muted">непрочитанные</button>
+                        {% endif %}
+                    </p>
+                    {% endif %}
                 <table class="inbox-table" cellspacing="0" cellpadding="0">
                     <thead>
                         <tr>
+                            <th class="col-check"><input type="checkbox" id="inbox-check-all" title="Выбрать все"></th>
                             <th class="col-from">{% if folder == 'sent' %}Кому{% else %}От{% endif %}</th>
                             <th class="col-subj">Тема</th>
                             <th class="col-when">Когда</th>
@@ -100,6 +135,7 @@
                     <tbody>
                         {% for c in conversations %}
                         <tr class="msg-thread{% if c.unread %} is-unread{% endif %}">
+                            <td class="col-check"><input type="checkbox" name="ids" value="{{ c.id }}" class="inbox-check"></td>
                             <td class="col-from">
                                 <a href="?c={{ c.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% elif unread_only %}&amp;unread=1{% endif %}">
                                     {% if c.peer %}{% avatar c.peer 32 %}{% else %}<img class="avatar" src="{% static 'img/nophoto.gif' %}" width="32" height="32" alt="">{% endif %}
@@ -114,10 +150,11 @@
                             <td class="col-when muted">{% if c.last_at %}{{ c.last_at|date:"j E, H:i" }}{% else %}—{% endif %}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="3" class="muted">{% if q or folder != 'inbox' or unread_only %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</td></tr>
+                        <tr><td colspan="4" class="muted">{% if q or folder != 'inbox' or unread_only %}Ничего не найдено.{% else %}Нет сообщений.{% endif %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                </form>
                 {% if has_more or page > 1 %}
                 <p class="msg-pager muted">
                     {% if page > 1 %}<a href="?page={{ page|add:'-1' }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if unread_only %}&amp;unread=1{% endif %}">← новее</a>{% endif %}

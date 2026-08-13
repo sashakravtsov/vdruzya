@@ -1211,10 +1211,18 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane .msg-tabs { margin: 0 0 8px; font-size: 11px; }
 .inbox-pane .msg-tabs a.is-on { font-weight: bold; color: #333; text-decoration: none; }
 .inbox-pane .msg-tabs .msg-read-all { display: inline; }
+.inbox-pane .msg-bulk { margin: 0 0 6px; font-size: 11px; }
 .inbox-pane .msg-title-edit { margin: 0 0 10px; font-size: 11px; }
 .inbox-pane .msg-title-edit .inputtext { width: 55%; max-width: 280px; margin: 0 4px; }
+.inbox-pane .msg-thread-filter { margin: 0 0 8px; font-size: 11px; }
+.inbox-pane .msg-thread-filter .inputtext { width: 45%; max-width: 220px; margin: 0 4px; }
+.inbox-pane .msg-reply-chip { margin: 0 0 8px; padding: 4px 0; border-top: 1px solid #D8DFEA; }
 .inbox-pane .msg-receipt { font-size: 11px; }
 .inbox-pane .msg-line.is-mine.is-read .msg-receipt { color: #3B5998; }
+.inbox-pane .msg-fwd { display: inline; margin-left: 4px; }
+.inbox-pane .msg-fwd > summary { list-style: none; cursor: pointer; display: inline; }
+.inbox-pane .msg-fwd > summary::-webkit-details-marker { display: none; }
+.inbox-pane .msg-fwd-form { display: inline; margin-left: 4px; }
 .inbox-pane .msg-pager { margin: 8px 0 0; font-size: 11px; }
 .inbox-table { width: 100%; border-collapse: collapse; margin: 4px 0 0; }
 .inbox-table th {
@@ -1225,6 +1233,7 @@ button.linkish .ico { margin-right: 2px; }
   padding: 8px 8px 8px 0; border-bottom: 1px solid #EEEFF3;
   vertical-align: top; font-size: 11px;
 }
+.inbox-table .col-check { width: 22px; text-align: center; }
 .inbox-table .col-from { width: 180px; }
 .inbox-table .col-from a { display: block; overflow: hidden; color: var(--fb); text-decoration: none; }
 .inbox-table .col-from img.avatar { float: left; margin-right: 6px; }
