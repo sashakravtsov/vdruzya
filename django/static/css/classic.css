@@ -1735,3 +1735,971 @@ body.fb-dialog-open { overflow: hidden; }
   border-bottom: 1px solid #eee;
 }
 .osm-suggest-item:hover { background: #D8DFEA; }
+
+/* —— Ферма —— */
+.farm-app {
+  --fm-soil: #6b4a2e;
+  --fm-leaf: #2f7a45;
+  --fm-sun: #e6b422;
+  --fm-sky: #e7f0e8;
+}
+.farm-app .farm-mark { color: var(--fm-leaf); margin-left: 4px; }
+.farm-app .farm-lead { margin: 0 0 8px; color: #445; }
+.farm-app .farm-strip {
+  margin: 0 0 10px; padding: 7px 9px;
+  background: linear-gradient(180deg, #f4faf4, var(--fm-sky));
+  border: 1px solid #b7cbb8; font: 11px/15px var(--font);
+}
+.farm-app .farm-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: var(--fm-leaf); color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.farm-app .farm-bankrupt { color: #a40; font-weight: bold; }
+.farm-app .farm-bankrupt-banner {
+  margin: 0 0 10px; padding: 8px 10px; border: 1px solid #e0c48a; background: #fff8e1;
+  font: 11px/15px var(--font);
+}
+.farm-app .farm-path {
+  margin: 0 0 12px; padding: 7px 9px; background: #f5f7fb; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.farm-app .farm-meter {
+  height: 8px; margin: 5px 0 6px; background: #dce6dd; border: 1px solid #b7cbb8; overflow: hidden;
+}
+.farm-app .farm-meter.thin { height: 6px; }
+.farm-app .farm-meter span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #6aa86a, var(--fm-leaf));
+}
+.farm-app .farm-list { margin: 0; padding-left: 16px; }
+.farm-app .farm-done { color: var(--fm-leaf); font-weight: bold; }
+
+.farm-app .farm-field-layout { display: table; width: 100%; }
+.farm-app .farm-field,
+.farm-app .farm-side { display: table-cell; vertical-align: top; }
+.farm-app .farm-field { width: 68%; padding-right: 12px; }
+.farm-app .farm-field {
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.farm-app .farm-field.is-in { opacity: 1; transform: none; }
+.farm-app .farm-plot {
+  display: inline-block; width: 31%; min-width: 140px; margin: 0 1% 10px 0;
+  vertical-align: top; border: 1px solid #8a6a45;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12), transparent 40%),
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.08), transparent 50%),
+    #5a3d24;
+  color: #f4ffe8; font: 11px/14px var(--font);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.12);
+}
+.farm-app .farm-plot.state-growing { background-color: #4a6b35; border-color: #3d5c2c; }
+.farm-app .farm-plot.state-ready {
+  background: linear-gradient(180deg, #7aa84a, #4f7a32);
+  border-color: var(--fm-sun);
+  animation: farm-ready 1.5s ease-in-out infinite;
+}
+.farm-app .farm-plot.state-withered { background: #5a5348; opacity: .85; }
+.farm-app .farm-plot.is-watered .farm-plot-inner { box-shadow: inset 0 -3px 0 rgba(90,160,220,.35); }
+.farm-app .farm-plot.is-due { outline: 2px solid var(--fm-sun); }
+@keyframes farm-ready {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(0,0,0,.12); }
+  50% { box-shadow: inset 0 0 0 2px rgba(230,180,34,.45), 0 0 0 2px rgba(230,180,34,.25); }
+}
+.farm-app .farm-plot-inner { padding: 8px 8px 4px; min-height: 58px; position: relative; }
+.farm-app .farm-plot-inner::before {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: 4px; height: 6px;
+  border-radius: 2px; background: var(--crop, transparent); opacity: .85;
+}
+.farm-app .farm-plot-idx { float: right; opacity: .7; font-size: 10px; }
+.farm-app .farm-plot-title { display: block; margin: 0 0 2px; }
+.farm-app .farm-plot-timer { display: block; color: #ffe9a8; font-weight: bold; }
+.farm-app .farm-plot-hint { display: block; font-size: 10px; color: #dcefdc; }
+.farm-app .farm-plot-acts { padding: 0 8px 8px; background: rgba(0,0,0,.15); }
+.farm-app .farm-plot-acts .inputsubmit,
+.farm-app .farm-plot-acts .inputbutton { margin: 2px 2px 0 0; }
+.farm-app .farm-plant-form select { width: 100%; margin: 0 0 4px; font-size: 11px; }
+.farm-app .farm-btn-harvest {
+  background: linear-gradient(180deg, #ffe08a, #e6b422) !important;
+  border-color: #a88410 !important; color: #3a2e08 !important;
+}
+
+.farm-app .farm-side { font: 11px/15px var(--font); }
+.farm-app .farm-crop-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.farm-app .farm-crop-list li { margin: 0 0 5px; }
+.farm-app .farm-crop-list li.is-locked { opacity: .55; }
+.farm-app .farm-crop-list i {
+  display: inline-block; width: 10px; height: 10px; margin-right: 4px;
+  border: 1px solid #333; vertical-align: middle;
+}
+.farm-app .farm-tag {
+  display: inline-block; margin-left: 4px; padding: 0 4px;
+  border: 1px solid #c3cde0; background: #edf2f8; color: #567; font-size: 10px;
+}
+.farm-app .farm-xp { margin-top: 10px; padding-top: 8px; border-top: 1px solid #c3cde0; }
+
+.farm-app .farm-barn .farm-animal {
+  display: inline-block; width: 46%; margin: 0 2% 10px 0; padding: 8px;
+  border: 1px solid #c3cde0; background: #fffaf3; vertical-align: top;
+}
+.farm-app .farm-shop { list-style: none; margin: 0; padding: 0; }
+.farm-app .farm-shop li {
+  margin: 0 0 10px; padding: 8px; border: 1px solid #c3cde0; background: #f7faf7;
+}
+.farm-app .farm-people { list-style: none; margin: 0; padding: 0; }
+.farm-app .farm-people li {
+  margin: 0 0 8px; padding: 7px; border: 1px solid #d7dee8; background: #fff;
+}
+.farm-app .farm-people .inputsubmit { margin-left: 6px; }
+
+.farm-app .farm-learn { display: table; width: 100%; }
+.farm-app .farm-learn-nav,
+.farm-app .farm-lesson { display: table-cell; vertical-align: top; }
+.farm-app .farm-learn-nav { width: 34%; padding-right: 12px; }
+.farm-app .farm-lesson {
+  padding: 8px 10px; border: 1px solid #c3cde0; background: #f8faf8;
+}
+.farm-app .farm-quiz { list-style: none; margin: 0 0 8px; padding: 0; }
+.farm-app .farm-badges { margin: 8px 0; }
+.farm-app .farm-badge-pill {
+  display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px;
+  border: 1px solid #c3cde0; background: #edf2f8; color: #789; font: 10px/14px var(--font);
+}
+.farm-app .farm-badge-pill.on {
+  border-color: #2f7a45; background: #e7f5ea; color: #1e4d2b; font-weight: bold;
+}
+.farm-app .farm-reset { margin: 10px 0; padding: 8px; border: 1px solid #e0c48a; background: #fff8e1; }
+.farm-app .farm-foot { margin-top: 14px; }
+
+@media (max-width: 720px) {
+  .farm-app .farm-field-layout,
+  .farm-app .farm-field,
+  .farm-app .farm-side,
+  .farm-app .farm-learn,
+  .farm-app .farm-learn-nav,
+  .farm-app .farm-lesson { display: block; width: auto; }
+  .farm-app .farm-plot { width: 48%; }
+}
+
+/* —— Знакомства (dating) —— */
+.dating-app {
+  --dt-ink: #2a3340;
+  --dt-rose: #b23c5a;
+  --dt-rose-soft: #f7e6eb;
+  --dt-leaf: #2f6b4f;
+  --dt-sky: #e8eef6;
+}
+.dating-app .dating-spark-mark {
+  color: var(--dt-rose); font-size: 12px; margin-left: 4px;
+}
+.dating-app .dating-lead { margin: 0 0 8px; color: #445; }
+.dating-app .dating-strip {
+  margin: 0 0 10px; padding: 7px 9px;
+  background: linear-gradient(180deg, #fff7f9, var(--dt-sky));
+  border: 1px solid #d5c2c8; font: 11px/15px var(--font); color: var(--dt-ink);
+}
+.dating-app .dating-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: var(--dt-rose); color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.dating-app .dating-path {
+  margin: 0 0 12px; padding: 7px 9px; background: #f5f7fb; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.dating-app .dating-meter {
+  height: 8px; margin: 5px 0 6px; background: #dde3ee; border: 1px solid #c3cde0; overflow: hidden;
+}
+.dating-app .dating-meter.thin { height: 6px; }
+.dating-app .dating-meter span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #d97890, var(--dt-rose));
+}
+.dating-app .dating-list { margin: 0; padding-left: 16px; }
+.dating-app .dating-done { color: var(--dt-leaf); font-weight: bold; }
+
+.dating-app .dating-stage {
+  margin: 0 0 14px; padding: 12px;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(178,60,90,.08), transparent 55%),
+    linear-gradient(180deg, #fff, #f3f6fb);
+  border: 1px solid #c9b4bb;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.dating-app .dating-stage.is-in { opacity: 1; transform: none; }
+.dating-app .dating-hero {
+  display: table; width: 100%; table-layout: fixed;
+}
+.dating-app .dating-hero-photo,
+.dating-app .dating-hero-copy {
+  display: table-cell; vertical-align: top;
+}
+.dating-app .dating-hero-photo {
+  width: 200px; padding-right: 14px; text-align: center;
+}
+.dating-app .dating-hero-photo .avatar {
+  width: 180px; height: 180px; object-fit: cover;
+  border: 1px solid #b9a4aa; background: #eee;
+  box-shadow: 0 2px 0 rgba(0,0,0,.04);
+}
+.dating-app .dating-compat {
+  margin: 8px auto 0; display: inline-block; min-width: 88px;
+  padding: 5px 8px; border: 1px solid #d4a3b0;
+  background: var(--dt-rose-soft); color: var(--dt-rose);
+  font: 10px/13px var(--font);
+}
+.dating-app .dating-compat b {
+  display: block; font: bold 18px/20px Georgia, "Times New Roman", serif; color: var(--dt-ink);
+}
+.dating-app .dating-name { margin: 0 0 4px; font: bold 16px/20px var(--font); }
+.dating-app .dating-meta { margin: 0 0 8px; color: #567; font: 11px/15px var(--font); }
+.dating-app .dating-headline {
+  margin: 0 0 6px; font: bold 12px/16px Georgia, "Times New Roman", serif; color: var(--dt-ink);
+}
+.dating-app .dating-about { margin: 0 0 8px; font: 11px/16px var(--font); color: #333; }
+.dating-app .dating-prompts { margin: 0; padding-left: 16px; font: 11px/15px var(--font); }
+.dating-app .dating-prompts li { margin: 0 0 6px; }
+.dating-app .dating-tag {
+  display: inline-block; margin-left: 4px; padding: 0 5px;
+  border: 1px solid #c3cde0; background: #edf2f8; font: 10px/14px var(--font); color: #456;
+}
+.dating-app .dating-tag.hot {
+  border-color: #d4a3b0; background: var(--dt-rose-soft); color: var(--dt-rose);
+}
+.dating-app .dating-actions {
+  margin: 12px 0 4px; padding-top: 10px; border-top: 1px solid #e0d0d5;
+}
+.dating-app .dating-actions form,
+.dating-app .dating-actions a.inputsubmit { margin-right: 6px; }
+.dating-app .dating-btn-like {
+  background: linear-gradient(180deg, #f7d6de, #e8b0bf) !important;
+  border-color: #b23c5a !important; color: #5a1528 !important;
+}
+.dating-app .dating-btn-super {
+  background: linear-gradient(180deg, #fff3c9, #f0d78c) !important;
+  border-color: #b8963a !important; color: #4a3a10 !important;
+}
+.dating-app .dating-queue { margin: 6px 0 0; }
+.dating-app .dating-empty {
+  padding: 14px; border: 1px dashed #c3cde0; background: #f7f9fc;
+}
+
+.dating-app .dating-people { list-style: none; margin: 0; padding: 0; }
+.dating-app .dating-people-item {
+  display: table; width: 100%; margin: 0 0 10px; padding: 8px;
+  border: 1px solid #d7dee8; background: #fff;
+}
+.dating-app .dating-people-item.is-super { border-color: #d4a3b0; background: #fffafb; }
+.dating-app .dating-people-item.is-new { border-color: #9db89d; background: #f4faf4; }
+.dating-app .dating-people-ava,
+.dating-app .dating-people-body { display: table-cell; vertical-align: top; }
+.dating-app .dating-people-ava { width: 58px; padding-right: 10px; }
+.dating-app .dating-people-body .inputsubmit { margin: 4px 6px 0 0; }
+.dating-app .dating-opener-line { margin: 3px 0 5px; font: 11px/15px var(--font); color: #456; }
+
+.dating-app .dating-match-banner {
+  margin: 0 0 12px; padding: 12px 14px;
+  border: 1px solid #c9a24a;
+  background: linear-gradient(180deg, #fff8e1, #f7e7b0);
+  font: 12px/16px var(--font);
+  transform: scale(.98); opacity: .01;
+  transition: transform .4s ease, opacity .4s ease;
+}
+.dating-app .dating-match-banner.is-pop { transform: none; opacity: 1; }
+.dating-app .dating-opener { margin: 6px 0; }
+
+.dating-app .dating-form .formtable th { width: 120px; vertical-align: top; padding-top: 6px; }
+.dating-app .dating-form input[type="text"],
+.dating-app .dating-form input[type="number"],
+.dating-app .dating-form textarea,
+.dating-app .dating-form select {
+  width: 92%; max-width: 420px;
+}
+.dating-app .dating-badges { margin: 0 0 10px; }
+.dating-app .dating-badge-pill {
+  display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px;
+  border: 1px solid #c3cde0; background: #edf2f8; color: #789;
+  font: 10px/14px var(--font);
+}
+.dating-app .dating-badge-pill.on {
+  border-color: #b23c5a; background: var(--dt-rose-soft); color: #5a1528; font-weight: bold;
+}
+.dating-app .dating-tip-layout { display: table; width: 100%; }
+.dating-app .dating-tip-nav,
+.dating-app .dating-tip-card { display: table-cell; vertical-align: top; }
+.dating-app .dating-tip-nav { width: 34%; padding-right: 12px; }
+.dating-app .dating-tip-card {
+  padding: 8px 10px; border: 1px solid #c3cde0; background: #f8fafc;
+}
+.dating-app .dating-quiz { list-style: none; margin: 0 0 8px; padding: 0; }
+.dating-app .dating-quiz li { margin: 0 0 4px; }
+.dating-app .dating-foot { margin-top: 14px; }
+
+@media (max-width: 720px) {
+  .dating-app .dating-hero,
+  .dating-app .dating-hero-photo,
+  .dating-app .dating-hero-copy,
+  .dating-app .dating-tip-layout,
+  .dating-app .dating-tip-nav,
+  .dating-app .dating-tip-card { display: block; width: auto; }
+  .dating-app .dating-hero-photo { margin-bottom: 10px; padding-right: 0; }
+  .dating-app .dating-hero-photo .avatar { width: 140px; height: 140px; }
+}
+
+/* —— Poker pro UI (felt, cards, chips) —— */
+.poker-app {
+  --pk-felt: #1f6b3a;
+  --pk-felt-deep: #145028;
+  --pk-rail: #6b3e22;
+  --pk-rail-hi: #8a5430;
+  --pk-gold: #f0d78c;
+}
+.poker-app .poker-lead { margin: 0 0 6px; }
+.poker-app .poker-strip {
+  margin: 0 0 10px; padding: 6px 9px;
+  background: linear-gradient(180deg, #f4f7fc, #e8eef8);
+  border: 1px solid #c3cde0; font: 11px/15px var(--font);
+}
+.poker-app .poker-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: #c00; color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.poker-app .poker-badge.soft { background: #390; }
+.poker-app .poker-bankrupt { color: #a40; font-weight: bold; }
+.poker-app .poker-path-card {
+  margin: 0 0 12px; padding: 7px 9px; background: #edf2f8; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.poker-app .poker-turn-banner {
+  margin: 0 0 10px; padding: 8px 10px; border: 1px solid #c3cde0; background: #f5f7fb;
+  font: bold 11px/15px var(--font);
+}
+.poker-app .poker-turn-banner.yours {
+  background: linear-gradient(180deg, #eef9ef, #dcefdc); border-color: #7aad7a;
+  animation: pk-pulse 1.6s ease-in-out infinite;
+}
+.poker-app .poker-turn-banner.pending { background: #fff8e1; border-color: #e6d9a8; }
+.poker-app .poker-turn-banner.done { background: #edf2f8; }
+@keyframes pk-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(80,160,90,.0); }
+  50% { box-shadow: 0 0 0 3px rgba(80,160,90,.22); }
+}
+.poker-app .poker-mute {
+  float: right; font: 10px/14px var(--font); color: #567; cursor: pointer; text-decoration: none;
+}
+.poker-app .poker-mute.is-off { color: #999; }
+.poker-app .poker-live,
+.app-live {
+  display: inline-block; margin-left: 8px; padding: 1px 7px;
+  border: 1px solid #8a3; background: #f4ffe8; color: #360;
+  font: bold 10px/14px var(--font); letter-spacing: .04em; vertical-align: middle;
+}
+.poker-app .poker-live.is-on,
+.app-live.is-on,
+.app-live.is-live {
+  border-color: #2a7; background: #e7ffe8; color: #164;
+  animation: pk-live 1.4s ease-in-out infinite;
+}
+@keyframes pk-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .72; }
+}
+.farm-toast, .dating-toast, .chess-toast {
+  margin: 0 0 8px; padding: 6px 9px; border: 1px solid #e6c48a; background: #fff8e8;
+  font: 11px/15px var(--font); color: #643;
+}
+.farm-toast.is-err, .dating-toast.is-err {
+  border-color: #d8a0a0; background: #fff0f0; color: #722;
+}
+.farm-app.is-live-tick .farm-field { outline: 1px solid rgba(80,160,90,.25); }
+.poker-app .poker-toast {
+  margin: 0 0 8px; padding: 6px 9px; border: 1px solid #e6c48a; background: #fff8e8;
+  font: 11px/15px var(--font); color: #643;
+}
+.poker-app .poker-coach {
+  margin: 0 0 8px; padding: 6px 9px; border: 1px solid #c3cde0; background: #f3f7fc;
+  font: 11px/15px var(--font); color: #345;
+}
+.poker-app #poker-rt-actions .inputsubmit { margin: 0 4px 6px 0; }
+.poker-app #poker-rt-actions .poker-raise-form { margin-top: 8px; }
+
+/* Oval casino table */
+.poker-app .poker-arena {
+  margin: 0 0 14px; padding: 14px 12px 16px;
+  background:
+    radial-gradient(ellipse at 50% 30%, #3a2a1c 0%, #1a120c 70%),
+    #1a120c;
+  border: 1px solid #2a1c12;
+}
+.poker-app .poker-oval {
+  position: relative; margin: 0 auto; max-width: 640px; min-height: 320px;
+  padding: 18px 22px 22px;
+  border-radius: 50% / 42%;
+  background:
+    radial-gradient(ellipse at 50% 40%, #2f8f4d 0%, var(--pk-felt) 42%, var(--pk-felt-deep) 78%),
+    var(--pk-felt-deep);
+  box-shadow:
+    inset 0 0 0 10px var(--pk-rail),
+    inset 0 0 0 13px var(--pk-rail-hi),
+    inset 0 0 0 16px #4a2a14,
+    inset 0 0 40px rgba(0,0,0,.35),
+    0 8px 18px rgba(0,0,0,.35);
+  color: #f4fff6;
+}
+.poker-app .poker-oval::before {
+  content: ""; position: absolute; inset: 22px;
+  border-radius: 50% / 42%;
+  border: 1px dashed rgba(255,255,255,.12);
+  pointer-events: none;
+}
+.poker-app .poker-felt-rail {
+  position: relative; z-index: 2; text-align: center;
+  margin: 0 0 8px; font: 10px/14px var(--font); color: #d7f0dd;
+}
+.poker-app .poker-felt-rail span {
+  display: inline-block; margin: 0 3px; padding: 1px 7px;
+  border: 1px solid rgba(255,255,255,.22); background: rgba(0,0,0,.18);
+  border-radius: 2px;
+}
+.poker-app .poker-streets {
+  position: relative; z-index: 2; text-align: center; margin: 0 0 10px;
+  font: 10px/14px var(--font); color: #c5e0cc;
+}
+.poker-app .poker-streets i {
+  display: inline-block; margin: 0 2px; padding: 1px 6px;
+  border: 1px solid rgba(255,255,255,.15); opacity: .45; font-style: normal;
+}
+.poker-app .poker-streets i.on {
+  opacity: 1; background: rgba(255,255,255,.12); color: var(--pk-gold); border-color: rgba(240,215,140,.45);
+}
+
+.poker-app .poker-seat {
+  position: relative; z-index: 2; text-align: center; margin: 0 auto 6px;
+  font: 11px/16px var(--font); max-width: 280px;
+}
+.poker-app .poker-seat.top { margin-top: 2px; }
+.poker-app .poker-seat.bot { margin-top: 8px; }
+.poker-app .poker-seat .poker-nameplate {
+  display: inline-block; padding: 3px 10px 4px;
+  background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 3px; color: #fff; min-width: 120px;
+}
+.poker-app .poker-seat.to-act .poker-nameplate {
+  border-color: var(--pk-gold);
+  box-shadow: 0 0 0 1px rgba(240,215,140,.35);
+}
+.poker-app .poker-seat .poker-stack-line { color: #d2e8d7; font-size: 10px; }
+.poker-app .poker-dealer {
+  display: inline-block; width: 18px; height: 18px; margin-left: 4px;
+  border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ddd 55%, #aaa);
+  color: #222; font: bold 10px/18px var(--font); text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,.4); vertical-align: middle;
+}
+.poker-app .poker-bet-line {
+  margin: 4px 0 2px; min-height: 22px; color: var(--pk-gold); font: bold 10px/14px var(--font);
+}
+.poker-app .poker-hole { margin-top: 5px; white-space: nowrap; }
+.poker-app .poker-board-wrap { position: relative; z-index: 2; text-align: center; margin: 8px 0 4px; }
+.poker-app .poker-pot {
+  margin: 0 0 6px; font: bold 12px/16px Georgia, "Times New Roman", serif; color: var(--pk-gold);
+  text-shadow: 0 1px 2px rgba(0,0,0,.45);
+}
+.poker-app .poker-pot .pk-chip-stack { margin-right: 6px; vertical-align: middle; }
+.poker-app .poker-board { min-height: 72px; }
+.poker-app .poker-board .pk-card,
+.poker-app .poker-hole .pk-card { margin: 0 3px; }
+.poker-app .pk-slot {
+  display: inline-block; width: 44px; height: 62px; margin: 0 3px;
+  border: 1px dashed rgba(255,255,255,.18); border-radius: 5px;
+  background: rgba(0,0,0,.12); vertical-align: top;
+}
+.poker-app .poker-hand-hint {
+  margin: 4px 0 0; font: 10px/14px var(--font); color: #cfe8d4;
+}
+
+/* Playing cards */
+.poker-app .pk-card,
+.pk-card {
+  --deal: 0;
+  position: relative; display: inline-block; width: 44px; height: 62px;
+  vertical-align: top; border-radius: 5px;
+  background: linear-gradient(165deg, #fff 0%, #f7f7f4 55%, #eee 100%);
+  border: 1px solid #2a2a2a;
+  box-shadow: 0 2px 3px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.65);
+  color: #151515;
+  font: 700 11px/1.05 Georgia, "Times New Roman", serif;
+  animation: pk-deal .38s ease both;
+  animation-delay: calc(var(--deal) * 60ms);
+  transform-origin: 50% 120%;
+}
+@keyframes pk-deal {
+  from { opacity: 0; transform: translateY(-14px) rotate(-8deg) scale(.92); }
+  to { opacity: 1; transform: none; }
+}
+.poker-app .pk-card.red { color: #c11818; }
+.poker-app .pk-card .pk-corner {
+  position: absolute; display: block; text-align: center; line-height: 1.05;
+}
+.poker-app .pk-card .pk-corner.tl { top: 3px; left: 4px; }
+.poker-app .pk-card .pk-corner.br {
+  right: 4px; bottom: 3px; transform: rotate(180deg);
+}
+.poker-app .pk-card .pk-corner i { display: block; font-style: normal; font-size: 12px; }
+.poker-app .pk-card .pk-corner u { display: block; text-decoration: none; font-size: 11px; }
+.poker-app .pk-card .pk-pip {
+  position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  text-align: center; font-size: 22px; line-height: 1;
+}
+.poker-app .pk-card.mine {
+  box-shadow: 0 2px 4px rgba(0,0,0,.32), 0 0 0 1px #d4b44a, inset 0 0 0 1px #fff;
+}
+.poker-app .pk-card.back {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.08), transparent 40%),
+    repeating-linear-gradient(45deg, #1e3a6e 0 3px, #274a86 3px 6px);
+  border-color: #14284a; color: #fff;
+}
+.poker-app .pk-card.back .pk-back-pattern {
+  position: absolute; inset: 5px; border: 1px solid rgba(255,255,255,.28);
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,220,140,.35), transparent 55%),
+    repeating-linear-gradient(-45deg, transparent 0 4px, rgba(255,255,255,.08) 4px 5px);
+}
+.poker-app .pk-card.lg { width: 52px; height: 74px; }
+.poker-app .pk-card.lg .pk-pip { font-size: 26px; }
+.poker-app .pk-card.lg .pk-corner i { font-size: 13px; }
+
+/* Chips */
+.poker-app .pk-chip-stack {
+  position: relative; display: inline-block; width: 28px; height: 22px; vertical-align: middle;
+}
+.poker-app .pk-chip {
+  position: absolute; left: 4px; width: 20px; height: 20px; border-radius: 50%;
+  bottom: calc(var(--n) * 2px); border: 2px dashed rgba(255,255,255,.55);
+  box-shadow: 0 1px 1px rgba(0,0,0,.45), inset 0 0 0 2px rgba(0,0,0,.15);
+}
+.poker-app .pk-chip.red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #c62828); }
+.poker-app .pk-chip.blue { background: radial-gradient(circle at 35% 30%, #64b5f6, #1565c0); }
+.poker-app .pk-chip.green { background: radial-gradient(circle at 35% 30%, #81c784, #2e7d32); }
+.poker-app .pk-chip.black { background: radial-gradient(circle at 35% 30%, #777, #222); }
+.poker-app .pk-chip.purple { background: radial-gradient(circle at 35% 30%, #ba68c8, #6a1b9a); }
+.poker-app .pk-chip.yellow { background: radial-gradient(circle at 35% 30%, #ffe082, #f9a825); }
+.poker-app .pk-chip.orange { background: radial-gradient(circle at 35% 30%, #ffb74d, #ef6c00); }
+.poker-app .pk-chip.pink { background: radial-gradient(circle at 35% 30%, #f48fb1, #ad1457); }
+.poker-app .pk-chip.gray { background: radial-gradient(circle at 35% 30%, #eee, #9e9e9e); }
+
+.poker-app .poker-actions {
+  margin: 8px 0; padding: 8px; background: #f4f7fc; border: 1px solid #c3cde0;
+}
+.poker-app .poker-actions form.inline { display: inline; margin-right: 6px; }
+.poker-app .poker-actions .inputsubmit { min-width: 72px; }
+.poker-app .poker-raise-form { margin: 6px 0 10px; }
+.poker-app .poker-raise-presets { margin: 0 0 6px; }
+.poker-app .poker-raise-presets button {
+  margin-right: 4px; margin-bottom: 3px;
+}
+.poker-app .poker-simple-list { list-style: none; margin: 0; padding: 0; }
+.poker-app .poker-simple-list li {
+  margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
+}
+.poker-app .poker-row-hot td { background: #fff8e1; }
+.poker-app a.poker-cta { display: inline-block; padding: 1px 8px; text-decoration: none; }
+.poker-app .poker-xp-bar {
+  height: 8px; margin: 0 0 12px; background: #e0e0e0; border: 1px solid #ccc; overflow: hidden;
+}
+.poker-app .poker-xp-bar.thin { height: 5px; margin: 0 0 6px; }
+.poker-app .poker-xp-bar span { display: block; height: 100%; background: var(--fb); }
+.poker-app .poker-quiz-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.poker-app .poker-quiz-list li { margin: 0; padding: 3px 0; }
+.poker-app .poker-done { color: #390; font-weight: bold; margin-left: 4px; }
+.poker-app .poker-learn-progress { margin: 0 0 8px; font: 11px/15px var(--font); }
+.poker-app .poker-chapter { margin: 0 0 14px; }
+.poker-app .poker-theme-tabs { margin: 0 0 10px; font: 11px/16px var(--font); }
+.poker-app .poker-theme-tabs a.on { font-weight: bold; color: #333; text-decoration: none; }
+.poker-app .poker-hint-box { margin: 6px 0 10px; font: 11px/15px var(--font); }
+.poker-app .poker-hint-text { display: none; margin-left: 8px; color: #555; }
+.poker-app .poker-hint-check:checked ~ .poker-hint-text { display: inline; }
+.poker-app tr.is-me td { background: #edf2f8; }
+.poker-app h5 {
+  margin: 12px 0 6px; padding: 0; font: bold 11px/14px var(--font); color: #333;
+}
+.poker-app .poker-lobby-grid {
+  display: table; width: 100%; margin: 0 0 12px; border-collapse: separate; border-spacing: 10px 0;
+}
+.poker-app .poker-lobby-col {
+  display: table-cell; width: 50%; vertical-align: top;
+  padding: 8px 10px; border: 1px solid #c3cde0;
+  background: linear-gradient(180deg, #fbfcfe, #f0f4fa);
+}
+.poker-app .poker-room-panel {
+  margin: 0 0 12px; padding: 10px 12px; border: 1px solid #c3cde0;
+  background: linear-gradient(180deg, #fbfcfe, #f0f4fa);
+}
+.poker-app .poker-code-box {
+  margin: 6px 0 10px; padding: 6px 8px; background: #fff8e1; border: 1px dashed #c9b66b;
+  font: 12px/16px var(--font);
+}
+.poker-app .poker-lock {
+  display: inline-block; margin-left: 4px; padding: 0 5px;
+  background: #555; color: #fff; font: bold 10px/14px var(--font);
+}
+.poker-app .poker-seats-row { margin: 8px 0 10px; }
+.poker-app .poker-seat-slot {
+  display: inline-block; width: 46%; margin-right: 2%; padding: 8px;
+  border: 1px solid #c3cde0; background: #fff; vertical-align: top;
+  font: 11px/15px var(--font);
+}
+.poker-app .poker-seat-slot.me { border-color: #3B5998; background: #edf2f8; }
+.poker-app .poker-seat-slot.empty { opacity: .7; }
+.poker-app .poker-seats-row.multi .poker-seat-slot {
+  width: 30%; margin: 0 1% 6px; min-width: 90px;
+}
+.poker-app .poker-mini-felt {
+  margin: 0 0 12px; padding: 10px; border-radius: 8px;
+  background: radial-gradient(ellipse at center, #2f8f4d, #145028);
+  color: #e8ffe8; text-align: center; font: 11px/15px var(--font);
+}
+.poker-app .poker-goals .poker-simple-list li { border: 0; padding: 2px 0; }
+.poker-app .poker-badges { margin: 8px 0 12px; }
+.poker-app .poker-badge-pill {
+  display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px;
+  border: 1px solid #c3cde0; background: #f5f7fb; font: 10px/14px var(--font); color: #789;
+}
+.poker-app .poker-badge-pill.on {
+  background: #fff8e1; border-color: #c9b66b; color: #333; font-weight: bold;
+}
+
+/* Multi-seat ring on oval */
+.poker-app .poker-oval.is-multi { min-height: 380px; position: relative; }
+.poker-app .poker-multi-ring { position: absolute; inset: 28px 24px 70px; z-index: 2; pointer-events: none; }
+.poker-app .poker-mseat {
+  position: absolute; width: 130px; margin-left: -65px; text-align: center;
+  font: 11px/15px var(--font); pointer-events: auto;
+}
+.poker-app .poker-mseat .poker-nameplate { min-width: 0; max-width: 130px; }
+.poker-app .poker-mseat.folded { opacity: .45; }
+.poker-app .poker-mseat.folded .poker-hole { filter: grayscale(.8); }
+.poker-app .poker-mseat.to-act .poker-nameplate {
+  border-color: var(--pk-gold); box-shadow: 0 0 0 1px rgba(240,215,140,.4);
+}
+.poker-app .poker-mseat.me .poker-nameplate { background: rgba(30,60,120,.45); }
+.poker-app .poker-board-wrap.center-board {
+  position: absolute; left: 50%; top: 48%; transform: translate(-50%, -50%);
+  z-index: 3; width: 90%;
+}
+/* angle classes: 0=top, 90=right, 180=bottom, 270=left */
+.poker-app .poker-mseat.a0 { left: 50%; top: 0; }
+.poker-app .poker-mseat.a60 { left: 82%; top: 12%; }
+.poker-app .poker-mseat.a72 { left: 86%; top: 18%; }
+.poker-app .poker-mseat.a90 { left: 92%; top: 38%; }
+.poker-app .poker-mseat.a120 { left: 82%; top: 62%; }
+.poker-app .poker-mseat.a144 { left: 78%; top: 68%; }
+.poker-app .poker-mseat.a180 { left: 50%; top: auto; bottom: 0; }
+.poker-app .poker-mseat.a216 { left: 22%; top: 68%; }
+.poker-app .poker-mseat.a240 { left: 18%; top: 62%; }
+.poker-app .poker-mseat.a270 { left: 8%; top: 38%; }
+.poker-app .poker-mseat.a288 { left: 14%; top: 18%; }
+.poker-app .poker-mseat.a300 { left: 18%; top: 12%; }
+@media (max-width: 640px) {
+  .poker-app .poker-lobby-grid,
+  .poker-app .poker-lobby-col { display: block; width: auto; }
+  .poker-app .poker-lobby-col { margin-bottom: 8px; }
+  .poker-app .poker-seat-slot { display: block; width: auto; margin: 0 0 6px; }
+  .poker-app .poker-oval {
+    border-radius: 28px; min-height: 360px; padding: 14px 10px;
+    box-shadow:
+      inset 0 0 0 8px var(--pk-rail),
+      inset 0 0 0 11px var(--pk-rail-hi),
+      inset 0 0 0 14px #4a2a14,
+      0 6px 14px rgba(0,0,0,.3);
+  }
+  .poker-app .poker-oval::before { inset: 16px; border-radius: 20px; }
+  .poker-app .pk-card { width: 40px; height: 56px; }
+  .poker-app .pk-slot { width: 40px; height: 56px; }
+}
+#snav .snav-apps-label {
+  display: block; margin-top: 8px; padding: 2px 0 1px;
+  color: #333; font-weight: bold; font-size: 11px;
+}
+#snav a.snav-app { padding-left: 8px; }
+/* Compact secondary nav — classic blue chrome (no HTML5 details) */
+#snav .snav-more {
+  display: block; float: left; width: 114px; clear: both; margin: 0; padding: 0;
+}
+#snav .snav-more-cb {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  border: 0; clip: rect(0 0 0 0); overflow: hidden;
+}
+#snav .snav-more-toggle {
+  display: block; width: 114px; margin: 0; padding: 2px 3px;
+  border-bottom: solid 1px var(--line); color: var(--fb);
+  box-sizing: border-box; font: 11px/14px var(--font); cursor: pointer;
+}
+#snav .snav-more-toggle::after { content: " ▾"; color: gray; font-size: 10px; }
+#snav .snav-more-cb:checked + .snav-more-toggle::after { content: " ▴"; }
+#snav .snav-more-toggle:hover { color: #fff; background: var(--fb); }
+#snav .snav-more-cb:checked + .snav-more-toggle:hover::after { color: #fff; }
+#snav .snav-more-panel { display: none; float: left; width: 114px; }
+#snav .snav-more-cb:checked ~ .snav-more-panel { display: block; }
+#snav .snav-more-panel a { width: 114px; }
+.app-canvas-page .classic-page-lead { margin-bottom: 10px; }
+/* App Center / calculator classic 16px icons */
+.app-ico {
+  display: inline-block; width: 16px; height: 16px; vertical-align: -3px;
+  margin-right: 4px; border: 0;
+}
+.app-ico-lg { vertical-align: -2px; margin-right: 6px; }
+.calc-ico {
+  display: inline-block; width: 16px; height: 16px; vertical-align: -3px;
+  margin-right: 4px; border: 0;
+}
+.calc-suite h4 .calc-ico { margin-right: 5px; }
+.calc-suite .calc-tool-list .calc-ico { margin-right: 5px; }
+.calc-suite .calc-popular-links .calc-ico { margin-right: 2px; }
+.calc-suite .calc-related-list .calc-ico { margin-right: 3px; }
+/* Calculators suite — classic profile-box chrome, clear hierarchy */
+.calc-suite .calc-lead { margin: 0 0 10px; }
+.calc-suite .calc-blurb { margin: 0 0 8px; color: #333; }
+.calc-suite .calc-law {
+  margin: 0 0 10px; padding: 6px 8px;
+  background: #edf2f8; border: 1px solid #c6d2e3; color: #333;
+  font: 11px/15px var(--font);
+}
+.calc-suite .calc-search { margin: 0 0 12px; }
+.calc-suite .calc-search .inputtext { margin: 0 4px; }
+.calc-suite .calc-popular { margin: 0 0 12px; }
+.calc-suite .calc-popular h5,
+.calc-suite .calc-related h5,
+.calc-suite .calc-topic h5 {
+  margin: 0 0 6px; padding: 0; font: bold 11px/14px var(--font); color: #333;
+}
+.calc-suite .calc-popular-links { margin: 0; line-height: 1.6; }
+.calc-suite .calc-topic-nav { margin: 0 0 12px; line-height: 1.5; }
+.calc-suite .calc-topics { margin: 0 0 12px; }
+.calc-suite .calc-topic { margin: 0 0 14px; }
+.calc-suite .calc-tool-list { list-style: none; margin: 0; padding: 0; }
+.calc-suite .calc-tool-list li {
+  margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
+}
+.calc-suite .calc-tool-list a { font-weight: bold; }
+.calc-suite .calc-form .calc-hint { margin-top: 2px; max-width: 320px; }
+.calc-suite .calc-reset { margin-left: 8px; }
+.calc-suite .calc-result {
+  margin-top: 12px; padding: 8px 10px; background: #f7f7f7;
+  border: 1px solid var(--line);
+}
+.calc-suite .calc-result-err { background: #fff5f5; border-color: #e0b4b4; }
+.calc-suite .calc-primary {
+  margin: 0 0 6px; font: bold 14px/18px var(--font); color: #111;
+}
+.calc-suite .calc-result-title { font-size: 12px; color: #333; }
+.calc-suite .calc-lines { margin: 6px 0 0; padding-left: 18px; }
+.calc-suite .calc-lines li { margin: 2px 0; }
+.calc-suite .calc-notes { margin: 8px 0 0; padding-left: 18px; color: #666; }
+.calc-suite .calc-notes li { margin: 3px 0; }
+.calc-suite .calc-error { margin: 6px 0 0; color: #a00; }
+.calc-suite .calc-back { margin: 0 0 10px; }
+.calc-suite .calc-related { margin-top: 14px; padding-top: 8px; border-top: 1px solid #eee; }
+.calc-suite .calc-related-list { list-style: none; margin: 0; padding: 0; }
+.calc-suite .calc-related-list li { display: inline; margin: 0; }
+.calc-suite .calc-related-list li:not(:last-child)::after { content: " · "; color: #999; }
+.calc-suite .calc-foot { margin-top: 14px; }
+
+/* Chess app — classic canvas board (pro UX) */
+.chess-app .chess-lead { margin: 0 0 6px; }
+.chess-app .chess-strip {
+  margin: 0 0 10px; padding: 5px 8px; background: #edf2f8; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.chess-app .chess-tabs { margin: 0 0 12px; }
+.chess-app .chess-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: #c00; color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.chess-app .chess-badge.soft { background: #390; }
+.chess-app h5 {
+  margin: 12px 0 6px; padding: 0; font: bold 11px/14px var(--font); color: #333;
+}
+.chess-app .chess-turn-banner {
+  margin: 0 0 10px; padding: 7px 9px; border: 1px solid #c3cde0; background: #f5f7fb;
+  font: bold 11px/15px var(--font);
+}
+.chess-app .chess-turn-banner.yours {
+  background: #e8f5e9; border-color: #8cbc8c;
+  animation: chessPulse 1.4s ease-in-out infinite;
+}
+.chess-app .chess-turn-banner.pending { background: #fff8e1; border-color: #e6d9a8; }
+.chess-app .chess-turn-banner.done { background: #edf2f8; }
+@keyframes chessPulse {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(60,120,60,0); }
+  50% { box-shadow: inset 0 0 0 1px rgba(60,120,60,0.35); }
+}
+.chess-app.chess-flash .chess-board { outline: 2px solid var(--fb); }
+.chess-app .chess-game-layout {
+  display: table; width: 100%; table-layout: fixed;
+}
+.chess-app .chess-game-main,
+.chess-app .chess-game-side {
+  display: table-cell; vertical-align: top;
+}
+.chess-app .chess-game-main { width: 68%; padding-right: 12px; }
+.chess-app .chess-game-side { width: 32%; }
+.chess-app .chess-player { margin: 0 0 6px; font: 11px/16px var(--font); }
+.chess-app .chess-caps { margin-left: 6px; letter-spacing: 1px; }
+.chess-app .chess-adv { margin-left: 4px; }
+.chess-app .chess-movetable {
+  width: 100%; border-collapse: collapse; font: 11px/16px var(--font);
+}
+.chess-app .chess-movetable td {
+  padding: 2px 4px; border-bottom: 1px solid #eee; vertical-align: top;
+}
+.chess-app .chess-movetable td.n { width: 22px; color: #777; }
+.chess-app .chess-movetable tr.is-last td { background: #edf2f8; font-weight: bold; }
+.chess-app .chess-row-hot td { background: #fff8e1; }
+.chess-app a.chess-cta {
+  display: inline-block; padding: 1px 8px; text-decoration: none;
+}
+.chess-board-wrap { margin: 8px 0 12px; }
+.chess-board-wrap.can-move { box-shadow: 0 0 0 1px #8cbc8c; }
+.chess-board {
+  border-collapse: collapse; border: 1px solid #333;
+}
+.chess-board td {
+  width: 28px; height: 28px; text-align: center; vertical-align: middle;
+  padding: 0; font-size: 20px; line-height: 28px;
+}
+.chess-board.chess-board-lg td {
+  width: 34px; height: 34px; font-size: 24px; line-height: 34px;
+}
+.chess-board td.light { background: #f0d9b5; }
+.chess-board td.dark { background: #b58863; }
+.chess-board td.selected { outline: 2px solid var(--fb); outline-offset: -2px; }
+.chess-board td.hint { box-shadow: inset 0 0 0 2px #6a9; }
+.chess-board td.last-from,
+.chess-board td.last-to { box-shadow: inset 0 0 0 34px rgba(255, 255, 100, 0.35); }
+.chess-board td.in-check { box-shadow: inset 0 0 0 34px rgba(220, 40, 40, 0.38); }
+.chess-board a.chess-sq {
+  display: block; width: 28px; height: 28px; text-decoration: none; color: #111;
+}
+.chess-move-form { margin: 8px 0; }
+.chess-moves { margin: 0 0 8px; line-height: 1.5; }
+.chess-simple-list, .chess-lesson-list {
+  list-style: none; margin: 0; padding: 0;
+}
+.chess-simple-list li, .chess-lesson-list li {
+  margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
+}
+.chess-app tr.is-me td { background: #edf2f8; }
+.chess-app .chess-draw-banner {
+  margin: 8px 0; padding: 6px 8px; background: #fff8e1; border: 1px solid #e6d9a8;
+}
+.chess-app .chess-actions { margin: 6px 0 10px; }
+.chess-app .chess-actions form.inline,
+.chess-app .chess-draw-banner form.inline,
+.chess-app .chess-turn-banner form.inline { display: inline; }
+.chess-app .chess-pager { margin: 8px 0; }
+.chess-app .chess-learn-progress { margin: 0 0 8px; font: 11px/15px var(--font); }
+.chess-app .chess-chapter { margin: 0 0 14px; }
+.chess-app .chess-path-card {
+  margin: 0 0 12px; padding: 7px 9px; background: #edf2f8; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.chess-app .chess-xp-bar {
+  height: 8px; margin: 0 0 12px; background: #e0e0e0; border: 1px solid #ccc; overflow: hidden;
+}
+.chess-app .chess-xp-bar.thin { height: 5px; margin: 0 0 6px; }
+.chess-app .chess-xp-bar span {
+  display: block; height: 100%; background: var(--fb); min-width: 0;
+}
+.chess-app .chess-quiz-list {
+  list-style: none; margin: 0 0 8px; padding: 0;
+}
+.chess-app .chess-quiz-list li { margin: 0; padding: 3px 0; }
+.chess-app .chess-diagram { opacity: 0.98; }
+.chess-app .chess-theme-tabs { margin: 0 0 10px; font: 11px/16px var(--font); }
+.chess-app .chess-theme-tabs a.on { font-weight: bold; color: #333; text-decoration: none; }
+.chess-app .chess-tip-list {
+  margin: 0 0 10px 18px; padding: 0;
+}
+.chess-app .chess-tip-list li { margin: 0 0 4px; }
+.chess-app .chess-lesson-nav { margin: 12px 0 8px; }
+.chess-app .chess-done { color: #390; font-weight: bold; margin-left: 4px; }
+.chess-app .chess-daily-goals {
+  margin: 0 0 8px; font: 11px/15px var(--font);
+}
+.chess-app .chess-goal.on { color: #390; font-weight: bold; }
+.chess-app .chess-badges { margin: 0 0 10px; }
+.chess-app .chess-mute {
+  float: right; margin-left: 8px; font-size: 10px;
+}
+.chess-app .chess-mute.is-off { color: #999; text-decoration: line-through; }
+.chess-app .chess-hint-box { margin: 6px 0 10px; font: 11px/15px var(--font); }
+.chess-app .chess-hint-text {
+  display: none; margin-left: 8px; color: #555;
+}
+.chess-app .chess-hint-text.is-open { display: inline; }
+.chess-board.chess-board-coords th.chess-coord {
+  width: 14px; height: auto; padding: 0 2px;
+  font: 10px/14px var(--font); color: #666; font-weight: normal;
+  background: transparent; border: 0; text-align: center; vertical-align: middle;
+}
+.chess-board.chess-board-coords th.chess-coord.file { height: 14px; }
+@media (max-width: 700px) {
+  .chess-app .chess-game-layout,
+  .chess-app .chess-game-main,
+  .chess-app .chess-game-side {
+    display: block; width: auto; padding: 0;
+  }
+  .chess-app .chess-game-side { margin-top: 12px; }
+}
+.chess-app span.chess-sq {
+  display: block; width: 100%; height: 100%; color: #111;
+  cursor: pointer; user-select: none;
+}
+.chess-app .chess-board td.dragging { opacity: 0.7; }
+.chess-app .chess-board td.drag-over { outline: 2px dashed var(--fb); outline-offset: -2px; }
+.chess-app .chess-clocks {
+  margin: 8px 0 10px; max-width: 280px;
+}
+.chess-app .chess-clock-side {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 4px 8px; border: 1px solid #ccc; background: #f7f7f7;
+  font: 11px/16px var(--font);
+}
+.chess-app .chess-clock-side + .chess-clock-meta + .chess-clock-side,
+.chess-app .chess-clock-meta + .chess-clock-side { margin-top: 4px; }
+.chess-app .chess-clock-meta { margin: 3px 0; font-size: 10px; }
+.chess-app .chess-clock-time {
+  font-weight: bold; font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right;
+}
+.chess-app .chess-clock-side.is-running {
+  background: #edf2f8; border-color: var(--fb);
+}
+.chess-app .chess-clock-side.is-low .chess-clock-time { color: #a40; }
+.chess-app .chess-clock-side.is-flag {
+  background: #fde8e8; border-color: #c66;
+}
+.chess-app .chess-manual { margin: 6px 0 8px; }
+.chess-app .chess-manual-check { margin-right: 4px; vertical-align: middle; }
+.chess-app .chess-manual-toggle { cursor: pointer; vertical-align: middle; }
+.chess-app .chess-manual-fields { display: none; margin-top: 6px; }
+.chess-app .chess-manual-check:checked ~ .chess-manual-fields { display: block; }
+
+/* OSM maps — classic profile-box, Leaflet owns its own layout */
+.osm-box .osm-map {
+  width: 100%; height: 220px; border: 1px solid #B3B3B3; background: #e8eef7;
+}
+.osm-suggest-wrap { position: relative; display: inline-block; width: 100%; max-width: 360px; }
+.osm-suggest-wrap .inputtext { width: 100%; box-sizing: border-box; }
+.osm-suggest-box {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+  background: #fff; border: 1px solid #B3B3B3; max-height: 160px; overflow: auto;
+  font: 11px/14px var(--font);
+}
+.osm-suggest-item {
+  display: block; padding: 4px 6px; color: var(--fb); text-decoration: none;
+  border-bottom: 1px solid #eee;
+}
+.osm-suggest-item:hover { background: #D8DFEA; }

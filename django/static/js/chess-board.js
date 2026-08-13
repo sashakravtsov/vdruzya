@@ -75,11 +75,17 @@
     if (toEl) toEl.value = toSq || "";
   }
 
+  var liveClient = null;
+
   function submitMove(form, fromSq, toSq) {
     if (!form || !fromSq || !toSq) return;
     setFields(form, fromSq, toSq);
     var app = $("#chess-app");
     if (app) app.classList.add("chess-flash");
+    if (liveClient && liveClient.ws && liveClient.ws.readyState === 1) {
+      liveClient.act("move", { from_sq: fromSq, to_sq: toSq });
+      return;
+    }
     if (typeof form.requestSubmit === "function") form.requestSubmit();
     else form.submit();
   }
@@ -128,9 +134,7 @@
     });
 
     if (!canMove && board.getAttribute("data-mode") !== "puzzle") {
-      if (board.getAttribute("data-waiting") === "1") {
-        setTimeout(function () { window.location.reload(); }, 18000);
-      }
+      // Waiting for opponent: LIVE WebSocket pushes state (no page reload).
       return;
     }
 
@@ -236,6 +240,136 @@
     });
   }
 
+  function paintBoardFromState(state) {
+    var board = $("[data-chess-live]");
+    if (!board || !state || !state.board_rows) return;
+    var last = state.last_move || {};
+    var checkSq = state.check_sq || "";
+    var attrs = {
+      "data-chess-live": board.getAttribute("data-chess-live") || "1",
+      "data-can-move": state.can_move ? "1" : "0",
+      "data-my-side": state.my_side || "",
+      "data-form": board.getAttribute("data-form") || "chess-move-form",
+      "data-legal-script": board.getAttribute("data-legal-script") || "chess-legal-map",
+      "data-selected": "",
+      "data-waiting": !state.can_move && state.result === "*" && !state.is_pending ? "1" : "0",
+      class: board.className,
+      cellspacing: "0",
+      cellpadding: "0",
+    };
+    var html = "";
+    state.board_rows.forEach(function (row) {
+      html += "<tr><th class=\"chess-coord rank\">" + row[0].rank + "</th>";
+      row.forEach(function (cell) {
+        var cls = cell.light ? "light" : "dark";
+        if (last.from_sq && cell.sq === last.from_sq) cls += " last-from";
+        if (last.to_sq && cell.sq === last.to_sq) cls += " last-to";
+        if (checkSq && cell.sq === checkSq) cls += " in-check";
+        html +=
+          '<td class="' +
+          cls +
+          '" data-sq="' +
+          cell.sq +
+          '" data-piece="' +
+          (cell.piece || "") +
+          '"><span class="chess-sq" title="' +
+          cell.sq +
+          '">' +
+          (cell.glyph || "&nbsp;") +
+          "</span></td>";
+      });
+      html += "</tr>";
+    });
+    html += '<tr class="chess-files-row"><th class="chess-coord"></th>';
+    (state.board_files || []).forEach(function (f) {
+      html += '<th class="chess-coord file">' + f + "</th>";
+    });
+    html += "</tr>";
+    var attrHtml = Object.keys(attrs)
+      .map(function (k) {
+        return k + '="' + String(attrs[k]).replace(/"/g, "&quot;") + '"';
+      })
+      .join(" ");
+    var wrap = board.parentNode;
+    var tmp = document.createElement("div");
+    tmp.innerHTML = "<table " + attrHtml + ">" + html + "</table>";
+    var neu = tmp.firstChild;
+    wrap.replaceChild(neu, board);
+    wrap.classList.toggle("can-move", !!state.can_move);
+    var legalScript = document.getElementById(attrs["data-legal-script"]);
+    if (legalScript) legalScript.textContent = JSON.stringify(state.legal_map || {});
+    var clocks = $("#chess-clocks");
+    if (clocks && state.clock) {
+      clocks.setAttribute("data-white-ms", String(state.clock.white_ms || 0));
+      clocks.setAttribute("data-black-ms", String(state.clock.black_ms || 0));
+      clocks.setAttribute("data-turn", state.turn || "w");
+      clocks.setAttribute("data-active", state.clock.active ? "1" : "0");
+      clocks.setAttribute("data-enabled", state.clock.enabled ? "1" : "0");
+    }
+    bindBoard(neu);
+    if (state.result && state.result !== "*") beep("end");
+    else if (state.status === "check") beep("check");
+    else if (last.san && last.san.indexOf("×") >= 0) beep("capture");
+    else if (last.from_sq) beep("move");
+  }
+
+  function initLive() {
+    var app = $("#chess-app");
+    if (!app || !window.VdLive) return;
+    var wsUrl = app.getAttribute("data-ws-url");
+    if (!wsUrl) return;
+    var badge = app.querySelector("[data-app-live]");
+    liveClient = new window.VdLive.Client({
+      url: wsUrl,
+      onStatus: function (st) {
+        window.VdLive.setBadge(badge, st);
+      },
+      onState: function (payload) {
+        if (!payload || !payload.ok) return;
+        paintBoardFromState(payload);
+        app.classList.remove("chess-flash");
+      },
+      onActionResult: function (action, result) {
+        if (!result || !result.ok) {
+          app.classList.remove("chess-flash");
+          return;
+        }
+        if (result.state) paintBoardFromState(result.state);
+      },
+    });
+    liveClient.connect();
+
+    app.addEventListener("submit", function (ev) {
+      var form = ev.target;
+      if (!form || !liveClient || !liveClient.ws || liveClient.ws.readyState !== 1) return;
+      var actionEl = form.querySelector('[name="action"]');
+      var action = actionEl ? actionEl.value : "";
+      if (
+        [
+          "resign",
+          "draw_offer",
+          "draw_accept",
+          "draw_decline",
+          "claim_flag",
+          "accept_challenge",
+          "decline_challenge",
+          "cancel_challenge",
+          "move",
+        ].indexOf(action) < 0
+      ) {
+        return;
+      }
+      ev.preventDefault();
+      var payload = {};
+      Array.prototype.forEach.call(form.elements, function (el) {
+        if (!el.name || el.disabled) return;
+        if (el.type === "submit" || el.type === "button") return;
+        payload[el.name] = el.value;
+      });
+      liveClient.act(action, payload);
+    });
+  }
+
   function init() {
     $all("[data-chess-live]").forEach(bindBoard);
     var clocks = $("#chess-clocks");
@@ -254,6 +388,7 @@
       var sfx = app.getAttribute("data-sfx") || "";
       if (sfx) beep(sfx);
     }
+    initLive();
   }
 
   if (document.readyState === "loading") {

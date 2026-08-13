@@ -24,6 +24,7 @@ from . import views_platform as platform
 from . import views_developers as developers
 from . import views_app_api as app_api
 from . import realtime as rt
+from .poker import api as poker_api
 
 urlpatterns = [
     path("geo/suggest", osm_views.geo_suggest, name="geo.suggest"),
@@ -66,6 +67,9 @@ urlpatterns = [
     path("apps/<slug:slug>/canvas", platform.app_canvas, name="apps.canvas"),
     path("apps/<slug:slug>/authorize", platform.app_authorize, name="apps.authorize"),
     path("apps/<slug:slug>/launch", platform.app_launch, name="apps.launch"),
+    path("apps/poker/api/game/<int:game_id>", poker_api.table_state, name="poker.api.game"),
+    path("apps/poker/api/game/<int:game_id>/act", poker_api.table_act, name="poker.api.act"),
+    path("apps/poker/api/room/<int:room_id>", poker_api.room_state, name="poker.api.room"),
     path("apps/<slug:slug>", era12.app_show, name="apps.show"),
     path("applications", meta.redirect_permanent, {"to": "/apps"}, name="applications.legacy"),
     path("collections", era12.collections_home, name="collections"),
