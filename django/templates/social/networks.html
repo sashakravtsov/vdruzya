@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Сети — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="networks-page">
+    <div id="header" class="withsubtitle">
+        <h1>Сети</h1>
+        <div class="subtitle">Города, школы и места работы</div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Города</h4>
+            <div class="profile-box-body">
+                <ul class="profilelinks">
+                    {% for n in cities %}
+                    <li><a href="{% url 'people' %}?tab=search&amp;city={{ n.value|urlencode }}">{{ n.label }}</a> <span class="muted">({{ n.n }})</span></li>
+                    {% empty %}<li class="muted">Пока нет.</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Школы и вузы</h4>
+            <div class="profile-box-body">
+                <ul class="profilelinks">
+                    {% for n in schools %}
+                    <li><a href="{% url 'people' %}?tab=search&amp;school={{ n.value|urlencode }}">{{ n.label }}</a> <span class="muted">({{ n.n }})</span></li>
+                    {% empty %}<li class="muted">Пока нет.</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Работа</h4>
+            <div class="profile-box-body">
+                <ul class="profilelinks">
+                    {% for n in works %}
+                    <li><a href="{% url 'people' %}?tab=search&amp;workplace={{ n.value|urlencode }}">{{ n.label }}</a> <span class="muted">({{ n.n }})</span></li>
+                    {% empty %}<li class="muted">Пока нет.</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+        <p class="muted"><a href="{% url 'people' %}?tab=search">Расширенный поиск людей</a></p>
+    </div>
+</div>
+{% endblock %}
