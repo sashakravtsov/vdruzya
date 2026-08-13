@@ -101,7 +101,12 @@ def main():
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert b"snav-more" in r.content and "Ещё разделы".encode() in r.content
-    assert "Закладки".encode() in r.content or b"snav-app" in r.content
+    assert (
+        "Мои приложения".encode() in r.content
+        or "Закладки".encode() in r.content
+        or b"snav-app" in r.content
+    )
+    assert "В закладки".encode() in c.get("/apps", secure=True).content or b"snav-app" in r.content
     ok("sidebar compact snav + app bookmarks")
 
     r = c.get("/developers", secure=True)

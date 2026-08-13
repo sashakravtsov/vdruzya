@@ -5,7 +5,7 @@
 <div id="pagebody" class="apps-index">
     <div id="header" class="withsubtitle">
         <h1>{% if app.icon %}<img class="app-ico app-ico-lg" src="{% static app.icon %}" alt="" width="16" height="16"> {% endif %}{{ app.name }}</h1>
-        <div class="subtitle"><a href="{% url 'apps' %}">← приложения</a></div>
+        <div class="subtitle"><a href="{% url 'apps' %}">← приложения</a>{% if installed %} · <span class="muted">в закладках</span>{% endif %}</div>
     </div>
     <div id="content">
         {% include "partials/flash.html" %}
@@ -30,6 +30,16 @@
                             </ul>
                         </td>
                     </tr>
+                    <tr>
+                        <td class="label">Закладка:</td>
+                        <td class="muted">
+                            {% if installed %}
+                            Уже в «Мои приложения» слева.
+                            {% else %}
+                            После добавления ссылка появится слева в меню.
+                            {% endif %}
+                        </td>
+                    </tr>
                 </table>
                 <p class="stack-md action-row">
                     {% if user.is_authenticated %}
@@ -40,23 +50,25 @@
                             <input type="hidden" name="next" value="{% url 'apps.show' app.slug %}">
                             <button type="submit" class="linkish muted"
                                     data-fb-dialog
-                                    data-fb-dialog-title="Удалить приложение?"
-                                    data-fb-dialog-message="Убрать «{{ app.name }}» из ваших приложений?"
-                                    data-fb-dialog-form="#app-uninst">удалить</button>
+                                    data-fb-dialog-title="Убрать из закладок?"
+                                    data-fb-dialog-message="{{ bookmark_remove_message }}"
+                                    data-fb-dialog-form="#app-uninst">убрать из закладок</button>
                         </form>
                         {% else %}
                         <form method="post" action="{% url 'apps.install' app.slug %}" class="inline" id="app-inst">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'apps.canvas' app.slug %}">
                             <button type="submit" class="inputsubmit"
                                     data-fb-dialog
-                                    data-fb-dialog-title="Разрешения приложения"
+                                    data-fb-dialog-title="Добавить в закладки"
                                     data-fb-dialog-message="{{ install_dialog_message }}"
-                                    data-fb-dialog-form="#app-inst">Добавить приложение</button>
+                                    data-fb-dialog-form="#app-inst">Добавить в закладки</button>
                         </form>
                         {% endif %}
                     {% else %}
-                        <a href="{% url 'login' %}">Войдите</a>, чтобы добавить приложение.
+                        <a href="{% url 'login' %}">Войдите</a>, чтобы добавить приложение в закладки.
                     {% endif %}
-                    · <a href="{% url 'apps' %}">все приложения</a>
+                    · <a href="{% url 'apps' %}?tab=mine">мои приложения</a>
+                    · <a href="{% url 'apps' %}">каталог</a>
                 </p>
             </div>
         </div>

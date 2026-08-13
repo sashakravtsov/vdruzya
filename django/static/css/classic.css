@@ -1451,11 +1451,16 @@ body.fb-dialog-open { overflow: hidden; }
   display: inline-block; border: 1px solid #3B5998; background: #fff;
   padding: 4px 6px; margin-right: 4px; font-weight: bold;
 }
-#snav .snav-apps-label {
+#snav .snav-apps-label,
+#snav a.snav-apps-label {
   display: block; margin-top: 8px; padding: 2px 0 1px;
   color: #333; font-weight: bold; font-size: 11px;
+  text-decoration: none;
 }
+#snav a.snav-apps-label:hover { text-decoration: underline; color: #3b5998; }
 #snav a.snav-app { padding-left: 8px; }
+.apps-bookmark-hint { margin: 0 0 10px; }
+.apps-index .col-act .inline { display: inline; }
 /* Compact secondary nav — classic blue chrome (no HTML5 details) */
 #snav .snav-more {
   display: block; float: left; width: 114px; clear: both; margin: 0; padding: 0;
@@ -2419,11 +2424,16 @@ body.fb-dialog-open { overflow: hidden; }
   .poker-app .pk-card { width: 40px; height: 56px; }
   .poker-app .pk-slot { width: 40px; height: 56px; }
 }
-#snav .snav-apps-label {
+#snav .snav-apps-label,
+#snav a.snav-apps-label {
   display: block; margin-top: 8px; padding: 2px 0 1px;
   color: #333; font-weight: bold; font-size: 11px;
+  text-decoration: none;
 }
+#snav a.snav-apps-label:hover { text-decoration: underline; color: #3b5998; }
 #snav a.snav-app { padding-left: 8px; }
+.apps-bookmark-hint { margin: 0 0 10px; }
+.apps-index .col-act .inline { display: inline; }
 /* Compact secondary nav — classic blue chrome (no HTML5 details) */
 #snav .snav-more {
   display: block; float: left; width: 114px; clear: both; margin: 0; padding: 0;

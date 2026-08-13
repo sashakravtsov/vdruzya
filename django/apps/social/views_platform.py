@@ -25,8 +25,14 @@ def app_install(request, slug):
     if not app:
         messages.error(request, "Приложение не найдено.")
         return redirect("apps")
-    pa.install(me, slug)
-    messages.success(request, f"Приложение «{app['name']}» добавлено.")
+    _row, created = pa.install(me, slug)
+    if created:
+        messages.success(
+            request,
+            f"«{app['name']}» добавлено в закладки — смотрите слева в «Мои приложения».",
+        )
+    else:
+        messages.info(request, f"«{app['name']}» уже в ваших закладках.")
     next_url = request.POST.get("next") or reverse("apps.canvas", args=[slug])
     return redirect(next_url)
 
@@ -37,8 +43,8 @@ def app_uninstall(request, slug):
     me = profile_of(request.user)
     app = _require_app(slug, viewer=me)
     if app and pa.uninstall(me, slug):
-        messages.info(request, f"Приложение «{app['name']}» удалено из ваших.")
-    return redirect(request.POST.get("next") or "apps")
+        messages.info(request, f"«{app['name']}» убрано из закладок.")
+    return redirect(request.POST.get("next") or reverse("apps") + "?tab=mine")
 
 
 @login_required
@@ -51,6 +57,10 @@ def app_canvas(request, slug):
         return redirect("apps")
     if not pa.is_installed(me, slug):
         pa.install(me, slug)
+        messages.info(
+            request,
+            f"«{app['name']}» добавлено в закладки слева — «Мои приложения».",
+        )
 
     if app.get("dev_owned"):
         return _canvas_devapp(request, me, app)
@@ -121,6 +131,7 @@ def app_authorize(request, slug):
             return redirect(deny)
         if not pa.is_installed(me, slug):
             pa.install(me, slug)
+            messages.info(request, f"«{row.name}» добавлено в закладки.")
         code = oauth.create_oauth_code(row, me, redirect_uri)
         signed = oauth.make_signed_request(row, me)
         go = oauth.append_query(redirect_uri, {
@@ -155,6 +166,7 @@ def app_launch(request, slug):
     oauth.ensure_app_credentials(row)
     if not pa.is_installed(me, slug):
         pa.install(me, slug)
+        messages.info(request, f"«{row.name}» добавлено в закладки.")
     signed = oauth.make_signed_request(row, me)
     go = oauth.append_query(row.website_url, {
         "signed_request": signed,
