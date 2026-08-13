@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Участники — {{ group.name }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="group-page">
+    <div id="header" class="withsubtitle">
+        <h1>Участники</h1>
+        <div class="subtitle"><a href="{% url 'groups.show' group.id %}">{{ group.name }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Участники ({{ n_members }})</h4>
+            <div class="profile-box-body">
+                <p class="muted">В этой группе {{ n_members }} участник{% if n_members == 1 %}{% elif n_members > 1 and n_members < 5 %}а{% else %}ов{% endif %}.</p>
+                <table class="mygroups-table members-full" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th class="col-name">Участник</th>
+                            <th class="col-type">Роль</th>
+                            {% if is_admin %}<th class="col-act"></th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td class="col-name">
+                                <a href="{% url 'profile' row.social_user.id %}" class="member-row">
+                                    {% avatar row.social_user 50 %}
+                                    <b>{{ row.social_user.name }}</b>
+                                </a>
+                            </td>
+                            <td class="col-type muted">{{ row.role|ru_label }}</td>
+                            {% if is_admin and me.id != row.social_user_id %}
+                            <td class="col-act">
+                                <form method="post" action="{% url 'groups.members.manage' group.id row.social_user_id %}" class="inline">{% csrf_token %}
+                                    <button type="submit" name="action" value="officer" class="linkish">офицер</button>
+                                    · <button type="submit" name="action" value="moderator" class="linkish">модератор</button>
+                                    · <button type="submit" name="action" value="admin" class="linkish">админ</button>
+                                    · <button type="submit" name="action" value="member" class="linkish">участник</button>
+                                    · <button type="submit" name="action" value="remove" class="linkish muted">удалить</button>
+                                </form>
+                            </td>
+                            {% elif is_admin %}
+                            <td class="col-act"></td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr><td class="muted" colspan="3">Пока никого.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
