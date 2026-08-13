@@ -16,9 +16,10 @@ from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
 from apps.social.media import (
-    AUDIO_MAX_BYTES, VIDEO_MAX_BYTES,
-    format_duration_ms, parse_duration_ms, parse_waveform_peaks,
-    save_audio, save_video, serialize_waveform_peaks, waveform_from_bytes,
+    VIDEO_MAX_BYTES,
+    parse_duration_ms, parse_waveform_peaks,
+    save_audio, save_video, serialize_waveform_peaks, voice_body,
+    waveform_from_bytes,
 )
 from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile
 from apps.social.services import friend_ids, now, profile_of
@@ -281,8 +282,7 @@ def _snippet(c, me) -> str:
     if not text and c.last_attach:
         lt = (getattr(c, "last_type", None) or "")
         if lt == "voice":
-            dur = format_duration_ms(getattr(c, "last_duration", None))
-            text = f"[голосовое {dur}]" if dur != "0:00" else "[голосовое]"
+            text = voice_body(getattr(c, "last_duration", None))
         else:
             text = "[видео]" if lt == "video" else "[фото]"
     text = text[:80]
@@ -491,7 +491,7 @@ def notify_peers(me, conv: Conversation, m: Message):
     t = now()
     mt = (m.message_type or "")
     snippet = (m.body or "").strip() or (
-        "[голосовое]" if mt == "voice"
+        voice_body(m.duration_ms) if mt == "voice"
         else "[видео]" if mt == "video" or (m.attachment_mime or "").startswith("video/")
         else ("[фото]" if m.attachment_path else "")
     )
@@ -531,15 +531,10 @@ def _save_attach(upload, *, force_voice=False):
         return None, None, None, None, None
     size = getattr(upload, "size", 0) or 0
     ctype = (getattr(upload, "content_type", "") or "").lower()
-    # Voice notes: explicit flag, or clear audio/* (not a video clip).
     as_voice = force_voice or ctype.startswith("audio/") or ctype == "application/ogg"
     if as_voice:
-        if size > AUDIO_MAX_BYTES:
-            return None, None, None, None, None
-        try:
-            path, raw = save_audio(upload, "messages")
-        except Exception:
-            return None, None, None, None, None
+        # save_audio enforces size/empty; surface ValueError to the view
+        path, raw = save_audio(upload, "messages")
         name = (Path(getattr(upload, "name", "") or "voice.webm").name)[:120]
         mime = (getattr(upload, "content_type", None) or "audio/webm")[:80]
         return path, name, mime, "voice", raw
@@ -587,8 +582,7 @@ def _message_payload(body, path, akind, sid, message_type, *, duration_ms=None):
         message_type = "sticker"
     if not body and path:
         if message_type == "voice":
-            label = format_duration_ms(duration_ms)
-            body = f"[голосовое {label}]" if label != "0:00" else "[голосовое]"
+            body = voice_body(duration_ms)
         elif message_type == "video":
             body = "[видео]"
         else:
@@ -616,8 +610,6 @@ def post_message(
     waveform=None, duration_ms=None,
 ) -> Message:
     path, aname, amime, akind, raw = _save_attach(upload, force_voice=bool(voice))
-    wave = None
-    ms = None
     if copy_from and copy_from.attachment_path and not path:
         path = copy_from.attachment_path
         aname = copy_from.attachment_name
@@ -631,11 +623,12 @@ def post_message(
             akind = "video"
         else:
             akind = "photo"
-        wave, ms = _resolve_voice_meta(copy_from=copy_from)
     sid = _sticker_id(sticker_id or (copy_from.sticker_id if copy_from else None))
     if voice and akind == "voice":
         message_type = "voice"
+    wave = ms = None
     if akind == "voice" or message_type == "voice":
+        message_type = "voice"
         wave, ms = _resolve_voice_meta(
             client_wave=waveform, client_ms=duration_ms, raw=raw, copy_from=copy_from,
         )
@@ -670,7 +663,7 @@ def forward_message(me, message_id, other: SocialProfile) -> tuple[Message, Conv
         raise PermissionError(err)
     conv = dm_find_or_create(me, other)
     quote = (src.body or "").strip() or (
-        "[голосовое]" if src.attachment_is_audio
+        voice_body(src.duration_ms) if src.attachment_is_audio
         else "[видео]" if src.attachment_is_video
         else ("[фото]" if src.attachment_path else ("[стикер]" if src.sticker_id else ""))
     )

@@ -93,13 +93,20 @@ def message_send(request, me, conv):
     from apps.social.gifts import catalog
     form = MessageForm(request.POST, request.FILES, stickers=catalog()[:40])
     go = _go(conv.id)
-    if not form.is_valid():
-        messages.error(request, "Напишите текст, приложите фото / видео / голосовое или выберите стикер.")
+    wants_json = "application/json" in (request.headers.get("Accept") or "")
+
+    def fail(msg):
+        if wants_json:
+            return JsonResponse({"ok": False, "error": msg}, status=400)
+        messages.error(request, msg)
         return redirect(go)
+
+    if not form.is_valid():
+        return fail("Напишите текст, приложите фото / видео / голосовое или выберите стикер.")
     voice = form.cleaned_data.get("voice") or request.FILES.get("voice")
     photo = form.cleaned_data.get("photo") or request.FILES.get("photo")
     try:
-        ch.post_message(
+        m = ch.post_message(
             me, conv, form.cleaned_data.get("body") or "",
             upload=voice or photo,
             voice=bool(voice),
@@ -108,9 +115,13 @@ def message_send(request, me, conv):
             waveform=form.cleaned_data.get("waveform") or request.POST.get("waveform"),
             duration_ms=form.cleaned_data.get("duration_ms") or request.POST.get("duration_ms"),
         )
-    except ValueError:
-        messages.error(request, "Напишите текст, приложите фото / видео / голосовое или выберите стикер.")
-        return redirect(go)
+    except ValueError as exc:
+        detail = str(exc).strip()
+        if detail in ("", "empty"):
+            detail = "Напишите текст, приложите фото / видео / голосовое или выберите стикер."
+        return fail(detail)
+    if wants_json:
+        return JsonResponse({"ok": True, "last_id": m.id})
     return redirect(go)
 
 

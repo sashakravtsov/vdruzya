@@ -45,13 +45,13 @@
             {% if m.body_visible %}<div class="msg-text msg-md">{{ m.body|msg_md }}</div>{% endif %}
             {% if m.attachment_url %}
                 {% if m.attachment_is_audio %}
-                <div class="msg-voice" data-ms="{{ m.duration_ms|default:0 }}" data-peaks="{{ m.waveform|default:'' }}">
+                <div class="msg-voice" data-ms="{{ m.duration_ms|default:0 }}">
                     <button type="button" class="msg-voice-play" aria-label="Слушать">▶</button>
-                    <div class="msg-wave" role="slider" aria-label="Дорожка голосового" tabindex="0">
+                    <div class="msg-wave" role="slider" aria-label="Дорожка голосового" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
                         {% for h in m.waveform_bars %}<i style="height:{{ h }}%"></i>{% endfor %}
                     </div>
                     <span class="msg-voice-dur">{{ m.duration_label }}</span>
-                    <audio preload="metadata" class="msg-audio-el"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'audio/webm' }}"></audio>
+                    <audio preload="metadata" class="msg-audio-el" playsinline><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'audio/webm' }}"></audio>
                 </div>
                 {% elif m.attachment_is_video %}
                 <div class="msg-video"><video controls preload="metadata" class="msg-photo"><source src="{{ m.attachment_url }}" type="{{ m.attachment_mime|default:'video/mp4' }}"></video></div>

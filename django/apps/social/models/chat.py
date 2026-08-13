@@ -77,23 +77,20 @@ class Message(models.Model):
     @property
     def body_visible(self) -> bool:
         """Hide placeholder bodies for media/sticker/voice lines."""
+        from apps.social.media import is_voice_body
         b = (self.body or "").strip()
-        if not b:
+        if not b or is_voice_body(b):
             return False
-        if b in ("[фото]", "[видео]", "[стикер]", "[голосовое]"):
-            return False
-        if b.startswith("[голосовое "):
-            return False
-        return True
+        return b not in ("[фото]", "[видео]", "[стикер]")
 
     @property
     def waveform_bars(self) -> list[int]:
-        from apps.social.media import parse_waveform_peaks
+        from apps.social.media import WAVEFORM_BARS, parse_waveform_peaks
         peaks = parse_waveform_peaks(self.waveform)
         if peaks:
             return peaks
         # Soft placeholder so older voice notes still read as a track
-        return [18 + ((i * 17 + (self.id or 0) * 3) % 62) for i in range(40)]
+        return [18 + ((i * 17 + (self.id or 0) * 3) % 62) for i in range(WAVEFORM_BARS)]
 
     @property
     def duration_label(self) -> str:

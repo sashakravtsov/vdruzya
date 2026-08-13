@@ -18,7 +18,7 @@
     <a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}{% if tq %}&amp;tq={{ tq|urlencode }}{% endif %}">загрузить все</a>
 </p>
 {% endif %}
-<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}" data-message-url="{% url 'inbox.message' active.id %}" data-peer-read="{% if active.peer_read_at %}{{ active.peer_read_at|date:'c' }}{% endif %}" data-first="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}">
+<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}" data-message-url="{% url 'inbox.message' active.id %}" data-peer-read="{% if active.peer_read_at %}{{ active.peer_read_at|date:'c' }}{% endif %}" data-first="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-voice-bars="{{ voice_bars|default:40 }}" data-voice-max-ms="{{ voice_max_ms|default:300000 }}">
     {% for m in thread_messages %}
     {% ifchanged m.created_at|date:"Ymd" %}
     {% include "social/_inbox_line.html" with show_day=1 %}
@@ -45,16 +45,31 @@
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
     {{ form.waveform }}
     {{ form.duration_ms }}
-    <p class="wallposter-file msg-voice-row">
-        {{ form.voice }}
-        <button type="button" class="linkish" id="inbox-voice-btn">● Голосовое</button>
-        <button type="button" class="linkish muted" id="inbox-voice-cancel" hidden>отмена</button>
-        <span class="file-hint muted" id="inbox-voice-hint">запись в браузере · до 8 МБ · с дорожкой</span>
-    </p>
-    <div class="msg-voice-live" id="inbox-voice-live" hidden aria-hidden="true">
-        <span class="msg-voice-live-lab muted">запись</span>
-        <div class="msg-wave is-live" id="inbox-voice-live-wave"></div>
-        <span class="msg-voice-dur" id="inbox-voice-live-dur">0:00</span>
+    <div class="msg-voice-compose">
+        <p class="wallposter-file msg-voice-row">
+            {{ form.voice }}
+            <button type="button" class="linkish" id="inbox-voice-btn">● Голосовое</button>
+            <button type="button" class="linkish muted" id="inbox-voice-cancel" hidden>отмена</button>
+            <span class="file-hint muted" id="inbox-voice-hint">запись · прослушать · отправить · до 5 мин</span>
+        </p>
+        <div class="msg-voice-live" id="inbox-voice-live" hidden aria-hidden="true">
+            <span class="msg-voice-live-dot" aria-hidden="true"></span>
+            <span class="msg-voice-live-lab muted">запись</span>
+            <div class="msg-wave is-live" id="inbox-voice-live-wave"></div>
+            <span class="msg-voice-dur" id="inbox-voice-live-dur">0:00</span>
+            <span class="msg-voice-max muted">/ 5:00</span>
+        </div>
+        <div class="msg-voice-draft" id="inbox-voice-draft" hidden>
+            <div class="msg-voice is-draft">
+                <button type="button" class="msg-voice-play" id="inbox-voice-draft-play" aria-label="Прослушать">▶</button>
+                <div class="msg-wave" id="inbox-voice-draft-wave" role="slider" aria-label="Черновик голосового" tabindex="0"></div>
+                <span class="msg-voice-dur" id="inbox-voice-draft-dur">0:00</span>
+            </div>
+            <p class="msg-voice-draft-actions">
+                <button type="button" class="inputsubmit" id="inbox-voice-send">Отправить</button>
+                · <button type="button" class="linkish muted" id="inbox-voice-discard">сбросить</button>
+            </p>
+        </div>
     </div>
     <input type="submit" class="inputsubmit" value="Отправить">
 </form>
