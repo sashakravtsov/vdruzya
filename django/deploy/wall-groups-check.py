@@ -70,8 +70,16 @@ def main():
         fail("comment compose missing on profile wall")
     if f'href="#c-wall-{wall.id}"' not in body and f'data-comment-open="c-wall-{wall.id}"' not in body:
         fail("comment reveal link missing")
-    if 'id="id_body"' in body:
-        fail("duplicate Django id_body still used for wall comments")
+    if f'id="body-wall-{wall.id}"' not in body:
+        fail("unique comment body field id missing")
+    # Comment composes must not reuse Django default id_body (collides across posts)
+    import re as _re
+    for _m in _re.finditer(
+        r'<form[^>]*class="[^"]*wall-comment-compose[^"]*"[^>]*>.*?</form>',
+        body, _re.I | _re.S,
+    ):
+        if 'id="id_body"' in _m.group(0):
+            fail("wall-comment-compose still uses id_body")
     ok("comment reveal chrome")
 
     r = post(f"/posts/{wall.id}/comment", {"body": "probe wall comment", "next": f"/profile/{me.id}"})

@@ -389,7 +389,7 @@ def installed_slugs(me) -> set[str]:
 
 
 def install(me, slug: str):
-    if not me or not app_by_slug(slug):
+    if not me or not app_by_slug(slug, viewer=me):
         return None
     from apps.social.models import AppInstall
     row, _ = AppInstall.objects.get_or_create(
