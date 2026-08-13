@@ -820,4 +820,11 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/calc-suite-check.py; then
 else
   echo "FAIL calculator suite + compact snav"; FAIL=1
 fi
+echo "== Chess app probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-chess-modules.py \
+  && .venv/bin/python deploy/chess-check.py; then
+  echo "OK   chess app"
+else
+  echo "FAIL chess app"; FAIL=1
+fi
 exit "$FAIL"

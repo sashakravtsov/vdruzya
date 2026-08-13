@@ -71,8 +71,9 @@ def main():
     assert b"vacation" in body or "Отпускные".encode() in body
     assert b"calc-suite" in body
     assert "Часто ищут".encode() in body
-    assert b"ico-calc.gif" in body
-    assert b"ico-tax.gif" in body
+    # Manifest static may hash filenames (ico-calc.<hash>.gif)
+    assert b"calc-ico" in body and b"img/calc/ico-calc" in body
+    assert b"img/calc/ico-tax" in body
     assert b"<iframe" not in body.lower()
     assert "22%".encode() in body or "НДС".encode() in body
 
@@ -84,7 +85,8 @@ def main():
         "tool": "vat", "amount": "1220", "rate": "22", "mode": "extract",
     }, secure=True)
     assert r.status_code == 200 and "220,00".encode() in r.content
-    assert "425-ФЗ".encode() in r.content or "22%".encode() in r.content
+    assert "22%".encode() in r.content
+    assert b"Wordstat" not in r.content and b"iframe" not in r.content.lower()
 
     r = c.get("/apps/calculator/canvas?q=ндс", secure=True)
     assert r.status_code == 200 and "НДС".encode() in r.content

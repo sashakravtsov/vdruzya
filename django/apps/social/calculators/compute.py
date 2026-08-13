@@ -7,6 +7,7 @@ from decimal import Decimal, ROUND_CEILING
 
 from . import helpers as H
 from . import law
+from . import copy as C
 from .catalog import get_tool
 
 
@@ -61,7 +62,7 @@ def calc_vacation(data):
             f"Средний дневной заработок: {H.money(avg_day)} ₽",
             f"База: {H.money(earn)} ₽ / {H.num(months, H.TWOPLACES)} мес. / 29,3",
         ],
-        ["ст. 139 ТК РФ: среднемесячное число календарных дней — 29,3. Без исключённых периодов (больничные и т.п.)."],
+        ["Обычно считают так: средний заработок за месяцы делят на 29,3 и умножают на дни отпуска."],
         primary=f"К выплате: {H.money(pay)} ₽",
     )
 
@@ -168,7 +169,7 @@ def calc_sick(data):
             f"% оплаты по стажу: {H.num(pct, H.TWOPLACES)}% (<5 лет — 60%, 5–8 — 80%, ≥8 — 100%)",
         ],
         [
-            "ст. 7, 14 Федерального закона № 255-ФЗ. Без предельной базы СФР и районных коэффициентов — ориентир.",
+            "Учтены дни и стаж. Лимиты выплат и районные коэффициенты здесь не заложены — это ориентир.",
         ],
         primary=f"Пособие: {H.money(benefit)} ₽",
     )
@@ -190,7 +191,7 @@ def calc_vat(data):
     if rate < 0 or rate >= 100:
         raise H.CalcError("Ставка НДС должна быть от 0 до 100%")
     frac = law.vat_fraction_label(rate)
-    notes = [law.VAT_LAW_NOTE]
+    notes = [C.VAT_NOTE]
     if ship:
         suggested = law.vat_default_rate(ship)
         if suggested != rate and rate_raw != "custom":
@@ -308,7 +309,7 @@ def calc_penalty(data):
                 f"Пени: {H.money(pen)} ₽",
                 f"Формула: сумма × {H.num(key, H.TWOPLACES)}% × {H.num(days, H.TWOPLACES)} / 300",
             ],
-            ["ст. 75 НК РФ (модель 1/300). Для части периодов физлиц/организаций могут применяться иные доли — сверяйте актуальную редакцию."],
+            ["Считаем как 1/300 ключевой ставки за каждый день. Уточните актуальную ставку ЦБ перед оплатой."],
             primary=f"Пени: {H.money(pen)} ₽",
         )
     base = H.D(data.get("base"), "365")
@@ -545,7 +546,7 @@ def calc_salary(data):
                 f"Оклад/мес.: {H.money(amount)} ₽ · база за год: {H.money(year_gross)} ₽",
                 f"НДФЛ за год: {H.money(year_tax)} ₽",
             ],
-            [law.NDFL_LAW_NOTE, "Оценка равномерного дохода 12 месяцев без вычетов."] + parts[:3],
+            [C.NDFL_NOTE, "Считаем, что доход каждый месяц одинаковый, без вычетов."] + parts[:3],
             primary=f"На руки: {H.money(net)} ₽",
         )
     if rate < 0 or rate >= 100:
@@ -777,7 +778,7 @@ def calc_ndfl(data):
     return H.ok(
         "НДФЛ (прогрессия)",
         lines,
-        [law.NDFL_LAW_NOTE],
+        [C.NDFL_NOTE],
         primary=f"НДФЛ: {H.money(tax)} ₽",
     )
 
@@ -1022,7 +1023,7 @@ def calc_contributions(data):
     return H.ok(
         "Страховые взносы 2026",
         lines,
-        [law.CONTRIB_LAW_NOTE],
+        [C.CONTRIB_NOTE],
         primary=f"Взносы: {H.money(main + injury_sum)} ₽",
     )
 
@@ -1088,7 +1089,7 @@ def calc_contract(data):
             f"Без НДС: {H.money(amount)} ₽",
             f"В месяц ({months} мес.): {H.money(monthly)} ₽",
         ],
-        [law.VAT_LAW_NOTE] if vat_rate in (Decimal("22"), Decimal("20")) else None,
+        [C.VAT_NOTE] if vat_rate in (Decimal("22"), Decimal("20"), Decimal("5"), Decimal("7")) else None,
         primary=f"С НДС: {H.money(total)} ₽",
     )
 

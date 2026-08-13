@@ -1,8 +1,10 @@
 
-"""Catalog of Wordstat top-50 calculators (RU demand, 2026)."""
+"""Catalog of 50 calculators with user-facing blurbs."""
 from __future__ import annotations
 
 from typing import Any
+
+from . import copy as C
 
 # slug, name, topic, blurb, fields: list[{name,label,type,default?,choices?,hint?}]
 TOOLS: list[dict[str, Any]] = [
@@ -91,22 +93,15 @@ TOOLS: list[dict[str, Any]] = [
         "law": "vat",
         "fields": [
             {"name": "amount", "label": "Сумма, ₽", "type": "money", "hint": "Для «выделить» — сумма с НДС; для «начислить» — без НДС"},
-            {"name": "rate", "label": "Ставка", "type": "choice", "choices": [
-                ("22", "22% — основная с 01.01.2026"),
-                ("20", "20% — до 31.12.2025"),
-                ("10", "10% — льготная (п. 2 ст. 164 НК РФ)"),
-                ("7", "7% — УСН (пониженная)"),
-                ("5", "5% — УСН (пониженная)"),
-                ("0", "0%"),
-                ("custom", "Своя ставка"),
-            ], "default": "22"},
-            {"name": "custom_rate", "label": "Своя ставка, %", "type": "decimal", "default": "", "required": False, "hint": "Если выбрана «Своя ставка»"},
+            {"name": "rate", "label": "Ставка", "type": "choice", "choices": C.VAT_RATE_CHOICES, "default": "22"},
+            {"name": "custom_rate", "label": "Своя ставка, %", "type": "decimal", "default": "", "required": False,
+             "hint": "Нужно, только если выше выбрано «Своя ставка»"},
             {"name": "mode", "label": "Режим", "type": "choice", "choices": [
-                ("extract", "Выделить из суммы (в т.ч. НДС)"),
-                ("add", "Начислить сверху"),
+                ("extract", "Выделить налог из суммы"),
+                ("add", "Начислить налог сверху"),
             ], "default": "extract"},
             {"name": "ship_date", "label": "Дата отгрузки (необяз.)", "type": "date", "required": False,
-             "hint": "Если ставка не задана вручную как «своя» — подсказка по периоду (до/после 01.01.2026)"},
+             "hint": "Помогает подсказать, какая ставка обычно подходит"},
         ],
     },
     {
@@ -697,11 +692,13 @@ def tool_icon(tool: dict[str, Any] | str) -> str:
     return _TOPIC_ICON.get(tool.get("topic") or "", "calc")
 
 
-# Attach icon key + static-relative path for templates.
+# Attach icon key + static-relative path for templates; apply user blurbs.
 for _t in TOOLS:
     key = tool_icon(_t)
     _t["icon"] = key
     _t["icon_src"] = f"img/calc/ico-{key}.gif"
+    if _t["slug"] in C.BLURBS:
+        _t["blurb"] = C.BLURBS[_t["slug"]]
 
 TOOL_BY_SLUG = {t["slug"]: t for t in TOOLS}
 
