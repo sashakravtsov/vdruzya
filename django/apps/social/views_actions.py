@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.social.forms import CommentForm, PostForm
+from apps.social.forms import CommentForm
 from apps.social.models import Comment, Post, SocialProfile
 from apps.social.models.legacy import Reaction
 from apps.social.services import bump_news, now as _now, profile_of

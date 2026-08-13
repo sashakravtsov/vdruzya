@@ -405,7 +405,7 @@ if ! grep -q 'id="tabs"' "${ROOT}/django/templates/social/profile_edit.html" 2>/
    || grep -q 'type="date"' "${ROOT}/django/apps/social/forms.py" 2>/dev/null \
    || [[ -f "${ROOT}/django/templates/social/_profile_edit_basic.html" ]] \
    || [[ -f "${ROOT}/django/templates/social/_profile_edit_education.html" ]] \
-   || ! grep -q 'row_editors' "${ROOT}/django/apps/social/profile_page.py" 2>/dev/null; then
+   || ! grep -q 'row_editors' "${ROOT}/django/apps/social/profile_edit.py" 2>/dev/null; then
   echo "FAIL profile edit not archive tabs/field-loop/row_editors"; FAIL=1
 else
   echo "OK   profile edit classic (#tabs + field loop + row_editors, no HTML5 date)"
