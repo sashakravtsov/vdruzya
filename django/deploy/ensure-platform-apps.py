@@ -44,13 +44,30 @@ CREATE TABLE IF NOT EXISTS app_truth_asks (
 );
 CREATE INDEX IF NOT EXISTS app_truth_asks_to_idx ON app_truth_asks (to_user_id, id DESC);
 CREATE INDEX IF NOT EXISTS app_truth_asks_from_idx ON app_truth_asks (from_user_id, id DESC);
+
+CREATE TABLE IF NOT EXISTS dev_apps (
+  id bigserial PRIMARY KEY,
+  owner_id bigint NOT NULL,
+  slug varchar(40) NOT NULL,
+  name varchar(80) NOT NULL,
+  category varchar(20) NOT NULL DEFAULT 'utilities',
+  blurb varchar(200) NOT NULL DEFAULT '',
+  detail varchar(500) NOT NULL DEFAULT '',
+  website_url varchar(255) NOT NULL DEFAULT '',
+  published boolean NOT NULL DEFAULT false,
+  featured boolean NOT NULL DEFAULT false,
+  created_at timestamp without time zone,
+  updated_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS dev_apps_slug_uniq ON dev_apps (slug);
+CREATE INDEX IF NOT EXISTS dev_apps_owner_idx ON dev_apps (owner_id, id DESC);
 """
 
 
 def main():
     with connection.cursor() as cur:
         cur.execute(SQL)
-        for t in ("app_installs", "app_cause_joins", "app_truth_asks"):
+        for t in ("app_installs", "app_cause_joins", "app_truth_asks", "dev_apps"):
             cur.execute(
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )

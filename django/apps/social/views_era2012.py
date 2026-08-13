@@ -214,11 +214,11 @@ def app_show(request, slug):
         except Exception:
             return redirect(f"/{legacy}")
 
-    app = pa.app_by_slug(slug)
+    me = profile_of(request.user) if request.user.is_authenticated else None
+    app = pa.app_by_slug(slug, viewer=me)
     if not app:
         messages.error(request, "Приложение не найдено.")
         return redirect("apps")
-    me = profile_of(request.user) if request.user.is_authenticated else None
     installed = bool(me and pa.is_installed(me, slug))
     return render(request, "social/app_detail.html", {
         "me": me, "app": app, "nav": "apps",

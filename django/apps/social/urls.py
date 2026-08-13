@@ -21,6 +21,7 @@ from . import views_era2013 as era13
 from . import views_era2014 as era14
 from . import views_osm as osm_views
 from . import views_platform as platform
+from . import views_developers as developers
 from . import realtime as rt
 
 urlpatterns = [
@@ -49,6 +50,10 @@ urlpatterns = [
     path("pages/<int:pk>", pages.page_show, name="pages.show"),
     path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
     path("apps", apps.apps_home, name="apps"),
+    path("developers", developers.developer_home, name="developers"),
+    path("developers/new", developers.developer_new, name="developers.new"),
+    path("developers/<slug:slug>/edit", developers.developer_edit, name="developers.edit"),
+    path("developers/<slug:slug>/delete", developers.developer_delete, name="developers.delete"),
     path("apps/<slug:slug>/install", platform.app_install, name="apps.install"),
     path("apps/<slug:slug>/uninstall", platform.app_uninstall, name="apps.uninstall"),
     path("apps/<slug:slug>/canvas", platform.app_canvas, name="apps.canvas"),

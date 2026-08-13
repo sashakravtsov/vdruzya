@@ -66,10 +66,12 @@ def main():
 
     r = get(f"/profile/{me.id}")
     body = r.content.decode()
-    if f'id="c-{wall.id}"' not in body or "wall-comment-compose" not in body:
+    if f'id="c-wall-{wall.id}"' not in body or "wall-comment-compose" not in body:
         fail("comment compose missing on profile wall")
-    if f'href="#c-{wall.id}"' not in body:
+    if f'href="#c-wall-{wall.id}"' not in body and f'data-comment-open="c-wall-{wall.id}"' not in body:
         fail("comment reveal link missing")
+    if 'id="id_body"' in body:
+        fail("duplicate Django id_body still used for wall comments")
     ok("comment reveal chrome")
 
     r = post(f"/posts/{wall.id}/comment", {"body": "probe wall comment", "next": f"/profile/{me.id}"})
@@ -197,9 +199,9 @@ def main():
 
     r = get(f"/groups/{g.id}?tab=wall")
     body = r.content.decode()
-    if f'id="c-{post_row.id}"' not in body or "wall-comment-compose" not in body:
+    if f'id="c-gpost-{post_row.id}"' not in body or "wall-comment-compose" not in body:
         fail("group comment compose missing")
-    if f'href="#c-{post_row.id}"' not in body:
+    if f'href="#c-gpost-{post_row.id}"' not in body and f'data-comment-open="c-gpost-{post_row.id}"' not in body:
         fail("group comment reveal link missing")
     ok("group comment reveal chrome")
 

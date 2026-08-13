@@ -1420,6 +1420,8 @@ body.fb-dialog-open { overflow: hidden; }
 .fb-dialog-photo .fb-dialog-body { padding: 0; }
 .fb-dialog-perms { margin: 6px 0 8px 18px; padding: 0; }
 .fb-dialog-perms li { margin: 2px 0; }
+.app-perms-list { margin: 0 0 0 16px; padding: 0; }
+.app-perms-list li { margin: 1px 0; }
 .photo-modal { display: table; width: 100%; table-layout: fixed; }
 .photo-modal-left {
   display: table-cell; width: 58%; vertical-align: middle;

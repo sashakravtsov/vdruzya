@@ -48,3 +48,29 @@ class AppTruthAsk(models.Model):
     class Meta:
         managed = False
         db_table = "app_truth_asks"
+
+
+class DevApp(models.Model):
+    """User-registered App Center entry (first-party canvas + optional website link).
+
+    Soft ban: no third-party hosted canvas/iframe — website_url is a link-out only.
+    """
+    id = models.BigAutoField(primary_key=True)
+    owner = models.ForeignKey(
+        SocialProfile, models.DO_NOTHING, related_name="dev_apps",
+        db_column="owner_id",
+    )
+    slug = models.CharField(max_length=40)
+    name = models.CharField(max_length=80)
+    category = models.CharField(max_length=20, default="utilities")
+    blurb = models.CharField(max_length=200, blank=True, default="")
+    detail = models.CharField(max_length=500, blank=True, default="")
+    website_url = models.CharField(max_length=255, blank=True, default="")
+    published = models.BooleanField(default=False)
+    featured = models.BooleanField(default=False)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "dev_apps"

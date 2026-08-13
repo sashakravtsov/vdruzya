@@ -214,7 +214,7 @@ def comment_create(request, post_id):
         bump_news()
     nxt = request.POST.get("next") or reverse("feed")
     if "#" not in nxt:
-        nxt = f"{nxt}#c-{post_id}"
+        nxt = f"{nxt}#c-wall-{post_id}"
     return redirect(nxt)
 
 

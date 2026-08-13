@@ -321,7 +321,7 @@ def group_comment(request, pk, post_id):
         CommunityPost.objects.filter(pk=post.pk).update(updated_at=t)
         bump_news()
     if post.topic == "wall":
-        return redirect(f"/groups/{pk}?tab=wall#c-{post.id}")
+        return redirect(f"/groups/{pk}?tab=wall#c-gpost-{post.id}")
     return redirect(f"/groups/{pk}?tab=discussion&topic={post.id}")
 
 

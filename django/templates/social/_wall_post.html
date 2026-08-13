@@ -106,7 +106,7 @@
                     </form>
                     {% if post.n_likes %} <span class="muted">({{ post.n_likes }})</span>{% endif %}
                     ·
-                    <a class="wall-act" href="#c-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
+                    <a class="wall-act" href="#c-wall-{{ post.id }}" data-comment-open="c-wall-{{ post.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if post.n_comments %} <span class="muted">({{ post.n_comments }})</span>{% endif %}
                     {% if post.can_share %}
                     ·
                     <form method="post" action="{% url 'posts.share' post.id %}" class="inline" id="share-post-{{ post.id }}">{% csrf_token %}
@@ -131,7 +131,7 @@
                 {% comment_thread post.comments.all preview=comment_preview|default_if_none:2 kind="wall" expand=comment_expand %}
                 {% if comment_form and me %}
                 {% url 'comments.store' post.id as c_action %}
-                {% include "social/_comment_compose.html" with action=c_action compose_id=post.id form=comment_form next=next %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=post.id compose_kind="wall" form=comment_form next=next %}
                 {% endif %}
             </div>
         </td>

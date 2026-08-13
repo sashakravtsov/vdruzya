@@ -119,7 +119,7 @@
 
                 {% if me %}
                 {% url 'albums.photos.comment' album.id photo.id as c_action %}
-                {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id form=comment_form open=1 %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id compose_kind="photo" form=comment_form open=1 %}
                 {% else %}
                 <p class="muted"><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы комментировать.</p>
                 {% endif %}

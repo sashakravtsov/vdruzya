@@ -78,6 +78,11 @@
     root.classList.remove("is-open");
     document.body.classList.remove("fb-dialog-open");
     setWide(root, null);
+    // Drop modal DOM so leftover #c-* / id_body never steal wall :target
+    var body = $(".fb-dialog-body", root);
+    if (body) body.innerHTML = "";
+    var foot = $(".fb-dialog-footer", root);
+    if (foot) foot.innerHTML = "";
   }
 
   function confirm(opts) {
@@ -129,26 +134,58 @@
       });
   }
 
+  function openCommentForm(formId) {
+    if (!formId) return false;
+    var form = document.getElementById(formId);
+    if (!form || !form.classList.contains("wall-comment-compose")) return false;
+    var scope = form.closest(".wallpost, .discuss-open, .photo-comments, .photo-modal, #content") || document;
+    scope.querySelectorAll(".wall-comment-compose.is-open").forEach(function (f) {
+      if (f !== form) f.classList.remove("is-open");
+    });
+    form.classList.add("is-open");
+    var input = form.querySelector("input[name='body'], textarea[name='body']");
+    if (input) {
+      try { input.focus(); } catch (e) {}
+    }
+    if (history.replaceState) {
+      try { history.replaceState(null, "", "#" + formId); } catch (e) {}
+    }
+    return true;
+  }
+
   function bindDataApi() {
     document.addEventListener("click", function (ev) {
-      var photoLink = ev.target.closest("a[data-fb-photo-modal], a[href]");
+      // Wall/group comment reveal — open the exact form (not a colliding :target)
+      var cOpen = ev.target.closest("[data-comment-open], a.wall-act[href^='#c-']");
+      if (cOpen && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) {
+        var cid = cOpen.getAttribute("data-comment-open");
+        if (!cid) {
+          var hrefC = cOpen.getAttribute("href") || "";
+          if (hrefC.charAt(0) === "#") cid = hrefC.slice(1);
+        }
+        if (cid && openCommentForm(cid)) {
+          ev.preventDefault();
+          return;
+        }
+      }
+
+      var photoLink = ev.target.closest("a[data-fb-photo-modal]");
+      if (!photoLink) {
+        // Auto-modal only for media thumbs, not every album permalink on the page
+        photoLink = ev.target.closest(
+          ".wall-media a[href], .photo-gallery a.photo-thumb[href], .news-photo-row a[href], a.photo-thumb[href]"
+        );
+      }
       if (photoLink && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey && !ev.altKey) {
         var modalUrl = photoLink.getAttribute("data-fb-photo-modal");
         if (!modalUrl) {
-          // Auto-open album photo pages in 2006 dialog (wall / gallery thumbs).
           var raw = photoLink.getAttribute("href") || "";
-          if (photoLink.closest(".photo-modal-full")) {
-            /* keep full-page link inside modal */
-          } else {
+          if (!photoLink.closest(".photo-modal-full")) {
             modalUrl = photoModalUrlFromHref(raw);
           }
         }
         if (modalUrl) {
           ev.preventDefault();
-          if (photoLink.closest("#classic-dialog-root") && photoLink.getAttribute("data-fb-photo-modal")) {
-            openPhotoModal(modalUrl);
-            return;
-          }
           openPhotoModal(modalUrl);
           return;
         }
@@ -164,17 +201,24 @@
       var formSel = t.getAttribute("data-fb-dialog-form");
       confirm({ title: title, message: msg, html: html || undefined }).then(function (ok) {
         if (!ok) return;
-        if (formSel) {
-          var form = document.querySelector(formSel);
-          if (form) form.submit();
-        } else if (href) {
-          window.location = href;
-        }
+        var form = null;
+        if (formSel) form = document.querySelector(formSel);
+        if (!form) form = t.closest("form");
+        if (form) form.submit();
+        else if (href) window.location = href;
       });
     });
+
+    // Deep-link #c-wall-123 on load
+    if (location.hash && location.hash.indexOf("#c-") === 0) {
+      openCommentForm(location.hash.slice(1));
+    }
   }
 
-  window.FBDialog = { open: open, close: close, confirm: confirm, openPhotoModal: openPhotoModal };
+  window.FBDialog = {
+    open: open, close: close, confirm: confirm,
+    openPhotoModal: openPhotoModal, openCommentForm: openCommentForm,
+  };
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bindDataApi);
   } else {

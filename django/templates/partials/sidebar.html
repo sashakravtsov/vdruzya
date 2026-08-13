@@ -37,6 +37,7 @@
         <a href="{% url 'anniversaries' %}"{% if nav == 'anniversaries' %} class="is-on"{% endif %}>Годовщины</a>
         <a href="{% url 'friends.lists' %}"{% if nav == 'lists' %} class="is-on"{% endif %}>Списки друзей</a>
         <a href="{% url 'apps' %}"{% if nav == 'apps' or nav == 'apps.show' or nav == 'apps.canvas' %} class="is-on"{% endif %}>Приложения</a>
+        <a href="{% url 'developers' %}"{% if nav == 'developers' %} class="is-on"{% endif %}>Разработчик</a>
         {% if sidebar_apps %}
         <span class="snav-apps-label">Закладки приложений</span>
         {% for app in sidebar_apps %}

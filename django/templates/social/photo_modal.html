@@ -43,7 +43,7 @@
             {% if me %}
             {% url 'albums.photos.comment' album.id photo.id as c_action %}
             {% url 'albums.photos.show' album.id photo.id as photo_next %}
-            {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id form=comment_form open=1 next=photo_next %}
+            {% include "social/_comment_compose.html" with action=c_action compose_id=photo.id compose_kind="pmod" form=comment_form open=1 next=photo_next %}
             {% else %}
             <p class="muted"><a href="{% url 'login' %}">Войдите</a>, чтобы комментировать.</p>
             {% endif %}

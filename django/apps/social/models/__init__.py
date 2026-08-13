@@ -1,6 +1,6 @@
 """ORM surface for classic FB-2006 features. Post-2006 columns stay deferred / unmanaged."""
 from .defer import GROUP_POST_DEFER, POST_DEFER, PROFILE_DEFER, profile_related
-from .platform import AppCauseJoin, AppInstall, AppTruthAsk
+from .platform import AppCauseJoin, AppInstall, AppTruthAsk, DevApp
 from .fields import PgJSON
 from .people import Block, Education, Experience, Friendship, SocialProfile
 from .feed import Comment, Post, PostMedia
@@ -50,5 +50,5 @@ __all__ = [
     "PageTimelineMilestone", "Collection", "CollectionItem",
     "Hashtag", "PostHashtag",
     "SavedItem", "SafetyEvent", "SafetyCheckin",
-    "AppInstall", "AppCauseJoin", "AppTruthAsk",
+    "AppInstall", "AppCauseJoin", "AppTruthAsk", "DevApp",
 ]

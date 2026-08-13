@@ -13,15 +13,15 @@ from apps.social.models import AppTruthAsk, Post, SocialProfile
 from apps.social.services import bump_news, friend_ids, now, profile_of
 
 
-def _require_app(slug):
-    return pa.app_by_slug(slug)
+def _require_app(slug, viewer=None):
+    return pa.app_by_slug(slug, viewer=viewer)
 
 
 @login_required
 @require_POST
 def app_install(request, slug):
     me = profile_of(request.user)
-    app = _require_app(slug)
+    app = _require_app(slug, viewer=me)
     if not app:
         messages.error(request, "Приложение не найдено.")
         return redirect("apps")
@@ -35,7 +35,7 @@ def app_install(request, slug):
 @require_POST
 def app_uninstall(request, slug):
     me = profile_of(request.user)
-    app = _require_app(slug)
+    app = _require_app(slug, viewer=me)
     if app and pa.uninstall(me, slug):
         messages.info(request, f"Приложение «{app['name']}» удалено из ваших.")
     return redirect(request.POST.get("next") or "apps")
@@ -45,12 +45,15 @@ def app_uninstall(request, slug):
 @require_http_methods(["GET", "POST"])
 def app_canvas(request, slug):
     me = profile_of(request.user)
-    app = _require_app(slug)
+    app = _require_app(slug, viewer=me)
     if not app:
         messages.error(request, "Приложение не найдено.")
         return redirect("apps")
     if not pa.is_installed(me, slug):
         pa.install(me, slug)
+
+    if app.get("dev_owned"):
+        return _canvas_devapp(request, me, app)
 
     handlers = {
         "causes": _canvas_causes,
@@ -72,6 +75,14 @@ def app_canvas(request, slug):
     if not handler:
         return redirect("apps.show", slug=slug)
     return handler(request, me, app)
+
+
+def _canvas_devapp(request, me, app):
+    """First-party canvas shell + link-out to developer website (no foreign iframe)."""
+    return render(request, "social/apps/canvas_devapp.html", {
+        "me": me, "app": app, "website_url": app.get("website_url") or "",
+        "nav": "apps", "installed": True,
+    })
 
 
 def _canvas_causes(request, me, app):

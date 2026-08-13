@@ -773,10 +773,13 @@ if ! grep -q 'name="apps.canvas"' "${ROOT}/django/apps/social/urls.py" 2>/dev/nu
   || ! grep -q 'classic-dialog.js' "${ROOT}/django/templates/layout.html" 2>/dev/null \
   || ! grep -q 'name="albums.photos.modal"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'snav-apps-label' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null \
-  || ! grep -q 'calculator' "${ROOT}/django/apps/social/platform_apps.py" 2>/dev/null; then
-  echo "FAIL platform canvas / photo modal / bookmarks missing"; FAIL=1
+  || ! grep -q 'calculator' "${ROOT}/django/apps/social/platform_apps.py" 2>/dev/null \
+  || ! grep -q 'name="developers"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'data-comment-open' "${ROOT}/django/templates/social/_wall_post.html" 2>/dev/null \
+  || ! grep -q 'dev_apps' "${ROOT}/django/deploy/ensure-platform-apps.py" 2>/dev/null; then
+  echo "FAIL platform / photo modal / developers / comment ids missing"; FAIL=1
 else
-  echo "OK   platform canvas + photo modal + app bookmarks"
+  echo "OK   platform + photo modal + developers + comment ids"
 fi
 echo "== FB 2012 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2012-modules.py \

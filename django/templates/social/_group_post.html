@@ -47,7 +47,7 @@
                     </form>
                     {% if p.n_likes %} <span class="muted">({{ p.n_likes }})</span>{% endif %}
                     ·
-                    <a class="wall-act" href="#c-{{ p.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if p.n_comments %} <span class="muted">({{ p.n_comments }})</span>{% endif %}
+                    <a class="wall-act" href="#c-gpost-{{ p.id }}" data-comment-open="c-gpost-{{ p.id }}"><span class="ico ico-comment"></span>Комментировать</a>{% if p.n_comments %} <span class="muted">({{ p.n_comments }})</span>{% endif %}
                     {% else %}
                     {% if p.n_likes %}<span class="muted">Нравится ({{ p.n_likes }})</span> · {% endif %}
                     <span class="ico ico-comment"></span> {{ p.n_comments|default:0 }}
@@ -56,7 +56,7 @@
                 {% comment_thread p.comments.all preview=2 kind="group" group=group %}
                 {% if is_member %}
                 {% url 'groups.comment' group.id p.id as c_action %}
-                {% include "social/_comment_compose.html" with action=c_action compose_id=p.id form=comment_form %}
+                {% include "social/_comment_compose.html" with action=c_action compose_id=p.id compose_kind="gpost" form=comment_form %}
                 {% endif %}
             </div>
         </td>

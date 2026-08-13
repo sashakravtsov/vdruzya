@@ -53,7 +53,7 @@
         {% comment_thread p.comments.all preview=0 kind="group" group=group %}
         {% if is_member and comment_form %}
         {% url 'groups.comment' group.id p.id as c_action %}
-        {% include "social/_comment_compose.html" with action=c_action compose_id=p.id form=comment_form open=1 %}
+        {% include "social/_comment_compose.html" with action=c_action compose_id=p.id compose_kind="gpost" form=comment_form open=1 %}
         {% endif %}
     </div>
 </div>

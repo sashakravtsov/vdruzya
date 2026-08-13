@@ -107,7 +107,7 @@ PLATFORM_APPS = (
             "Отправка уведомлений",
         ),
     },
-    # Sample first-party apps by Александр (App Center demos)
+    # Sample first-party App Center demos (developer chrome: ВДрузья)
     {
         "slug": "calculator",
         "name": "Калькулятор",
@@ -115,10 +115,10 @@ PLATFORM_APPS = (
         "featured": True,
         "blurb": "Простой калькулятор на стене приложений.",
         "detail": (
-            "Утилита Александра: сложение, вычитание, умножение и деление "
+            "Утилита ВДрузья: сложение, вычитание, умножение и деление "
             "прямо в canvas — как мини-приложение Facebook Platform."
         ),
-        "developer": "Александр",
+        "developer": "ВДрузья",
         "permissions": ("Основная информация профиля",),
     },
     {
@@ -128,10 +128,10 @@ PLATFORM_APPS = (
         "featured": True,
         "blurb": "Погода по городу — демо-прогноз для друзей.",
         "detail": (
-            "Приложение Александра: укажите город и получите демо-прогноз "
+            "Приложение ВДрузья: укажите город и получите демо-прогноз "
             "(без внешнего API — как учебный canvas-пример)."
         ),
-        "developer": "Александр",
+        "developer": "ВДрузья",
         "permissions": DEFAULT_PERMISSIONS,
     },
     {
@@ -141,10 +141,10 @@ PLATFORM_APPS = (
         "featured": False,
         "blurb": "Ежедневный гороскоп по знаку зодиака.",
         "detail": (
-            "Гороскопы от Александра: выберите знак и прочитайте короткий "
+            "Гороскопы ВДрузья: выберите знак и прочитайте короткий "
             "прогноз дня — classic lifestyle app."
         ),
-        "developer": "Александр",
+        "developer": "ВДрузья",
         "permissions": ("Основная информация профиля",),
     },
     {
@@ -154,10 +154,10 @@ PLATFORM_APPS = (
         "featured": True,
         "blurb": "Совместимость с друзьями — лёгкий демо-матч.",
         "detail": (
-            "Знакомства от Александра: покажет совпадения среди друзей "
+            "Знакомства ВДрузья: покажет совпадения среди друзей "
             "с процентом совместимости (демо, без стороннего хостинга)."
         ),
-        "developer": "Александр",
+        "developer": "ВДрузья",
         "permissions": (
             "Основная информация профиля",
             "Список друзей",
@@ -304,16 +304,63 @@ QUIZ_RESULTS = {
 }
 
 
-def app_by_slug(slug: str) -> dict | None:
+RESERVED_SLUGS = frozenset(
+    {a["slug"] for a in PLATFORM_APPS}
+    | set(LEGACY_MODULE_REDIRECTS)
+    | {"developer", "developers", "new", "edit", "install", "uninstall", "canvas"}
+)
+
+
+def _dev_app_dict(row) -> dict:
+    owner = getattr(row, "owner", None)
+    return {
+        "slug": row.slug,
+        "name": row.name,
+        "category": row.category or "utilities",
+        "featured": bool(row.featured),
+        "blurb": row.blurb or "",
+        "detail": row.detail or row.blurb or "",
+        "developer": (owner.name if owner else None) or "Разработчик",
+        "permissions": DEFAULT_PERMISSIONS + ("Ссылка на сайт приложения",),
+        "website_url": (row.website_url or "").strip(),
+        "dev_owned": True,
+        "owner_id": row.owner_id,
+        "published": bool(row.published),
+    }
+
+
+def published_dev_apps():
+    from apps.social.models import DevApp
+    try:
+        rows = list(
+            DevApp.objects.filter(published=True)
+            .select_related("owner")
+            .order_by("name")[:80]
+        )
+    except Exception:
+        return []
+    return [_dev_app_dict(r) for r in rows]
+
+
+def app_by_slug(slug: str, viewer=None) -> dict | None:
     slug = (slug or "").strip().lower()
     for a in PLATFORM_APPS:
         if a["slug"] == slug:
-            return a
+            return dict(a)
+    from apps.social.models import DevApp
+    try:
+        row = DevApp.objects.select_related("owner").filter(slug=slug).first()
+    except Exception:
+        row = None
+    if not row:
+        return None
+    if row.published or (viewer and getattr(viewer, "id", None) == row.owner_id):
+        return _dev_app_dict(row)
     return None
 
 
 def apps_grouped(*, category=None, featured_only=False):
-    rows = list(PLATFORM_APPS)
+    rows = [dict(a) for a in PLATFORM_APPS] + published_dev_apps()
     if featured_only:
         rows = [a for a in rows if a.get("featured")]
     if category:
@@ -362,7 +409,10 @@ def uninstall(me, slug: str) -> bool:
 
 def my_apps(me):
     slugs = installed_slugs(me)
-    return [a for a in PLATFORM_APPS if a["slug"] in slugs]
+    catalog = {a["slug"]: a for a in PLATFORM_APPS}
+    for a in published_dev_apps():
+        catalog[a["slug"]] = a
+    return [catalog[s] for s in catalog if s in slugs]
 
 
 def cause_join_counts() -> dict[str, int]:

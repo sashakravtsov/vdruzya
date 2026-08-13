@@ -203,14 +203,16 @@ def main():
 
     from apps.social import platform_apps as pa
     assert pa.app_by_slug("calculator") and pa.app_by_slug("dating")
-    assert pa.app_by_slug("calculator")["developer"] == "Александр"
+    assert pa.app_by_slug("calculator")["developer"] == "ВДрузья"
     assert len(pa.PLATFORM_APPS) >= 12
     assert "Список друзей" in pa.permissions_for(pa.app_by_slug("dating"))
     r = c.get("/apps/calculator", secure=True)
     assert r.status_code == 200
     body = r.content.decode("utf-8", "ignore").lower()
-    assert "александр" in body and "разрешен" in body
-    ok("platform apps + install permissions")
+    assert "вдрузья" in body and "разрешен" in body
+    r = c.get("/developers", secure=True)
+    assert r.status_code == 200
+    ok("platform apps + install permissions + developers")
 
     print("ALL techdebt probes passed")
 

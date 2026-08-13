@@ -91,17 +91,35 @@ def main():
     ):
         r = c.get(f"/apps/{slug}", secure=True)
         assert r.status_code == 200 and needle.encode() in r.content, slug
-        assert "Александр".encode() in r.content or slug in ("farm", "poker")
+        assert "ВДрузья".encode() in r.content, slug
         r = c.post(f"/apps/{slug}/install", {}, secure=True)
         assert r.status_code in (301, 302), slug
         r = c.get(f"/apps/{slug}/canvas", secure=True)
         assert r.status_code == 200 and needle.encode() in r.content, slug
-    ok("alexander apps + extra games canvas")
+    ok("builtin apps + extra games canvas")
 
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert "Закладки приложений".encode() in r.content or b"snav-app" in r.content
     ok("sidebar app bookmarks")
+
+    r = c.get("/developers", secure=True)
+    assert r.status_code == 200 and "Кабинет разработчика".encode() in r.content
+    from apps.social.models import DevApp
+    DevApp.objects.filter(slug="somneniya").delete()
+    r = c.post("/developers/new", {
+        "slug": "somneniya", "name": "Сомнения", "category": "lifestyle",
+        "blurb": "Сайт somneniya.ru", "detail": "Приложение для сайта Сомнения",
+        "website_url": "https://somneniya.ru", "published": "1",
+    }, secure=True)
+    assert r.status_code in (301, 302)
+    assert DevApp.objects.filter(slug="somneniya", owner=me).exists()
+    r = c.get("/apps/somneniya", secure=True)
+    assert r.status_code == 200 and b"somneniya.ru" in r.content
+    r = c.get("/apps/somneniya/canvas", secure=True)
+    assert r.status_code == 200 and b"somneniya.ru" in r.content
+    assert b"<iframe" not in r.content.lower()
+    ok("developer cabinet + link-out app")
 
     r = c.get("/collections", secure=True)
     assert r.status_code == 200
