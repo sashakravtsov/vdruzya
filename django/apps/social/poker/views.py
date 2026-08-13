@@ -10,6 +10,7 @@ from apps.social import platform_apps as pa
 from apps.social.models import SocialProfile
 from apps.social.services import friend_ids
 
+from . import engine as poker_engine
 from . import lessons as poker_lessons
 from . import puzzles as poker_puzzles
 from . import service as poker
@@ -136,12 +137,23 @@ def render_poker_canvas(request, me, app):
                     stake_key=form.cleaned_data["stake"],
                     is_private=bool(form.cleaned_data.get("is_private")),
                     in_champ=bool(form.cleaned_data.get("in_champ")),
+                    max_seats=int(form.cleaned_data.get("max_seats") or 6),
                 )
-                msg = "Комната создана."
+                poker.mark_host_achievement(me)
+                msg = f"Комната на {r.max_seats} мест создана."
                 if r.is_private and r.join_code:
                     msg += f" Код: {r.join_code}"
                 messages.success(request, msg)
                 return redirect(_poker_url("room", id=r.id))
+
+            if action == "daily_bonus":
+                got = poker.claim_daily_bonus(me)
+                messages.success(
+                    request,
+                    f"Ежедневный бонус: +{poker_engine.format_chips(got['amount'])} фишек "
+                    f"(серия {got['streak']} дн.).",
+                )
+                return redirect(_poker_url("play"))
 
             if action == "join_room":
                 rid = int(request.POST.get("room_id") or 0)

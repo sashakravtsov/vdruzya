@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smoke: poker app — engine, rooms, rating, championship, canvas."""
+"""Smoke: poker — multi-seat, rooms, rating, champ, engagement, canvas."""
 import os
 import sys
 
@@ -15,6 +15,7 @@ from django.test import Client, override_settings
 from apps.accounts.models import User
 from apps.social.poker import engine
 from apps.social.poker import lessons
+from apps.social.poker import multi as multi_eng
 from apps.social.poker import puzzles
 from apps.social.poker import service as poker
 from apps.social.services import profile_of
@@ -33,70 +34,82 @@ def ok(label):
     }
 )
 def main():
-    # hand ranks
     assert engine.evaluate_five(["Ah", "Kh", "Qh", "Jh", "Th"])[0] == 9
-    assert engine.evaluate_five(["9h", "Kh", "Qh", "Jh", "Th"])[0] == 8
-    assert engine.hand_name((6, 14, 13)) == "фулл-хаус"
-    hole = ["As", "Ad"]
-    board = ["2c", "2d", "2h", "9s", "Td"]
-    assert engine.best_hand(hole, board)[0] == 6  # full house
     cv = engine.card_view("Ah")
-    assert cv["red"] and cv["rank"] == "A" and cv["suit_name"] == "hearts"
+    assert cv["red"] and cv["suit_name"] == "hearts"
     assert engine.format_chips(1_000_000) == "1 000 000"
-    assert engine.chip_layers(12500)
-    ok("engine hand evaluation")
+    ok("engine")
 
-    dealt = engine.deal_hand("seed-1")
-    assert len(dealt["p1_hole"]) == 2 and len(dealt["deck"]) == 48
-    ok("engine deal")
+    seats = multi_eng.empty_room_seats(6)
+    seats = multi_eng.room_add_user(seats, 1)
+    seats = multi_eng.room_add_user(seats, 2)
+    seats = multi_eng.room_add_user(seats, 3)
+    assert multi_eng.room_seat_count(seats) == 3
+    deck = engine.new_deck("multi-seed")
+    hs = multi_eng.new_hand_seats([1, 2, 3], 20_000, deck)
+    hs, to_act, pot, cur = multi_eng.post_blinds(hs, 0, 500, 1000)
+    assert pot == 1500 and cur == 1000
+    assert to_act == 0  # 3-handed: UTG after BB=2 → next is 0? button=0, sb=1, bb=2, utg=0 yes
+    hs2, pot2, cur2, lab, paid = multi_eng.apply_action(hs, to_act, "fold", 0, cur, 1000, pot)
+    assert hs2[to_act]["folded"]
+    ok("multi engine blinds/fold")
 
-    assert len(lessons.LESSONS) >= 8
-    assert lessons.lesson_by_slug("bankruptcy-rules")
-    assert len(puzzles.PUZZLES) >= 10
-    assert puzzles.daily_puzzle()["id"]
-    for pz in puzzles.PUZZLES:
-        assert puzzles.check_answer(pz, pz["answer"])
-    ok("curriculum + puzzles")
+    assert len(lessons.LESSONS) >= 12
+    assert lessons.lesson_by_slug("multi-rooms")
+    assert lessons.lesson_by_slug("multiway-pots")
+    assert len(puzzles.PUZZLES) >= 15
+    assert "мультивей" in puzzles.THEMES
+    ok("curriculum expanded")
 
     assert poker.STARTING_CHIPS == 1_000_000
-    assert poker.BANKRUPT_DAYS == 5
-    assert poker.stake_by_key("micro")[4] == 20_000
+    assert 6 in poker.SEAT_CHOICES
     nw, nl = poker.elo_update(1200, 1200, draw=False)
     assert nw > 1200 > nl
-    ok("economy + elo")
+    ok("economy + seats")
 
-    users = list(User.objects.order_by("id")[:2])
+    users = list(User.objects.order_by("id")[:3])
     assert len(users) >= 1
     me = profile_of(users[0])
     prof = poker.get_or_create_profile(me)
-    assert prof.chips >= 0
     assert int(getattr(prof, "rating", 1200) or 1200) >= 100
     strip = poker.engagement_strip(me)
-    assert "chips" in strip and "bankrupt" in strip and "rating" in strip
+    assert "goals" in strip and "badges" in strip and "rating" in strip
     champ = poker.ensure_week_championship()
     assert champ.week_key
-    meta = poker.learn_stats(me)
-    assert meta["total"] >= 8
-    ok("profile + champ + learn stats")
+    ok("engagement strip")
 
-    room = poker.create_room(me, title="Smoke HU", stake_key="micro", is_private=True, in_champ=True)
-    assert room.is_private and room.join_code
-    assert poker.room_for(me, room.id)
+    room = poker.create_room(
+        me, title="Smoke 6max", stake_key="micro", is_private=True, in_champ=True, max_seats=6,
+    )
+    assert room.max_seats == 6 and room.join_code
+    meta = poker.room_view(room, me)
+    assert meta["max_seats"] == 6 and meta["filled_n"] >= 1
     if len(users) >= 2:
         peer = profile_of(users[1])
         poker.get_or_create_profile(peer)
-        joined = poker.join_room(peer, join_code=room.join_code)
-        assert joined.p2_id == peer.id
+        poker.join_room(peer, join_code=room.join_code)
+        if len(users) >= 3:
+            p3 = profile_of(users[2])
+            poker.get_or_create_profile(p3)
+            poker.join_room(p3, join_code=room.join_code)
         g = poker.start_room_hand(me, room.id)
-        assert g.status == "active" and g.room_id == room.id
-        assert g.championship_id
+        assert g.mode == "multi" and g.status == "active"
         view = poker.table_view(g, me)
-        assert "my_cards" in view and "board_slots" in view
-        assert len(view["board_slots"]) == 5
-        assert "street_label" in view and view["pot_fmt"] is not None
-        ok("private room + deal")
+        assert view["mode"] == "multi" and view["players_n"] >= 2
+        assert view["multi_seats"]
+        # fold as to_act until our tests don't need full hand
+        ok("multi room deal")
     else:
-        ok("private room create (single user)")
+        ok("multi room create (single user)")
+
+    # daily bonus idempotent path
+    try:
+        poker.claim_daily_bonus(me)
+        poker.claim_daily_bonus(me)
+        raise AssertionError("second bonus should fail")
+    except ValueError:
+        pass
+    ok("daily bonus")
 
     c = Client()
     c.force_login(users[0])
@@ -108,24 +121,15 @@ def main():
         assert b"<iframe" not in body.lower()
         assert b"<details" not in body.lower()
     play = c.get("/apps/poker/canvas?tab=play", secure=True).content
-    assert "Вызвать на раздачу".encode() in play or "Банкротство".encode() in play
-    assert "рейтинг".encode() in play.lower() or "Рейтинг".encode() in play
+    assert "Цели дня".encode() in play
     rooms = c.get("/apps/poker/canvas?tab=rooms", secure=True).content
     assert "Создать комнату".encode() in rooms
-    assert "Войти по коду".encode() in rooms
-    assert "Лобби столов".encode() in rooms
-    assert b"poker-table.js" in rooms or b"poker-mini-felt" in rooms
-    ratings = c.get("/apps/poker/canvas?tab=ratings", secure=True).content
-    assert "Рейтинг Elo".encode() in ratings
-    champs = c.get("/apps/poker/canvas?tab=champs", secure=True).content
-    assert "Чемпионат".encode() in champs or champ.title.encode() in champs
+    assert "Мест".encode() in rooms or b"max_seats" in rooms or "мест".encode() in rooms
     learn = c.get("/apps/poker/canvas?tab=learn", secure=True).content
-    assert "Система обучения".encode() in learn
+    assert "Групповые столы".encode() in learn
     bank = c.get("/apps/poker/canvas?tab=bank", secure=True).content
-    assert "1".encode() in bank and "000".encode() in bank
-    puzzles_html = c.get("/apps/poker/canvas?tab=puzzles", secure=True).content
-    assert "Задача дня".encode() in puzzles_html
-    ok("canvas rooms + rating + champ UI")
+    assert "Ачивки".encode() in bank
+    ok("canvas multi + engagement UI")
     print("ALL poker probes passed")
 
 

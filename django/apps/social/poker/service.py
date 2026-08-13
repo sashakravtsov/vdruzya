@@ -9,12 +9,11 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.utils import timezone
-
 from apps.social.models import SocialProfile
 from apps.social.services import now as _now
 
 from . import engine
+from . import multi as multi_eng
 from .models import (
     PokerAction, PokerChampEntry, PokerChampionship, PokerGame, PokerLessonProgress,
     PokerProfile, PokerPuzzleProgress, PokerRoom,
@@ -118,25 +117,29 @@ def _new_join_code(n: int = 6) -> str:
     return secrets.token_hex(3).upper()
 
 
+def _naive(dt):
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=None) if getattr(dt, "tzinfo", None) else dt
+
+
 def is_bankrupt(profile: PokerProfile, at=None) -> bool:
-    at = at or timezone.now()
-    until = profile.bankrupt_until
-    if until and until > at:
-        return True
-    return False
+    at = _naive(at or _now())
+    until = _naive(profile.bankrupt_until)
+    return bool(until and until > at)
 
 
 def can_reset_bankruptcy(profile: PokerProfile, at=None) -> bool:
-    at = at or timezone.now()
-    until = profile.bankrupt_until
+    at = _naive(at or _now())
+    until = _naive(profile.bankrupt_until)
     if not until:
         return False
     return until <= at
 
 
 def bankrupt_remaining(profile: PokerProfile, at=None) -> timedelta | None:
-    at = at or timezone.now()
-    until = profile.bankrupt_until
+    at = _naive(at or _now())
+    until = _naive(profile.bankrupt_until)
     if not until or until <= at:
         return None
     return until - at
@@ -144,7 +147,7 @@ def bankrupt_remaining(profile: PokerProfile, at=None) -> timedelta | None:
 
 def _mark_bankrupt(profile: PokerProfile) -> None:
     profile.chips = 0
-    profile.bankrupt_until = timezone.now() + timedelta(days=BANKRUPT_DAYS)
+    profile.bankrupt_until = _now() + timedelta(days=BANKRUPT_DAYS)
     profile.updated_at = _now()
     profile.save(update_fields=["chips", "bankrupt_until", "updated_at"])
 
@@ -182,6 +185,12 @@ def add_learn_xp(user: SocialProfile, amount: int) -> PokerProfile:
 
 
 def seat_of(game: PokerGame, user: SocialProfile) -> int | None:
+    if getattr(game, "mode", "hu") == "multi":
+        seats = multi_eng.loads_list(game.seats_json)
+        for i, s in enumerate(seats):
+            if int(s.get("u") or 0) == user.id:
+                return i  # 0-based for multi
+        return None
     if game.p1_id == user.id:
         return 1
     if game.p2_id == user.id:
@@ -193,12 +202,23 @@ def opp_of(game: PokerGame, user: SocialProfile) -> SocialProfile:
     return game.p2 if game.p1_id == user.id else game.p1
 
 
+def _user_in_multi_game(game: PokerGame, user: SocialProfile) -> bool:
+    if getattr(game, "mode", "hu") != "multi":
+        return False
+    return any(int(s.get("u") or 0) == user.id for s in multi_eng.loads_list(game.seats_json))
+
+
 def game_for(user: SocialProfile, gid: int) -> PokerGame | None:
-    return (
-        PokerGame.objects.filter(Q(p1=user) | Q(p2=user), pk=gid)
-        .select_related("p1", "p2", "invited_by", "winner")
+    game = (
+        PokerGame.objects.filter(pk=gid)
+        .select_related("p1", "p2", "invited_by", "winner", "room")
         .first()
     )
+    if not game:
+        return None
+    if game.p1_id == user.id or game.p2_id == user.id or _user_in_multi_game(game, user):
+        return game
+    return None
 
 
 @transaction.atomic
@@ -458,10 +478,12 @@ def _finish(game: PokerGame, winner_seat: int | None, reason: str) -> PokerGame:
     game.updated_at = _now()
     game.save()
     for p in (p1, p2):
+        _touch_play_streak(p)
         p.updated_at = _now()
         p.save()
         if int(p.chips or 0) < MIN_PLAYABLE_CHIPS:
             _mark_bankrupt(p)
+    unlock_achievements_for_users([p1, p2], multi=False, won=bool(winner_seat))
     _release_room_after_hand(game)
     return game
 
@@ -524,6 +546,8 @@ def act(
     game = PokerGame.objects.select_for_update().filter(pk=game_id).first()
     if not game or game.status != "active":
         raise ValueError("Раздача недоступна")
+    if getattr(game, "mode", "hu") == "multi":
+        return _act_multi(user, game, action, raise_to=raise_to)
     seat = seat_of(game, user)
     if not seat or seat != game.to_act:
         raise ValueError("Сейчас не ваш ход")
@@ -633,8 +657,23 @@ def play_hub(user: SocialProfile) -> dict:
         PokerGame.objects.filter(Q(p1=user) | Q(p2=user))
         .filter(status__in=["pending", "active"])
         .select_related("p1", "p2", "invited_by")
-        .order_by("-updated_at")[:40]
+        .order_by("-updated_at")[:50]
     )
+    # Multi games where user is seat 3+ (not mirrored in p1/p2)
+    extra = list(
+        PokerGame.objects.filter(mode="multi", status="active")
+        .exclude(Q(p1=user) | Q(p2=user))
+        .select_related("p1", "p2", "invited_by")
+        .order_by("-updated_at")[:30]
+    )
+    seen = {g.id for g in open_games}
+    for g in extra:
+        if g.id in seen:
+            continue
+        if _user_in_multi_game(g, user):
+            open_games.append(g)
+            seen.add(g.id)
+
     your_act, waiting, incoming, outgoing = [], [], [], []
     for g in open_games:
         if g.status == "pending":
@@ -644,7 +683,9 @@ def play_hub(user: SocialProfile) -> dict:
                 incoming.append(g)
             continue
         seat = seat_of(g, user)
-        if seat and seat == g.to_act:
+        if seat is None:
+            continue
+        if seat == g.to_act:
             your_act.append(g)
         else:
             waiting.append(g)
@@ -671,6 +712,8 @@ def engagement_strip(user: SocialProfile) -> dict:
         .order_by("-updated_at")[:8]
     )
     chips = int(p.chips or 0)
+    goals = daily_goals(user)
+    badges = achievement_badges(user)
     return {
         **hub,
         "chips": chips,
@@ -681,6 +724,7 @@ def engagement_strip(user: SocialProfile) -> dict:
         "rated_games": int(p.rated_games or 0),
         "skill": skill_level(p.learn_xp),
         "puzzle_streak": int(p.puzzle_streak or 0),
+        "play_streak": int(getattr(p, "play_streak", 0) or 0),
         "bankrupt": is_bankrupt(p),
         "can_reset": can_reset_bankruptcy(p),
         "bankrupt_days_left": (
@@ -695,10 +739,140 @@ def engagement_strip(user: SocialProfile) -> dict:
         "win_rate": (
             int(round(100 * int(p.wins or 0) / int(p.games))) if int(p.games or 0) else 0
         ),
+        "goals": goals,
+        "badges": badges,
+        "badges_n": sum(1 for b in badges if b["unlocked"]),
+    }
+
+
+def _table_view_multi(game: PokerGame, viewer: SocialProfile) -> dict:
+    seats = multi_eng.loads_list(game.seats_json)
+    board = engine.parse_cards(game.board)
+    my_i = seat_of(game, viewer)
+    show_all = game.status == "done" or game.street in ("showdown", "done")
+    ids = [int(s["u"]) for s in seats]
+    names = {sp.id: sp.name for sp in SocialProfile.objects.filter(pk__in=ids)}
+    n = max(1, len(seats))
+    # CSS angle positions around oval
+    angles = {
+        2: [0, 180],
+        3: [0, 120, 240],
+        4: [0, 90, 180, 270],
+        5: [0, 72, 144, 216, 288],
+        6: [0, 60, 120, 180, 240, 300],
+    }.get(n, [i * (360 // n) for i in range(n)])
+
+    my_hole = engine.parse_cards(seats[my_i]["hole"]) if my_i is not None else []
+    my_stack = int(seats[my_i]["stack"]) if my_i is not None else 0
+    my_bet = int(seats[my_i]["bet"]) if my_i is not None else 0
+    current_bet = int(game.current_bet or 0)
+    to_call = max(0, current_bet - my_bet) if my_i is not None else 0
+    legal = []
+    if my_i is not None and game.status == "active" and my_i == game.to_act:
+        legal = engine.legal_actions(to_call, my_stack, my_bet, to_call == 0)
+
+    seat_views = []
+    for i, s in enumerate(seats):
+        hole = engine.parse_cards(s.get("hole") or "")
+        show_hole = show_all or (my_i is not None and i == my_i)
+        seat_views.append({
+            "idx": i,
+            "user_id": int(s["u"]),
+            "name": names.get(int(s["u"]), "?"),
+            "stack": int(s.get("stack") or 0),
+            "stack_fmt": engine.format_chips(s.get("stack")),
+            "bet": int(s.get("bet") or 0),
+            "bet_fmt": engine.format_chips(s.get("bet")),
+            "folded": bool(s.get("folded")),
+            "all_in": bool(s.get("all_in")),
+            "dealer": i == int(game.button),
+            "to_act": game.status == "active" and i == game.to_act,
+            "me": my_i is not None and i == my_i,
+            "angle": angles[i] if i < len(angles) else (i * 60) % 360,
+            "cards": [engine.card_view(c) for c in hole] if show_hole else [],
+            "hidden": not show_hole and not s.get("folded"),
+        })
+
+    min_raise_to = max(current_bet + game.big_blind, game.big_blind)
+    pot = int(game.pot or 0)
+    max_raise = my_bet + my_stack
+    half_pot = min(max(min_raise_to, my_bet + max(to_call, pot // 2)), max_raise) if max_raise else min_raise_to
+    pot_raise = min(max(min_raise_to, my_bet + max(to_call, pot)), max_raise) if max_raise else min_raise_to
+    hand_strength = ""
+    if my_hole and len(board) >= 3:
+        hand_strength = engine.hand_name(engine.best_hand(my_hole, board))
+    elif my_hole and len(my_hole) == 2:
+        if my_hole[0][0] == my_hole[1][0]:
+            hand_strength = "пара на руках"
+        elif my_hole[0][1] == my_hole[1][1]:
+            hand_strength = "suited"
+        else:
+            hand_strength = "offsuit"
+
+    street = game.street or "preflop"
+    streets = ["preflop", "flop", "turn", "river"]
+    street_idx = streets.index(street) if street in streets else (
+        4 if street in ("showdown", "done") else 0
+    )
+    board_slots = [engine.card_view(c) for c in board]
+    while len(board_slots) < 5:
+        board_slots.append(None)
+    waiting = bool(
+        game.status == "active" and my_i is not None and not legal and game.to_act != my_i
+    )
+    return {
+        "mode": "multi",
+        "multi_seats": seat_views,
+        "seat": my_i if my_i is not None else -1,
+        "board": board,
+        "board_cards": [engine.card_view(c) for c in board],
+        "board_slots": board_slots,
+        "my_hole": my_hole,
+        "my_cards": [engine.card_view(c) for c in my_hole],
+        "my_stack": my_stack,
+        "my_bet": my_bet,
+        "my_stack_fmt": engine.format_chips(my_stack),
+        "my_bet_fmt": engine.format_chips(my_bet),
+        "opp_stack": 0,
+        "opp_bet": 0,
+        "opp_stack_fmt": "",
+        "opp_bet_fmt": "",
+        "opp_cards": [],
+        "opp_name": "",
+        "opp_is_dealer": False,
+        "i_am_dealer": bool(my_i is not None and my_i == game.button),
+        "to_call": to_call,
+        "to_call_fmt": engine.format_chips(to_call),
+        "legal": legal,
+        "pot": pot,
+        "pot_fmt": engine.format_chips(pot),
+        "street": street,
+        "street_label": engine.street_label(street),
+        "street_idx": street_idx,
+        "streets": [
+            {"key": s, "label": engine.street_label(s), "on": i <= street_idx}
+            for i, s in enumerate(streets)
+        ],
+        "can_act": bool(legal),
+        "waiting": waiting,
+        "min_raise_to": min_raise_to,
+        "min_raise_fmt": engine.format_chips(min_raise_to),
+        "half_pot_to": half_pot,
+        "pot_raise_to": pot_raise,
+        "max_raise_to": max_raise,
+        "hand_strength": hand_strength,
+        "room_id": game.room_id,
+        "sb_fmt": engine.format_chips(game.small_blind),
+        "bb_fmt": engine.format_chips(game.big_blind),
+        "buy_in_fmt": engine.format_chips(game.buy_in),
+        "players_n": n,
     }
 
 
 def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
+    if getattr(game, "mode", "hu") == "multi":
+        return _table_view_multi(game, viewer)
+
     seat = seat_of(game, viewer) or 0
     board = engine.parse_cards(game.board)
     my_hole = engine.parse_cards(game.p1_hole if seat == 1 else game.p2_hole) if seat else []
@@ -727,7 +901,6 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
     if my_hole and len(board) >= 3:
         hand_strength = engine.hand_name(engine.best_hand(my_hole, board))
     elif my_hole and len(my_hole) == 2:
-        # light preflop hint
         r1, r2 = my_hole[0][0], my_hole[1][0]
         suited = my_hole[0][1] == my_hole[1][1]
         if r1 == r2:
@@ -753,6 +926,8 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
         board_slots.append(None)
 
     return {
+        "mode": "hu",
+        "multi_seats": [],
         "seat": seat,
         "board": board,
         "board_labels": [engine.card_label(c) for c in board],
@@ -802,6 +977,7 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
             (game.p2.name if seat == 1 else game.p1.name) if seat
             else game.p2.name
         ),
+        "players_n": 2,
     }
 
 
@@ -1003,7 +1179,11 @@ def recent_finished(user: SocialProfile, limit: int = 10) -> list[PokerGame]:
     )
 
 
-# --- rooms ---
+# --- rooms (2–6 seats) ---
+
+DAILY_BONUS_CHIPS = 25_000
+SEAT_CHOICES = (2, 3, 4, 5, 6)
+
 
 def list_open_rooms(limit: int = 40) -> list[PokerRoom]:
     return list(
@@ -1021,11 +1201,34 @@ def room_for(user: SocialProfile, room_id: int) -> PokerRoom | None:
     )
 
 
+def _room_seats(room: PokerRoom) -> list:
+    raw = multi_eng.loads_list(getattr(room, "seats_json", None) or "[]")
+    max_seats = max(multi_eng.MIN_SEATS, min(multi_eng.MAX_SEATS, int(getattr(room, "max_seats", 2) or 2)))
+    if len(raw) != max_seats:
+        # migrate legacy p1/p2 rooms
+        seats = multi_eng.empty_room_seats(max_seats)
+        if room.p1_id:
+            seats[0] = room.p1_id
+        if room.p2_id and max_seats > 1:
+            seats[1] = room.p2_id
+        if raw and all(isinstance(x, int) or x is None for x in raw):
+            for i, v in enumerate(raw[:max_seats]):
+                seats[i] = v
+        return seats
+    return [int(x) if x else None for x in raw]
+
+
+def _sync_room_p12(room: PokerRoom, seats: list) -> None:
+    filled = [s for s in seats if s]
+    room.p1_id = filled[0] if filled else None
+    room.p2_id = filled[1] if len(filled) > 1 else None
+
+
 def _room_seat(room: PokerRoom, user: SocialProfile) -> int | None:
-    if room.p1_id == user.id:
-        return 1
-    if room.p2_id == user.id:
-        return 2
+    seats = _room_seats(room)
+    for i, uid in enumerate(seats):
+        if uid == user.id:
+            return i
     return None
 
 
@@ -1036,6 +1239,7 @@ def create_room(
     stake_key: str = "micro",
     is_private: bool = False,
     in_champ: bool = True,
+    max_seats: int = 2,
 ) -> PokerRoom:
     profile = get_or_create_profile(owner)
     if is_bankrupt(profile):
@@ -1043,10 +1247,15 @@ def create_room(
     _key, _label, _sb, _bb, buy = stake_by_key(stake_key)
     if profile.chips < buy:
         raise ValueError(f"Не хватает фишек для бай-ина {buy:,}".replace(",", " "))
+    max_seats = int(max_seats or 2)
+    if max_seats not in SEAT_CHOICES:
+        raise ValueError("Допустимо 2–6 мест за столом")
     title = (title or "").strip()[:80] or f"Стол {owner.name}"
     now = _now()
     code = _new_join_code() if is_private else ""
-    return PokerRoom.objects.create(
+    seats = multi_eng.empty_room_seats(max_seats)
+    seats[0] = owner.id
+    room = PokerRoom.objects.create(
         title=title,
         owner=owner,
         stake_key=_key,
@@ -1057,9 +1266,13 @@ def create_room(
         status="open",
         in_champ=bool(in_champ),
         hands_played=0,
+        max_seats=max_seats,
+        seats_json=multi_eng.dumps(seats),
+        button_seat=0,
         created_at=now,
         updated_at=now,
     )
+    return room
 
 
 @transaction.atomic
@@ -1087,23 +1300,22 @@ def join_room(
         room = PokerRoom.objects.select_for_update().filter(pk=room_id).first()
     if not room or room.status == "closed":
         raise ValueError("Комната недоступна")
-    if room.is_private and code and room.join_code != code:
-        raise ValueError("Неверный код")
+    if room.status == "playing":
+        raise ValueError("Дождитесь конца раздачи")
     if room.is_private and not code and _room_seat(room, user) is None and room.owner_id != user.id:
         raise ValueError("Приватная комната — нужен код")
-    if _room_seat(room, user) is not None:
+    seats = _room_seats(room)
+    if user.id in seats:
         return room
     _key, _label, _sb, _bb, buy = stake_by_key(room.stake_key)
     if profile.chips < buy:
         raise ValueError("Недостаточно фишек для бай-ина этой комнаты")
-    if room.p1_id is None:
-        room.p1 = user
-    elif room.p2_id is None:
-        if room.p1_id == user.id:
-            return room
-        room.p2 = user
-    else:
-        raise ValueError("Комната уже заполнена")
+    try:
+        seats = multi_eng.room_add_user(seats, user.id)
+    except ValueError as exc:
+        raise ValueError(str(exc)) from exc
+    room.seats_json = multi_eng.dumps(seats)
+    _sync_room_p12(room, seats)
     room.updated_at = _now()
     room.save()
     return room
@@ -1116,21 +1328,20 @@ def leave_room(user: SocialProfile, room_id: int) -> None:
         raise ValueError("Комната не найдена")
     if room.status == "playing":
         raise ValueError("Нельзя выйти во время раздачи")
-    seat = _room_seat(room, user)
-    if seat is None and room.owner_id != user.id:
+    seats = _room_seats(room)
+    if user.id not in seats and room.owner_id != user.id:
         raise ValueError("Вы не в этой комнате")
-    if seat == 1:
-        room.p1 = room.p2
-        room.p2 = None
-    elif seat == 2:
-        room.p2 = None
+    seats = multi_eng.room_remove_user(seats, user.id)
+    filled = [s for s in seats if s]
     if room.owner_id == user.id:
-        if room.p1_id:
-            room.owner = room.p1
+        if filled:
+            room.owner_id = filled[0]
         else:
             room.status = "closed"
-    if not room.p1_id and not room.p2_id:
+    if not filled:
         room.status = "closed"
+    room.seats_json = multi_eng.dumps(seats)
+    _sync_room_p12(room, seats)
     room.updated_at = _now()
     room.save()
 
@@ -1149,40 +1360,192 @@ def close_room(user: SocialProfile, room_id: int) -> None:
     room.save(update_fields=["status", "updated_at"])
 
 
-def _deal_into_game(game: PokerGame) -> PokerGame:
-    a = get_or_create_profile(game.p1)
-    b = get_or_create_profile(game.p2)
-    for p in (a, b):
-        if is_bankrupt(p):
-            raise ValueError("Банкротство мешает начать раздачу")
-        if p.chips < game.buy_in:
-            raise ValueError("Недостаточно фишек для бай-ина")
-    a.chips -= game.buy_in
-    b.chips -= game.buy_in
-    a.updated_at = b.updated_at = _now()
-    a.save(update_fields=["chips", "updated_at"])
-    b.save(update_fields=["chips", "updated_at"])
+def _mirror_hu_columns(game: PokerGame, seats: list[dict]) -> None:
+    m = multi_eng.seats_to_hu_mirror(seats)
+    for k, v in m.items():
+        setattr(game, k, v)
 
-    dealt = engine.deal_hand(seed=f"poker-{game.id}-{_now().timestamp()}")
-    game.p1_stack = game.buy_in
-    game.p2_stack = game.buy_in
-    game.p1_bet = 0
-    game.p2_bet = 0
-    game.pot = 0
-    game.p1_hole = engine.join_cards(dealt["p1_hole"])
-    game.p2_hole = engine.join_cards(dealt["p2_hole"])
-    game.board = ""
-    game.deck = engine.join_cards(dealt["deck"])
-    game.street = "preflop"
-    game.button = 1 if (game.room_id or 0) % 2 == 0 else 2
-    if game.room_id:
-        room = PokerRoom.objects.filter(pk=game.room_id).first()
-        if room:
-            game.button = 1 if int(room.hands_played or 0) % 2 == 0 else 2
-    game.status = "active"
+
+def _finish_multi(game: PokerGame, seats: list[dict], reason: str, board: list[str] | None = None) -> PokerGame:
+    board = board if board is not None else engine.parse_cards(game.board)
+    names = {}
+    ids = [int(s["u"]) for s in seats]
+    for sp in SocialProfile.objects.filter(pk__in=ids):
+        names[sp.id] = sp.name
+
+    # If fold-win before board complete
+    only = multi_eng.only_one_left(seats)
+    if only is not None and game.street not in ("showdown", "done"):
+        winner = seats[only]
+        winner["stack"] += int(game.pot or 0)
+        game.pot = 0
+        primary_uid = int(winner["u"])
+        notes = [reason]
+    else:
+        seats, notes, primary_uid = multi_eng.distribute_side_pots(seats, board)
+        game.pot = 0
+
+    game.seats_json = multi_eng.dumps(seats)
+    _mirror_hu_columns(game, seats)
+    game.hand_label = multi_eng.hand_label_for(seats, board, names) or reason
+    game.status = "done"
+    game.street = "done"
+    game.to_act = -1
+    game.last_action = reason if not notes else f"{reason} · {'; '.join(notes)}"
+    game.result = "multi"
+    game.winner_id = primary_uid
     game.updated_at = _now()
-    _post_blinds(game)
-    game.last_action = "раздача · блайнды"
+    game.save()
+
+    # Return stacks to profiles + stats / rating / champ
+    profiles = {}
+    for uid in ids:
+        sp = SocialProfile.objects.filter(pk=uid).first()
+        if sp:
+            profiles[uid] = get_or_create_profile(sp)
+    for s in seats:
+        uid = int(s["u"])
+        p = profiles[uid]
+        p.chips += int(s.get("stack") or 0)
+        p.games += 1
+        if primary_uid and uid == primary_uid:
+            p.wins += 1
+            p.biggest_pot = max(int(p.biggest_pot or 0), int(s.get("invested") or 0))
+        elif primary_uid:
+            p.losses += 1
+        else:
+            p.ties += 1
+        _touch_play_streak(p)
+        p.updated_at = _now()
+        p.save()
+        if int(p.chips or 0) < MIN_PLAYABLE_CHIPS:
+            _mark_bankrupt(p)
+
+    if game.is_rated and primary_uid:
+        _apply_multi_rating(profiles, primary_uid)
+    if game.championship_id:
+        _apply_multi_champ(game, profiles, primary_uid)
+
+    unlock_achievements_for_users(list(profiles.values()), multi=len(seats) > 2, won=bool(primary_uid))
+    _release_room_after_hand(game)
+    return game
+
+
+def _apply_multi_rating(profiles: dict, winner_id: int) -> None:
+    winner = profiles[winner_id]
+    others = [p for uid, p in profiles.items() if uid != winner_id]
+    if not others:
+        return
+    avg = int(round(sum(int(p.rating or 1200) for p in others) / len(others)))
+    nw, nl = elo_update(int(winner.rating or 1200), avg, draw=False, k=24)
+    delta = nw - int(winner.rating or 1200)
+    winner.rating = nw
+    winner.rated_games = int(winner.rated_games or 0) + 1
+    winner.save(update_fields=["rating", "rated_games", "updated_at"])
+    # distribute loss among others
+    each = max(1, abs(nl - avg) // max(1, len(others))) if delta else 0
+    for p in others:
+        p.rating = max(100, int(p.rating or 1200) - each)
+        p.rated_games = int(p.rated_games or 0) + 1
+        p.updated_at = _now()
+        p.save(update_fields=["rating", "rated_games", "updated_at"])
+
+
+def _apply_multi_champ(game: PokerGame, profiles: dict, winner_id: int | None) -> None:
+    champ = game.championship
+    for uid, p in profiles.items():
+        e, _ = PokerChampEntry.objects.get_or_create(
+            championship=champ, social_user_id=uid,
+            defaults={"points": 0, "wins": 0, "losses": 0, "ties": 0},
+        )
+        if winner_id and uid == winner_id:
+            e.points += 3
+            e.wins += 1
+        elif winner_id:
+            e.losses += 1
+        else:
+            e.points += 1
+            e.ties += 1
+        e.save()
+
+
+def _advance_multi_street(game: PokerGame, seats: list[dict]) -> PokerGame:
+    seats = multi_eng.reset_street_bets(seats)
+    game.current_bet = 0
+    if game.street == "river":
+        board = engine.parse_cards(game.board)
+        game.street = "showdown"
+        game.seats_json = multi_eng.dumps(seats)
+        return _finish_multi(game, seats, "шоудаун", board)
+
+    deck = engine.parse_cards(game.deck)
+    board = engine.parse_cards(game.board)
+    deck, board, street = engine.deal_board(deck, board, game.street)
+    game.deck = engine.join_cards(deck)
+    game.board = engine.join_cards(board)
+    game.street = street
+
+    # all-in runout
+    if not multi_eng.can_act_indices(seats) and len(multi_eng.active_indices(seats)) >= 2:
+        while game.street not in ("showdown", "done") and game.status == "active":
+            if game.street == "river":
+                game.seats_json = multi_eng.dumps(seats)
+                return _finish_multi(game, seats, "шоудаун · олл-ин", engine.parse_cards(game.board))
+            deck = engine.parse_cards(game.deck)
+            board = engine.parse_cards(game.board)
+            deck, board, street = engine.deal_board(deck, board, game.street)
+            game.deck = engine.join_cards(deck)
+            game.board = engine.join_cards(board)
+            game.street = street
+        if game.street == "river":
+            game.seats_json = multi_eng.dumps(seats)
+            return _finish_multi(game, seats, "шоудаун · олл-ин", engine.parse_cards(game.board))
+
+    # first to act postflop = left of button
+    n = len(seats)
+    start = multi_eng.next_idx(int(game.button), n)
+    actor = start
+    chosen = None
+    for _ in range(n):
+        s = seats[actor]
+        if not s.get("folded") and not s.get("all_in"):
+            chosen = actor
+            break
+        actor = multi_eng.next_idx(actor, n)
+    game.to_act = chosen if chosen is not None else -1
+    game.seats_json = multi_eng.dumps(seats)
+    _mirror_hu_columns(game, seats)
+    game.updated_at = _now()
+    game.save()
+    return game
+
+
+def _act_multi(user: SocialProfile, game: PokerGame, action: str, raise_to: int = 0) -> PokerGame:
+    seats = multi_eng.loads_list(game.seats_json)
+    actor = seat_of(game, user)
+    if actor is None or actor != game.to_act:
+        raise ValueError("Сейчас не ваш ход")
+    seats, pot, current_bet, label, paid = multi_eng.apply_action(
+        seats, actor, action, raise_to, int(game.current_bet or 0), int(game.big_blind), int(game.pot or 0),
+    )
+    game.pot = pot
+    game.current_bet = current_bet
+    game.last_action = f"{user.name}: {label}"
+    _log(game, user, action, paid)
+
+    only = multi_eng.only_one_left(seats)
+    if only is not None:
+        game.seats_json = multi_eng.dumps(seats)
+        return _finish_multi(game, seats, f"{user.name} — банк без шоудауна")
+
+    if multi_eng.betting_closed(seats, current_bet):
+        return _advance_multi_street(game, seats)
+
+    nxt = multi_eng.next_to_act(seats, actor)
+    game.to_act = nxt if nxt is not None else -1
+    game.seats_json = multi_eng.dumps(seats)
+    _mirror_hu_columns(game, seats)
+    game.updated_at = _now()
     game.save()
     return game
 
@@ -1196,53 +1559,256 @@ def start_room_hand(user: SocialProfile, room_id: int) -> PokerGame:
         g = PokerGame.objects.filter(pk=room.current_game_id).first()
         if g and g.status == "active":
             return g
-    if not room.p1_id or not room.p2_id:
-        raise ValueError("Нужны два игрока за столом")
+    seats_room = _room_seats(room)
+    filled = [uid for uid in seats_room if uid]
+    if len(filled) < 2:
+        raise ValueError("Нужны минимум 2 игрока за столом")
     if _room_seat(room, user) is None:
         raise ValueError("Вы не за этим столом")
+
     _key, _label, sb, bb, buy = stake_by_key(room.stake_key)
+    profiles = []
+    for uid in filled:
+        sp = SocialProfile.objects.filter(pk=uid).first()
+        if not sp:
+            raise ValueError("Игрок не найден")
+        p = get_or_create_profile(sp)
+        if is_bankrupt(p):
+            raise ValueError(f"{sp.name}: банкротство")
+        if p.chips < buy:
+            raise ValueError(f"{sp.name}: не хватает фишек на бай-ин")
+        profiles.append((sp, p))
+
+    for sp, p in profiles:
+        p.chips -= buy
+        p.updated_at = _now()
+        p.save(update_fields=["chips", "updated_at"])
+
+    deck = engine.new_deck(seed=f"poker-room-{room.id}-{_now().timestamp()}")
+    button = int(getattr(room, "button_seat", 0) or 0) % len(filled)
+    hand_seats = multi_eng.new_hand_seats(filled, buy, deck)
+    hand_seats, to_act, pot, current_bet = multi_eng.post_blinds(hand_seats, button, sb, bb)
+
     champ = ensure_week_championship() if room.in_champ else None
     now = _now()
+    p1 = profiles[0][0]
+    p2 = profiles[1][0]
     game = PokerGame.objects.create(
-        p1=room.p1,
-        p2=room.p2,
+        p1=p1,
+        p2=p2,
         invited_by=user,
-        status="pending",
+        status="active",
         result="*",
         small_blind=sb,
         big_blind=bb,
         buy_in=buy,
-        button=1,
-        to_act=1,
+        button=button,
+        to_act=to_act,
         street="preflop",
+        pot=pot,
+        current_bet=current_bet,
+        board="",
+        deck=engine.join_cards(deck),
+        seats_json=multi_eng.dumps(hand_seats),
+        mode="multi",
         room=room,
         championship=champ,
         is_rated=True,
+        last_action="раздача · блайнды",
         created_at=now,
         updated_at=now,
     )
-    game = _deal_into_game(game)
+    _mirror_hu_columns(game, hand_seats)
+    game.save()
+
     room.current_game = game
     room.status = "playing"
+    room.button_seat = (button + 1) % len(filled)
     room.updated_at = _now()
-    room.save(update_fields=["current_game", "status", "updated_at"])
+    room.save(update_fields=["current_game", "status", "button_seat", "updated_at"])
     return game
 
 
 def room_view(room: PokerRoom, viewer: SocialProfile) -> dict:
     stake = stake_by_key(room.stake_key)
+    seats = _room_seats(room)
     seat = _room_seat(room, viewer)
+    filled_n = multi_eng.room_seat_count(seats)
     game = None
     if room.current_game_id:
         game = PokerGame.objects.filter(pk=room.current_game_id).first()
+    # hydrate names
+    ids = [u for u in seats if u]
+    names = {sp.id: sp.name for sp in SocialProfile.objects.filter(pk__in=ids)}
+    seat_rows = []
+    for i, uid in enumerate(seats):
+        seat_rows.append({
+            "idx": i,
+            "user_id": uid,
+            "name": names.get(uid, "") if uid else "",
+            "empty": uid is None,
+            "me": uid == viewer.id,
+        })
     return {
         "seat": seat,
+        "seats": seat_rows,
+        "filled_n": filled_n,
+        "max_seats": int(getattr(room, "max_seats", 2) or 2),
         "stake": stake,
         "can_start": bool(
-            seat and room.p1_id and room.p2_id and room.status == "open"
+            seat is not None and filled_n >= 2 and room.status == "open"
             and not is_bankrupt(get_or_create_profile(viewer))
         ),
         "is_owner": room.owner_id == viewer.id,
         "active_game": game if game and game.status == "active" else None,
         "last_game": game if game and game.status == "done" else None,
     }
+
+
+# --- engagement ---
+
+def _touch_play_streak(profile: PokerProfile) -> None:
+    today = date.today()
+    last = getattr(profile, "last_play_on", None)
+    if last == today:
+        return
+    if last == today - timedelta(days=1):
+        profile.play_streak = int(profile.play_streak or 0) + 1
+    else:
+        profile.play_streak = 1
+    profile.last_play_on = today
+
+
+def _ach_set(profile: PokerProfile) -> set[str]:
+    raw = (getattr(profile, "achievements", None) or "").strip()
+    if not raw:
+        return set()
+    return {x for x in raw.split(",") if x}
+
+
+def _ach_save(profile: PokerProfile, keys: set[str]) -> None:
+    profile.achievements = ",".join(sorted(keys))[:500]
+    profile.updated_at = _now()
+    profile.save(update_fields=["achievements", "updated_at"])
+
+
+ACHIEVEMENTS = (
+    ("first_win", "Первая победа", "Выиграйте раздачу"),
+    ("hands_10", "10 раздач", "Сыграйте 10 раздач"),
+    ("hands_50", "Ветеран", "Сыграйте 50 раздач"),
+    ("multi_win", "Мультитейбл", "Победа за столом 3+ игроков"),
+    ("rating_1400", "Элита 1400", "Рейтинг 1400+"),
+    ("learn_half", "Ученик", "Пройдите половину уроков"),
+    ("learn_all", "Магистр", "Пройдите все уроки"),
+    ("puzzle_10", "Тактик", "Решите 10 задач"),
+    ("streak_3", "Серия 3", "Играйте 3 дня подряд"),
+    ("host", "Хозяин стола", "Создайте комнату"),
+)
+
+
+def unlock_achievements_for_users(profiles: list[PokerProfile], multi: bool = False, won: bool = False) -> None:
+    from . import lessons as poker_lessons
+
+    total_lessons = len(poker_lessons.LESSONS)
+    for p in profiles:
+        keys = _ach_set(p)
+        before = set(keys)
+        if int(p.wins or 0) >= 1:
+            keys.add("first_win")
+        if int(p.games or 0) >= 10:
+            keys.add("hands_10")
+        if int(p.games or 0) >= 50:
+            keys.add("hands_50")
+        if multi and won and int(p.wins or 0) >= 1:
+            keys.add("multi_win")
+        if int(p.rating or 1200) >= 1400:
+            keys.add("rating_1400")
+        if int(p.puzzle_solved or 0) >= 10:
+            keys.add("puzzle_10")
+        if int(getattr(p, "play_streak", 0) or 0) >= 3:
+            keys.add("streak_3")
+        done = PokerLessonProgress.objects.filter(
+            social_user_id=p.social_user_id, completed_at__isnull=False,
+        ).count()
+        if total_lessons and done * 2 >= total_lessons:
+            keys.add("learn_half")
+        if total_lessons and done >= total_lessons:
+            keys.add("learn_all")
+        if keys != before:
+            _ach_save(p, keys)
+
+
+def claim_daily_bonus(user: SocialProfile) -> dict:
+    p = get_or_create_profile(user)
+    if is_bankrupt(p):
+        raise ValueError("Банкротство: бонус недоступен")
+    today = date.today()
+    if getattr(p, "daily_bonus_on", None) == today:
+        raise ValueError("Сегодняшний бонус уже получен")
+    last_bonus = getattr(p, "daily_bonus_on", None)
+    if last_bonus == today - timedelta(days=1):
+        streak = int(getattr(p, "play_streak", 0) or 0) + 1
+    else:
+        streak = 1
+    amount = DAILY_BONUS_CHIPS + min(50_000, (streak - 1) * 5_000)
+    p.chips += amount
+    p.daily_bonus_on = today
+    p.play_streak = streak
+    if getattr(p, "last_play_on", None) != today:
+        p.last_play_on = today
+    p.updated_at = _now()
+    p.save()
+    return {"amount": amount, "chips": int(p.chips), "streak": streak}
+
+
+def daily_goals(user: SocialProfile) -> dict:
+    from . import lessons as poker_lessons
+    from . import puzzles as poker_puzzles
+
+    p = get_or_create_profile(user)
+    today = date.today()
+    lesson_today = PokerLessonProgress.objects.filter(
+        social_user=user, completed_at__date=today,
+    ).exists()
+    puzzle_today = getattr(p, "last_puzzle_on", None) == today
+    played_today = getattr(p, "last_play_on", None) == today
+    bonus_claimed = getattr(p, "daily_bonus_on", None) == today
+    items = [
+        {"key": "bonus", "title": "Ежедневный бонус", "done": bonus_claimed},
+        {"key": "lesson", "title": "Урок дня", "done": lesson_today},
+        {"key": "puzzle", "title": "Задача дня", "done": puzzle_today},
+        {"key": "play", "title": "Сыграть раздачу", "done": played_today},
+    ]
+    done_n = sum(1 for i in items if i["done"])
+    return {
+        "items": items,
+        "done": done_n,
+        "total": len(items),
+        "pct": int(round(100 * done_n / len(items))),
+        "bonus_ready": not bonus_claimed and not is_bankrupt(p),
+        "bonus_amount": DAILY_BONUS_CHIPS,
+        "daily_puzzle": poker_puzzles.daily_puzzle(),
+        "next_lesson": next(
+            (l for l in poker_lessons.LESSONS
+             if l["slug"] not in lesson_done_slugs(user)),
+            None,
+        ),
+    }
+
+
+def achievement_badges(user: SocialProfile) -> list[dict]:
+    p = get_or_create_profile(user)
+    have = _ach_set(p)
+    return [
+        {"key": k, "title": t, "hint": h, "unlocked": k in have}
+        for k, t, h in ACHIEVEMENTS
+    ]
+
+
+def mark_host_achievement(user: SocialProfile) -> None:
+    p = get_or_create_profile(user)
+    keys = _ach_set(p)
+    if "host" not in keys:
+        keys.add("host")
+        _ach_save(p, keys)
+

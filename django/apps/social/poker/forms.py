@@ -44,6 +44,13 @@ class RoomCreateForm(forms.Form):
         label="Лимит",
         widget=_sel(),
     )
+    max_seats = forms.TypedChoiceField(
+        choices=[(n, f"{n} мест" + ("а" if n == 2 else "")) for n in poker.SEAT_CHOICES],
+        coerce=int,
+        initial=6,
+        label="Мест за столом",
+        widget=_sel(),
+    )
     is_private = forms.BooleanField(required=False, initial=False, label="Приватная (по коду)")
     in_champ = forms.BooleanField(
         required=False,

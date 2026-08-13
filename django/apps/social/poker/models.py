@@ -24,6 +24,10 @@ class PokerProfile(models.Model):
     reset_count = models.IntegerField(default=0)
     rating = models.IntegerField(default=1200)
     rated_games = models.IntegerField(default=0)
+    play_streak = models.IntegerField(default=0)
+    last_play_on = models.DateField(null=True, blank=True)
+    daily_bonus_on = models.DateField(null=True, blank=True)
+    achievements = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
@@ -88,6 +92,9 @@ class PokerRoom(models.Model):
     )
     in_champ = models.BooleanField(default=True)
     hands_played = models.IntegerField(default=0)
+    max_seats = models.IntegerField(default=2)
+    seats_json = models.TextField(blank=True, default="[]")
+    button_seat = models.IntegerField(default=0)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
@@ -109,7 +116,7 @@ class PokerGame(models.Model):
         db_column="invited_by_id", related_name="+",
     )
     status = models.CharField(max_length=16, default="pending")  # pending|active|done|cancelled
-    result = models.CharField(max_length=12, default="*")  # p1|p2|tie|*|cancel
+    result = models.CharField(max_length=12, default="*")  # p1|p2|tie|*|cancel|multi
     winner = models.ForeignKey(
         SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
         db_column="winner_id", related_name="+",
@@ -117,7 +124,7 @@ class PokerGame(models.Model):
     small_blind = models.IntegerField(default=500)
     big_blind = models.IntegerField(default=1000)
     buy_in = models.IntegerField(default=20000)
-    button = models.SmallIntegerField(default=1)  # 1 or 2
+    button = models.SmallIntegerField(default=1)  # HU: 1/2; multi: 0-based idx
     to_act = models.SmallIntegerField(default=1)
     street = models.CharField(max_length=12, default="preflop")
     pot = models.BigIntegerField(default=0)
@@ -140,6 +147,9 @@ class PokerGame(models.Model):
         db_column="championship_id", related_name="+",
     )
     is_rated = models.BooleanField(default=True)
+    mode = models.CharField(max_length=12, default="hu")  # hu|multi
+    seats_json = models.TextField(blank=True, default="[]")
+    current_bet = models.BigIntegerField(default=0)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

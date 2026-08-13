@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Ensure poker app tables (profiles, rooms, championships, games, learning)."""
+"""Ensure poker app tables (profiles, rooms, multi-seat games, championships, learning)."""
 import os
 import sys
 
@@ -26,15 +26,30 @@ CREATE TABLE IF NOT EXISTS poker_profiles (
   best_puzzle_streak integer NOT NULL DEFAULT 0,
   last_puzzle_on date,
   learn_xp integer NOT NULL DEFAULT 0,
-  bankrupt_until timestamp with time zone,
+  bankrupt_until timestamp without time zone,
   reset_count integer NOT NULL DEFAULT 0,
   rating integer NOT NULL DEFAULT 1200,
   rated_games integer NOT NULL DEFAULT 0,
+  play_streak integer NOT NULL DEFAULT 0,
+  last_play_on date,
+  daily_bonus_on date,
+  achievements text NOT NULL DEFAULT '',
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
 ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS rating integer NOT NULL DEFAULT 1200;
 ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS rated_games integer NOT NULL DEFAULT 0;
+ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS play_streak integer NOT NULL DEFAULT 0;
+ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS last_play_on date;
+ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS daily_bonus_on date;
+ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS achievements text NOT NULL DEFAULT '';
+-- Normalize bankrupt_until to naive-compatible timestamp without time zone when possible
+DO $$ BEGIN
+  ALTER TABLE poker_profiles
+    ALTER COLUMN bankrupt_until TYPE timestamp without time zone
+    USING bankrupt_until AT TIME ZONE 'UTC';
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS poker_championships (
   id bigserial PRIMARY KEY,
@@ -75,9 +90,15 @@ CREATE TABLE IF NOT EXISTS poker_rooms (
   current_game_id bigint,
   in_champ boolean NOT NULL DEFAULT true,
   hands_played integer NOT NULL DEFAULT 0,
+  max_seats integer NOT NULL DEFAULT 2,
+  seats_json text NOT NULL DEFAULT '[]',
+  button_seat integer NOT NULL DEFAULT 0,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
+ALTER TABLE poker_rooms ADD COLUMN IF NOT EXISTS max_seats integer NOT NULL DEFAULT 2;
+ALTER TABLE poker_rooms ADD COLUMN IF NOT EXISTS seats_json text NOT NULL DEFAULT '[]';
+ALTER TABLE poker_rooms ADD COLUMN IF NOT EXISTS button_seat integer NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS poker_rooms_status_idx ON poker_rooms (status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS poker_rooms_code_idx ON poker_rooms (join_code) WHERE join_code <> '';
 
@@ -109,12 +130,18 @@ CREATE TABLE IF NOT EXISTS poker_games (
   room_id bigint,
   championship_id bigint,
   is_rated boolean NOT NULL DEFAULT true,
+  mode varchar(12) NOT NULL DEFAULT 'hu',
+  seats_json text NOT NULL DEFAULT '[]',
+  current_bet bigint NOT NULL DEFAULT 0,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
 ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS room_id bigint;
 ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS championship_id bigint;
 ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS is_rated boolean NOT NULL DEFAULT true;
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS mode varchar(12) NOT NULL DEFAULT 'hu';
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS seats_json text NOT NULL DEFAULT '[]';
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS current_bet bigint NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS poker_games_p1_idx ON poker_games (p1_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_p2_idx ON poker_games (p2_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_status_idx ON poker_games (status, updated_at DESC);

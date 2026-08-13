@@ -40,12 +40,31 @@
         </div>
 
         {% if tab == 'play' and hub %}
+        {% if strip.goals %}
+        <div class="poker-path-card poker-goals">
+            <b>Цели дня</b> · {{ strip.goals.done }}/{{ strip.goals.total }}
+            <div class="poker-xp-bar thin"><span style="width:{{ strip.goals.pct }}%"></span></div>
+            <ul class="poker-simple-list">
+                {% for g in strip.goals.items %}
+                <li>{% if g.done %}<span class="poker-done">✓</span>{% else %}○{% endif %} {{ g.title }}</li>
+                {% endfor %}
+            </ul>
+            {% if strip.goals.bonus_ready %}
+            <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=play" class="inline">{% csrf_token %}
+                <input type="hidden" name="action" value="daily_bonus">
+                <button type="submit" class="inputsubmit">Забрать бонус +{{ strip.goals.bonus_amount|pk_chips }}</button>
+            </form>
+            {% endif %}
+            {% if strip.play_streak %}<span class="muted"> · игровая серия {{ strip.play_streak }} дн.</span>{% endif %}
+            {% if strip.badges_n %}<span class="muted"> · ачивки {{ strip.badges_n }}</span>{% endif %}
+        </div>
+        {% endif %}
         {% if learn_meta and learn_meta.next_lesson %}
         <div class="poker-path-card">
             <b>Продолжить обучение:</b>
             <a href="{% url 'apps.canvas' 'poker' %}?tab=learn&amp;lesson={{ learn_meta.next_lesson.slug }}">{{ learn_meta.next_lesson.title }}</a>
             · <a href="{% url 'apps.canvas' 'poker' %}?tab=puzzles&amp;daily=1">задача дня</a>{% if learn_meta.daily_solved %} <span class="poker-done">✓</span>{% endif %}
-            · <a href="{% url 'apps.canvas' 'poker' %}?tab=rooms">открыть комнату</a>
+            · <a href="{% url 'apps.canvas' 'poker' %}?tab=rooms">групповой стол</a>
         </div>
         {% endif %}
 
@@ -160,7 +179,7 @@
         {% endif %}
 
         {% if tab == 'rooms' %}
-        <div class="poker-mini-felt">Лобби столов · публичные и приватные комнаты · чемпионат и Elo</div>
+        <div class="poker-mini-felt">Лобби · столы 2–6 игроков · публичные и приватные · чемпионат и Elo</div>
         <div class="poker-lobby-grid">
             <div class="poker-lobby-col">
                 <h5>Создать комнату</h5>
@@ -172,6 +191,7 @@
                     <table class="formtable" cellspacing="0">
                         <tr><td class="label">Название:</td><td>{{ room_form.title }}</td></tr>
                         <tr><td class="label">Лимит:</td><td>{{ room_form.stake }}</td></tr>
+                        <tr><td class="label">Мест:</td><td>{{ room_form.max_seats }}</td></tr>
                         <tr><td class="label"></td><td><label>{{ room_form.is_private }} {{ room_form.is_private.label }}</label></td></tr>
                         <tr><td class="label"></td><td><label>{{ room_form.in_champ }} {{ room_form.in_champ.label }}</label></td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Открыть стол"></td></tr>
@@ -195,23 +215,20 @@
             <thead><tr><th>Стол</th><th>Лимит</th><th>Игроки</th><th>Статус</th><th></th></tr></thead>
             <tbody>
             {% for r in rooms %}
-            <tr{% if r.p1_id == me.id or r.p2_id == me.id %} class="poker-row-hot"{% endif %}>
+            <tr class="{% if r.id %}{% endif %}">
                 <td><a href="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ r.id }}"><b>{{ r.title }}</b></a>
-                    <div class="muted">{{ r.owner.name }}{% if r.in_champ %} · чемпионат{% endif %}</div></td>
+                    <div class="muted">{{ r.owner.name }} · {{ r.max_seats|default:2 }} мест{% if r.in_champ %} · чемпионат{% endif %}</div></td>
                 <td class="muted">{{ r.stake_key }}</td>
-                <td>{% if r.p1 %}{{ r.p1.name }}{% else %}—{% endif %} / {% if r.p2 %}{{ r.p2.name }}{% else %}свободно{% endif %}</td>
+                <td class="muted">до {{ r.max_seats|default:2 }}</td>
                 <td>{{ r.status }} · раздач {{ r.hands_played }}</td>
                 <td>
-                    {% if r.p1_id == me.id or r.p2_id == me.id %}
-                    <a href="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ r.id }}">войти</a>
-                    {% elif not r.p2_id and r.status == 'open' %}
-                    <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=rooms" class="inline">{% csrf_token %}
+                    <a href="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ r.id }}">открыть</a>
+                    {% if r.status == 'open' %}
+                    · <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=rooms" class="inline">{% csrf_token %}
                         <input type="hidden" name="action" value="join_room">
                         <input type="hidden" name="room_id" value="{{ r.id }}">
                         <button type="submit" class="inputsubmit">Сесть</button>
                     </form>
-                    {% else %}
-                    <span class="muted">занято</span>
                     {% endif %}
                 </td>
             </tr>
@@ -224,7 +241,8 @@
 
         {% if tab == 'room' and room and room_meta %}
         <p><a href="{% url 'apps.canvas' 'poker' %}?tab=rooms">← все комнаты</a></p>
-        <h5>{{ room.title }}{% if room.is_private %} <span class="poker-lock">приват</span>{% endif %}</h5>
+        <h5>{{ room.title }}{% if room.is_private %} <span class="poker-lock">приват</span>{% endif %}
+            <span class="muted">· {{ room_meta.filled_n }}/{{ room_meta.max_seats }}</span></h5>
         <div class="poker-room-panel">
             <p>
                 Хозяин <b>{{ room.owner.name }}</b>
@@ -236,18 +254,16 @@
             {% if room.is_private and room_meta.is_owner %}
             <p class="poker-code-box">Код для друзей: <b>{{ room.join_code }}</b></p>
             {% endif %}
-            <div class="poker-seats-row">
-                <div class="poker-seat-slot{% if room.p1_id == me.id %} me{% endif %}">
-                    <span class="muted">Место 1</span>
-                    <div><b>{% if room.p1 %}{{ room.p1.name }}{% else %}свободно{% endif %}</b></div>
+            <div class="poker-seats-row multi">
+                {% for s in room_meta.seats %}
+                <div class="poker-seat-slot{% if s.me %} me{% endif %}{% if s.empty %} empty{% endif %}">
+                    <span class="muted">Место {{ s.idx|add:1 }}</span>
+                    <div><b>{% if s.empty %}свободно{% else %}{{ s.name }}{% endif %}</b></div>
                 </div>
-                <div class="poker-seat-slot{% if room.p2_id == me.id %} me{% endif %}">
-                    <span class="muted">Место 2</span>
-                    <div><b>{% if room.p2 %}{{ room.p2.name }}{% else %}свободно{% endif %}</b></div>
-                </div>
+                {% endfor %}
             </div>
             <div class="poker-actions">
-                {% if not room_meta.seat and room.status == 'open' and not room.p2_id and not room.is_private %}
+                {% if room_meta.seat is None and room.status == 'open' and room_meta.filled_n < room_meta.max_seats and not room.is_private %}
                 <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ room.id }}" class="inline">{% csrf_token %}
                     <input type="hidden" name="action" value="join_room">
                     <input type="hidden" name="room_id" value="{{ room.id }}">
@@ -258,15 +274,15 @@
                 <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ room.id }}" class="inline">{% csrf_token %}
                     <input type="hidden" name="action" value="start_hand">
                     <input type="hidden" name="room_id" value="{{ room.id }}">
-                    <button type="submit" class="inputsubmit">Раздать карты</button>
+                    <button type="submit" class="inputsubmit">Раздать карты ({{ room_meta.filled_n }} игр.)</button>
                 </form>
-                {% elif room_meta.seat and not room.p2_id %}
-                <span class="muted">Ждём второго игрока…</span>
+                {% elif room_meta.seat is not None and room_meta.filled_n < 2 %}
+                <span class="muted">Ждём ещё игроков…</span>
                 {% endif %}
                 {% if room_meta.last_game %}
                 <a href="{% url 'apps.canvas' 'poker' %}?tab=table&amp;id={{ room_meta.last_game.id }}">последняя раздача</a>
                 {% endif %}
-                {% if room_meta.seat %}
+                {% if room_meta.seat is not None %}
                 <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ room.id }}" class="inline">{% csrf_token %}
                     <input type="hidden" name="action" value="leave_room">
                     <input type="hidden" name="room_id" value="{{ room.id }}">
@@ -305,18 +321,48 @@
 
         <div class="poker-arena" id="poker-arena"
              data-status="{{ game.status }}"
-             data-can-act="{% if view.can_act %}1{% else %}0{% endif %}">
-            <div class="poker-oval">
+             data-can-act="{% if view.can_act %}1{% else %}0{% endif %}"
+             data-mode="{{ view.mode|default:'hu' }}">
+            <div class="poker-oval{% if view.mode == 'multi' %} is-multi seats-{{ view.players_n }}{% endif %}">
                 <div class="poker-felt-rail">
                     {% if game.is_rated %}<span>рейтинг</span>{% endif %}
                     {% if game.championship_id %}<span>чемпионат</span>{% endif %}
                     {% if game.room_id %}<span>комната #{{ game.room_id }}</span>{% endif %}
+                    {% if view.mode == 'multi' %}<span>{{ view.players_n }} игр.</span>{% endif %}
                     <span>{{ view.sb_fmt }}/{{ view.bb_fmt }}</span>
                 </div>
                 <div class="poker-streets">
                     {% for s in view.streets %}<i class="{% if s.on %}on{% endif %}">{{ s.label }}</i>{% endfor %}
                 </div>
 
+                {% if view.mode == 'multi' %}
+                <div class="poker-multi-ring">
+                    {% for s in view.multi_seats %}
+                    <div class="poker-mseat a{{ s.angle }}{% if s.to_act %} to-act{% endif %}{% if s.me %} me{% endif %}{% if s.folded %} folded{% endif %}">
+                        <div class="poker-nameplate">
+                            <b>{{ s.name }}</b>{% if s.dealer %}<span class="poker-dealer" title="Дилер">D</span>{% endif %}
+                            <div class="poker-stack-line">стек {{ s.stack_fmt }}{% if s.all_in %} · олл-ин{% endif %}</div>
+                        </div>
+                        <div class="poker-bet-line">{% if s.bet %}{% pk_chip_stack s.bet %} {{ s.bet_fmt }}{% else %}&nbsp;{% endif %}</div>
+                        <div class="poker-hole">
+                            {% if s.folded %}<span class="poker-hand-hint">фолд</span>
+                            {% elif s.cards %}{% for c in s.cards %}{% pk_card c %}{% endfor %}
+                            {% elif s.hidden %}{% pk_card_back %}{% pk_card_back %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="poker-board-wrap center-board">
+                    <div class="poker-pot">{% pk_chip_stack view.pot %} Банк <b>{{ view.pot_fmt }}</b></div>
+                    <div class="poker-board">
+                        {% for c in view.board_slots %}
+                            {% if c %}{% pk_card c "lg" forloop.counter0 %}{% else %}<span class="pk-slot"></span>{% endif %}
+                        {% endfor %}
+                    </div>
+                    {% if view.hand_strength %}<div class="poker-hand-hint">Комбинация: <b>{{ view.hand_strength }}</b></div>{% endif %}
+                </div>
+                {% else %}
                 <div class="poker-seat top{% if view.waiting %} to-act{% endif %}">
                     <div class="poker-nameplate">
                         <b>{{ view.opp_name }}</b>{% if view.opp_is_dealer %}<span class="poker-dealer" title="Дилер">D</span>{% endif %}
@@ -363,6 +409,7 @@
                     <div class="poker-hand-hint">Комбинация: <b>{{ view.hand_strength }}</b></div>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
 
@@ -596,10 +643,19 @@
         <table class="infotable">
             <tr><td class="label">Фишки:</td><td><b>{{ strip.chips_fmt|default:strip.chips }}</b></td></tr>
             <tr><td class="label">Рейтинг:</td><td><b>{{ strip.rating }}</b> ({{ strip.rated_games }} игр)</td></tr>
-            <tr><td class="label">Раздач / побед:</td><td>{{ strip.games }} / {{ strip.wins }}</td></tr>
+            <tr><td class="label">Раздач / побед:</td><td>{{ strip.games }} / {{ strip.wins }} · WR {{ strip.win_rate }}%</td></tr>
+            <tr><td class="label">Серия дней:</td><td>{{ strip.play_streak }}</td></tr>
             <tr><td class="label">Сбросов профиля:</td><td>{{ strip.reset_count }}</td></tr>
-            <tr><td class="label">Старт после сброса:</td><td>{{ strip.starting_chips }}</td></tr>
+            <tr><td class="label">Старт после сброса:</td><td>{{ strip.starting_chips_fmt|default:strip.starting_chips }}</td></tr>
         </table>
+        {% if strip.badges %}
+        <h5>Ачивки</h5>
+        <div class="poker-badges">
+            {% for b in strip.badges %}
+            <span class="poker-badge-pill{% if b.unlocked %} on{% endif %}" title="{{ b.hint }}">{{ b.title }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% if strip.bankrupt %}
         <div class="poker-turn-banner pending">
             Банкротство: нельзя играть ~{{ strip.bankrupt_days_left }} дн.
