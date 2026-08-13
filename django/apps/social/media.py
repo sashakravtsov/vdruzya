@@ -16,10 +16,12 @@ log = logging.getLogger(__name__)
 
 _IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 _VIDEO_EXT = {".mp4", ".webm", ".mov", ".m4v"}
+_AUDIO_EXT = {".webm", ".ogg", ".oga", ".opus", ".mp3", ".m4a", ".aac", ".wav"}
 _MAX_IMAGE_EDGE = 2048
 _JPEG_QUALITY = 85
 # Video files stream to disk above FILE_UPLOAD_MAX_MEMORY_SIZE; hard cap below.
 VIDEO_MAX_BYTES = 32 * 1024 * 1024
+AUDIO_MAX_BYTES = 8 * 1024 * 1024
 
 
 def media_url(path: str | None) -> str | None:
@@ -142,6 +144,43 @@ def save_video(upload, folder: str = "videos") -> tuple[str, str | None]:
         # Fake/corrupt uploads (smoke probes) often fail decode — not fatal.
         log.warning("video poster skipped for %s: %s", video_path, exc)
     return video_path, poster_path
+
+
+def save_audio(upload, folder: str = "messages") -> str:
+    """Store classic Inbox voice note on the same media disk as photos/videos."""
+    name = getattr(upload, "name", "") or "voice.webm"
+    ext = Path(name).suffix.lower()
+    ctype = (getattr(upload, "content_type", "") or "").lower()
+    if ext not in _AUDIO_EXT:
+        if "ogg" in ctype:
+            ext = ".ogg"
+        elif "mpeg" in ctype or "mp3" in ctype:
+            ext = ".mp3"
+        elif "mp4" in ctype or "m4a" in ctype or "aac" in ctype:
+            ext = ".m4a"
+        elif "wav" in ctype:
+            ext = ".wav"
+        else:
+            ext = ".webm"
+    size = getattr(upload, "size", None) or 0
+    if size and size > AUDIO_MAX_BYTES:
+        raise ValueError(f"Голосовое больше {AUDIO_MAX_BYTES // (1024 * 1024)} МБ")
+    raw = _read_upload(upload)
+    if len(raw) > AUDIO_MAX_BYTES:
+        raise ValueError(f"Голосовое больше {AUDIO_MAX_BYTES // (1024 * 1024)} МБ")
+    if len(raw) < 32:
+        raise ValueError("Пустая запись")
+    path = f"{folder}/{uuid.uuid4().hex}{ext}"
+    return default_storage.save(path, ContentFile(raw))
+
+
+def try_save_audio(upload, folder: str = "messages") -> str | None:
+    if not upload:
+        return None
+    try:
+        return save_audio(upload, folder)
+    except Exception:
+        return None
 
 
 def _poster_from_bytes(raw: bytes, *, folder: str) -> str | None:

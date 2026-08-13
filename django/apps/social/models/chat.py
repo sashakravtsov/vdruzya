@@ -64,6 +64,12 @@ class Message(models.Model):
             return True
         return (self.attachment_mime or "").startswith("video/")
 
+    @property
+    def attachment_is_audio(self) -> bool:
+        if (self.message_type or "") == "voice":
+            return True
+        return (self.attachment_mime or "").lower().startswith("audio/")
+
 
 class Notification(models.Model):
     id = models.BigAutoField(primary_key=True)

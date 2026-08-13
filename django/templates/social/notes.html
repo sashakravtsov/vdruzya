@@ -36,6 +36,15 @@
                         <div class="muted">
                             <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
                             {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
+                            · <a href="{% url 'posts.show' p.id %}">открыть</a>
+                            {% if me and p.social_user_id == me.id %}
+                            · <a href="{% url 'posts.edit' p.id %}">редактировать</a>
+                            ·
+                            <form method="post" action="{% url 'posts.delete' p.id %}" class="inline" onsubmit="return confirm('Удалить заметку?');">{% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="linkish muted">удалить</button>
+                            </form>
+                            {% endif %}
                         </div>
                         {% if p.body %}<div>{{ p.body|truncatewords:40 }}</div>{% endif %}
                     </div>

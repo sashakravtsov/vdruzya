@@ -7,7 +7,7 @@ from apps.social import chat as ch
 from apps.social.forms import MessageForm
 from apps.social.services import accepted_friends as friends_of
 
-FOLDERS = frozenset({"inbox", "sent"})
+FOLDERS = frozenset({"inbox", "sent", "archive"})
 
 
 def _page(request) -> int:
@@ -32,9 +32,10 @@ def _load_active(me, active_id, conversations, show_all):
         return None, [], [], False, "inbox"
     active.display_name = ch.label(active, me)
     active.peer = ch.peer(active, me)
+    active.is_archived = ch.is_archived(me, active)
     members = ch.others(active, me)
     thread_messages, has_older = ch.thread(active, all_messages=show_all)
-    if not ch.is_archived(me, active):
+    if not active.is_archived:
         ch.mark_read(me, active)
     for c in conversations:
         if c.id == active.id:
@@ -45,6 +46,7 @@ def _load_active(me, active_id, conversations, show_all):
 def build_inbox_ctx(request, me, *, compose_form):
     q = (request.GET.get("q") or "").strip()
     folder = _folder(request)
+    unread_only = request.GET.get("unread") == "1" and folder == "inbox"
     compose = request.GET.get("compose") or request.GET.get("new")
     to_id = request.GET.get("to")
     page = _page(request)
@@ -52,6 +54,8 @@ def build_inbox_ctx(request, me, *, compose_form):
     conversations, has_more = ch.inbox(
         me, limit=40, offset=(page - 1) * 40, q=q,
         sent_only=folder == "sent",
+        archived=folder == "archive",
+        unread_only=unread_only,
     )
     active_id = request.GET.get("c")
     active, members, thread_messages, has_older, err_redirect = _load_active(
@@ -77,6 +81,7 @@ def build_inbox_ctx(request, me, *, compose_form):
         "friends": friends,
         "q": q,
         "folder": folder,
+        "unread_only": unread_only,
         "page": page,
         "has_more": has_more,
         "nav": "inbox",

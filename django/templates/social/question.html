@@ -52,6 +52,12 @@
                                 <input type="hidden" name="next" value="{{ request.path }}">
                                 <button type="submit" class="linkish">{% if a.voted_by_me %}убрать голос{% else %}голосовать{% endif %}</button>
                             </form>
+                            {% if a.social_user_id == me.id or is_own %}
+                            ·
+                            <form method="post" action="{% url 'questions.answers.delete' question.id a.id %}" class="inline" onsubmit="return confirm('Удалить ответ?');">{% csrf_token %}
+                                <button type="submit" class="linkish muted">удалить</button>
+                            </form>
+                            {% endif %}
                             {% endif %}
                         </div>
                     </div>

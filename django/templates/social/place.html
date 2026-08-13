@@ -60,6 +60,12 @@
                         — {{ r.stars }}/5
                         {% if r.body %} — {{ r.body }}{% endif %}
                         {% if r.created_at %}<span class="muted"> · {{ r.created_at|fb_when }}</span>{% endif %}
+                        {% if me and r.social_user_id == me.id or can_manage %}
+                        ·
+                        <form method="post" action="{% url 'places.reviews.delete' place.id r.id %}" class="inline" onsubmit="return confirm('Удалить отзыв?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет отзывов.</p>{% endfor %}
@@ -75,6 +81,12 @@
                         <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
                         {% if c.message %} — {{ c.message }}{% endif %}
                         {% if c.created_at %}<span class="muted"> · {{ c.created_at|fb_when }}</span>{% endif %}
+                        {% if me and c.social_user_id == me.id or can_manage %}
+                        ·
+                        <form method="post" action="{% url 'places.checkins.delete' place.id c.id %}" class="inline" onsubmit="return confirm('Удалить отметку?');">{% csrf_token %}
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% empty %}<p class="muted">Пока никто не отмечался.</p>{% endfor %}

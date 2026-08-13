@@ -151,6 +151,34 @@ def place_delete(request, pk):
 
 
 @login_required
+@require_POST
+def place_checkin_delete(request, pk, checkin_id):
+    from apps.social.models import PlaceCheckin
+    me = profile_of(request.user)
+    place = get_object_or_404(Place, pk=pk)
+    checkin = get_object_or_404(PlaceCheckin, pk=checkin_id, place=place)
+    if e10.place_checkin_delete(me, place, checkin):
+        messages.info(request, "Отметка удалена.")
+    else:
+        messages.error(request, "Удалить можно только свою отметку.")
+    return redirect(place)
+
+
+@login_required
+@require_POST
+def place_review_delete(request, pk, review_id):
+    from apps.social.models import PlaceReview
+    me = profile_of(request.user)
+    place = get_object_or_404(Place, pk=pk)
+    review = get_object_or_404(PlaceReview, pk=review_id, place=place)
+    if e10.place_review_delete(me, place, review):
+        messages.info(request, "Отзыв удалён.")
+    else:
+        messages.error(request, "Удалить можно только свой отзыв.")
+    return redirect(place)
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def questions_home(request):
     me = profile_of(request.user)
@@ -241,6 +269,19 @@ def question_vote(request, pk, answer_id):
     elif out == "unvoted":
         messages.info(request, "Голос снят.")
     return redirect(request.POST.get("next") or question)
+
+
+@login_required
+@require_POST
+def question_answer_delete(request, pk, answer_id):
+    me = profile_of(request.user)
+    question = get_object_or_404(Question, pk=pk)
+    answer = get_object_or_404(QuestionAnswer, pk=answer_id, question=question)
+    if e10.question_answer_delete(me, question, answer):
+        messages.info(request, "Ответ удалён.")
+    else:
+        messages.error(request, "Удалить можно свой ответ или ответ на свой вопрос.")
+    return redirect(question)
 
 
 @login_required

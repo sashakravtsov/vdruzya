@@ -14,7 +14,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 
 from apps.social.friendship import is_blocked
-from apps.social.media import VIDEO_MAX_BYTES, save_video
+from apps.social.media import AUDIO_MAX_BYTES, VIDEO_MAX_BYTES, save_audio, save_video
 from apps.social.models import Conversation, ConversationMember, Message, Notification, SocialProfile
 from apps.social.services import friend_ids, now, profile_of
 
@@ -96,6 +96,17 @@ def leave(me, conv: Conversation):
         cache.delete(f"nav:{me.id}")
 
 
+def unarchive(me, conv: Conversation) -> bool:
+    """Restore a soft-archived conversation to the Inbox list."""
+    t = now()
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation=conv, archived_at__isnull=False,
+    ).update(archived_at=None, updated_at=t)
+    if n:
+        cache.delete(f"nav:{me.id}")
+    return bool(n)
+
+
 def is_archived(me, conv: Conversation) -> bool:
     return ConversationMember.objects.filter(
         conversation=conv, social_user=me, archived_at__isnull=False,
@@ -156,7 +167,8 @@ def _revive_dm(conv: Conversation, me):
 def _snippet(c, me) -> str:
     text = (c.last_body or "").strip()
     if not text and c.last_attach:
-        text = "[фото]"
+        lt = (getattr(c, "last_type", None) or "")
+        text = "[голосовое]" if lt == "voice" else ("[видео]" if lt == "video" else "[фото]")
     text = text[:80]
     if not text:
         return ""
@@ -168,17 +180,19 @@ def _snippet(c, me) -> str:
     return f"{who}: {text}" if who else text
 
 
-def _inbox_qs(me):
+def _inbox_qs(me, *, archived=False):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     mine = Message.objects.filter(conversation_id=OuterRef("pk"), social_user=me).order_by("-id")
     my_read_sq = ConversationMember.objects.filter(
         conversation_id=OuterRef("pk"), social_user=me,
     ).values("last_read_at")[:1]
+    mem = {"members__social_user": me}
+    if archived:
+        mem["members__archived_at__isnull"] = False
+    else:
+        mem["members__archived_at__isnull"] = True
     return (
-        Conversation.objects.filter(
-            community_id__isnull=True,
-            members__social_user=me, members__archived_at__isnull=True,
-        )
+        Conversation.objects.filter(community_id__isnull=True, **mem)
         .annotate(
             last_body=Subquery(last.values("body")[:1]),
             last_at=Subquery(last.values("created_at")[:1]),
@@ -234,11 +248,14 @@ def _decorate_inbox(rows, me, *, sent_only=False):
     return rows
 
 
-def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
-    qs = _filter_inbox(_inbox_qs(me), me, q=q, unread_only=unread_only, sent_only=sent_only)
+def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False, archived=False):
+    qs = _filter_inbox(
+        _inbox_qs(me, archived=archived), me,
+        q=q, unread_only=unread_only and not archived, sent_only=sent_only and not archived,
+    )
     rows = list(qs[offset: offset + limit + 1])
     has_more = len(rows) > limit
-    return _decorate_inbox(rows[:limit], me, sent_only=sent_only), has_more
+    return _decorate_inbox(rows[:limit], me, sent_only=sent_only and not archived), has_more
 
 
 def _msg_qs(conv, q=""):
@@ -342,8 +359,10 @@ def notify_peers(me, conv: Conversation, m: Message):
     if not peer_ids:
         return
     t = now()
+    mt = (m.message_type or "")
     snippet = (m.body or "").strip() or (
-        "[видео]" if (m.message_type or "") == "video" or (m.attachment_mime or "").startswith("video/")
+        "[голосовое]" if mt == "voice"
+        else "[видео]" if mt == "video" or (m.attachment_mime or "").startswith("video/")
         else ("[фото]" if m.attachment_path else "")
     )
     body = f"{me.name}: {snippet}"[:255]
@@ -374,11 +393,24 @@ def _is_video_upload(upload) -> bool:
     return Path(name).suffix in _VIDEO_EXT or ctype.startswith("video/")
 
 
-def _save_attach(upload):
-    """Save photo (Pillow) or video (same media disk). Returns (path, name, mime, kind)."""
+def _save_attach(upload, *, force_voice=False):
+    """Save photo / video / voice (same media disk). Returns (path, name, mime, kind)."""
     if not upload:
         return None, None, None, None
     size = getattr(upload, "size", 0) or 0
+    ctype = (getattr(upload, "content_type", "") or "").lower()
+    # Voice notes: explicit flag, or clear audio/* (not a video clip).
+    as_voice = force_voice or ctype.startswith("audio/") or ctype == "application/ogg"
+    if as_voice:
+        if size > AUDIO_MAX_BYTES:
+            return None, None, None, None
+        try:
+            path = save_audio(upload, "messages")
+        except Exception:
+            return None, None, None, None
+        name = (Path(getattr(upload, "name", "") or "voice.webm").name)[:120]
+        mime = (getattr(upload, "content_type", None) or "audio/webm")[:80]
+        return path, name, mime, "voice"
     if _is_video_upload(upload):
         if size > VIDEO_MAX_BYTES:
             return None, None, None, None
@@ -422,16 +454,24 @@ def _message_payload(body, path, akind, sid, message_type):
     elif sid:
         message_type = "sticker"
     if not body and path:
-        body = "[видео]" if message_type == "video" else "[фото]"
+        if message_type == "voice":
+            body = "[голосовое]"
+        elif message_type == "video":
+            body = "[видео]"
+        else:
+            body = "[фото]"
     return body[:4000], message_type
 
 
 def post_message(
     me, conv: Conversation, body: str = "", *,
     message_type="text", upload=None, reply_to_id=None, sticker_id=None,
+    voice=False,
 ) -> Message:
-    path, aname, amime, akind = _save_attach(upload)
+    path, aname, amime, akind = _save_attach(upload, force_voice=bool(voice))
     sid = _sticker_id(sticker_id)
+    if voice and akind == "voice":
+        message_type = "voice"
     body, message_type = _message_payload(body, path, akind, sid, message_type)
     reply = (
         Message.objects.filter(pk=reply_to_id, conversation=conv).first()

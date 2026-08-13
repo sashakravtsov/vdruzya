@@ -9,6 +9,14 @@ from apps.social.models import Message
 
 class MessageForm(ClassicForm, forms.ModelForm):
     photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
+    voice = forms.FileField(
+        required=False, label="Голосовое",
+        widget=forms.FileInput(attrs={
+            "class": "inputfile",
+            "accept": "audio/*,audio/webm,audio/ogg,audio/mp4,.webm,.ogg,.mp3,.m4a,.wav",
+            "id": "id_voice_file",
+        }),
+    )
     reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
     sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
 
@@ -26,8 +34,13 @@ class MessageForm(ClassicForm, forms.ModelForm):
 
     def clean(self):
         data = super().clean()
-        if not (data.get("body") or "").strip() and not self.files.get("photo") and not data.get("sticker"):
-            self.add_error("body", "Напишите текст, приложите фото / видео или выберите стикер.")
+        if (
+            not (data.get("body") or "").strip()
+            and not self.files.get("photo")
+            and not self.files.get("voice")
+            and not data.get("sticker")
+        ):
+            self.add_error("body", "Напишите текст, приложите фото / видео / голосовое или выберите стикер.")
         return data
 
 
