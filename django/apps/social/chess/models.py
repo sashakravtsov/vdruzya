@@ -73,6 +73,10 @@ class ChessGame(models.Model):
         SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
         db_column="winner_id", related_name="+",
     )
+    draw_offer_by = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="draw_offer_by_id", related_name="+",
+    )
     moves_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
@@ -80,6 +84,15 @@ class ChessGame(models.Model):
     class Meta:
         managed = False
         db_table = "chess_games"
+
+    @property
+    def result_label(self) -> str:
+        return {
+            "1-0": "победа белых",
+            "0-1": "победа чёрных",
+            "1/2-1/2": "ничья",
+            "*": "идёт партия",
+        }.get(self.result, self.result)
 
 
 class ChessMove(models.Model):
@@ -97,3 +110,16 @@ class ChessMove(models.Model):
     class Meta:
         managed = False
         db_table = "chess_moves"
+
+
+class ChessLessonProgress(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    social_user = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, db_column="social_user_id", related_name="+",
+    )
+    lesson_slug = models.CharField(max_length=40)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "chess_lesson_progress"

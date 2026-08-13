@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smoke: chess app — engine, ratings, weekly championship, canvas tabs."""
+"""Smoke: chess app — engine, forms, lessons, puzzles, weekly championship, canvas."""
 import os
 import sys
 
@@ -10,11 +10,14 @@ import django
 
 django.setup()
 
+from django.core.management import call_command
 from django.test import Client
 
 from apps.accounts.models import User
 from apps.social.chess import engine
+from apps.social.chess import forms as chess_forms
 from apps.social.chess import lessons
+from apps.social.chess import puzzles
 from apps.social.chess import service as chess
 from apps.social.services import profile_of
 
@@ -27,34 +30,63 @@ def main():
     fen, san = engine.make_move(engine.START_FEN, "e2", "e4")
     assert "e2-e4" in san
     assert engine.game_status(fen) == "active"
-    assert len(lessons.LESSONS) >= 5
-    ok("engine + lessons")
+    assert len(lessons.LESSONS) >= 20
+    assert len(lessons.CHAPTERS) >= 6
+    assert lessons.CATALOG.get("board")
+    assert lessons.CATALOG.neighbors("board")[1] is not None
+    ok("engine + lessons catalog")
+
+    for pz in puzzles.PUZZLES:
+        fen2, _san = engine.make_move(pz["fen"], pz["answer"][0], pz["answer"][1])
+        assert engine.game_status(fen2) == "checkmate", pz["id"]
+        assert puzzles.check_answer(pz, pz["answer"][0], pz["answer"][1])
+    ok(f"puzzles mate-in-1 ({len(puzzles.PUZZLES)})")
+
+    form = chess_forms.MoveForm(data={"game_id": 1, "from_sq": "e2", "to_sq": "e4"})
+    assert form.is_valid()
+    bad = chess_forms.MoveForm(data={"game_id": 1, "from_sq": "xx", "to_sq": "e4"})
+    assert not bad.is_valid()
+    ok("django forms validation")
 
     champ = chess.ensure_week_championship()
     assert champ.week_key and champ.status == "open"
     champ2 = chess.ensure_week_championship()
     assert champ.id == champ2.id
-    ok("weekly championship idempotent")
+    call_command("ensure_chess_week")
+    ok("weekly championship + management command")
 
     users = list(User.objects.order_by("id")[:2])
     assert len(users) >= 1
     me = profile_of(users[0])
     r = chess.get_or_create_rating(me)
     assert r.rating == 1200 or r.games >= 0
-    ok("rating bootstrap")
+    meta = chess.learn_stats(me)
+    assert meta["total"] >= 20
+    ok("rating + learn progress helpers")
 
     c = Client()
     c.force_login(users[0])
-    for tab in ("play", "stats", "ratings", "champs", "learn"):
+    for tab in ("play", "stats", "ratings", "champs", "learn", "puzzles"):
         resp = c.get(f"/apps/chess/canvas?tab={tab}", secure=True)
         assert resp.status_code == 200, tab
         body = resp.content
         assert "Шахматы".encode() in body
         assert b"Wordstat" not in body
         assert b"<iframe" not in body.lower()
-    assert "Обучение".encode() in c.get("/apps/chess/canvas?tab=learn", secure=True).content
+    learn = c.get("/apps/chess/canvas?tab=learn", secure=True).content
+    assert "Обучение".encode() in learn
+    assert "Основы".encode() in learn
+    assert "Пройдено уроков".encode() in learn
+    lesson = c.get("/apps/chess/canvas?tab=learn&lesson=board", secure=True).content
+    assert "Доска и названия клеток".encode() in lesson
+    assert "Отметить как пройденный".encode() in lesson
+    puzzles_html = c.get("/apps/chess/canvas?tab=puzzles", secure=True).content
+    assert "Задачи".encode() in puzzles_html
+    assert "Мат в 1 ход".encode() in puzzles_html
     assert "Чемпионат недели".encode() in c.get("/apps/chess/canvas?tab=champs", secure=True).content
-    ok("canvas tabs")
+    play = c.get("/apps/chess/canvas?tab=play", secure=True).content
+    assert "Учитывать в чемпионате".encode() in play
+    ok("canvas tabs + learn/puzzles UI")
     print("ALL chess probes passed")
 
 

@@ -78,6 +78,19 @@ CREATE TABLE IF NOT EXISTS chess_moves (
   created_at timestamp without time zone
 );
 CREATE INDEX IF NOT EXISTS chess_moves_game_idx ON chess_moves (game_id, ply);
+
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS draw_offer_by_id bigint;
+
+CREATE TABLE IF NOT EXISTS chess_lesson_progress (
+  id bigserial PRIMARY KEY,
+  social_user_id bigint NOT NULL,
+  lesson_slug varchar(40) NOT NULL,
+  completed_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS chess_lesson_progress_uniq
+  ON chess_lesson_progress (social_user_id, lesson_slug);
+CREATE INDEX IF NOT EXISTS chess_lesson_progress_user_idx
+  ON chess_lesson_progress (social_user_id, completed_at DESC);
 """
 
 

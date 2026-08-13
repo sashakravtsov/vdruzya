@@ -3,14 +3,18 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from django.core.cache import cache
+from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 
 from apps.social.models import SocialProfile
 from apps.social.services import now as _now
 
 from . import engine
-from .models import ChessChampEntry, ChessChampionship, ChessGame, ChessMove, ChessRating
+from .models import (
+    ChessChampEntry, ChessChampionship, ChessGame, ChessLessonProgress, ChessMove, ChessRating,
+)
 
 
 def week_key(d: date | None = None) -> str:
@@ -30,19 +34,26 @@ def ensure_week_championship(d: date | None = None) -> ChessChampionship:
     """Create current week championship if missing (lazy weekly launcher)."""
     d = d or date.today()
     key = week_key(d)
+    cache_key = f"chess:champ:{key}"
+    cached_id = cache.get(cache_key)
+    if cached_id:
+        obj = ChessChampionship.objects.filter(pk=cached_id).first()
+        if obj:
+            return obj
     start, end = week_bounds(d)
     obj = ChessChampionship.objects.filter(week_key=key).first()
-    if obj:
-        return obj
-    title = f"Чемпионат недели {start.strftime('%d.%m')}–{end.strftime('%d.%m.%Y')}"
-    return ChessChampionship.objects.create(
-        week_key=key,
-        title=title,
-        starts_on=start,
-        ends_on=end,
-        status="open",
-        created_at=_now(),
-    )
+    if not obj:
+        title = f"Чемпионат недели {start.strftime('%d.%m')}–{end.strftime('%d.%m.%Y')}"
+        obj = ChessChampionship.objects.create(
+            week_key=key,
+            title=title,
+            starts_on=start,
+            ends_on=end,
+            status="open",
+            created_at=_now(),
+        )
+    cache.set(cache_key, obj.id, 3600)
+    return obj
 
 
 def get_or_create_rating(user: SocialProfile) -> ChessRating:
@@ -72,20 +83,6 @@ def leaderboard(limit: int = 20):
         .filter(games__gt=0)
         .order_by("-rating", "-wins")[:limit]
     )
-
-
-def user_stats(user: SocialProfile) -> dict:
-    r = get_or_create_rating(user)
-    recent = list(
-        ChessGame.objects.filter(Q(white=user) | Q(black=user))
-        .exclude(result="*")
-        .order_by("-id")[:10]
-    )
-    active = list(
-        ChessGame.objects.filter(Q(white=user) | Q(black=user), result="*")
-        .order_by("-updated_at")[:10]
-    )
-    return {"rating": r, "recent": recent, "active": active}
 
 
 def start_game(white: SocialProfile, black: SocialProfile, *, in_champ: bool = True) -> ChessGame:
@@ -145,6 +142,7 @@ def play_move(game: ChessGame, user: SocialProfile, frm: str, to: str) -> ChessG
     game.fen = new_fen
     game.turn = "b" if side == "w" else "w"
     game.moves_count += 1
+    game.draw_offer_by_id = None
     game.updated_at = _now()
     ChessMove.objects.create(
         game=game, ply=game.moves_count, from_sq=frm.lower()[:2], to_sq=to.lower()[:2],
@@ -253,3 +251,122 @@ def championship_standings(champ: ChessChampionship, limit: int = 30):
 def recent_championships(limit: int = 6):
     ensure_week_championship()
     return list(ChessChampionship.objects.order_by("-starts_on")[:limit])
+
+
+@transaction.atomic
+def offer_draw(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if game.result != "*":
+        raise ValueError("Партия уже закончена")
+    if not side_of(game, user):
+        raise ValueError("Это не ваша партия")
+    if game.draw_offer_by_id == user.id:
+        raise ValueError("Вы уже предложили ничью")
+    if game.draw_offer_by_id and game.draw_offer_by_id != user.id:
+        # treat as accept if opponent already offered
+        return accept_draw(game, user)
+    game.draw_offer_by_id = user.id
+    game.updated_at = _now()
+    game.save(update_fields=["draw_offer_by_id", "updated_at"])
+    return game
+
+
+@transaction.atomic
+def accept_draw(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if game.result != "*":
+        raise ValueError("Партия уже закончена")
+    if not side_of(game, user):
+        raise ValueError("Это не ваша партия")
+    if not game.draw_offer_by_id or game.draw_offer_by_id == user.id:
+        raise ValueError("Нет предложения ничьей от соперника")
+    game.status = "draw"
+    game.result = "1/2-1/2"
+    game.draw_offer_by_id = None
+    game.updated_at = _now()
+    game.save()
+    _finish_ratings(game)
+    return game
+
+
+@transaction.atomic
+def decline_draw(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if game.result != "*":
+        raise ValueError("Партия уже закончена")
+    if not side_of(game, user):
+        raise ValueError("Это не ваша партия")
+    if not game.draw_offer_by_id or game.draw_offer_by_id == user.id:
+        raise ValueError("Нет предложения ничьей")
+    game.draw_offer_by_id = None
+    game.updated_at = _now()
+    game.save(update_fields=["draw_offer_by_id", "updated_at"])
+    return game
+
+
+def finished_games_page(user: SocialProfile, page_num: int = 1, per_page: int = 15):
+    qs = (
+        ChessGame.objects.filter(Q(white=user) | Q(black=user))
+        .exclude(result="*")
+        .select_related("white", "black")
+        .order_by("-id")
+    )
+    return Paginator(qs, per_page).get_page(page_num)
+
+
+def ratings_page(page_num: int = 1, per_page: int = 25):
+    qs = (
+        ChessRating.objects.select_related("social_user")
+        .filter(games__gt=0)
+        .order_by("-rating", "-wins")
+    )
+    return Paginator(qs, per_page).get_page(page_num)
+
+
+def mark_lesson_done(user: SocialProfile, slug: str) -> ChessLessonProgress:
+    row, _ = ChessLessonProgress.objects.get_or_create(
+        social_user=user, lesson_slug=slug[:40],
+        defaults={"completed_at": _now()},
+    )
+    if not row.completed_at:
+        row.completed_at = _now()
+        row.save(update_fields=["completed_at"])
+    return row
+
+
+def lesson_done_slugs(user: SocialProfile) -> set[str]:
+    return set(
+        ChessLessonProgress.objects.filter(social_user=user)
+        .values_list("lesson_slug", flat=True)
+    )
+
+
+def learn_stats(user: SocialProfile) -> dict:
+    from .lessons import CATALOG
+    done = lesson_done_slugs(user)
+    total = len(CATALOG.ordered_slugs)
+    return {
+        "done": len(done),
+        "total": total,
+        "pct": int(round(100 * len(done) / total)) if total else 0,
+        "slugs": done,
+    }
+
+
+def user_stats(user: SocialProfile) -> dict:
+    r = get_or_create_rating(user)
+    recent = list(
+        ChessGame.objects.filter(Q(white=user) | Q(black=user))
+        .exclude(result="*")
+        .select_related("white", "black")
+        .order_by("-id")[:10]
+    )
+    active = list(
+        ChessGame.objects.filter(Q(white=user) | Q(black=user), result="*")
+        .select_related("white", "black")
+        .order_by("-updated_at")[:10]
+    )
+    by_result = (
+        ChessGame.objects.filter(Q(white=user) | Q(black=user))
+        .exclude(result="*")
+        .values("result")
+        .annotate(n=Count("id"))
+    )
+    return {"rating": r, "recent": recent, "active": active, "by_result": list(by_result)}

@@ -1565,6 +1565,24 @@ body.fb-dialog-open { overflow: hidden; }
   margin: 0; padding: 4px 0; border-bottom: 1px solid #eee;
 }
 .chess-app tr.is-me td { background: #edf2f8; }
+.chess-app .chess-draw-banner {
+  margin: 8px 0; padding: 6px 8px; background: #fff8e1; border: 1px solid #e6d9a8;
+}
+.chess-app .chess-actions { margin: 6px 0 10px; }
+.chess-app .chess-actions form.inline,
+.chess-app .chess-draw-banner form.inline { display: inline; }
+.chess-app .chess-pager { margin: 8px 0; }
+.chess-app .chess-learn-progress { margin: 0 0 10px; }
+.chess-app .chess-chapter { margin: 0 0 14px; }
+.chess-app .chess-tip-list {
+  margin: 0 0 10px 18px; padding: 0;
+}
+.chess-app .chess-tip-list li { margin: 0 0 4px; }
+.chess-app .chess-lesson-nav { margin: 12px 0 8px; }
+.chess-app .chess-done { color: #390; font-weight: bold; margin-left: 4px; }
+.chess-app span.chess-sq {
+  display: block; width: 28px; height: 28px; color: #111;
+}
 
 /* OSM maps — classic profile-box, Leaflet owns its own layout */
 .osm-box .osm-map {
