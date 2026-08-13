@@ -116,7 +116,8 @@ def cover_upload(request):
         me.save(update_fields=["cover_path", "updated_at"])
         bump_news()
         messages.success(request, "Обложка профиля обновлена.")
-    return redirect(request.POST.get("next") or "/profile/edit?section=picture")
+    next_url = request.POST.get("next") or (f"/profile/{me.id}" if me else "/profile/edit?section=picture")
+    return redirect(next_url)
 
 
 @login_required

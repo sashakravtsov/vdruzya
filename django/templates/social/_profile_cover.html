@@ -1,0 +1,21 @@
+{% load static %}
+{# FB Timeline-style cover (2011): full-width photo, avatar + name on the banner. #}
+<div class="tl-cover{% if not profile.cover_url %} is-empty{% endif %}">
+    <div class="tl-cover-photo"{% if profile.cover_url %} style="background-image:url('{{ profile.cover_url }}')"{% endif %}></div>
+    {% if is_own %}
+    <a class="tl-cover-btn" href="{% url 'profile.edit' %}?section=picture">{% if profile.cover_url %}Сменить обложку{% else %}Добавить обложку{% endif %}</a>
+    {% endif %}
+    <div class="tl-cover-foot">
+        <a class="tl-avatar" href="{% if is_own %}{% url 'profile.edit' %}?section=picture{% else %}?tab=photos{% endif %}">
+            <img src="{% if profile.avatar_url %}{{ profile.avatar_url }}{% else %}{% static 'img/nophoto.gif' %}{% endif %}" alt="" width="120" height="120">
+        </a>
+        <div class="tl-who">
+            <h1>{{ profile.name }}</h1>
+            {% if profile.city %}
+            <div class="tl-sub">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>
+            {% elif networks %}
+            <div class="tl-sub">{{ networks.0.label }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>

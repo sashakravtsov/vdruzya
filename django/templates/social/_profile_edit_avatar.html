@@ -21,18 +21,21 @@
     <div class="clear"></div>
     <div id="currentcover">
         <h4>Обложка профиля</h4>
+        <p class="muted">Широкая фотография над профилем (как Timeline).</p>
         {% if me.cover_url %}
-        <img src="{{ me.cover_url }}" alt="" class="profile-cover-img">
+        <div class="tl-edit-preview" style="background-image:url('{{ me.cover_url }}')"></div>
         <form method="post" action="{% url 'profile.cover.clear' %}" class="avatar-clear">{% csrf_token %}
             <input type="hidden" name="next" value="{% url 'profile.edit' %}?section=picture">
             <button type="submit" class="linkish muted">Удалить обложку</button>
         </form>
         {% else %}
-        <p class="muted">нет обложки</p>
+        <div class="tl-edit-preview"></div>
+        <p class="muted">нет обложки — будет синий фон Timeline</p>
         {% endif %}
         <form method="post" action="{% url 'profile.cover' %}" enctype="multipart/form-data">{% csrf_token %}
             <input type="hidden" name="next" value="{% url 'profile.edit' %}?section=picture">
             <input type="file" name="cover" accept="image/jpeg,image/png,image/gif" class="inputfile">
+            <small>JPEG, PNG или GIF · лучше шире, чем выше (около 850×315).</small>
             <p><input type="submit" class="inputsubmit" value="Загрузить обложку"></p>
         </form>
     </div>

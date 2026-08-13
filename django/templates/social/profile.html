@@ -2,18 +2,10 @@
 {% load vd %}
 {% block title %}{{ profile.name }} — ВДрузья{% endblock %}
 {% block pagebody %}
-<div id="pagebody" class="profile">
-    <div id="header"{% if profile.city or networks %} class="withsubtitle"{% endif %}>
-        <h1>{{ profile.name }}</h1>
-        {% if profile.city %}
-        <div class="subtitle">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</div>
-        {% elif networks %}
-        <div class="subtitle">{{ networks.0.label }}</div>
-        {% endif %}
-    </div>
-    {# Archive Dec 2005: padding on #content, divider bg on #userprofile (not on #content) #}
+<div id="pagebody" class="profile profile-tl">
     <div id="content">
         {% include "partials/flash.html" %}
+        {% include "social/_profile_cover.html" %}
         <div id="userprofile">
             <div id="profilenarrowcolumn">
                 {% include "social/_profile_left.html" %}
