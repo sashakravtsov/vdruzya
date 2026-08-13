@@ -287,10 +287,18 @@ def main():
     CommunityPost.objects.filter(body__startswith="probe ").delete()
     Post.objects.filter(body__startswith="probe ").delete()
     if created:
-        from apps.social.models import CommunityMember
-        CommunityMember.objects.filter(community=created).delete()
-        created.delete()
-    ok("cleanup")
+        r = get(f"/groups/{created.id}/edit")
+        if r.status_code != 200 or "Удалить группу".encode() not in r.content:
+            fail("group edit missing delete")
+        cid = created.id
+        r = post(f"/groups/{cid}/delete", {})
+        if r.status_code != 200:
+            fail(f"group delete {r.status_code}")
+        if Community.objects.filter(pk=cid).exists():
+            fail("group still exists after delete")
+        ok("group delete")
+    else:
+        ok("cleanup")
     print("ALL wall/groups probes passed")
 
 

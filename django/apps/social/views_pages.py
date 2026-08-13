@@ -1,6 +1,7 @@
 """Pages (Страницы) — classic FB Pages on companies schema."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_not_required, login_required
+from django.db import transaction
 from django.db.models import Count, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
@@ -107,6 +108,45 @@ def page_edit(request, pk):
         messages.success(request, "Страница сохранена.")
         return redirect(page)
     return render(request, "social/page_edit.html", {"page": page, "form": form, "me": me})
+
+
+def delete_page(me, page) -> bool:
+    """Admin-only hard delete of a Page and related classic chrome data."""
+    if not me or not page or not _is_admin(me, page):
+        return False
+    from apps.social.cascade import purge_wall_posts
+    from apps.social.models import Event, EventAttendee
+    from apps.social.models.era2012 import CollectionItem, PageTimelineMilestone
+    from apps.social.models.era2014 import SavedItem
+
+    with transaction.atomic():
+        purge_wall_posts(list(Post.objects.filter(topic=page.topic_key).values_list("id", flat=True)))
+        for event in Event.objects.filter(company=page):
+            purge_wall_posts(list(Post.objects.filter(topic=event.topic_key).values_list("id", flat=True)))
+            EventAttendee.objects.filter(event=event).delete()
+            SavedItem.objects.filter(event=event).delete()
+            event.delete()
+        CollectionItem.objects.filter(company=page).delete()
+        SavedItem.objects.filter(company=page).delete()
+        PageTimelineMilestone.objects.filter(company=page).delete()
+        CompanyAdmin.objects.filter(company=page).delete()
+        CompanyFollower.objects.filter(company=page).delete()
+        page.delete()
+    bump_news()
+    return True
+
+
+@login_required
+@require_POST
+def page_delete(request, pk):
+    me = profile_of(request.user)
+    page = get_object_or_404(Company, pk=pk)
+    name = page.name
+    if delete_page(me, page):
+        messages.info(request, f"Страница «{name}» удалена.")
+        return redirect("pages")
+    messages.error(request, "Удалить могут только администраторы.")
+    return redirect(page)
 
 
 @login_required

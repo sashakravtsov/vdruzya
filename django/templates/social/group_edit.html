@@ -41,6 +41,15 @@
                 </form>
             </div>
         </div>
+        <div class="profile-box">
+            <h4>Удалить группу</h4>
+            <div class="profile-box-body">
+                <p class="muted">Группа, стена, обсуждения, документы и участники будут удалены без возможности восстановления.</p>
+                <form method="post" action="{% url 'groups.delete' group.id %}" onsubmit="return confirm('Удалить группу «{{ group.name|escapejs }}» навсегда?');">{% csrf_token %}
+                    <input type="submit" class="inputsubmit" value="Удалить группу">
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

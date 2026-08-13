@@ -22,6 +22,25 @@
 
         {% if is_own %}
         <div class="profile-box">
+            <h4>Редактировать</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'collections.edit' col.id %}">{% csrf_token %}
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Название:</td><td><input class="inputtext" type="text" name="title" size="40" maxlength="160" value="{{ col.title }}"></td></tr>
+                        <tr><td class="label">Описание:</td><td><input class="inputtext" type="text" name="description" size="40" maxlength="500" value="{{ col.description }}"></td></tr>
+                        <tr><td class="label">Кто видит:</td><td>
+                            <select name="visibility" class="inputtext">
+                                <option value="friends"{% if col.visibility == 'friends' %} selected{% endif %}>Друзья</option>
+                                <option value="public"{% if col.visibility == 'public' %} selected{% endif %}>Все</option>
+                                <option value="private"{% if col.visibility == 'private' %} selected{% endif %}>Только я</option>
+                            </select>
+                        </td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
             <h4>Обложка</h4>
             <div class="profile-box-body">
                 <form method="post" action="{% url 'collections.cover' col.id %}" enctype="multipart/form-data">{% csrf_token %}

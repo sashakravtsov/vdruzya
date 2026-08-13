@@ -182,6 +182,22 @@ def clear_collection_cover(me, col) -> bool:
     return True
 
 
+def update_collection(me, col, *, title, description="", visibility="friends") -> bool:
+    if not me or not col or col.social_user_id != me.id:
+        return False
+    title = (title or "").strip()[:160]
+    if not title:
+        return False
+    vis = visibility if visibility in VIS else (col.visibility or "friends")
+    col.title = title
+    col.description = (description or "")[:500]
+    col.visibility = vis
+    col.updated_at = now()
+    col.save(update_fields=["title", "description", "visibility", "updated_at"])
+    bump_news()
+    return True
+
+
 def delete_collection(me, collection_id) -> bool:
     col = Collection.objects.filter(pk=collection_id, social_user=me).first()
     if not col:

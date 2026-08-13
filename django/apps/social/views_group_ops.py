@@ -39,6 +39,65 @@ def group_edit(request, pk):
     return render(request, "social/group_edit.html", {"group": group, "form": form, "me": me})
 
 
+def delete_group(me, group) -> bool:
+    """Admin-only hard delete of a Group and related classic chrome data."""
+    if not me or not group or not is_group_admin(me, group):
+        return False
+    from apps.social.models import (
+        CommunityPostMedia, Conversation, ConversationMember, Event, EventAttendee,
+        GroupDoc, Message,
+    )
+    from apps.social.models.era2014 import SavedItem
+    from apps.social.models.legacy import GroupCommentReaction, GroupPostReaction
+
+    with transaction.atomic():
+        post_ids = list(
+            CommunityPost.objects.filter(community=group).values_list("id", flat=True)
+        )
+        if post_ids:
+            cids = list(
+                CommunityPostComment.objects.filter(post_id__in=post_ids).values_list("id", flat=True)
+            )
+            if cids:
+                GroupCommentReaction.objects.filter(comment_id__in=cids).delete()
+            GroupPostReaction.objects.filter(post_id__in=post_ids).delete()
+            CommunityPostComment.objects.filter(post_id__in=post_ids).delete()
+            CommunityPostMedia.objects.filter(post_id__in=post_ids).delete()
+            CommunityPost.objects.filter(id__in=post_ids).delete()
+        from apps.social.cascade import purge_wall_posts
+        from apps.social.models import Post
+        for event in Event.objects.filter(community=group):
+            purge_wall_posts(list(Post.objects.filter(topic=event.topic_key).values_list("id", flat=True)))
+            EventAttendee.objects.filter(event=event).delete()
+            SavedItem.objects.filter(event=event).delete()
+            event.delete()
+        GroupDoc.objects.filter(community=group).delete()
+        CommunityJoinRequest.objects.filter(community=group).delete()
+        CommunityMember.objects.filter(community=group).delete()
+        conv_ids = list(
+            Conversation.objects.filter(community_id=group.id).values_list("id", flat=True)
+        )
+        if conv_ids:
+            Message.objects.filter(conversation_id__in=conv_ids).delete()
+            ConversationMember.objects.filter(conversation_id__in=conv_ids).delete()
+            Conversation.objects.filter(id__in=conv_ids).delete()
+        group.delete()
+    bump_news()
+    return True
+
+
+@login_required
+@require_POST
+def group_delete(request, pk):
+    me, group = profile_of(request.user), get_object_or_404(Community, pk=pk)
+    name = group.name
+    if delete_group(me, group):
+        messages.info(request, f"Группа «{name}» удалена.")
+        return redirect("groups")
+    messages.error(request, "Удалить может только администратор.")
+    return redirect("groups.show", pk=pk)
+
+
 @login_required
 def group_members(request, pk):
     group = get_object_or_404(Community, pk=pk)
