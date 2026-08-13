@@ -42,10 +42,8 @@
                 </form>
                 {% for it in items %}
                 <div class="event-list-row market-row">
-                    {% if it.photo_url %}
-                    <a class="market-thumb" href="{% url 'marketplace.show' it.id %}"><img src="{{ it.photo_url }}" alt="" width="50" height="50"></a>
-                    {% endif %}
-                    <div class="market-row-body">
+                    {% include "social/_list_thumb.html" with url=it.photo_url href=it.get_absolute_url %}
+                    <div class="list-row-body">
                         <b><a href="{% url 'marketplace.show' it.id %}">{{ it.title }}</a></b>
                         {% if it.price %}<span class="muted"> · {{ it.price }}</span>{% endif %}
                         <div class="muted">

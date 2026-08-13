@@ -64,10 +64,8 @@
             <div class="profile-box-body">
                 {% for c in checkins %}
                 <div class="event-list-row place-row">
-                    {% if c.photo_url %}
-                    <span class="place-thumb"><img src="{{ c.photo_url }}" alt="" width="50" height="50"></span>
-                    {% endif %}
-                    <div class="place-row-body">
+                    {% include "social/_list_thumb.html" with url=c.photo_url %}
+                    <div class="list-row-body">
                         <a href="{% url 'profile' c.social_user.id %}"><b>{{ c.social_user.name }}</b></a>
                         {% if c.message %} — {{ c.message }}{% endif %}
                         {% if c.created_at %}<span class="muted"> · {{ c.created_at|fb_when }}</span>{% endif %}

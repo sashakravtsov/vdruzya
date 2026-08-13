@@ -22,13 +22,13 @@
                 {% for s in items %}
                 <div class="classic-person-row">
                     {% if s.post and s.post.media_url %}
-                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.post.media_url }}" alt="" width="50" height="50"></a>
+                    {% include "social/_list_thumb.html" with url=s.post.media_url href=s.get_absolute_url %}
                     {% elif s.event and s.event.cover_url %}
-                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.event.cover_url }}" alt="" width="50" height="50"></a>
+                    {% include "social/_list_thumb.html" with url=s.event.cover_url href=s.get_absolute_url %}
                     {% elif s.place and s.place.photo_url %}
-                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.place.photo_url }}" alt="" width="50" height="50"></a>
+                    {% include "social/_list_thumb.html" with url=s.place.photo_url href=s.get_absolute_url %}
                     {% elif s.company and s.company.cover_url %}
-                    <a class="place-thumb" href="{{ s.get_absolute_url }}"><img src="{{ s.company.cover_url }}" alt="" width="50" height="50"></a>
+                    {% include "social/_list_thumb.html" with url=s.company.cover_url href=s.get_absolute_url %}
                     {% endif %}
                     <span>
                         <a href="{{ s.get_absolute_url }}"><b>{{ s.title|default:"Без названия" }}</b></a>

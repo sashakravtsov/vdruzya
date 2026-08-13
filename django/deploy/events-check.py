@@ -160,7 +160,7 @@ def main():
         r = c.get(f"/events/{covered.id}", secure=True)
         assert r.status_code == 200 and b"<img" in r.content
         r = c.get("/events?tab=hosting", secure=True)
-        assert r.status_code == 200 and b"event-thumb" in r.content
+        assert r.status_code == 200 and b"list-thumb" in r.content
         ok("event cover photo")
 
         from apps.social.services import bump_news, news_items

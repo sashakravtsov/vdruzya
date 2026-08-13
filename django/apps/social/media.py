@@ -107,6 +107,16 @@ def save_image(upload, folder: str) -> str:
     return default_storage.save(name, ContentFile(data))
 
 
+def try_save_image(upload, folder: str) -> str | None:
+    """Optional upload — None if missing or processing fails."""
+    if not upload:
+        return None
+    try:
+        return save_image(upload, folder)
+    except Exception:
+        return None
+
+
 def save_video(upload, folder: str = "videos") -> tuple[str, str | None]:
     """Store video on the same media disk as photos; optional poster frame via ffmpeg.
     Returns (video_path, poster_path|None). Not a separate video CDN — same S3/local storage.

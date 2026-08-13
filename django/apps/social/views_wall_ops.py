@@ -45,14 +45,11 @@ def post_edit(request, post_id):
             post.topic = "note"
             post.updated_at = now()
             fields = ["media_label", "body", "visibility", "kind", "topic", "updated_at"]
-            upload = form.cleaned_data.get("photo")
-            if upload:
-                from apps.social.media import save_image
-                try:
-                    post.media_path = save_image(upload, "notes")
-                    fields.append("media_path")
-                except Exception:
-                    pass
+            from apps.social.media import try_save_image
+            path = try_save_image(form.cleaned_data.get("photo"), "notes")
+            if path:
+                post.media_path = path
+                fields.append("media_path")
             post.save(update_fields=fields)
             bump_news()
             messages.success(request, "Заметка сохранена.")

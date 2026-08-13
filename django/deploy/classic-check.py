@@ -107,7 +107,7 @@ def main():
     r = c.get(f"/posts/{nphoto.id}", secure=True)
     assert r.status_code == 200 and b"<img" in r.content
     r = c.get("/notes?mine=1", secure=True)
-    assert r.status_code == 200 and b"note-thumb" in r.content
+    assert r.status_code == 200 and b"list-thumb" in r.content
     nphoto.delete()
     ok("notes photo attach")
 
@@ -152,7 +152,7 @@ def main():
     assert r.status_code == 200 and b"<img" in r.content
     assert mitem.photo_path.encode() in r.content or mitem.photo_url.encode() in r.content
     r = c.get("/marketplace", secure=True)
-    assert r.status_code == 200 and b"market-thumb" in r.content
+    assert r.status_code == 200 and b"list-thumb" in r.content
     mitem.delete()
     ok("marketplace listing photo")
 

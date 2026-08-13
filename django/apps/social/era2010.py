@@ -20,17 +20,8 @@ def places_list(q="", city="", limit=40):
     return list(qs[:limit])
 
 
-def _place_save_photo(upload, folder="places"):
-    if not upload:
-        return None
-    from apps.social.media import save_image
-    try:
-        return save_image(upload, folder)
-    except Exception:
-        return None
-
-
 def place_create(me, *, name, city="", address="", photo=None):
+    from apps.social.media import try_save_image
     name = (name or "").strip()[:160]
     if not me or not name:
         return None
@@ -39,17 +30,18 @@ def place_create(me, *, name, city="", address="", photo=None):
         name=name,
         city=(city or "").strip()[:120],
         address=(address or "").strip()[:255],
-        photo_path=_place_save_photo(photo, "places"),
+        photo_path=try_save_image(photo, "places"),
         created_at=t, updated_at=t,
     )
 
 
 def place_checkin(me, place, message="", photo=None):
+    from apps.social.media import try_save_image
     if not me or not place:
         return None
     t = now()
     msg = (message or "").strip()[:500]
-    path = _place_save_photo(photo, "checkins")
+    path = try_save_image(photo, "checkins")
     checkin = PlaceCheckin.objects.create(
         place=place, social_user=me, message=msg, photo_path=path, created_at=t,
     )

@@ -36,10 +36,8 @@
                 </form>
                 {% for p in places %}
                 <div class="event-list-row place-row">
-                    {% if p.photo_url %}
-                    <a class="place-thumb" href="{% url 'places.show' p.id %}"><img src="{{ p.photo_url }}" alt="" width="50" height="50"></a>
-                    {% endif %}
-                    <div class="place-row-body">
+                    {% include "social/_list_thumb.html" with url=p.photo_url href=p.get_absolute_url %}
+                    <div class="list-row-body">
                         <b><a href="{% url 'places.show' p.id %}">{{ p.name }}</a></b>
                         <div class="muted">{% if p.city %}{{ p.city }}{% endif %}{% if p.address %} · {{ p.address }}{% endif %}</div>
                     </div>

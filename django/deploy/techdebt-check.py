@@ -126,9 +126,11 @@ def main():
 
     r = c.get("/graph", secure=True)
     assert r.status_code == 200
-    # Graph post rows include media partial (same chrome as hashtag)
-    assert b"_news_post_body" not in r.content  # template name not in HTML
-    ok("graph chrome ok")
+    assert b"_news_post_body" not in r.content
+    from apps.social.services import mini_feed
+    feed = mini_feed(me, limit=5, viewer=me)
+    assert isinstance(feed, list)
+    ok("mini_feed slim + graph chrome")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()

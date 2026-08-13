@@ -21,103 +21,68 @@ def hidden_story_keys(me) -> set[str]:
     )
 
 
+def _id(obj) -> int | None:
+    return getattr(obj, "id", None) if obj is not None else None
+
+
+# kind → item key for simple "{kind}:{id}" stories
+_OBJ_KEY = {
+    "safety": "checkin",
+    "checkin": "checkin",
+    "review": "review",
+    "market": "listing",
+    "group_doc": "doc",
+}
+
+
 def story_key_for(item: dict) -> str | None:
-    """Stable per-story hide key. Kind-specific branches run before generic post/place/event."""
+    """Stable per-story hide key. Kind-specific before generic post/place/event."""
     kind = (item.get("kind") or "").strip()
-    actor = item.get("actor")
+    actor, other = item.get("actor"), item.get("other")
 
     if kind == "hashtag":
-        tag, post = item.get("tag"), item.get("post")
-        if tag is not None and post is not None and getattr(tag, "id", None) and getattr(post, "id", None):
-            return f"hashtag:{tag.id}:{post.id}"
+        tag, post = _id(item.get("tag")), _id(item.get("post"))
+        if tag and post:
+            return f"hashtag:{tag}:{post}"
 
-    if kind == "safety":
-        checkin = item.get("checkin")
-        if checkin is not None and getattr(checkin, "id", None):
-            return f"safety:{checkin.id}"
+    if kind in _OBJ_KEY:
+        oid = _id(item.get(_OBJ_KEY[kind]))
+        if oid:
+            return f"{kind}:{oid}"
 
-    if kind == "checkin":
-        row = item.get("checkin")
-        if row is not None and getattr(row, "id", None):
-            return f"checkin:{row.id}"
+    if kind in ("joined", "created", "fan"):
+        obj = item.get("group") if kind != "fan" else item.get("page")
+        oid, aid = _id(obj), _id(actor)
+        if oid and aid:
+            return f"{kind}:{oid}:{aid}"
 
-    if kind == "review":
-        row = item.get("review")
-        if row is not None and getattr(row, "id", None):
-            return f"review:{row.id}"
-
-    if kind == "joined":
-        group = item.get("group")
-        if group is not None and actor is not None and getattr(group, "id", None) and getattr(actor, "id", None):
-            return f"joined:{group.id}:{actor.id}"
-
-    if kind == "created":
-        group = item.get("group")
-        if group is not None and actor is not None and getattr(group, "id", None) and getattr(actor, "id", None):
-            return f"created:{group.id}:{actor.id}"
-
-    if kind == "fan":
-        page = item.get("page")
-        if page is not None and actor is not None and getattr(page, "id", None) and getattr(actor, "id", None):
-            return f"fan:{page.id}:{actor.id}"
-
-    if kind == "market":
-        listing = item.get("listing")
-        if listing is not None and getattr(listing, "id", None):
-            return f"market:{listing.id}"
-
-    if kind == "anniversary" and actor is not None and getattr(actor, "id", None):
+    if kind == "anniversary" and _id(actor):
         years = item.get("years")
         return f"anniversary:{actor.id}:{years if years is not None else 0}"
 
-    if kind == "group_doc":
-        doc = item.get("doc")
-        if doc is not None and getattr(doc, "id", None):
-            return f"group_doc:{doc.id}"
-
     if kind in ("friend", "relationship"):
-        other = item.get("other")
-        if actor is not None and other is not None and getattr(actor, "id", None) and getattr(other, "id", None):
-            a, b = sorted((actor.id, other.id))
-            return f"{kind}:{a}:{b}"
+        a, b = _id(actor), _id(other)
+        if a and b:
+            lo, hi = sorted((a, b))
+            return f"{kind}:{lo}:{hi}"
 
-    og = item.get("og")
-    if og is not None and getattr(og, "id", None):
-        return f"og:{og.id}"
+    if oid := _id(item.get("og")):
+        return f"og:{oid}"
 
-    milestone = item.get("milestone")
-    if milestone is not None and getattr(milestone, "id", None):
+    if oid := _id(item.get("milestone")):
         prefix = "page_milestone" if kind == "page_milestone" else "milestone"
-        return f"{prefix}:{milestone.id}"
+        return f"{prefix}:{oid}"
 
-    col = item.get("collection")
-    if col is not None and getattr(col, "id", None):
-        return f"collection:{col.id}"
+    if oid := _id(item.get("collection")):
+        return f"collection:{oid}"
 
-    post = item.get("post")
-    if post is not None and getattr(post, "id", None):
-        return f"{kind}:{post.id}"
-
-    photo = item.get("photo")
-    if photo is not None and getattr(photo, "id", None):
-        return f"{kind}:photo:{photo.id}"
-
-    poll = item.get("poll")
-    if poll is not None and getattr(poll, "id", None):
-        return f"{kind}:poll:{poll.id}"
-
-    question = item.get("question")
-    if question is not None and getattr(question, "id", None):
-        return f"{kind}:q:{question.id}"
-
-    place = item.get("place")
-    if place is not None and getattr(place, "id", None):
-        return f"{kind}:place:{place.id}"
-
-    event = item.get("event")
-    if event is not None and getattr(event, "id", None):
-        return f"{kind}:event:{event.id}"
-
+    for key, mid in (
+        ("post", ""), ("photo", "photo:"), ("poll", "poll:"),
+        ("question", "q:"), ("place", "place:"), ("event", "event:"),
+    ):
+        oid = _id(item.get(key))
+        if oid:
+            return f"{kind}:{mid}{oid}" if mid else f"{kind}:{oid}"
     return None
 
 
@@ -178,7 +143,8 @@ def hidden_people(me, limit=40):
         return []
     from apps.social.models import SocialProfile, profile_related
     ids = list(
-        FeedHide.objects.filter(social_user=me).order_by("-id").values_list("actor_id", flat=True)[:limit]
+        FeedHide.objects.filter(social_user=me).order_by("-id")
+        .values_list("actor_id", flat=True)[:limit]
     )
     if not ids:
         return []

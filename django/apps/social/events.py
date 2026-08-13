@@ -38,18 +38,8 @@ def parse_starts(raw):
     return starts
 
 
-def _event_save_cover(upload):
-    """Optional event cover on the same media disk as wall photos."""
-    if not upload:
-        return None
-    from apps.social.media import save_image
-    try:
-        return save_image(upload, "events")
-    except Exception:
-        return None
-
-
 def create_event(me, *, title, place="", description="", starts_at=None, community=None, company=None, cover=None):
+    from apps.social.media import try_save_image
     title = (title or "").strip()[:255]
     if not me or not title or not starts_at:
         return None
@@ -62,7 +52,7 @@ def create_event(me, *, title, place="", description="", starts_at=None, communi
         host=me,
         community=community,
         company=company,
-        cover_path=_event_save_cover(cover),
+        cover_path=try_save_image(cover, "events"),
         created_at=t,
         updated_at=t,
     )
@@ -81,9 +71,10 @@ def update_event(me, event, *, title, place="", description="", starts_at=None, 
     event.place = (place or "").strip()[:255] or "—"
     event.description = (description or "").strip()[:4000]
     event.starts_at = starts_at
+    from apps.social.media import try_save_image
     event.updated_at = now()
     fields = ["title", "place", "description", "starts_at", "updated_at"]
-    path = _event_save_cover(cover)
+    path = try_save_image(cover, "events")
     if path:
         event.cover_path = path
         fields.append("cover_path")

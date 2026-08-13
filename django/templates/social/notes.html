@@ -30,10 +30,8 @@
             <div class="profile-box-body">
                 {% for p in items %}
                 <div class="event-list-row note-row">
-                    {% if p.media_url %}
-                    <a class="note-thumb" href="{% url 'posts.show' p.id %}"><img src="{{ p.media_url }}" alt="" width="50" height="50"></a>
-                    {% endif %}
-                    <div class="note-row-body">
+                    {% include "social/_list_thumb.html" with url=p.media_url href=p.get_absolute_url %}
+                    <div class="list-row-body">
                         <b><a href="{% url 'posts.show' p.id %}">{{ p.media_label|default:"Заметка" }}</a></b>
                         <div class="muted">
                             <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>

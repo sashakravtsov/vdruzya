@@ -49,6 +49,12 @@ def main():
     assert data and ext in (".png", ".jpg", ".gif")
     ok("pillow process")
 
+    from apps.social.media import try_save_image
+    assert try_save_image(None, "x") is None
+    path = try_save_image(SimpleUploadedFile("t.png", PNG, content_type="image/png"), "qa")
+    assert path and path.startswith("qa/")
+    ok("try_save_image")
+
     # snippet_text never surfaces storage: paths in classic chrome lists.
     probe = Post(kind="video", body="storage:videos/x.mp4\n\nпривет ролик", media_label="")
     assert probe.snippet_text == "привет ролик"

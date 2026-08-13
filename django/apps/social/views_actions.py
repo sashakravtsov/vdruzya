@@ -221,14 +221,8 @@ def note_create(request):
             messages.error(req, "Укажите заголовок и текст.")
             return redirect(go)
         d = form.cleaned_data
-        media_path = None
-        upload = d.get("photo")
-        if upload:
-            from apps.social.media import save_image
-            try:
-                media_path = save_image(upload, "notes")
-            except Exception:
-                media_path = None
+        from apps.social.media import try_save_image
+        media_path = try_save_image(d.get("photo"), "notes")
         Post.objects.create(
             social_user=me,
             body=d["body"],

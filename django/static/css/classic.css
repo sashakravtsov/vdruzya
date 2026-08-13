@@ -1135,9 +1135,9 @@ button.linkish .ico { margin-right: 2px; }
 }
 .events-page .event-list-row:last-child { border-bottom: 0; }
 .events-page .event-list-row .classic-inline-actions { float: right; }
-.events-page .event-thumb { float: left; margin: 0 8px 0 0; }
-.events-page .event-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
-.events-page .event-row-body { overflow: hidden; }
+.list-thumb { float: left; margin: 0 8px 0 0; }
+.list-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
+.list-row-body { overflow: hidden; }
 .events-page .event-cover { margin: 0 0 8px; }
 .events-page .event-cover img { max-width: 100%; border: 1px solid #B3B3B3; }
 .events-page #content.events-content { padding: 10px; overflow: hidden; box-sizing: border-box; }
@@ -1158,13 +1158,8 @@ button.linkish .ico { margin-right: 2px; }
 }
 .gift-tile img { display: block; width: 100%; height: 100%; border: 0; }
 .places-page .place-row { overflow: hidden; }
-.places-page .place-thumb { float: left; margin: 0 8px 0 0; }
-.places-page .place-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
-.places-page .place-row-body { overflow: hidden; }
 .places-page .place-photo { margin: 0 0 8px; }
 .places-page .place-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
-.place-thumb { float: left; margin: 0 8px 0 0; }
-.place-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
 .gift-tile:hover, .gift-tile.is-on { border-color: #3B5998; outline: 1px solid #3B5998; }
 .gift-tile-sm { width: 50px; height: 50px; float: left; margin: 0 8px 0 0; }
 .gift-tile-title {
@@ -1237,18 +1232,12 @@ button.linkish .ico { margin-right: 2px; }
 .inbox-pane > h4 .edit { float: right; font-weight: normal; }
 .inbox-pane .msg-actions form { display: inline; }
 .inbox-pane .msg-compose .file-hint { display: block; margin-top: 4px; }
-.market-page .market-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
-.market-page .market-row:last-child { border-bottom: 0; }
-.market-page .market-thumb { float: left; margin: 0 8px 0 0; }
-.market-page .market-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
-.market-page .market-row-body { overflow: hidden; }
+.market-page .market-row,
+.notes-page .note-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
+.market-page .market-row:last-child,
+.notes-page .note-row:last-child { border-bottom: 0; }
 .market-page .market-photo { margin: 0 0 8px; }
 .market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
-.notes-page .note-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
-.notes-page .note-row:last-child { border-bottom: 0; }
-.notes-page .note-thumb { float: left; margin: 0 8px 0 0; }
-.notes-page .note-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
-.notes-page .note-row-body { overflow: hidden; }
 .note-photo { margin: 4px 0; }
 .note-photo img { border: 1px solid #B3B3B3; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }

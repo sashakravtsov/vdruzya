@@ -85,7 +85,7 @@ def main():
     place = Place.objects.filter(name=name).order_by("-id").first()
     assert place and place.photo_path and place.photo_path.startswith("places/"), place
     r = c.get("/places", secure=True)
-    assert r.status_code == 200 and b"place-thumb" in r.content
+    assert r.status_code == 200 and b"list-thumb" in r.content
     r = c.post(f"/places/{place.id}", {
         "action": "checkin", "message": "кофе",
         "photo": SimpleUploadedFile("cin.png", PNG, content_type="image/png"),

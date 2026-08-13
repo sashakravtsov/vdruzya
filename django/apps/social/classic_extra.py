@@ -176,23 +176,13 @@ def market_list(q="", place="", *, mine=False, viewer=None, limit=40):
     return list(qs[:limit])
 
 
-def _market_save_photo(upload):
-    """Optional listing photo on the same media disk as wall photos."""
-    if not upload:
-        return None
-    from apps.social.media import save_image
-    try:
-        return save_image(upload, "market")
-    except Exception:
-        return None
-
-
 def market_create(me, *, title, price="", place="", description="", photo=None):
+    from apps.social.media import try_save_image
     title = (title or "").strip()[:160]
     if not me or not title:
         return None
     t = now()
-    path = _market_save_photo(photo)
+    path = try_save_image(photo, "market")
     row = MarketplaceListing.objects.create(
         social_user=me,
         title=title,
@@ -219,8 +209,9 @@ def market_update(me, item, *, title, price="", place="", description="", photo=
     item.place = (place or "").strip()[:120]
     item.description = (description or "").strip()[:4000]
     item.updated_at = now()
+    from apps.social.media import try_save_image
     fields = ["title", "price", "place", "description", "updated_at"]
-    path = _market_save_photo(photo)
+    path = try_save_image(photo, "market")
     if path:
         item.photo_path = path
         fields.append("photo_path")

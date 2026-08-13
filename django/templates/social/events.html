@@ -50,10 +50,8 @@
                         ·
                         <a href="{% url 'events.show' e.id %}">подробнее</a>
                     </span>
-                    {% if e.cover_url %}
-                    <a class="event-thumb" href="{% url 'events.show' e.id %}"><img src="{{ e.cover_url }}" alt="" width="50" height="50"></a>
-                    {% endif %}
-                    <div class="event-row-body">
+                    {% include "social/_list_thumb.html" with url=e.cover_url href=e.get_absolute_url %}
+                    <div class="list-row-body">
                         <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
                         <div class="muted">
                             {{ e.starts_at|date:"j E Y, H:i" }}
