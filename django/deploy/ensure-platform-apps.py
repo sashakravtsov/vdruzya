@@ -54,22 +54,19 @@ CREATE TABLE IF NOT EXISTS dev_apps (
   blurb varchar(200) NOT NULL DEFAULT '',
   detail varchar(500) NOT NULL DEFAULT '',
   website_url varchar(255) NOT NULL DEFAULT '',
-  callback_url varchar(255) NOT NULL DEFAULT '',
-  api_key varchar(48) NOT NULL DEFAULT '',
-  api_secret varchar(64) NOT NULL DEFAULT '',
   published boolean NOT NULL DEFAULT false,
   featured boolean NOT NULL DEFAULT false,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
+-- Upgrade columns before indexes that reference them
+ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS callback_url varchar(255) NOT NULL DEFAULT '';
+ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS api_key varchar(48) NOT NULL DEFAULT '';
+ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS api_secret varchar(64) NOT NULL DEFAULT '';
 CREATE UNIQUE INDEX IF NOT EXISTS dev_apps_slug_uniq ON dev_apps (slug);
 CREATE INDEX IF NOT EXISTS dev_apps_owner_idx ON dev_apps (owner_id, id DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS dev_apps_api_key_uniq ON dev_apps (api_key)
   WHERE api_key <> '';
-
-ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS callback_url varchar(255) NOT NULL DEFAULT '';
-ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS api_key varchar(48) NOT NULL DEFAULT '';
-ALTER TABLE dev_apps ADD COLUMN IF NOT EXISTS api_secret varchar(64) NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS app_oauth_codes (
   id bigserial PRIMARY KEY,
