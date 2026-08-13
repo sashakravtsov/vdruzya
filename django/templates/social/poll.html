@@ -5,7 +5,16 @@
 <div id="pagebody" class="polls-page">
     <div id="header" class="withsubtitle">
         <h1>Опрос</h1>
-        <div class="subtitle"><a href="{% url 'polls' %}">← опросы</a></div>
+        <div class="subtitle">
+            <a href="{% url 'polls' %}">← опросы</a>
+            {% if is_own %}
+            · <a href="{% url 'polls.edit' poll.id %}">редактировать</a>
+            ·
+            <form method="post" action="{% url 'polls.delete' poll.id %}" class="inline" onsubmit="return confirm('Удалить опрос?');">{% csrf_token %}
+                <button type="submit" class="linkish muted">удалить</button>
+            </form>
+            {% endif %}
+        </div>
     </div>
     <div id="content">
         {% include "partials/flash.html" %}

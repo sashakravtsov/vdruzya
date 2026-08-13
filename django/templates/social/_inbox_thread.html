@@ -6,15 +6,20 @@
 {% if has_older and not show_all %}
 <p class="msg-older"><a href="?c={{ active.id }}&amp;all=1{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}">← более ранние сообщения</a></p>
 {% endif %}
-<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}">
+<div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}">
     {% for m in thread_messages %}
     {% include "social/_inbox_line.html" %}
     {% empty %}<p class="muted">Напишите первое сообщение.</p>{% endfor %}
 </div>
-<form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" enctype="multipart/form-data">{% csrf_token %}
+<p class="msg-typing muted" id="inbox-typing" aria-live="polite" hidden></p>
+<form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" id="inbox-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.reply_to }}
     {{ form.body }}
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
     {% if form.sticker %}<p class="wallposter-file">Стикер: {{ form.sticker }}</p>{% endif %}
+    <p class="wallposter-file msg-voice-row">
+        <button type="button" class="linkish" id="inbox-voice-btn" data-state="voice">● Голосовое</button>
+        <span class="file-hint muted">индикатор «записывает» для собеседника (файл — скоро)</span>
+    </p>
     <input type="submit" class="inputsubmit" value="Отправить">
 </form>

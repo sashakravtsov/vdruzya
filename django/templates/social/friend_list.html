@@ -10,6 +10,21 @@
     <div id="content">
         {% include "partials/flash.html" %}
         <div class="profile-box">
+            <h4>Переименовать</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="rename">
+                    <table class="formtable" cellspacing="0">
+                        <tr>
+                            <td class="label">Название:</td>
+                            <td><input class="inputtext" type="text" name="name" size="40" maxlength="120" value="{{ flist.name }}"></td>
+                        </tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
             <h4>Участники</h4>
             <div class="profile-box-body">
                 {% for p in members %}

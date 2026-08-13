@@ -5,7 +5,10 @@
 <div id="pagebody" class="places-page">
     <div id="header" class="withsubtitle">
         <h1>{{ place.name }}</h1>
-        <div class="subtitle"><a href="{% url 'places' %}">← места</a></div>
+        <div class="subtitle">
+            <a href="{% url 'places' %}">← места</a>
+            {% if can_manage %} · <a href="{% url 'places.edit' place.id %}">редактировать</a>{% endif %}
+        </div>
     </div>
     <div id="content">
         {% include "partials/flash.html" %}

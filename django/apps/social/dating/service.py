@@ -519,6 +519,20 @@ def mark_match_seen(me: SocialProfile, match_id: int) -> None:
         m.save(update_fields=["seen_b"])
 
 
+def unmatch(me: SocialProfile, match_id: int) -> bool:
+    """Remove a mutual match and clear like/super swipes so the pair can rematch later."""
+    m = DatingMatch.objects.filter(pk=match_id).filter(Q(user_a=me) | Q(user_b=me)).first()
+    if not me or not m:
+        return False
+    a_id, b_id = m.user_a_id, m.user_b_id
+    m.delete()
+    DatingSwipe.objects.filter(
+        Q(from_user_id=a_id, to_user_id=b_id) | Q(from_user_id=b_id, to_user_id=a_id),
+        action__in=("like", "super"),
+    ).delete()
+    return True
+
+
 def visitors(me: SocialProfile, limit: int = 15) -> list[dict]:
     seen = set()
     out = []

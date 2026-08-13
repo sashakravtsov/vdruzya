@@ -5,7 +5,16 @@
 <div id="pagebody" class="questions-page">
     <div id="header" class="withsubtitle">
         <h1>Вопрос</h1>
-        <div class="subtitle"><a href="{% url 'questions' %}">← вопросы</a></div>
+        <div class="subtitle">
+            <a href="{% url 'questions' %}">← вопросы</a>
+            {% if is_own %}
+            · <a href="{% url 'questions.edit' question.id %}">редактировать</a>
+            ·
+            <form method="post" action="{% url 'questions.delete' question.id %}" class="inline" onsubmit="return confirm('Удалить вопрос?');">{% csrf_token %}
+                <button type="submit" class="linkish muted">удалить</button>
+            </form>
+            {% endif %}
+        </div>
     </div>
     <div id="content">
         {% include "partials/flash.html" %}

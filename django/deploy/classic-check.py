@@ -79,7 +79,9 @@ def main():
     assert link
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "link" and i.get("post") and i["post"].id == link.id for i in feed)
-    ok("link in news feed")
+    r = c.get("/links?mine=1", secure=True)
+    assert r.status_code == 200 and "удалить".encode() in r.content
+    ok("link in news feed + mine delete chrome")
 
     # notes browse create
     r = c.post("/notes", {
@@ -168,7 +170,9 @@ def main():
     assert video
     feed = news_items(me, limit=80)
     assert any(i.get("kind") == "video" and i.get("post") and i["post"].id == video.id for i in feed)
-    ok("video in news feed")
+    r = c.get("/videos?mine=1", secure=True)
+    assert r.status_code == 200 and "удалить".encode() in r.content
+    ok("video in news feed + mine delete chrome")
 
     # friend list
     r = c.post("/friends/lists", {"name": f"QA List {uuid.uuid4().hex[:4]}"}, secure=True)
@@ -177,6 +181,11 @@ def main():
     assert fl
     from apps.social.models import FriendListMember, SocialProfile
     from apps.social.services import friend_ids
+    renamed = f"QA List Renamed {uuid.uuid4().hex[:4]}"
+    r = c.post(f"/friends/lists/{fl.id}", {"action": "rename", "name": renamed}, secure=True)
+    assert r.status_code in (301, 302)
+    fl.refresh_from_db()
+    assert fl.name == renamed
     buddy = SocialProfile.objects.filter(id__in=friend_ids(me)).exclude(id=me.id).first()
     if buddy:
         r = c.post(f"/friends/lists/{fl.id}", {"action": "add", "friend_id": str(buddy.id)}, secure=True)
@@ -192,15 +201,24 @@ def main():
         r = c.post(f"/friends/lists/{fl.id}", {"action": "remove", "friend_id": str(buddy.id)}, secure=True)
         assert r.status_code in (301, 302)
         assert not FriendListMember.objects.filter(friend_list=fl, social_user=buddy).exists()
-        ok("friend list membership + feed/friends filters")
+        ok("friend list rename + membership + feed/friends filters")
     else:
-        ok("friend list membership skipped (no friend)")
+        ok("friend list rename (membership skipped — no friend)")
     r = c.get("/feed?filter=shares", secure=True)
     assert r.status_code == 200 and b"feed-filters" in r.content
     ok("feed kind filters")
 
+    # catalog delete for own link/video
+    r = c.post(f"/posts/{link.id}/delete", {"next": "/links?mine=1"}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not Post.objects.filter(pk=link.id).exists()
+    r = c.post(f"/posts/{video.id}/delete", {"next": "/videos?mine=1"}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not Post.objects.filter(pk=video.id).exists()
+    ok("links/videos catalog delete")
+
     # cleanup
-    Post.objects.filter(id__in=[x.id for x in (link, note, video) if x]).delete()
+    Post.objects.filter(id__in=[x.id for x in (note,) if x]).delete()
     item.delete()
     FriendListMember.objects.filter(friend_list=fl).delete()
     fl.delete()

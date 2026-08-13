@@ -240,8 +240,10 @@ CREATE INDEX IF NOT EXISTS family_links_to_idx
 
 ALTER = """
 ALTER TABLE places ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
+ALTER TABLE places ADD COLUMN IF NOT EXISTS created_by_id bigint NULL;
 ALTER TABLE place_checkins ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
+CREATE INDEX IF NOT EXISTS places_created_by_idx ON places (created_by_id);
 """
 
 
@@ -261,7 +263,10 @@ def main():
                 "SELECT 1 FROM information_schema.tables WHERE table_name=%s", [t]
             )
             assert cur.fetchone(), t
-        for col in ("places.photo_path", "place_checkins.photo_path", "questions.photo_path"):
+        for col in (
+            "places.photo_path", "places.created_by_id",
+            "place_checkins.photo_path", "questions.photo_path",
+        ):
             table, name = col.split(".")
             cur.execute(
                 "SELECT 1 FROM information_schema.columns "

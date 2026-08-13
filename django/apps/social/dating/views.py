@@ -117,6 +117,18 @@ def render_dating_canvas(request, me, app):
                     "Вы снова в ленте." if p.discoverable else "Анкета скрыта из ленты.",
                 )
                 return redirect(_url("profile"))
+
+            if action == "unmatch":
+                try:
+                    mid = int(request.POST.get("match_id") or 0)
+                except (TypeError, ValueError):
+                    mid = 0
+                if dating.unmatch(me, mid):
+                    messages.info(request, "Матч удалён.")
+                    _live_dating(me)
+                else:
+                    messages.error(request, "Не удалось удалить матч.")
+                return redirect(_url("matches"))
         except ValueError as exc:
             messages.error(request, str(exc))
         except Exception:
