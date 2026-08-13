@@ -54,9 +54,10 @@ def main():
     assert hs2[to_act]["folded"]
     ok("multi engine blinds/fold")
 
-    assert len(lessons.LESSONS) >= 12
+    assert len(lessons.LESSONS) >= 13
     assert lessons.lesson_by_slug("multi-rooms")
     assert lessons.lesson_by_slug("multiway-pots")
+    assert lessons.lesson_by_slug("live-tables")
     assert len(puzzles.PUZZLES) >= 15
     assert "мультивей" in puzzles.THEMES
     ok("curriculum expanded")
@@ -84,6 +85,7 @@ def main():
     assert room.max_seats == 6 and room.join_code
     meta = poker.room_view(room, me)
     assert meta["max_seats"] == 6 and meta["filled_n"] >= 1
+    dealt = None
     if len(users) >= 2:
         peer = profile_of(users[1])
         poker.get_or_create_profile(peer)
@@ -92,12 +94,11 @@ def main():
             p3 = profile_of(users[2])
             poker.get_or_create_profile(p3)
             poker.join_room(p3, join_code=room.join_code)
-        g = poker.start_room_hand(me, room.id)
-        assert g.mode == "multi" and g.status == "active"
-        view = poker.table_view(g, me)
+        dealt = poker.start_room_hand(me, room.id)
+        assert dealt.mode == "multi" and dealt.status == "active"
+        view = poker.table_view(dealt, me)
         assert view["mode"] == "multi" and view["players_n"] >= 2
         assert view["multi_seats"]
-        # fold as to_act until our tests don't need full hand
         ok("multi room deal")
     else:
         ok("multi room create (single user)")
@@ -130,6 +131,38 @@ def main():
     bank = c.get("/apps/poker/canvas?tab=bank", secure=True).content
     assert "Ачивки".encode() in bank
     ok("canvas multi + engagement UI")
+
+    from django.conf import settings
+
+    assert "channels" in settings.INSTALLED_APPS
+    assert getattr(settings, "CHANNEL_LAYERS", None)
+    from apps.social.poker.routing import websocket_urlpatterns
+
+    assert websocket_urlpatterns
+    ok("channels + poker websocket routes")
+
+    from apps.social.poker import realtime as rt
+
+    room_api = c.get(f"/apps/poker/api/room/{room.id}", secure=True)
+    assert room_api.status_code == 200
+    assert room_api.json().get("type") == "room"
+    room_html = c.get(f"/apps/poker/canvas?tab=room&id={room.id}", secure=True).content
+    assert b"poker-realtime.js" in room_html
+    assert b"/ws/poker/room/" in room_html
+    if dealt is not None:
+        snap = rt.serialize_table(dealt, me)
+        assert snap["type"] == "table" and "board_slots" in snap
+        api = c.get(f"/apps/poker/api/game/{dealt.id}", secure=True)
+        assert api.status_code == 200
+        assert api.json().get("type") == "table"
+        table_html = c.get(f"/apps/poker/canvas?tab=table&id={dealt.id}", secure=True).content
+        assert b"poker-realtime.js" in table_html
+        assert b"data-ws-url" in table_html
+        assert b"/ws/poker/game/" in table_html
+        ok("poker JSON API + LIVE canvas hooks")
+    else:
+        ok("poker room LIVE hooks (deal skipped: need 2+ users)")
+
     print("ALL poker probes passed")
 
 

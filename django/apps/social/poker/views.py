@@ -13,6 +13,7 @@ from apps.social.services import friend_ids
 from . import engine as poker_engine
 from . import lessons as poker_lessons
 from . import puzzles as poker_puzzles
+from . import realtime as poker_rt
 from . import service as poker
 from .forms import (
     ChallengeForm, GameActionForm, LessonQuizForm, PuzzleAnswerForm,
@@ -93,6 +94,7 @@ def render_poker_canvas(request, me, app):
             if action == "accept":
                 gid = int(request.POST.get("game_id") or 0)
                 g = poker.accept_challenge(me, gid)
+                poker_rt.notify_game(g, event="deal")
                 messages.success(request, "Раздача началась. Удачи!")
                 return redirect(_poker_url("table", id=g.id))
 
@@ -116,6 +118,7 @@ def render_poker_canvas(request, me, app):
                     form.cleaned_data["play"],
                     raise_to=int(form.cleaned_data.get("raise_to") or 0),
                 )
+                poker_rt.notify_game(g, event="acted")
                 if g.status == "done":
                     messages.success(request, f"Раздача окончена: {g.last_action}")
                     if g.room_id:
@@ -140,6 +143,7 @@ def render_poker_canvas(request, me, app):
                     max_seats=int(form.cleaned_data.get("max_seats") or 6),
                 )
                 poker.mark_host_achievement(me)
+                poker_rt.broadcast_room(r.id, "created")
                 msg = f"Комната на {r.max_seats} мест создана."
                 if r.is_private and r.join_code:
                     msg += f" Код: {r.join_code}"
@@ -158,6 +162,7 @@ def render_poker_canvas(request, me, app):
             if action == "join_room":
                 rid = int(request.POST.get("room_id") or 0)
                 r = poker.join_room(me, room_id=rid or None)
+                poker_rt.broadcast_room(r.id, "join")
                 messages.success(request, "Вы за столом.")
                 return redirect(_poker_url("room", id=r.id))
 
@@ -167,24 +172,29 @@ def render_poker_canvas(request, me, app):
                     join_form = form
                     raise ValueError("Введите код комнаты")
                 r = poker.join_room(me, join_code=form.cleaned_data["join_code"])
+                poker_rt.broadcast_room(r.id, "join")
                 messages.success(request, f"Вход в «{r.title}».")
                 return redirect(_poker_url("room", id=r.id))
 
             if action == "leave_room":
                 rid = int(request.POST.get("room_id") or 0)
                 poker.leave_room(me, rid)
+                poker_rt.broadcast_room(rid, "leave")
                 messages.info(request, "Вы вышли из комнаты.")
                 return redirect(_poker_url("rooms"))
 
             if action == "close_room":
                 rid = int(request.POST.get("room_id") or 0)
                 poker.close_room(me, rid)
+                poker_rt.broadcast_room(rid, "closed")
                 messages.info(request, "Комната закрыта.")
                 return redirect(_poker_url("rooms"))
 
             if action == "start_hand":
                 rid = int(request.POST.get("room_id") or 0)
                 g = poker.start_room_hand(me, rid)
+                poker_rt.notify_game(g, event="deal")
+                poker_rt.broadcast_room(rid, "playing")
                 messages.success(request, "Новая раздача!")
                 return redirect(_poker_url("table", id=g.id))
 

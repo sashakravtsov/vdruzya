@@ -129,10 +129,18 @@ if [[ -f "${ROOT}/django/apps/social/models/polls.py" ]]; then
 else
   echo "OK   no polls module"
 fi
-if grep -q 'CHANNEL_LAYERS' "${ROOT}/django/config/settings.py" 2>/dev/null; then
-  echo "FAIL CHANNEL_LAYERS still configured"; FAIL=1
+# Messenger WS is banned; poker Channels LIVE is allowed.
+if [[ -f "${ROOT}/django/static/js/messenger.js" ]] || grep -RIl 'MessengerConsumer\|messenger\.js' \
+    "${ROOT}/django/apps/social" 2>/dev/null | grep -q .; then
+  echo "FAIL messenger WebSocket artifacts present"; FAIL=1
 else
-  echo "OK   no CHANNEL_LAYERS"
+  echo "OK   no messenger WebSocket"
+fi
+if grep -q 'CHANNEL_LAYERS' "${ROOT}/django/config/settings.py" 2>/dev/null \
+   && grep -q 'poker' "${ROOT}/django/apps/social/poker/routing.py" 2>/dev/null; then
+  echo "OK   poker CHANNEL_LAYERS"
+else
+  echo "FAIL poker Channels not wired"; FAIL=1
 fi
 if grep -q 'Что у вас нового' "${ROOT}/django/templates/social/feed.html" 2>/dev/null; then
   echo "FAIL feed still has status publisher"; FAIL=1

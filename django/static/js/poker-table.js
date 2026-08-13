@@ -74,9 +74,11 @@
     });
   });
 
+  // Prefer Channels LIVE; HTTP poll only as fallback while waiting.
   var waiting = root.getAttribute("data-waiting") === "1";
   var pollUrl = root.getAttribute("data-poll-url") || "";
-  if (waiting && pollUrl) {
+  var hasRt = root.getAttribute("data-poker-rt") === "game";
+  if (waiting && pollUrl && !hasRt) {
     var tries = 0;
     var timer = window.setInterval(function () {
       tries += 1;
@@ -96,4 +98,11 @@
         .catch(function () {});
     }, 4000);
   }
+
+  root.addEventListener("poker:state", function (ev) {
+    var st = ev.detail || {};
+    if (st.can_act) beep("turn");
+    else if (st.status === "done") beep("win");
+    else if (st.event === "deal" || st.event === "acted") beep("chip");
+  });
 })();

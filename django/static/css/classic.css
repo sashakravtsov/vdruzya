@@ -1489,6 +1489,29 @@ body.fb-dialog-open { overflow: hidden; }
   float: right; font: 10px/14px var(--font); color: #567; cursor: pointer; text-decoration: none;
 }
 .poker-app .poker-mute.is-off { color: #999; }
+.poker-app .poker-live {
+  display: inline-block; margin-left: 8px; padding: 1px 7px;
+  border: 1px solid #8a3; background: #f4ffe8; color: #360;
+  font: bold 10px/14px var(--font); letter-spacing: .04em; vertical-align: middle;
+}
+.poker-app .poker-live.is-on {
+  border-color: #2a7; background: #e7ffe8; color: #164;
+  animation: pk-live 1.4s ease-in-out infinite;
+}
+@keyframes pk-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .72; }
+}
+.poker-app .poker-toast {
+  margin: 0 0 8px; padding: 6px 9px; border: 1px solid #e6c48a; background: #fff8e8;
+  font: 11px/15px var(--font); color: #643;
+}
+.poker-app .poker-coach {
+  margin: 0 0 8px; padding: 6px 9px; border: 1px solid #c3cde0; background: #f3f7fc;
+  font: 11px/15px var(--font); color: #345;
+}
+.poker-app #poker-rt-actions .inputsubmit { margin: 0 4px 6px 0; }
+.poker-app #poker-rt-actions .poker-raise-form { margin-top: 8px; }
 
 /* Oval casino table */
 .poker-app .poker-arena {

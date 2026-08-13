@@ -3,11 +3,12 @@
 {% load poker_tags %}
 {% block canvas_body %}
 <div class="profile-box poker-app" id="poker-app"
-     {% if tab == 'table' and view %}data-waiting="{% if view.waiting %}1{% else %}0{% endif %}" data-poll-url="{% url 'apps.canvas' 'poker' %}?tab=table&amp;id={{ game.id }}"{% endif %}>
-    <h4>Покер</h4>
+     {% if tab == 'table' and game and view %}data-poker-rt="game" data-ws-url="/ws/poker/game/{{ game.id }}/" data-waiting="{% if view.waiting %}1{% else %}0{% endif %}" data-poll-url="{% url 'apps.canvas' 'poker' %}?tab=table&amp;id={{ game.id }}"{% elif tab == 'room' and room %}data-poker-rt="room" data-ws-url="/ws/poker/room/{{ room.id }}/"{% endif %}>
+    <h4>Покер <span class="poker-live" data-poker-live hidden>…</span></h4>
     <div class="profile-box-body">
         <a href="#" class="poker-mute" id="poker-mute">звук</a>
-        <p class="poker-lead">Texas Hold'em: комнаты, приватные столы, рейтинг Elo и чемпионат недели.</p>
+        <p class="poker-lead">Texas Hold'em LIVE: комнаты 2–6, приватные столы, Elo, чемпионат и школа игры.</p>
+        <p class="poker-toast" data-poker-toast hidden></p>
         <p class="poker-strip">
             Фишки <b>{{ strip.chips_fmt|default:strip.chips }}</b>
             · рейтинг <b>{{ strip.rating }}</b>
@@ -242,7 +243,7 @@
         {% if tab == 'room' and room and room_meta %}
         <p><a href="{% url 'apps.canvas' 'poker' %}?tab=rooms">← все комнаты</a></p>
         <h5>{{ room.title }}{% if room.is_private %} <span class="poker-lock">приват</span>{% endif %}
-            <span class="muted">· {{ room_meta.filled_n }}/{{ room_meta.max_seats }}</span></h5>
+            <span class="muted">· <span data-poker-seat-count>{{ room_meta.filled_n }}/{{ room_meta.max_seats }}</span></span></h5>
         <div class="poker-room-panel">
             <p>
                 Хозяин <b>{{ room.owner.name }}</b>
@@ -250,11 +251,12 @@
                 · статус <b>{{ room.status }}</b>
                 · раздач <b>{{ room.hands_played }}</b>
                 {% if room.in_champ %} · чемпионат{% endif %}
+                · обновление LIVE
             </p>
             {% if room.is_private and room_meta.is_owner %}
             <p class="poker-code-box">Код для друзей: <b>{{ room.join_code }}</b></p>
             {% endif %}
-            <div class="poker-seats-row multi">
+            <div class="poker-seats-row multi" data-poker-seat-list>
                 {% for s in room_meta.seats %}
                 <div class="poker-seat-slot{% if s.me %} me{% endif %}{% if s.empty %} empty{% endif %}">
                     <span class="muted">Место {{ s.idx|add:1 }}</span>
@@ -270,13 +272,14 @@
                     <button type="submit" class="inputsubmit">Сесть за стол</button>
                 </form>
                 {% endif %}
-                {% if room_meta.can_start %}
-                <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ room.id }}" class="inline">{% csrf_token %}
+                <span data-poker-start-wrap{% if not room_meta.can_start %} hidden{% endif %}>
+                <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ room.id }}" class="inline" data-poker-start-form>{% csrf_token %}
                     <input type="hidden" name="action" value="start_hand">
                     <input type="hidden" name="room_id" value="{{ room.id }}">
-                    <button type="submit" class="inputsubmit">Раздать карты ({{ room_meta.filled_n }} игр.)</button>
+                    <button type="submit" class="inputsubmit">Раздать карты</button>
                 </form>
-                {% elif room_meta.seat is not None and room_meta.filled_n < 2 %}
+                </span>
+                {% if room_meta.seat is not None and room_meta.filled_n < 2 %}
                 <span class="muted">Ждём ещё игроков…</span>
                 {% endif %}
                 {% if room_meta.last_game %}
@@ -302,7 +305,7 @@
 
         {% if tab == 'table' and game and view %}
         {% if game.status == 'pending' %}
-        <div class="poker-turn-banner pending">Ожидание принятия вызова · {{ view.sb_fmt }}/{{ view.bb_fmt }} · бай-ин {{ view.buy_in_fmt }}</div>
+        <div class="poker-turn-banner pending" data-poker-banner>Ожидание принятия вызова · {{ view.sb_fmt }}/{{ view.bb_fmt }} · бай-ин {{ view.buy_in_fmt }}</div>
         {% if game.invited_by_id != me.id %}
         <form method="post" action="{% url 'apps.canvas' 'poker' %}?tab=table&amp;id={{ game.id }}">{% csrf_token %}
             <input type="hidden" name="action" value="accept">
@@ -311,13 +314,16 @@
         </form>
         {% endif %}
         {% elif game.status == 'done' %}
-        <div class="poker-turn-banner done">{{ game.last_action }}{% if game.hand_label %} · {{ game.hand_label }}{% endif %}</div>
+        <div class="poker-turn-banner done" data-poker-banner>{{ game.last_action }}{% if game.hand_label %} · {{ game.hand_label }}{% endif %}</div>
         {% else %}
-        <div class="poker-turn-banner{% if view.can_act %} yours{% endif %}">
-            {% if view.can_act %}Ваш ход · {{ view.street_label }}{% elif view.waiting %}Ход соперника · {{ view.street_label }} · автообновление{% else %}{{ view.street_label }}{% endif %}
+        <div class="poker-turn-banner{% if view.can_act %} yours{% endif %}" data-poker-banner>
+            {% if view.can_act %}Ваш ход · {{ view.street_label }}{% elif view.waiting %}Ход соперника · {{ view.street_label }} · LIVE{% else %}{{ view.street_label }}{% endif %}
             {% if game.last_action %} · {{ game.last_action }}{% endif %}
         </div>
         {% endif %}
+        <p class="poker-coach" data-poker-coach {% if not view.can_act %}hidden{% endif %}>
+            {% if view.can_act %}Подсказка тренера появится для улицы — играйте осознанно.{% endif %}
+        </p>
 
         <div class="poker-arena" id="poker-arena"
              data-status="{{ game.status }}"
@@ -330,15 +336,16 @@
                     {% if game.room_id %}<span>комната #{{ game.room_id }}</span>{% endif %}
                     {% if view.mode == 'multi' %}<span>{{ view.players_n }} игр.</span>{% endif %}
                     <span>{{ view.sb_fmt }}/{{ view.bb_fmt }}</span>
+                    <span>Channels LIVE</span>
                 </div>
-                <div class="poker-streets">
+                <div class="poker-streets" data-poker-streets>
                     {% for s in view.streets %}<i class="{% if s.on %}on{% endif %}">{{ s.label }}</i>{% endfor %}
                 </div>
 
                 {% if view.mode == 'multi' %}
-                <div class="poker-multi-ring">
+                <div class="poker-multi-ring" data-poker-multi-ring>
                     {% for s in view.multi_seats %}
-                    <div class="poker-mseat a{{ s.angle }}{% if s.to_act %} to-act{% endif %}{% if s.me %} me{% endif %}{% if s.folded %} folded{% endif %}">
+                    <div class="poker-mseat a{{ s.angle }}{% if s.to_act %} to-act{% endif %}{% if s.me %} me{% endif %}{% if s.folded %} folded{% endif %}" data-poker-mseat="{{ s.idx }}">
                         <div class="poker-nameplate">
                             <b>{{ s.name }}</b>{% if s.dealer %}<span class="poker-dealer" title="Дилер">D</span>{% endif %}
                             <div class="poker-stack-line">стек {{ s.stack_fmt }}{% if s.all_in %} · олл-ин{% endif %}</div>
@@ -354,24 +361,24 @@
                     {% endfor %}
                 </div>
                 <div class="poker-board-wrap center-board">
-                    <div class="poker-pot">{% pk_chip_stack view.pot %} Банк <b>{{ view.pot_fmt }}</b></div>
-                    <div class="poker-board">
+                    <div class="poker-pot" data-poker-pot>{% pk_chip_stack view.pot %} Банк <b>{{ view.pot_fmt }}</b></div>
+                    <div class="poker-board" data-poker-board>
                         {% for c in view.board_slots %}
                             {% if c %}{% pk_card c "lg" forloop.counter0 %}{% else %}<span class="pk-slot"></span>{% endif %}
                         {% endfor %}
                     </div>
-                    {% if view.hand_strength %}<div class="poker-hand-hint">Комбинация: <b>{{ view.hand_strength }}</b></div>{% endif %}
+                    <div class="poker-hand-hint" data-poker-strength {% if not view.hand_strength %}hidden{% endif %}>{% if view.hand_strength %}Комбинация: <b>{{ view.hand_strength }}</b>{% endif %}</div>
                 </div>
                 {% else %}
-                <div class="poker-seat top{% if view.waiting %} to-act{% endif %}">
+                <div class="poker-seat top{% if view.waiting %} to-act{% endif %}" data-poker-seat="opp">
                     <div class="poker-nameplate">
-                        <b>{{ view.opp_name }}</b>{% if view.opp_is_dealer %}<span class="poker-dealer" title="Дилер">D</span>{% endif %}
-                        <div class="poker-stack-line">стек {{ view.opp_stack_fmt }}</div>
+                        <b data-poker-seat-name>{{ view.opp_name }}{% if view.opp_is_dealer %}<span class="poker-dealer" title="Дилер">D</span>{% endif %}</b>
+                        <div class="poker-stack-line" data-poker-seat-stack>стек {{ view.opp_stack_fmt }}</div>
                     </div>
-                    <div class="poker-bet-line">
+                    <div class="poker-bet-line" data-poker-seat-bet>
                         {% if view.opp_bet %}{% pk_chip_stack view.opp_bet %} {{ view.opp_bet_fmt }}{% else %}&nbsp;{% endif %}
                     </div>
-                    <div class="poker-hole">
+                    <div class="poker-hole" data-poker-seat-cards>
                         {% if view.opp_cards %}
                             {% for c in view.opp_cards %}{% pk_card c "" forloop.counter0 %}{% endfor %}
                         {% elif game.status == 'active' or game.status == 'done' %}
@@ -381,38 +388,38 @@
                 </div>
 
                 <div class="poker-board-wrap">
-                    <div class="poker-pot">
+                    <div class="poker-pot" data-poker-pot>
                         {% pk_chip_stack view.pot %}
                         Банк <b>{{ view.pot_fmt }}</b>
                     </div>
-                    <div class="poker-board">
+                    <div class="poker-board" data-poker-board>
                         {% for c in view.board_slots %}
                             {% if c %}{% pk_card c "lg" forloop.counter0 %}{% else %}<span class="pk-slot"></span>{% endif %}
                         {% endfor %}
                     </div>
                 </div>
 
-                <div class="poker-seat bot{% if view.can_act %} to-act{% endif %}">
-                    <div class="poker-bet-line">
+                <div class="poker-seat bot{% if view.can_act %} to-act{% endif %}" data-poker-seat="me">
+                    <div class="poker-bet-line" data-poker-seat-bet>
                         {% if view.my_bet %}{% pk_chip_stack view.my_bet %} {{ view.my_bet_fmt }}{% else %}&nbsp;{% endif %}
                     </div>
-                    <div class="poker-hole">
+                    <div class="poker-hole" data-poker-seat-cards>
                         {% for c in view.my_cards %}{% pk_card c "mine" forloop.counter0 %}{% empty %}
                         {% if game.status == 'pending' %}<span class="poker-hand-hint">карты после старта</span>{% endif %}
                         {% endfor %}
                     </div>
                     <div class="poker-nameplate">
-                        <b>{{ me.name }}</b>{% if view.i_am_dealer %}<span class="poker-dealer" title="Дилер">D</span>{% endif %}
-                        <div class="poker-stack-line">стек {{ view.my_stack_fmt }}</div>
+                        <b>{{ me.name }}</b><span class="poker-dealer" title="Дилер" data-poker-me-dealer {% if not view.i_am_dealer %}hidden{% endif %}>D</span>
+                        <div class="poker-stack-line" data-poker-seat-stack>стек {{ view.my_stack_fmt }}</div>
                     </div>
-                    {% if view.hand_strength %}
-                    <div class="poker-hand-hint">Комбинация: <b>{{ view.hand_strength }}</b></div>
-                    {% endif %}
+                    <div class="poker-hand-hint" data-poker-strength {% if not view.hand_strength %}hidden{% endif %}>{% if view.hand_strength %}Комбинация: <b>{{ view.hand_strength }}</b>{% endif %}</div>
                 </div>
                 {% endif %}
             </div>
         </div>
 
+        <div id="poker-rt-actions" class="poker-actions" hidden></div>
+        <div data-poker-ssr-actions{% if not view.can_act %} hidden{% endif %}>
         {% if view.can_act %}
         <div class="poker-actions">
             {% for a in view.legal %}
@@ -452,15 +459,16 @@
         </form>
         {% endif %}
         {% endif %}
+        </div>
 
-        {% if actions %}
         <h5>Лог раздачи</h5>
-        <ul class="poker-simple-list">
+        <ul class="poker-simple-list" data-poker-log>
             {% for a in actions %}
             <li><span class="muted">{{ a.street }}</span> · {{ a.actor.name }}: {{ a.action }}{% if a.amount %} {{ a.amount|pk_chips }}{% endif %}</li>
+            {% empty %}
+            <li class="muted">Ходы появятся здесь в LIVE</li>
             {% endfor %}
         </ul>
-        {% endif %}
         <p>
             {% if game.room_id %}<a href="{% url 'apps.canvas' 'poker' %}?tab=room&amp;id={{ game.room_id }}">← в комнату</a> ·{% endif %}
             <a href="{% url 'apps.canvas' 'poker' %}?tab=play">к лобби</a>
@@ -702,7 +710,8 @@
         {% endif %}
     </div>
 </div>
-{% if tab == 'table' or tab == 'rooms' or tab == 'play' %}
+{% if tab == 'table' or tab == 'room' or tab == 'rooms' or tab == 'play' %}
 <script src="{% static 'js/poker-table.js' %}" defer></script>
+<script src="{% static 'js/poker-realtime.js' %}" defer></script>
 {% endif %}
 {% endblock %}
