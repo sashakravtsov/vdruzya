@@ -1,0 +1,66 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Задать вопрос</h4>
+    <div class="profile-box-body">
+        {% if friends %}
+        <form method="post">{% csrf_token %}
+            <input type="hidden" name="action" value="ask">
+            <table class="formtable" cellspacing="0">
+                <tr>
+                    <td class="label">Другу:</td>
+                    <td>
+                        <select name="friend_id" class="inputtext">
+                            {% for f in friends %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Вопрос:</td>
+                    <td><input class="inputtext" type="text" name="question" maxlength="300" style="width:100%"></td>
+                </tr>
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Спросить"></td></tr>
+            </table>
+        </form>
+        {% else %}
+        <p class="muted">Нужны друзья.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="profile-box">
+    <h4>Вам задали</h4>
+    <div class="profile-box-body">
+        {% for a in incoming %}
+        <div class="minifeed-item">
+            <a href="{% url 'profile' a.from_user.id %}"><b>{{ a.from_user.name }}</b></a>:
+            {{ a.question }}
+            {% if a.answer %}
+            <div class="muted">ответ: {{ a.answer }}</div>
+            {% else %}
+            <form method="post" class="stack-sm">{% csrf_token %}
+                <input type="hidden" name="action" value="answer">
+                <input type="hidden" name="ask_id" value="{{ a.id }}">
+                <input class="inputtext" type="text" name="answer" maxlength="500" style="width:80%">
+                <input type="submit" class="inputbutton" value="Ответить">
+            </form>
+            {% endif %}
+        </div>
+        {% empty %}<p class="muted">Пока пусто.</p>{% endfor %}
+    </div>
+</div>
+
+<div class="profile-box">
+    <h4>Вы спросили</h4>
+    <div class="profile-box-body">
+        {% for a in outgoing %}
+        <div class="minifeed-item">
+            <a href="{% url 'profile' a.to_user.id %}"><b>{{ a.to_user.name }}</b></a>:
+            {{ a.question }}
+            {% if a.answer %}<div class="muted">ответ: {{ a.answer }}</div>
+            {% else %}<span class="muted"> · ждёт ответа</span>{% endif %}
+        </div>
+        {% empty %}<p class="muted">Пока пусто.</p>{% endfor %}
+    </div>
+</div>
+{% endblock %}

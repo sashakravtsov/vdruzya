@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}ВДрузья | Добро пожаловать во ВДрузья!{% endblock %}
+{% block welcome %}
+{% include "partials/sidebar.html" %}
+<div id="pagebody" class="welcome">
+    <div id="header"><h1>Добро пожаловать во ВДрузья!</h1></div>
+    <div id="content">
+        <div class="infocontent">
+            <h2>ВДрузья — социальная сеть, которая связывает людей через друзей, группы и общие интересы.</h2>
+            <p>Здесь можно общаться, смотреть, как люди знакомы друг с другом, и находить единомышленников.</p>
+            <p>Вступление — по приглашению друга. Уже в сети? Войдите слева.</p>
+            <p>Во ВДрузья вы можете:</p>
+            <ul class="bulletpoints">
+                <li><span>Искать людей и добавлять друзей.</span></li>
+                <li><span>Смотреть, как люди связаны друг с другом.</span></li>
+                <li><span>Находить группы и события.</span></li>
+                <li><span>Делиться фото и писать на стену.</span></li>
+            </ul>
+            <p class="welcome-cta muted">Нужна ссылка-приглашение от участника ВДрузья.</p>
+        </div>
+    </div>
+    {% include "partials/footer.html" %}
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}

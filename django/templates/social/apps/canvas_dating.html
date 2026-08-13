@@ -1,0 +1,30 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Знакомства</h4>
+    <div class="profile-box-body">
+        <p class="muted">Демо-совместимость среди друзей (без стороннего хостинга).</p>
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead>
+                <tr>
+                    <th class="col-name">Кто</th>
+                    <th class="col-type">Совместимость</th>
+                    <th class="col-act"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in matches %}
+                <tr>
+                    <td class="col-name"><a href="{% url 'profile' m.profile.id %}"><b>{{ m.profile.name }}</b></a></td>
+                    <td class="col-type"><b>{{ m.score }}%</b> · {{ m.note }}</td>
+                    <td class="col-act"><a href="{% url 'inbox.start' m.profile.id %}">написать</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="muted">Добавьте друзей — появятся совпадения.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="muted">Разработчик: ВДрузья</p>
+    </div>
+</div>
+{% endblock %}

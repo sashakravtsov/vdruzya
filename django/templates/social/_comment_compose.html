@@ -1,0 +1,14 @@
+{# Classic reveal compose. Expects: action, compose_id; optional compose_kind, form, next, open #}
+{# Unique ids: c-<kind>-<id> — avoids collisions across wall/photo/group + photo modal leftovers. #}
+{% with kind=compose_kind|default:"post" %}
+<form method="post" action="{{ action }}"
+      class="wall-comment-compose{% if open or form and form.errors %} is-open{% endif %}"
+      id="c-{{ kind }}-{{ compose_id }}">{% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <input class="inputtext input-comment" type="text" name="body"
+           id="body-{{ kind }}-{{ compose_id }}"
+           maxlength="2000" autocomplete="off"
+           value="{% if form and form.body.value %}{{ form.body.value }}{% endif %}">
+    <input type="submit" class="inputsubmit" value="Комментировать">
+</form>
+{% endwith %}

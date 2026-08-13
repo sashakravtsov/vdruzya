@@ -1,0 +1,9 @@
+{% with u=request.resolver_match.url_name %}
+<div id="tabs">
+    <div class="{% if u == 'about' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'about' %}">О сайте</a></div>
+    <div class="{% if u == 'security' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'security' %}">Помощь</a></div>
+    <div class="{% if u == 'contacts' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'contacts' %}">Контакты</a></div>
+    <div class="{% if u == 'terms' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'terms' %}">Правила</a></div>
+    <div class="{% if u == 'privacy' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'privacy' %}">Конфиденциальность</a></div>
+</div>
+{% endwith %}
