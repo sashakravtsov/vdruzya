@@ -17,6 +17,16 @@
                 <table class="infotable">
                     <tr><td class="label">Разработчик:</td><td>{{ app.developer|default:"ВДрузья" }}</td></tr>
                     <tr><td class="label">Тип:</td><td>canvas · first-party</td></tr>
+                    <tr>
+                        <td class="label">Разрешения:</td>
+                        <td>
+                            <ul class="app-perms-list">
+                                {% for p in app_permissions %}
+                                <li>{{ p }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
                 </table>
                 <p class="stack-md action-row">
                     {% if user.is_authenticated %}
@@ -39,14 +49,6 @@
                                     data-fb-dialog-message="{{ install_dialog_message }}"
                                     data-fb-dialog-form="#app-inst">Добавить приложение</button>
                         </form>
-                        <div class="stack-md">
-                            <p class="muted">При установке запрашиваются разрешения:</p>
-                            <ul>
-                                {% for p in app_permissions %}
-                                <li>{{ p }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
                         {% endif %}
                     {% else %}
                         <a href="{% url 'login' %}">Войдите</a>, чтобы добавить приложение.

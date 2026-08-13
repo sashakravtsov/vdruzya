@@ -112,7 +112,11 @@ def main():
     ), "hashtag story missing from feed"
     ok("hashtag feed story")
 
+    # Legacy App Center slug → real Graph Search route (302)
     r = c.get("/apps/graph", secure=True)
+    assert r.status_code in (301, 302)
+    assert (r.get("Location") or "").endswith("/graph")
+    r = c.get("/apps/graph", secure=True, follow=True)
     assert r.status_code == 200
     assert "Поиск по графу".encode() in r.content
     ok("app center graph")

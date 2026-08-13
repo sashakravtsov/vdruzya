@@ -207,7 +207,9 @@ def main():
     assert len(pa.PLATFORM_APPS) >= 12
     assert "Список друзей" in pa.permissions_for(pa.app_by_slug("dating"))
     r = c.get("/apps/calculator", secure=True)
-    assert r.status_code == 200 and "Разрешен".encode() in r.content
+    assert r.status_code == 200
+    body = r.content.decode("utf-8", "ignore").lower()
+    assert "александр" in body and "разрешен" in body
     ok("platform apps + install permissions")
 
     print("ALL techdebt probes passed")
