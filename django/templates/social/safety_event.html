@@ -1,11 +1,11 @@
 {% extends "layout.html" %}
 {% load vd %}
-{% block title %}{{ event.title }} — Safety Check{% endblock %}
+{% block title %}{{ event.title }} — Проверка безопасности{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="safety-page">
-    <div id="header">
+    <div id="header" class="withsubtitle">
         <h1>{{ event.title }}</h1>
-        <div class="subtitle"><a href="{% url 'safety' %}">← Safety Check</a></div>
+        <div class="subtitle"><a href="{% url 'safety' %}">← проверка безопасности</a></div>
     </div>
     <div id="content">
         {% include "partials/flash.html" %}

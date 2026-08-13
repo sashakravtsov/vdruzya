@@ -36,7 +36,7 @@
                 <div class="classic-person-row">
                     {% include "social/_list_thumb.html" with url=c.cover_url href=c.get_absolute_url %}
                     <a href="{% url 'collections.show' c.id %}"><b>{{ c.title }}</b></a>
-                    <span class="muted"> · {{ c.visibility }}</span>
+                    <span class="muted"> · {% if c.visibility == 'public' %}всем{% elif c.visibility == 'friends' %}друзьям{% else %}только мне{% endif %}</span>
                     <form method="post" action="{% url 'collections.delete' c.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish muted" onclick="return confirm('Удалить коллекцию?');">удалить</button>
                     </form>

@@ -27,13 +27,13 @@
                     {% if event.description %}<p class="stack-sm">{{ event.description|linebreaksbr }}</p>{% endif %}
 
                     {% if is_host %}
-                    <p class="muted stack-sm">
+                    <div class="muted stack-sm action-row">
                         <a href="{% url 'events.edit' event.id %}">ред.</a>
                         ·
                         <form method="post" action="{% url 'events.delete' event.id %}" class="inline">{% csrf_token %}
                             <button type="submit" class="linkish muted" onclick="return confirm('Удалить событие?');">удалить</button>
                         </form>
-                    </p>
+                    </div>
                     {% endif %}
 
                     <div class="event-rsvp">

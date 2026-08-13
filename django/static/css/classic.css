@@ -1293,6 +1293,23 @@ button.linkish .ico { margin-right: 2px; }
 .app-open-btn { padding: 4px 10px; text-decoration: none; }
 .wall-comment-compose .input-comment,
 .wall-comment-compose input.input-comment { width: 80%; }
+.action-row { overflow: hidden; }
+.action-row form.inline { display: inline; }
+.photo-tags-list { margin: 0 0 6px; line-height: 16px; }
+.photo-tags-list form.inline { display: inline; }
+/* orphan browse modules — same content padding as gifts/account */
+.notifications-page #content,
+.birthdays-page #content,
+.lists-page #content,
+.blocked-page #content,
+.networks-page #content,
+.places-page #content,
+.og-page #content,
+.saves-page #content,
+.safety-page #content,
+.trending-page #content,
+.hashtag-page #content,
+.mobile-page #content { padding: 10px; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-video { margin-top: 4px; }
 .inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }

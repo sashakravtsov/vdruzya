@@ -410,6 +410,22 @@ if ! grep -q 'list-row-body' "${ROOT}/django/templates/social/links.html" 2>/dev
 else
   echo "OK   layout pass list-row + stack helpers"
 fi
+# Module pass: no form-in-<p>, group_doc chrome, RU era chrome
+if grep -n '<p[^>]*>[^<]*<form' "${ROOT}/django/templates/social/marketplace_show.html" \
+      "${ROOT}/django/templates/social/event.html" \
+      "${ROOT}/django/templates/social/group_doc.html" 2>/dev/null | grep -q .; then
+  echo "FAIL form nested in <p> on market/event/group_doc"; FAIL=1
+else
+  echo "OK   no form-in-p on market/event/group_doc"
+fi
+if ! grep -q 'class="group-page"' "${ROOT}/django/templates/social/group_doc.html" 2>/dev/null \
+   || ! grep -q 'withsubtitle' "${ROOT}/django/templates/social/safety_event.html" 2>/dev/null \
+   || ! grep -q 'Лента жизни' "${ROOT}/django/templates/social/profile.html" 2>/dev/null \
+   || ! grep -q 'Проверка безопасности' "${ROOT}/django/templates/social/safety.html" 2>/dev/null; then
+  echo "FAIL module pass chrome (group_doc/safety/timeline RU)"; FAIL=1
+else
+  echo "OK   module pass chrome (group_doc/safety/timeline RU)"
+fi
 if [[ -f "${ROOT}/django/templates/social/videos.html" ]]; then
   echo "FAIL duplicate videos.html still present"; FAIL=1
 else

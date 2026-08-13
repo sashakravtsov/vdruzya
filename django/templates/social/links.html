@@ -7,7 +7,7 @@
     <div id="content">
         {% include "partials/flash.html" %}
         <div id="tabs">
-            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="?">Друзья</a></div>
+            <div class="{% if not mine %}activetab{% else %}inactivetab{% endif %}"><a href="{% if kind == 'video' %}{% url 'videos' %}{% else %}{% url 'links' %}{% endif %}">Друзья</a></div>
             <div class="{% if mine %}activetab{% else %}inactivetab{% endif %}"><a href="?mine=1">Мои</a></div>
         </div>
         <div class="profile-box">

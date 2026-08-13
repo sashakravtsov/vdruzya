@@ -20,7 +20,7 @@
     </div>
     <div class="clear"></div>
     <div id="currentcover">
-        <h4>Обложка профиля (Timeline)</h4>
+        <h4>Обложка профиля</h4>
         {% if me.cover_url %}
         <img src="{{ me.cover_url }}" alt="" class="profile-cover-img">
         <form method="post" action="{% url 'profile.cover.clear' %}" class="avatar-clear">{% csrf_token %}

@@ -23,20 +23,20 @@
                 </table>
                 {% if item.description %}<p class="stack-sm">{{ item.description|linebreaksbr }}</p>{% endif %}
                 {% if user.is_authenticated and item.social_user_id != me.id %}
-                <p class="stack-md">
+                <div class="stack-md action-row">
                     <form method="post" action="{% url 'inbox.start' item.social_user.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="inputsubmit">Написать продавцу</button>
                     </form>
-                </p>
+                </div>
                 {% endif %}
                 {% if is_owner %}
-                <p class="stack-md">
+                <div class="stack-md action-row">
                     <a href="{% url 'marketplace.edit' item.id %}">ред.</a>
                     ·
                     <form method="post" action="{% url 'marketplace.delete' item.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish muted" onclick="return confirm('Удалить объявление?');">удалить</button>
                     </form>
-                </p>
+                </div>
                 {% endif %}
             </div>
         </div>

@@ -355,7 +355,7 @@
         <span class="ico ico-note news-ico"></span>
         <div class="news-body">
             <a href="{% url 'profile' item.actor.id %}">{{ item.actor.name }}</a>
-            добавил(а) этап на Timeline:
+            добавил(а) этап ленты жизни:
             <a href="{% url 'profile' item.actor.id %}?tab=timeline&amp;y={{ item.milestone.occurred_on.year }}"><b>{{ item.milestone.title }}</b></a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
         </div>

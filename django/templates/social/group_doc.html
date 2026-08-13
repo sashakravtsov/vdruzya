@@ -2,7 +2,7 @@
 {% load vd %}
 {% block title %}{{ doc.title }} — {{ group.name }} — ВДрузья{% endblock %}
 {% block pagebody %}
-<div id="pagebody" class="groups-page">
+<div id="pagebody" class="group-page">
     <div id="header" class="withsubtitle">
         <h1>{{ doc.title }}</h1>
         <div class="subtitle"><a href="{% url 'groups.show' group.id %}?tab=docs">← документы «{{ group.name }}»</a></div>
@@ -36,11 +36,11 @@
                 {% else %}
                 <div class="doc-body">{{ doc.body|linebreaksbr }}</div>
                 {% if is_admin %}
-                <p class="stack-sm">
+                <div class="stack-sm action-row">
                     <form method="post" action="{% url 'groups.docs.delete' group.id doc.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish muted" onclick="return confirm('Удалить документ?');">удалить</button>
                     </form>
-                </p>
+                </div>
                 {% endif %}
                 {% endif %}
             </div>

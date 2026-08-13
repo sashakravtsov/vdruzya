@@ -48,7 +48,7 @@
                 </div>
 
                 <div class="photo-tags">
-                    <p><b>На фото:</b>
+                    <div class="photo-tags-list"><b>На фото:</b>
                         {% for t in tags %}
                         <a href="{% url 'profile' t.social_user.id %}">{{ t.social_user.name }}</a>{% if t.is_pending %} <span class="muted">(ожидает)</span>{% endif %}{% if is_owner or me and me.id == t.social_user_id or me and me.id == t.tagged_by_id %}
                         <form method="post" action="{% url 'albums.photos.tag.delete' album.id photo.id t.id %}" class="inline">{% csrf_token %}
@@ -62,7 +62,7 @@
                         </form>{% endif %}{% if not forloop.last %}, {% endif %}
                         {% empty %}<span class="muted">никого не отметили</span>
                         {% endfor %}
-                    </p>
+                    </div>
                     {% if can_tag and tag_candidates %}
                     <form method="post" action="{% url 'albums.photos.tag' album.id photo.id %}" class="photo-tag-form">{% csrf_token %}
                         <table class="formtable" cellpadding="0" cellspacing="0">

@@ -17,7 +17,7 @@
         </p>
 
         <div class="profile-box">
-            <h4>{% if kind %}{{ kind }}{% else %}Недавно{% endif %}</h4>
+            <h4>{% if kind == "post" %}Посты{% elif kind == "link" %}Ссылки{% elif kind == "page" %}Страницы{% elif kind == "place" %}Места{% elif kind == "event" %}События{% elif kind %}{{ kind }}{% else %}Недавно{% endif %}</h4>
             <div class="profile-box-body">
                 {% for s in items %}
                 <div class="classic-person-row">

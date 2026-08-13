@@ -10,7 +10,7 @@
 {% endif %}
 
 <div class="profile-box">
-    <h4>Timeline{% if is_admin %} <a class="edit" href="{% url 'pages.edit' page.id %}">обложка</a>{% endif %}</h4>
+    <h4>Лента{% if is_admin %} <a class="edit" href="{% url 'pages.edit' page.id %}">обложка</a>{% endif %}</h4>
     <div class="profile-box-body">
         <div class="subtabs">
             {% for y in timeline_years %}
