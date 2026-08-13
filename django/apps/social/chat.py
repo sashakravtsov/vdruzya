@@ -168,13 +168,13 @@ def _snippet(c, me) -> str:
     return f"{who}: {text}" if who else text
 
 
-def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
+def _inbox_qs(me):
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
     mine = Message.objects.filter(conversation_id=OuterRef("pk"), social_user=me).order_by("-id")
     my_read_sq = ConversationMember.objects.filter(
         conversation_id=OuterRef("pk"), social_user=me,
     ).values("last_read_at")[:1]
-    qs = (
+    return (
         Conversation.objects.filter(
             community_id__isnull=True,
             members__social_user=me, members__archived_at__isnull=True,
@@ -196,6 +196,9 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
         .order_by(F("updated_at").desc(nulls_last=True), "-id")
         .distinct()
     )
+
+
+def _filter_inbox(qs, me, *, q="", unread_only=False, sent_only=False):
     q = (q or "").strip()
     if q:
         qs = qs.filter(
@@ -211,10 +214,10 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
             .filter(last_from_id__isnull=False, last_at__isnull=False)
             .filter(Q(my_read_at__isnull=True) | Q(last_at__gt=F("my_read_at")))
         )
+    return qs
 
-    rows = list(qs[offset: offset + limit + 1])
-    has_more = len(rows) > limit
-    rows = rows[:limit]
+
+def _decorate_inbox(rows, me, *, sent_only=False):
     for c in rows:
         c.display_name = label(c, me)
         c.peer = peer(c, me)
@@ -228,7 +231,14 @@ def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
             c.last_from_id and c.last_from_id != me.id and c.last_at
             and (c.my_read_at is None or c.last_at > c.my_read_at)
         )
-    return rows, has_more
+    return rows
+
+
+def inbox(me, limit=40, offset=0, q="", unread_only=False, sent_only=False):
+    qs = _filter_inbox(_inbox_qs(me), me, q=q, unread_only=unread_only, sent_only=sent_only)
+    rows = list(qs[offset: offset + limit + 1])
+    has_more = len(rows) > limit
+    return _decorate_inbox(rows[:limit], me, sent_only=sent_only), has_more
 
 
 def _msg_qs(conv, q=""):

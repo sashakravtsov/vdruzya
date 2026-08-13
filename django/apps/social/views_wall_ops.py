@@ -4,73 +4,32 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from apps.social.forms import CommentForm, NoteForm, PostForm
+from apps.social.forms import CommentForm
 from apps.social.models import Post
-from apps.social.services import attach_wall_notes, bump_news, feed_queryset, now, profile_of, wall_owner_id
+from apps.social.services import attach_wall_notes, feed_queryset, profile_of
 
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def post_edit(request, post_id):
+    from apps.social import note_edit as ne
     me = profile_of(request.user)
     post = get_object_or_404(Post, pk=post_id)
-    if not me or post.social_user_id != me.id:
-        messages.error(request, "Нельзя редактировать.")
-        return redirect(request.GET.get("next") or "feed")
-    on_wall = (post.topic or "").startswith("wall:")
-    is_note = getattr(post, "kind", None) == "note" or (post.topic or "") == "note"
-    # FB 2006 wall text: delete-only
-    if on_wall and not is_note:
-        messages.error(request, "Запись на стене нельзя редактировать — только удалить.")
-        oid = wall_owner_id(post)
-        return redirect(f"/profile/{oid}" if oid else (request.GET.get("next") or "feed"))
-    nxt = request.POST.get("next") or request.GET.get("next") or (
-        f"/profile/{me.id}?tab=notes" if is_note else "/feed"
-    )
-    if is_note:
-        initial = {
-            "title": post.media_label or "",
-            "body": post.body or "",
-            "visibility": post.visibility or "public",
-        }
-        form = NoteForm(
-            request.POST or None, request.FILES or None,
-            initial=None if request.method == "POST" else initial,
-        )
-        if request.method == "POST" and form.is_valid():
-            post.media_label = form.cleaned_data["title"]
-            post.body = form.cleaned_data["body"]
-            post.visibility = form.cleaned_data["visibility"]
-            post.kind = "note"
-            post.topic = "note"
-            post.updated_at = now()
-            fields = ["media_label", "body", "visibility", "kind", "topic", "updated_at"]
-            from apps.social.media import try_save_image
-            path = try_save_image(form.cleaned_data.get("photo"), "notes")
-            if path:
-                post.media_path = path
-                fields.append("media_path")
-            post.save(update_fields=fields)
-            bump_news()
-            messages.success(request, "Заметка сохранена.")
+    ok, err, extra = ne.can_edit(me, post)
+    if not ok:
+        messages.error(request, err)
+        return redirect(extra or request.GET.get("next") or "feed")
+    is_note = extra
+    nxt = ne.next_url(request, me, is_note)
+    form = ne.edit_forms(request, post, is_note)
+    if request.method == "POST":
+        saved = ne.save_note(post, form) if is_note else ne.save_post(post, form)
+        if saved:
+            messages.success(request, "Заметка сохранена." if is_note else "Запись обновлена.")
             return redirect(nxt)
-        return render(
-            request, "social/post_edit.html",
-            {"form": form, "post": post, "me": me, "next": nxt, "is_note": True},
-        )
-
-    form = PostForm(request.POST or None, request.FILES or None, instance=post, simple=False)
-    if request.method == "POST" and form.is_valid():
-        obj = form.save(commit=False)
-        obj.body = (obj.body or "").strip()
-        obj.updated_at = now()
-        obj.save(update_fields=["body", "visibility", "updated_at"])
-        bump_news()
-        messages.success(request, "Запись обновлена.")
-        return redirect(nxt)
     return render(
         request, "social/post_edit.html",
-        {"form": form, "post": post, "me": me, "next": nxt, "is_note": False},
+        {"form": form, "post": post, "me": me, "next": nxt, "is_note": is_note},
     )
 
 

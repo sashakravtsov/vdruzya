@@ -443,12 +443,11 @@ def post_tag_delete(request, post_id, tag_id):
 @login_required
 @require_POST
 def avatar_upload(request):
-    from django.conf import settings
-    from apps.social.media import save_image
+    from apps.social.media import try_save_image
     me = profile_of(request.user)
-    f = request.FILES.get("avatar")
-    if me and f and f.size <= settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
-        me.avatar_path = save_image(f, "avatars")
+    path = try_save_image(request.FILES.get("avatar"), "avatars") if me else None
+    if path:
+        me.avatar_path = path
         me.updated_at = _now()
         me.save(update_fields=["avatar_path", "updated_at"])
         Post.objects.create(

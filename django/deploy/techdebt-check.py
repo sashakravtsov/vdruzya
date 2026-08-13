@@ -134,9 +134,16 @@ def main():
     from apps.social import graph_search as gs
     from apps.social import groups_dir as gd
     from apps.social import inbox_ctx as ic
+    from apps.social import pages_dir as pd
+    from apps.social import ticker as tk
+    from apps.social import note_edit as ne
     assert callable(gs.graph_search) and callable(gd.directory_ctx) and callable(ic.build_inbox_ctx)
+    assert callable(pd.directory_ctx) and callable(tk.ticker_items) and callable(ne.save_note)
+    r = c.get("/search?q=а&tab=groups", secure=True)
+    assert r.status_code == 200, "search Q filter"
     ok("mini_feed slim + graph chrome")
     ok("wall/groups/graph/inbox/news slim modules")
+    ok("pages/ticker/note_edit slim + search Q")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()

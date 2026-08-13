@@ -231,67 +231,9 @@ def _add_follow_public(items, viewer, blocked, follows, limit):
 
 
 def ticker_items(viewer, limit=12):
-    """Compact friend/follow activity for News Feed right rail (classic Ticker)."""
-    if not viewer:
-        return []
-    from apps.social.models import Block, Post
-
-    fids = friend_ids(viewer) | {viewer.id}
-    follows = followee_ids(viewer)
-    actors = fids | follows
-    blocked = set(
-        Block.objects.filter(blocker=viewer).values_list("blocked_id", flat=True)
-    )
-    actors -= blocked
-    actors.discard(viewer.id)
-    if not actors:
-        return []
-    out = []
-    for p in (
-        Post.objects.filter(social_user_id__in=actors)
-        .filter(Q(visibility="public") | Q(visibility="") | Q(social_user_id__in=fids))
-        .exclude(kind="gift")
-        .select_related("social_user")
-        .defer(*profile_related("social_user__"))
-        .order_by("-id")[:limit]
-    ):
-        topic = p.topic or ""
-        if p.kind == "status" or topic == "status":
-            text = "обновил(а) статус"
-        elif topic == "picture":
-            text = "сменил(а) фото"
-        elif p.kind == "note":
-            text = "написал(а) заметку"
-        else:
-            text = "написал(а) на стене"
-        out.append({"at": p.created_at, "actor": p.social_user, "text": text, "url": p.get_absolute_url()})
-    for row in (
-        OgStory.objects.filter(social_user_id__in=actors)
-        .select_related("social_user")
-        .defer(*profile_related("social_user__"))
-        .order_by("-id")[:limit]
-    ):
-        out.append({
-            "at": row.created_at, "actor": row.social_user,
-            "text": f"{og_label(row.verb)} «{row.object_title}»",
-            "url": row.object_url or f"/profile/{row.social_user_id}",
-        })
-    for row in (
-        ProfileFollow.objects.filter(follower_id__in=fids)
-        .exclude(followee_id=viewer.id)
-        .select_related("follower", "followee")
-        .defer(*profile_related("follower__"), *profile_related("followee__"))
-        .order_by("-id")[:limit]
-    ):
-        if row.followee_id in blocked or row.follower_id in blocked:
-            continue
-        out.append({
-            "at": row.created_at, "actor": row.follower,
-            "text": f"подписался(ась) на {row.followee.name}",
-            "url": f"/profile/{row.followee_id}",
-        })
-    out.sort(key=lambda x: x["at"] or datetime.min, reverse=True)
-    return out[:limit]
+    """Compact friend/follow activity — builders in ticker.ticker_items."""
+    from apps.social.ticker import ticker_items as build
+    return build(viewer, limit=limit)
 
 
 def timeline_bundle(profile, viewer, *, year=None):
