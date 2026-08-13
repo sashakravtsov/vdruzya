@@ -1,8 +1,12 @@
-"""Poker services: chips economy, bankruptcy, Texas Hold'em hands, learning XP."""
+"""Poker services: chips, rooms, rating, weekly championship, Hold'em, learning."""
 from __future__ import annotations
 
+import secrets
+import string
 from datetime import date, timedelta
 
+from django.core.cache import cache
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -12,7 +16,8 @@ from apps.social.services import now as _now
 
 from . import engine
 from .models import (
-    PokerAction, PokerGame, PokerLessonProgress, PokerProfile, PokerPuzzleProgress,
+    PokerAction, PokerChampEntry, PokerChampionship, PokerGame, PokerLessonProgress,
+    PokerProfile, PokerPuzzleProgress, PokerRoom,
 )
 
 STARTING_CHIPS = 1_000_000
@@ -35,18 +40,82 @@ def stake_by_key(key: str) -> tuple:
     return STAKE_LEVELS[0]
 
 
+def week_key(d: date | None = None) -> str:
+    d = d or date.today()
+    iso = d.isocalendar()
+    return f"{iso.year}-W{iso.week:02d}"
+
+
+def week_bounds(d: date | None = None) -> tuple[date, date]:
+    d = d or date.today()
+    start = d - timedelta(days=d.weekday())
+    end = start + timedelta(days=6)
+    return start, end
+
+
+def ensure_week_championship(d: date | None = None) -> PokerChampionship:
+    d = d or date.today()
+    key = week_key(d)
+    cache_key = f"poker:champ:{key}"
+    cached_id = cache.get(cache_key)
+    if cached_id:
+        obj = PokerChampionship.objects.filter(pk=cached_id).first()
+        if obj:
+            return obj
+    start, end = week_bounds(d)
+    obj = PokerChampionship.objects.filter(week_key=key).first()
+    if not obj:
+        title = f"Чемпионат недели {start.strftime('%d.%m')}–{end.strftime('%d.%m.%Y')}"
+        obj = PokerChampionship.objects.create(
+            week_key=key,
+            title=title,
+            starts_on=start,
+            ends_on=end,
+            status="open",
+            created_at=_now(),
+        )
+    cache.set(cache_key, obj.id, 3600)
+    return obj
+
+
+def elo_update(winner_r: int, loser_r: int, draw: bool = False, k: int = 32) -> tuple[int, int]:
+    expected_w = 1 / (1 + 10 ** ((loser_r - winner_r) / 400))
+    expected_l = 1 - expected_w
+    if draw:
+        score_w, score_l = 0.5, 0.5
+    else:
+        score_w, score_l = 1.0, 0.0
+    new_w = int(round(winner_r + k * (score_w - expected_w)))
+    new_l = int(round(loser_r + k * (score_l - expected_l)))
+    return max(100, new_w), max(100, new_l)
+
+
 def get_or_create_profile(user: SocialProfile) -> PokerProfile:
     row, created = PokerProfile.objects.get_or_create(
         social_user=user,
         defaults={
             "chips": STARTING_CHIPS,
+            "rating": 1200,
+            "rated_games": 0,
             "created_at": _now(),
             "updated_at": _now(),
         },
     )
     if created:
         return row
+    if getattr(row, "rating", None) is None:
+        row.rating = 1200
+        row.save(update_fields=["rating"])
     return row
+
+
+def _new_join_code(n: int = 6) -> str:
+    alphabet = string.ascii_uppercase + string.digits
+    for _ in range(12):
+        code = "".join(secrets.choice(alphabet) for _ in range(n))
+        if not PokerRoom.objects.filter(join_code=code, status__in=["open", "playing"]).exists():
+            return code
+    return secrets.token_hex(3).upper()
 
 
 def is_bankrupt(profile: PokerProfile, at=None) -> bool:
@@ -137,6 +206,7 @@ def challenge(
     inviter: SocialProfile,
     invitee: SocialProfile,
     stake_key: str = "micro",
+    in_champ: bool = True,
 ) -> PokerGame:
     if inviter.id == invitee.id:
         raise ValueError("Нельзя вызвать самого себя")
@@ -152,6 +222,7 @@ def challenge(
     if b.chips < buy:
         raise ValueError("У соперника недостаточно фишек на этот лимит")
     now = _now()
+    champ = ensure_week_championship() if in_champ else None
     return PokerGame.objects.create(
         p1=inviter,
         p2=invitee,
@@ -164,6 +235,8 @@ def challenge(
         button=1,
         to_act=1,
         street="preflop",
+        championship=champ,
+        is_rated=True,
         created_at=now,
         updated_at=now,
     )
@@ -288,6 +361,60 @@ def _log(game: PokerGame, user: SocialProfile, action: str, amount: int = 0) -> 
     )
 
 
+def _apply_rating_and_champ(game: PokerGame, p1: PokerProfile, p2: PokerProfile) -> None:
+    if game.is_rated:
+        r1, r2 = int(p1.rating or 1200), int(p2.rating or 1200)
+        if game.result == "tie":
+            n1, n2 = elo_update(r1, r2, draw=True)
+        elif game.result == "p1":
+            n1, n2 = elo_update(r1, r2, draw=False)
+        elif game.result == "p2":
+            n2, n1 = elo_update(r2, r1, draw=False)
+        else:
+            n1, n2 = r1, r2
+        p1.rating, p2.rating = n1, n2
+        p1.rated_games = int(p1.rated_games or 0) + 1
+        p2.rated_games = int(p2.rated_games or 0) + 1
+
+    if game.championship_id:
+        champ = game.championship
+        e1, _ = PokerChampEntry.objects.get_or_create(
+            championship=champ, social_user=game.p1,
+            defaults={"points": 0, "wins": 0, "losses": 0, "ties": 0},
+        )
+        e2, _ = PokerChampEntry.objects.get_or_create(
+            championship=champ, social_user=game.p2,
+            defaults={"points": 0, "wins": 0, "losses": 0, "ties": 0},
+        )
+        if game.result == "p1":
+            e1.points += 3
+            e1.wins += 1
+            e2.losses += 1
+        elif game.result == "p2":
+            e2.points += 3
+            e2.wins += 1
+            e1.losses += 1
+        elif game.result == "tie":
+            e1.points += 1
+            e2.points += 1
+            e1.ties += 1
+            e2.ties += 1
+        e1.save()
+        e2.save()
+
+
+def _release_room_after_hand(game: PokerGame) -> None:
+    if not game.room_id:
+        return
+    room = PokerRoom.objects.filter(pk=game.room_id).first()
+    if not room or room.status == "closed":
+        return
+    room.hands_played = int(room.hands_played or 0) + 1
+    room.status = "open"
+    room.updated_at = _now()
+    room.save(update_fields=["hands_played", "status", "updated_at"])
+
+
 def _finish(game: PokerGame, winner_seat: int | None, reason: str) -> PokerGame:
     """winner_seat 1/2 or None for tie. Return chips to profiles."""
     p1 = get_or_create_profile(game.p1)
@@ -320,6 +447,7 @@ def _finish(game: PokerGame, winner_seat: int | None, reason: str) -> PokerGame:
         p2.ties += 1
     p1.games += 1
     p2.games += 1
+    _apply_rating_and_champ(game, p1, p2)
     game.pot = 0
     game.p1_stack = 0
     game.p2_stack = 0
@@ -334,6 +462,7 @@ def _finish(game: PokerGame, winner_seat: int | None, reason: str) -> PokerGame:
         p.save()
         if int(p.chips or 0) < MIN_PLAYABLE_CHIPS:
             _mark_bankrupt(p)
+    _release_room_after_hand(game)
     return game
 
 
@@ -535,11 +664,19 @@ def engagement_strip(user: SocialProfile) -> dict:
     hub = play_hub(user)
     p = get_or_create_profile(user)
     left = bankrupt_remaining(p)
+    champ = ensure_week_championship()
+    my_rooms = list(
+        PokerRoom.objects.filter(Q(p1=user) | Q(p2=user) | Q(owner=user))
+        .exclude(status="closed")
+        .order_by("-updated_at")[:8]
+    )
     return {
         **hub,
         "chips": int(p.chips or 0),
         "wins": int(p.wins or 0),
         "games": int(p.games or 0),
+        "rating": int(p.rating or 1200),
+        "rated_games": int(p.rated_games or 0),
         "skill": skill_level(p.learn_xp),
         "puzzle_streak": int(p.puzzle_streak or 0),
         "bankrupt": is_bankrupt(p),
@@ -549,6 +686,9 @@ def engagement_strip(user: SocialProfile) -> dict:
         ),
         "reset_count": int(p.reset_count or 0),
         "starting_chips": STARTING_CHIPS,
+        "champ": champ,
+        "my_rooms": my_rooms,
+        "my_rooms_n": len(my_rooms),
     }
 
 
@@ -573,10 +713,13 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
         "seat": seat,
         "board": board,
         "board_labels": [engine.card_label(c) for c in board],
+        "board_cards": [engine.card_view(c) for c in board],
         "my_hole": my_hole,
         "my_labels": [engine.card_label(c) for c in my_hole],
+        "my_cards": [engine.card_view(c) for c in my_hole],
         "opp_hole": opp_hole,
         "opp_labels": [engine.card_label(c) for c in opp_hole],
+        "opp_cards": [engine.card_view(c) for c in opp_hole],
         "my_stack": my_stack,
         "opp_stack": opp_stack,
         "my_bet": my_bet,
@@ -587,6 +730,7 @@ def table_view(game: PokerGame, viewer: SocialProfile) -> dict:
         "street": game.street,
         "can_act": bool(legal),
         "min_raise_to": max(opp_bet + game.big_blind, game.big_blind),
+        "room_id": game.room_id,
     }
 
 
@@ -750,9 +894,284 @@ def leaderboard(limit: int = 20) -> list[PokerProfile]:
     )
 
 
+def rating_leaderboard(limit: int = 25) -> list[PokerProfile]:
+    return list(
+        PokerProfile.objects.select_related("social_user")
+        .filter(rated_games__gt=0)
+        .order_by("-rating", "-wins")[:limit]
+    )
+
+
+def ratings_page(page_num: int = 1, per_page: int = 25):
+    qs = (
+        PokerProfile.objects.select_related("social_user")
+        .filter(rated_games__gt=0)
+        .order_by("-rating", "-wins")
+    )
+    return Paginator(qs, per_page).get_page(page_num)
+
+
+def championship_standings(champ: PokerChampionship, limit: int = 30):
+    return list(
+        PokerChampEntry.objects.select_related("social_user")
+        .filter(championship=champ)
+        .order_by("-points", "-wins")[:limit]
+    )
+
+
+def recent_championships(limit: int = 6):
+    ensure_week_championship()
+    return list(PokerChampionship.objects.order_by("-starts_on")[:limit])
+
+
 def recent_finished(user: SocialProfile, limit: int = 10) -> list[PokerGame]:
     return list(
         PokerGame.objects.filter(Q(p1=user) | Q(p2=user), status="done")
         .select_related("p1", "p2", "winner")
         .order_by("-id")[:limit]
     )
+
+
+# --- rooms ---
+
+def list_open_rooms(limit: int = 40) -> list[PokerRoom]:
+    return list(
+        PokerRoom.objects.filter(status__in=["open", "playing"], is_private=False)
+        .select_related("owner", "p1", "p2", "current_game")
+        .order_by("-updated_at")[:limit]
+    )
+
+
+def room_for(user: SocialProfile, room_id: int) -> PokerRoom | None:
+    return (
+        PokerRoom.objects.filter(pk=room_id)
+        .select_related("owner", "p1", "p2", "current_game")
+        .first()
+    )
+
+
+def _room_seat(room: PokerRoom, user: SocialProfile) -> int | None:
+    if room.p1_id == user.id:
+        return 1
+    if room.p2_id == user.id:
+        return 2
+    return None
+
+
+@transaction.atomic
+def create_room(
+    owner: SocialProfile,
+    title: str,
+    stake_key: str = "micro",
+    is_private: bool = False,
+    in_champ: bool = True,
+) -> PokerRoom:
+    profile = get_or_create_profile(owner)
+    if is_bankrupt(profile):
+        raise ValueError("Банкротство: комнату создать нельзя")
+    _key, _label, _sb, _bb, buy = stake_by_key(stake_key)
+    if profile.chips < buy:
+        raise ValueError(f"Не хватает фишек для бай-ина {buy:,}".replace(",", " "))
+    title = (title or "").strip()[:80] or f"Стол {owner.name}"
+    now = _now()
+    code = _new_join_code() if is_private else ""
+    return PokerRoom.objects.create(
+        title=title,
+        owner=owner,
+        stake_key=_key,
+        is_private=bool(is_private),
+        join_code=code,
+        p1=owner,
+        p2=None,
+        status="open",
+        in_champ=bool(in_champ),
+        hands_played=0,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@transaction.atomic
+def join_room(
+    user: SocialProfile,
+    room_id: int | None = None,
+    join_code: str = "",
+) -> PokerRoom:
+    profile = get_or_create_profile(user)
+    if is_bankrupt(profile):
+        raise ValueError("Банкротство: войти в комнату нельзя")
+    room = None
+    code = (join_code or "").strip().upper()
+    if code:
+        room = (
+            PokerRoom.objects.select_for_update()
+            .filter(join_code=code)
+            .exclude(status="closed")
+            .order_by("-id")
+            .first()
+        )
+        if not room:
+            raise ValueError("Комната с таким кодом не найдена")
+    elif room_id:
+        room = PokerRoom.objects.select_for_update().filter(pk=room_id).first()
+    if not room or room.status == "closed":
+        raise ValueError("Комната недоступна")
+    if room.is_private and code and room.join_code != code:
+        raise ValueError("Неверный код")
+    if room.is_private and not code and _room_seat(room, user) is None and room.owner_id != user.id:
+        raise ValueError("Приватная комната — нужен код")
+    if _room_seat(room, user) is not None:
+        return room
+    _key, _label, _sb, _bb, buy = stake_by_key(room.stake_key)
+    if profile.chips < buy:
+        raise ValueError("Недостаточно фишек для бай-ина этой комнаты")
+    if room.p1_id is None:
+        room.p1 = user
+    elif room.p2_id is None:
+        if room.p1_id == user.id:
+            return room
+        room.p2 = user
+    else:
+        raise ValueError("Комната уже заполнена")
+    room.updated_at = _now()
+    room.save()
+    return room
+
+
+@transaction.atomic
+def leave_room(user: SocialProfile, room_id: int) -> None:
+    room = PokerRoom.objects.select_for_update().filter(pk=room_id).first()
+    if not room or room.status == "closed":
+        raise ValueError("Комната не найдена")
+    if room.status == "playing":
+        raise ValueError("Нельзя выйти во время раздачи")
+    seat = _room_seat(room, user)
+    if seat is None and room.owner_id != user.id:
+        raise ValueError("Вы не в этой комнате")
+    if seat == 1:
+        room.p1 = room.p2
+        room.p2 = None
+    elif seat == 2:
+        room.p2 = None
+    if room.owner_id == user.id:
+        if room.p1_id:
+            room.owner = room.p1
+        else:
+            room.status = "closed"
+    if not room.p1_id and not room.p2_id:
+        room.status = "closed"
+    room.updated_at = _now()
+    room.save()
+
+
+@transaction.atomic
+def close_room(user: SocialProfile, room_id: int) -> None:
+    room = PokerRoom.objects.select_for_update().filter(pk=room_id).first()
+    if not room:
+        raise ValueError("Комната не найдена")
+    if room.owner_id != user.id:
+        raise ValueError("Закрыть может только хозяин")
+    if room.status == "playing":
+        raise ValueError("Сначала доиграйте раздачу")
+    room.status = "closed"
+    room.updated_at = _now()
+    room.save(update_fields=["status", "updated_at"])
+
+
+def _deal_into_game(game: PokerGame) -> PokerGame:
+    a = get_or_create_profile(game.p1)
+    b = get_or_create_profile(game.p2)
+    for p in (a, b):
+        if is_bankrupt(p):
+            raise ValueError("Банкротство мешает начать раздачу")
+        if p.chips < game.buy_in:
+            raise ValueError("Недостаточно фишек для бай-ина")
+    a.chips -= game.buy_in
+    b.chips -= game.buy_in
+    a.updated_at = b.updated_at = _now()
+    a.save(update_fields=["chips", "updated_at"])
+    b.save(update_fields=["chips", "updated_at"])
+
+    dealt = engine.deal_hand(seed=f"poker-{game.id}-{_now().timestamp()}")
+    game.p1_stack = game.buy_in
+    game.p2_stack = game.buy_in
+    game.p1_bet = 0
+    game.p2_bet = 0
+    game.pot = 0
+    game.p1_hole = engine.join_cards(dealt["p1_hole"])
+    game.p2_hole = engine.join_cards(dealt["p2_hole"])
+    game.board = ""
+    game.deck = engine.join_cards(dealt["deck"])
+    game.street = "preflop"
+    game.button = 1 if (game.room_id or 0) % 2 == 0 else 2
+    if game.room_id:
+        room = PokerRoom.objects.filter(pk=game.room_id).first()
+        if room:
+            game.button = 1 if int(room.hands_played or 0) % 2 == 0 else 2
+    game.status = "active"
+    game.updated_at = _now()
+    _post_blinds(game)
+    game.last_action = "раздача · блайнды"
+    game.save()
+    return game
+
+
+@transaction.atomic
+def start_room_hand(user: SocialProfile, room_id: int) -> PokerGame:
+    room = PokerRoom.objects.select_for_update().filter(pk=room_id).first()
+    if not room or room.status == "closed":
+        raise ValueError("Комната недоступна")
+    if room.status == "playing" and room.current_game_id:
+        g = PokerGame.objects.filter(pk=room.current_game_id).first()
+        if g and g.status == "active":
+            return g
+    if not room.p1_id or not room.p2_id:
+        raise ValueError("Нужны два игрока за столом")
+    if _room_seat(room, user) is None:
+        raise ValueError("Вы не за этим столом")
+    _key, _label, sb, bb, buy = stake_by_key(room.stake_key)
+    champ = ensure_week_championship() if room.in_champ else None
+    now = _now()
+    game = PokerGame.objects.create(
+        p1=room.p1,
+        p2=room.p2,
+        invited_by=user,
+        status="pending",
+        result="*",
+        small_blind=sb,
+        big_blind=bb,
+        buy_in=buy,
+        button=1,
+        to_act=1,
+        street="preflop",
+        room=room,
+        championship=champ,
+        is_rated=True,
+        created_at=now,
+        updated_at=now,
+    )
+    game = _deal_into_game(game)
+    room.current_game = game
+    room.status = "playing"
+    room.updated_at = _now()
+    room.save(update_fields=["current_game", "status", "updated_at"])
+    return game
+
+
+def room_view(room: PokerRoom, viewer: SocialProfile) -> dict:
+    stake = stake_by_key(room.stake_key)
+    seat = _room_seat(room, viewer)
+    game = None
+    if room.current_game_id:
+        game = PokerGame.objects.filter(pk=room.current_game_id).first()
+    return {
+        "seat": seat,
+        "stake": stake,
+        "can_start": bool(
+            seat and room.p1_id and room.p2_id and room.status == "open"
+            and not is_bankrupt(get_or_create_profile(viewer))
+        ),
+        "is_owner": room.owner_id == viewer.id,
+        "active_game": game if game and game.status == "active" else None,
+        "last_game": game if game and game.status == "done" else None,
+    }

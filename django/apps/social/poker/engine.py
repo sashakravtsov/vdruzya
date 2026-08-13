@@ -29,6 +29,21 @@ def card_label(card: str) -> str:
     return f"{card[0].replace('T', '10')}{SUIT_GLYPH.get(card[1], card[1])}"
 
 
+def card_view(card: str) -> dict:
+    """UI-friendly card: rank, suit glyph, red/black."""
+    if not card or len(card) < 2:
+        return {"raw": card or "", "rank": "?", "suit": "?", "red": False, "label": "?"}
+    rank = card[0].replace("T", "10")
+    suit = card[1]
+    return {
+        "raw": card,
+        "rank": rank,
+        "suit": SUIT_GLYPH.get(suit, suit),
+        "red": suit in ("h", "d"),
+        "label": f"{rank}{SUIT_GLYPH.get(suit, suit)}",
+    }
+
+
 def new_deck(seed: str | None = None) -> list[str]:
     deck = [r + s for r in RANKS for s in SUITS]
     rng = random.Random(seed)

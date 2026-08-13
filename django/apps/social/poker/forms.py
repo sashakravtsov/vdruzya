@@ -16,6 +16,11 @@ class ChallengeForm(forms.Form):
         label="Лимит",
         widget=_sel(),
     )
+    in_champ = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Учитывать в чемпионате недели",
+    )
 
     def __init__(self, *args, friends=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,6 +30,37 @@ class ChallengeForm(forms.Form):
         ] or [("", "Сначала добавьте друзей")]
         if not friends:
             self.fields["friend_id"].disabled = True
+
+
+class RoomCreateForm(forms.Form):
+    title = forms.CharField(
+        max_length=80,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "inputtext", "size": "28", "placeholder": "Название стола"}),
+    )
+    stake = forms.ChoiceField(
+        choices=[(s[0], s[1]) for s in poker.STAKE_LEVELS],
+        initial="micro",
+        label="Лимит",
+        widget=_sel(),
+    )
+    is_private = forms.BooleanField(required=False, initial=False, label="Приватная (по коду)")
+    in_champ = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Чемпионат недели",
+    )
+
+
+class RoomJoinCodeForm(forms.Form):
+    join_code = forms.CharField(
+        max_length=12,
+        widget=forms.TextInput(attrs={
+            "class": "inputtext", "size": "10", "placeholder": "Код",
+            "style": "text-transform:uppercase",
+        }),
+        label="Код комнаты",
+    )
 
 
 class GameActionForm(forms.Form):

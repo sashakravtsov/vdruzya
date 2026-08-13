@@ -22,12 +22,78 @@ class PokerProfile(models.Model):
     learn_xp = models.IntegerField(default=0)
     bankrupt_until = models.DateTimeField(null=True, blank=True)
     reset_count = models.IntegerField(default=0)
+    rating = models.IntegerField(default=1200)
+    rated_games = models.IntegerField(default=0)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = "poker_profiles"
+
+
+class PokerChampionship(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    week_key = models.CharField(max_length=12)
+    title = models.CharField(max_length=120)
+    starts_on = models.DateField()
+    ends_on = models.DateField()
+    status = models.CharField(max_length=12, default="open")
+    created_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "poker_championships"
+
+
+class PokerChampEntry(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    championship = models.ForeignKey(
+        PokerChampionship, on_delete=models.DO_NOTHING, db_column="championship_id", related_name="+",
+    )
+    social_user = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, db_column="social_user_id", related_name="+",
+    )
+    points = models.IntegerField(default=0)
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    ties = models.IntegerField(default=0)
+
+    class Meta:
+        managed = False
+        db_table = "poker_champ_entries"
+
+
+class PokerRoom(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    title = models.CharField(max_length=80)
+    owner = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, db_column="owner_id", related_name="+",
+    )
+    stake_key = models.CharField(max_length=16, default="micro")
+    is_private = models.BooleanField(default=False)
+    join_code = models.CharField(max_length=12, blank=True, default="")
+    p1 = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="p1_id", related_name="+",
+    )
+    p2 = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="p2_id", related_name="+",
+    )
+    status = models.CharField(max_length=16, default="open")  # open|playing|closed
+    current_game = models.ForeignKey(
+        "PokerGame", on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="current_game_id", related_name="+",
+    )
+    in_champ = models.BooleanField(default=True)
+    hands_played = models.IntegerField(default=0)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "poker_rooms"
 
 
 class PokerGame(models.Model):
@@ -65,6 +131,15 @@ class PokerGame(models.Model):
     deck = models.TextField(default="")
     last_action = models.CharField(max_length=120, default="")
     hand_label = models.CharField(max_length=120, default="")
+    room = models.ForeignKey(
+        PokerRoom, on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="room_id", related_name="+",
+    )
+    championship = models.ForeignKey(
+        PokerChampionship, on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="championship_id", related_name="+",
+    )
+    is_rated = models.BooleanField(default=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

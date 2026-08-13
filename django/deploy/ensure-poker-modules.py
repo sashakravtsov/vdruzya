@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Ensure poker app tables (profiles, games, learning)."""
+"""Ensure poker app tables (profiles, rooms, championships, games, learning)."""
 import os
 import sys
 
@@ -28,9 +28,58 @@ CREATE TABLE IF NOT EXISTS poker_profiles (
   learn_xp integer NOT NULL DEFAULT 0,
   bankrupt_until timestamp with time zone,
   reset_count integer NOT NULL DEFAULT 0,
+  rating integer NOT NULL DEFAULT 1200,
+  rated_games integer NOT NULL DEFAULT 0,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
+ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS rating integer NOT NULL DEFAULT 1200;
+ALTER TABLE poker_profiles ADD COLUMN IF NOT EXISTS rated_games integer NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS poker_championships (
+  id bigserial PRIMARY KEY,
+  week_key varchar(12) NOT NULL,
+  title varchar(120) NOT NULL,
+  starts_on date NOT NULL,
+  ends_on date NOT NULL,
+  status varchar(12) NOT NULL DEFAULT 'open',
+  created_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS poker_championships_week_uniq
+  ON poker_championships (week_key);
+
+CREATE TABLE IF NOT EXISTS poker_champ_entries (
+  id bigserial PRIMARY KEY,
+  championship_id bigint NOT NULL,
+  social_user_id bigint NOT NULL,
+  points integer NOT NULL DEFAULT 0,
+  wins integer NOT NULL DEFAULT 0,
+  losses integer NOT NULL DEFAULT 0,
+  ties integer NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX IF NOT EXISTS poker_champ_entries_uniq
+  ON poker_champ_entries (championship_id, social_user_id);
+CREATE INDEX IF NOT EXISTS poker_champ_entries_standings_idx
+  ON poker_champ_entries (championship_id, points DESC);
+
+CREATE TABLE IF NOT EXISTS poker_rooms (
+  id bigserial PRIMARY KEY,
+  title varchar(80) NOT NULL,
+  owner_id bigint NOT NULL,
+  stake_key varchar(16) NOT NULL DEFAULT 'micro',
+  is_private boolean NOT NULL DEFAULT false,
+  join_code varchar(12) NOT NULL DEFAULT '',
+  p1_id bigint,
+  p2_id bigint,
+  status varchar(16) NOT NULL DEFAULT 'open',
+  current_game_id bigint,
+  in_champ boolean NOT NULL DEFAULT true,
+  hands_played integer NOT NULL DEFAULT 0,
+  created_at timestamp without time zone,
+  updated_at timestamp without time zone
+);
+CREATE INDEX IF NOT EXISTS poker_rooms_status_idx ON poker_rooms (status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS poker_rooms_code_idx ON poker_rooms (join_code) WHERE join_code <> '';
 
 CREATE TABLE IF NOT EXISTS poker_games (
   id bigserial PRIMARY KEY,
@@ -57,12 +106,20 @@ CREATE TABLE IF NOT EXISTS poker_games (
   deck text NOT NULL DEFAULT '',
   last_action varchar(120) NOT NULL DEFAULT '',
   hand_label varchar(120) NOT NULL DEFAULT '',
+  room_id bigint,
+  championship_id bigint,
+  is_rated boolean NOT NULL DEFAULT true,
   created_at timestamp without time zone,
   updated_at timestamp without time zone
 );
 CREATE INDEX IF NOT EXISTS poker_games_p1_idx ON poker_games (p1_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_p2_idx ON poker_games (p2_id, id DESC);
 CREATE INDEX IF NOT EXISTS poker_games_status_idx ON poker_games (status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS poker_games_room_idx ON poker_games (room_id, id DESC);
+CREATE INDEX IF NOT EXISTS poker_games_champ_idx ON poker_games (championship_id, id DESC);
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS room_id bigint;
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS championship_id bigint;
+ALTER TABLE poker_games ADD COLUMN IF NOT EXISTS is_rated boolean NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS poker_actions (
   id bigserial PRIMARY KEY,
