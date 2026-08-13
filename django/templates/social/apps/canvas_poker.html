@@ -594,7 +594,7 @@
         {% if tab == 'bank' %}
         <h5>Банкролл и банкротство</h5>
         <table class="infotable">
-            <tr><td class="label">Фишки:</td><td><b>{{ strip.chips }}</b></td></tr>
+            <tr><td class="label">Фишки:</td><td><b>{{ strip.chips_fmt|default:strip.chips }}</b></td></tr>
             <tr><td class="label">Рейтинг:</td><td><b>{{ strip.rating }}</b> ({{ strip.rated_games }} игр)</td></tr>
             <tr><td class="label">Раздач / побед:</td><td>{{ strip.games }} / {{ strip.wins }}</td></tr>
             <tr><td class="label">Сбросов профиля:</td><td>{{ strip.reset_count }}</td></tr>
