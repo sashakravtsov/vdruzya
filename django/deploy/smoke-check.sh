@@ -517,7 +517,8 @@ if ! grep -q 'company_name__icontains' "${ROOT}/django/apps/social/friendship.py
 else
   echo "OK   workplace Find Friends uses Experience"
 fi
-if ! grep -q 'NoteForm' "${ROOT}/django/apps/social/views_wall_ops.py" 2>/dev/null; then
+if ! grep -q 'NoteForm' "${ROOT}/django/apps/social/note_edit.py" 2>/dev/null \
+  && ! grep -q 'NoteForm' "${ROOT}/django/apps/social/views_wall_ops.py" 2>/dev/null; then
   echo "FAIL Notes edit not using NoteForm"; FAIL=1
 else
   echo "OK   Notes edit uses NoteForm"
