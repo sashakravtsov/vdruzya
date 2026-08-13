@@ -63,7 +63,7 @@ def get_or_create_rating(user: SocialProfile) -> ChessRating:
         return row
     return ChessRating.objects.create(
         social_user=user, rating=1200, games=0, wins=0, losses=0, draws=0,
-        puzzle_solved=0, puzzle_streak=0, best_puzzle_streak=0, updated_at=_now(),
+        puzzle_solved=0, puzzle_streak=0, best_puzzle_streak=0, learn_xp=0, updated_at=_now(),
     )
 
 
@@ -542,33 +542,152 @@ def ratings_page(page_num: int = 1, per_page: int = 25):
     return Paginator(qs, per_page).get_page(page_num)
 
 
-def mark_lesson_done(user: SocialProfile, slug: str) -> ChessLessonProgress:
+def _lesson_row(user: SocialProfile, slug: str) -> ChessLessonProgress:
     row, _ = ChessLessonProgress.objects.get_or_create(
         social_user=user, lesson_slug=slug[:40],
-        defaults={"completed_at": _now()},
+        defaults={"quiz_ok": False, "drill_ok": False, "completed_at": None},
     )
+    return row
+
+
+def add_learn_xp(user: SocialProfile, amount: int) -> int:
+    rating = get_or_create_rating(user)
+    rating.learn_xp = int(rating.learn_xp or 0) + max(0, int(amount))
+    rating.updated_at = _now()
+    rating.save(update_fields=["learn_xp", "updated_at"])
+    return rating.learn_xp
+
+
+def skill_level(xp: int) -> dict:
+    xp = int(xp or 0)
+    level = 1 + xp // 100
+    into = xp % 100
+    return {"level": level, "xp": xp, "into": into, "next_at": level * 100}
+
+
+def _maybe_complete_lesson(user: SocialProfile, row: ChessLessonProgress, lesson: dict) -> bool:
+    """Auto-complete when required quiz/drill are done. Returns True if newly completed."""
+    need_quiz = bool(lesson.get("quiz"))
+    need_drill = bool(lesson.get("drill"))
+    if need_quiz and not row.quiz_ok:
+        return False
+    if need_drill and not row.drill_ok:
+        return False
+    if row.completed_at:
+        return False
+    # For interactive lessons auto-complete; plain lessons still use mark button
+    if need_quiz or need_drill:
+        row.completed_at = _now()
+        row.save(update_fields=["completed_at"])
+        add_learn_xp(user, 25)
+        return True
+    return False
+
+
+def mark_lesson_done(user: SocialProfile, slug: str) -> ChessLessonProgress:
+    from .lessons import lesson_by_slug
+    lesson = lesson_by_slug(slug)
+    if not lesson:
+        raise ValueError("Урок не найден")
+    row = _lesson_row(user, slug)
+    if lesson.get("quiz") and not row.quiz_ok:
+        raise ValueError("Сначала ответьте на тест урока")
+    if lesson.get("drill") and not row.drill_ok:
+        raise ValueError("Сначала выполните тренажёр на доске")
     if not row.completed_at:
         row.completed_at = _now()
         row.save(update_fields=["completed_at"])
+        add_learn_xp(user, 15 if not (lesson.get("quiz") or lesson.get("drill")) else 10)
     return row
+
+
+def submit_lesson_quiz(user: SocialProfile, slug: str, choice: str) -> dict:
+    from .lessons import lesson_by_slug
+    lesson = lesson_by_slug(slug)
+    if not lesson or not lesson.get("quiz"):
+        raise ValueError("В этом уроке нет теста")
+    quiz = lesson["quiz"]
+    ok = (choice or "").strip() == quiz["answer"]
+    row = _lesson_row(user, slug)
+    newly = False
+    if ok and not row.quiz_ok:
+        row.quiz_ok = True
+        row.save(update_fields=["quiz_ok"])
+        add_learn_xp(user, 10)
+        newly = _maybe_complete_lesson(user, row, lesson)
+    elif not ok:
+        raise ValueError("Пока неверно. " + quiz.get("explain", "Попробуйте ещё раз."))
+    return {
+        "ok": True,
+        "explain": quiz.get("explain", ""),
+        "completed": bool(row.completed_at),
+        "newly_completed": newly,
+    }
+
+
+def submit_lesson_drill(user: SocialProfile, slug: str, frm: str, to: str) -> dict:
+    from .lessons import lesson_by_slug
+    lesson = lesson_by_slug(slug)
+    if not lesson or not lesson.get("drill"):
+        raise ValueError("В этом уроке нет тренажёра")
+    drill = lesson["drill"]
+    a, b = drill["answer"]
+    ok = frm.lower() == a and to.lower() == b
+    row = _lesson_row(user, slug)
+    newly = False
+    if ok and not row.drill_ok:
+        row.drill_ok = True
+        row.save(update_fields=["drill_ok"])
+        add_learn_xp(user, 20)
+        newly = _maybe_complete_lesson(user, row, lesson)
+    elif not ok:
+        raise ValueError("Не тот ход. Подсказка: " + drill.get("hint", ""))
+    return {
+        "ok": True,
+        "explain": drill.get("explain", ""),
+        "completed": bool(row.completed_at),
+        "newly_completed": newly,
+    }
+
+
+def lesson_progress_map(user: SocialProfile) -> dict[str, ChessLessonProgress]:
+    rows = ChessLessonProgress.objects.filter(social_user=user)
+    return {r.lesson_slug: r for r in rows}
 
 
 def lesson_done_slugs(user: SocialProfile) -> set[str]:
     return set(
-        ChessLessonProgress.objects.filter(social_user=user)
+        ChessLessonProgress.objects.filter(social_user=user, completed_at__isnull=False)
         .values_list("lesson_slug", flat=True)
     )
 
 
 def learn_stats(user: SocialProfile) -> dict:
     from .lessons import CATALOG
+    from . import puzzles as chess_puzzles
+
     done = lesson_done_slugs(user)
     total = len(CATALOG.ordered_slugs)
+    rating = get_or_create_rating(user)
+    skill = skill_level(getattr(rating, "learn_xp", 0) or 0)
+    next_les = CATALOG.next_incomplete(done)
+    chapters = CATALOG.chapter_progress(done)
+    prog = lesson_progress_map(user)
+    daily = chess_puzzles.daily_puzzle()
+    daily_solved = ChessPuzzleProgress.objects.filter(
+        social_user=user, puzzle_id=daily["id"], solved_at__isnull=False,
+    ).exists()
     return {
         "done": len(done),
         "total": total,
         "pct": int(round(100 * len(done) / total)) if total else 0,
         "slugs": done,
+        "next_lesson": next_les,
+        "chapters": chapters,
+        "progress": prog,
+        "skill": skill,
+        "daily": daily,
+        "daily_solved": daily_solved,
     }
 
 
@@ -647,6 +766,8 @@ def engagement_strip(user: SocialProfile, champ: ChessChampionship | None = None
         "rating": r.rating,
         "puzzle_streak": int(getattr(r, "puzzle_streak", 0) or 0),
         "puzzle_solved": int(getattr(r, "puzzle_solved", 0) or 0),
+        "learn_xp": int(getattr(r, "learn_xp", 0) or 0),
+        "skill": skill_level(getattr(r, "learn_xp", 0) or 0),
         "week_rank": week_rank,
         "week_points": week_points,
     }
@@ -669,11 +790,12 @@ def record_puzzle_attempt(user: SocialProfile, puzzle_id: str, solved: bool) -> 
 
     rating = get_or_create_rating(user)
     today = date.today()
+    xp_gain = 0
     if first_solve:
         rating.puzzle_solved = int(rating.puzzle_solved or 0) + 1
         last = rating.last_puzzle_on
         if last == today:
-            pass  # already counted streak today
+            pass
         elif last == today - timedelta(days=1):
             rating.puzzle_streak = int(rating.puzzle_streak or 0) + 1
         else:
@@ -682,6 +804,11 @@ def record_puzzle_attempt(user: SocialProfile, puzzle_id: str, solved: bool) -> 
         rating.best_puzzle_streak = max(
             int(rating.best_puzzle_streak or 0), int(rating.puzzle_streak or 0),
         )
+        xp_gain = 8
+        from . import puzzles as chess_puzzles
+        if chess_puzzles.daily_puzzle().get("id") == puzzle_id:
+            xp_gain += 17  # daily bonus → 25 total
+        rating.learn_xp = int(rating.learn_xp or 0) + xp_gain
         rating.updated_at = _now()
         rating.save()
     solved_ids = set(
@@ -694,10 +821,11 @@ def record_puzzle_attempt(user: SocialProfile, puzzle_id: str, solved: bool) -> 
         "streak": int(rating.puzzle_streak or 0),
         "solved_ids": solved_ids,
         "solved_total": int(rating.puzzle_solved or 0),
+        "xp_gain": xp_gain,
     }
 
 
-def puzzle_stats(user: SocialProfile) -> dict:
+def puzzle_stats(user: SocialProfile, theme: str | None = None) -> dict:
     from . import puzzles as chess_puzzles
 
     rating = get_or_create_rating(user)
@@ -705,7 +833,9 @@ def puzzle_stats(user: SocialProfile) -> dict:
         ChessPuzzleProgress.objects.filter(social_user=user, solved_at__isnull=False)
         .values_list("puzzle_id", flat=True)
     )
+    theme_list = chess_puzzles.puzzles_by_theme(theme)
     total = len(chess_puzzles.PUZZLES)
+    daily = chess_puzzles.daily_puzzle()
     return {
         "solved_ids": solved_ids,
         "solved": len(solved_ids),
@@ -713,4 +843,10 @@ def puzzle_stats(user: SocialProfile) -> dict:
         "streak": int(getattr(rating, "puzzle_streak", 0) or 0),
         "best_streak": int(getattr(rating, "best_puzzle_streak", 0) or 0),
         "pct": int(round(100 * len(solved_ids) / total)) if total else 0,
+        "themes": chess_puzzles.THEMES,
+        "theme": theme or "все",
+        "theme_list": theme_list,
+        "daily": daily,
+        "daily_solved": daily["id"] in solved_ids,
+        "skill": skill_level(getattr(rating, "learn_xp", 0) or 0),
     }

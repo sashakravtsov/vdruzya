@@ -96,3 +96,14 @@ class PuzzleAnswerForm(ClassicForm, forms.Form):
     puzzle_id = forms.CharField(max_length=40, widget=forms.HiddenInput())
     from_sq = SquareField(label="Откуда")
     to_sq = SquareField(label="Куда")
+
+
+class LessonQuizForm(ClassicForm, forms.Form):
+    lesson = forms.CharField(max_length=40, widget=forms.HiddenInput())
+    choice = forms.CharField(max_length=40)
+
+
+class LessonDrillForm(ClassicForm, forms.Form):
+    lesson = forms.CharField(max_length=40, widget=forms.HiddenInput())
+    from_sq = SquareField(label="Откуда")
+    to_sq = SquareField(label="Куда")

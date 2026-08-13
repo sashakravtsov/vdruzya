@@ -18,6 +18,7 @@ class ChessRating(models.Model):
     puzzle_streak = models.IntegerField(default=0)
     best_puzzle_streak = models.IntegerField(default=0)
     last_puzzle_on = models.DateField(null=True, blank=True)
+    learn_xp = models.IntegerField(default=0)
     updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -132,6 +133,8 @@ class ChessLessonProgress(models.Model):
         SocialProfile, on_delete=models.DO_NOTHING, db_column="social_user_id", related_name="+",
     )
     lesson_slug = models.CharField(max_length=40)
+    quiz_ok = models.BooleanField(default=False)
+    drill_ok = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

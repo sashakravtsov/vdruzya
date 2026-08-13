@@ -7,6 +7,7 @@
         <p class="chess-lead">Профессиональные партии с друзьями: часы, рейтинг, чемпионат недели, обучение и задачи.</p>
         <p class="chess-strip">
             Рейтинг <b>{{ strip.rating }}</b>
+            · навык <b>ур. {{ strip.skill.level }}</b> ({{ strip.skill.xp }} XP)
             · ваш ход <b>{{ strip.your_move_n }}</b>
             {% if strip.incoming_n %} · приглашения <b>{{ strip.incoming_n }}</b>{% endif %}
             · серия задач <b>{{ strip.puzzle_streak }}</b>
@@ -29,6 +30,16 @@
         </div>
 
         {% if tab == 'play' and hub %}
+        {% if learn_meta and learn_meta.next_lesson %}
+        <div class="chess-path-card">
+            <b>Продолжить обучение:</b>
+            <a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ learn_meta.next_lesson.slug }}">{{ learn_meta.next_lesson.title }}</a>
+            <span class="muted">· {{ learn_meta.done }}/{{ learn_meta.total }} уроков · ур. {{ learn_meta.skill.level }}</span>
+            {% if learn_meta.daily %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;daily=1">задача дня</a>{% if learn_meta.daily_solved %} <span class="chess-done">✓</span>{% endif %}
+            {% endif %}
+        </div>
+        {% endif %}
         {% if hub.incoming %}
         <h5>Входящие вызовы</h5>
         <table class="mygroups-table" cellspacing="0" cellpadding="0">
@@ -427,26 +438,142 @@
 
         {% if tab == 'learn' %}
         {% if learn_meta %}
-        <p class="chess-learn-progress muted">Пройдено уроков: <b>{{ learn_meta.done }}</b> из {{ learn_meta.total }} ({{ learn_meta.pct }}%)</p>
+        <p class="chess-learn-progress">
+            Путь: <b>{{ learn_meta.done }}</b>/{{ learn_meta.total }} ({{ learn_meta.pct }}%)
+            · навык <b>ур. {{ learn_meta.skill.level }}</b> — {{ learn_meta.skill.into }}/100 XP до следующего
+            {% if learn_meta.next_lesson and not lesson %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ learn_meta.next_lesson.slug }}">продолжить: {{ learn_meta.next_lesson.title }}</a>
+            {% endif %}
+        </p>
+        <div class="chess-xp-bar" title="{{ learn_meta.skill.into }} / 100"><span style="width:{{ learn_meta.skill.into }}%"></span></div>
         {% endif %}
         {% if lesson %}
         <p><a href="{% url 'apps.canvas' 'chess' %}?tab=learn">← все уроки</a></p>
         <p class="muted">Глава · {% for ch in chapters %}{% if ch.slug == lesson.chapter %}{{ ch.title }}{% endif %}{% endfor %}
             · ~{{ lesson.minutes }} мин.
             {% if lesson.slug|lesson_done:learn_meta.slugs %} · <b>пройден</b>{% endif %}
+            {% if lesson_row and lesson_row.quiz_ok %} · тест ✓{% endif %}
+            {% if lesson_row and lesson_row.drill_ok %} · тренажёр ✓{% endif %}
         </p>
         <h5>{{ lesson.title }}</h5>
         {% for p in lesson.body %}<p>{{ p }}</p>{% endfor %}
+        {% if lesson_diagram %}
+        <h5>Диаграмма</h5>
+        {% if lesson.diagram_caption %}<p class="muted">{{ lesson.diagram_caption }}</p>{% endif %}
+        <div class="chess-board-wrap chess-diagram">
+            <table class="chess-board" cellspacing="0" cellpadding="0">
+                {% for row in lesson_diagram %}
+                <tr>
+                    {% for cell in row %}
+                    <td class="{% if cell.light %}light{% else %}dark{% endif %}"><span class="chess-sq">{{ cell.glyph|default:"&nbsp;" }}</span></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
         {% if lesson.tips %}
         <h5>На заметку</h5>
         <ul class="chess-tip-list">{% for t in lesson.tips %}<li>{{ t }}</li>{% endfor %}</ul>
         {% endif %}
-        {% if not lesson.slug|lesson_done:learn_meta.slugs %}
+        {% if lesson.quiz %}
+        <h5>Проверка</h5>
+        {% if lesson_row and lesson_row.quiz_ok %}
+        <p class="chess-done">Тест пройден. {{ lesson.quiz.explain }}</p>
+        {% else %}
+        <p>{{ lesson.quiz.question }}</p>
         <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
-            <input type="hidden" name="action" value="lesson_done">
+            <input type="hidden" name="action" value="lesson_quiz">
             <input type="hidden" name="lesson" value="{{ lesson.slug }}">
-            <input type="submit" class="inputsubmit" value="Отметить как пройденный">
+            <ul class="chess-quiz-list">
+                {% for cid, label in lesson.quiz.choices %}
+                <li><label><input type="radio" name="choice" value="{{ cid }}" required> {{ label }}</label></li>
+                {% endfor %}
+            </ul>
+            <input type="submit" class="inputsubmit" value="Ответить">
         </form>
+        {% endif %}
+        {% endif %}
+        {% if lesson.drill %}
+        <h5>Тренажёр на доске</h5>
+        {% if lesson_row and lesson_row.drill_ok %}
+        <p class="chess-done">Тренажёр выполнен. {{ lesson.drill.explain }}</p>
+        {% else %}
+        <p>{{ lesson.drill.prompt }}</p>
+        <p class="muted">{{ lesson.drill.hint }}</p>
+        {{ lesson_drill_legal|json_script:"chess-drill-legal" }}
+        <div class="chess-board-wrap">
+            <table class="chess-board chess-board-lg"
+                   cellspacing="0" cellpadding="0"
+                   data-chess-live="1"
+                   data-mode="puzzle"
+                   data-can-move="1"
+                   data-my-side="{{ lesson.drill.side }}"
+                   data-form="chess-drill-form"
+                   data-legal-script="chess-drill-legal">
+                {% for row in lesson_drill_board %}
+                <tr>
+                    {% for cell in row %}
+                    <td class="{% if cell.light %}light{% else %}dark{% endif %}" data-sq="{{ cell.sq }}" data-piece="{{ cell.piece }}">
+                        <span class="chess-sq" title="{{ cell.sq }}">{{ cell.glyph|default:"&nbsp;" }}</span>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}" id="chess-drill-form">{% csrf_token %}
+            <input type="hidden" name="action" value="lesson_drill">
+            <input type="hidden" name="lesson" value="{{ lesson.slug }}">
+            <div class="chess-manual">
+                <input type="checkbox" id="chess-manual-drill" class="chess-manual-check">
+                <label for="chess-manual-drill" class="chess-manual-toggle muted">Ввести ход вручную</label>
+                <div class="chess-manual-fields">
+                    <table class="formtable" cellspacing="0">
+                        <tr><td class="label">Откуда:</td><td><input class="inputtext" name="from_sq" size="4" maxlength="2"></td></tr>
+                        <tr><td class="label">Куда:</td><td><input class="inputtext" name="to_sq" size="4" maxlength="2"></td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Проверить ход"></td></tr>
+                    </table>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+        {% endif %}
+        {% if lesson.related_puzzles %}
+        <p class="muted">Закрепить:
+            {% for pid in lesson.related_puzzles %}
+            <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ pid }}">задача</a>{% if not forloop.last %} · {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% if not lesson.slug|lesson_done:learn_meta.slugs %}
+            {% if not lesson.quiz and not lesson.drill %}
+            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
+                <input type="hidden" name="action" value="lesson_done">
+                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
+                <input type="submit" class="inputsubmit" value="Отметить как пройденный">
+            </form>
+            {% elif lesson_row and lesson_row.quiz_ok and lesson_row.drill_ok %}
+            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
+                <input type="hidden" name="action" value="lesson_done">
+                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
+                <input type="submit" class="inputsubmit" value="Завершить урок">
+            </form>
+            {% elif lesson_row and lesson_row.quiz_ok and not lesson.drill %}
+            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
+                <input type="hidden" name="action" value="lesson_done">
+                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
+                <input type="submit" class="inputsubmit" value="Завершить урок">
+            </form>
+            {% elif lesson_row and lesson_row.drill_ok and not lesson.quiz %}
+            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
+                <input type="hidden" name="action" value="lesson_done">
+                <input type="hidden" name="lesson" value="{{ lesson.slug }}">
+                <input type="submit" class="inputsubmit" value="Завершить урок">
+            </form>
+            {% else %}
+            <p class="muted">Чтобы пройти урок, выполните тест и/или тренажёр выше — они дают XP.</p>
+            {% endif %}
         {% endif %}
         <p class="chess-lesson-nav">
             {% if prev_lesson %}<a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ prev_lesson.slug }}">← {{ prev_lesson.title }}</a>{% endif %}
@@ -454,17 +581,20 @@
             {% if next_lesson %}<a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ next_lesson.slug }}">{{ next_lesson.title }} →</a>{% endif %}
         </p>
         {% else %}
-        <h5>Обучение</h5>
-        <p class="muted">Курс с нуля до уверенной партии. Отмечайте пройденные уроки и закрепляйте задачами.</p>
+        <h5>Система обучения</h5>
+        <p class="muted">Путь с диаграммами, тестами и тренажёрами на доске. XP растёт за уроки и задачи — открывайте главы по порядку.</p>
         {% for ch in chapters %}
         <div class="chess-chapter">
-            <h5>{{ ch.title }} <span class="muted">({{ ch.count }})</span></h5>
+            <h5>{{ ch.title }} <span class="muted">{{ ch.done }}/{{ ch.count }} · {{ ch.pct }}%</span></h5>
+            <div class="chess-xp-bar thin"><span style="width:{{ ch.pct }}%"></span></div>
             <p class="muted">{{ ch.blurb }}</p>
             <ul class="chess-lesson-list">
                 {% for les in ch.lessons %}
                 <li>
                     <a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ les.slug }}"><b>{{ les.title }}</b></a>
                     {% if les.slug|lesson_done:learn_meta.slugs %}<span class="chess-done">✓</span>{% endif %}
+                    {% if les.quiz %}<span class="muted"> · тест</span>{% endif %}
+                    {% if les.drill %}<span class="muted"> · тренажёр</span>{% endif %}
                     <div class="muted">{{ les.summary }} · ~{{ les.minutes }} мин.</div>
                 </li>
                 {% endfor %}
@@ -476,9 +606,22 @@
 
         {% if tab == 'puzzles' and puzzle %}
         {% if puzzle_meta %}
-        <p class="muted">Решено <b>{{ puzzle_meta.solved }}</b>/{{ puzzle_meta.total }} · серия дней <b>{{ puzzle_meta.streak }}</b> (рекорд {{ puzzle_meta.best_streak }})</p>
+        <div class="chess-path-card">
+            <b>Задача дня</b>
+            {% if puzzle_meta.daily_solved %}<span class="chess-done">решена ✓</span>
+            {% else %}<a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;daily=1">{{ puzzle_meta.daily.title }}</a> · +25 XP{% endif %}
+            · решено <b>{{ puzzle_meta.solved }}</b>/{{ puzzle_meta.total }}
+            · серия <b>{{ puzzle_meta.streak }}</b>
+        </div>
+        <p class="chess-theme-tabs">
+            <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;theme=все" class="{% if puzzle_meta.theme == 'все' %}on{% endif %}">все</a>
+            {% for th in puzzle_meta.themes %}
+            · <a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;theme={{ th }}" class="{% if puzzle_meta.theme == th %}on{% endif %}">{{ th }}</a>
+            {% endfor %}
+        </p>
         {% endif %}
-        <h5>{{ puzzle.title }}{% if puzzle.id|puzzle_done:puzzle_meta.solved_ids %} <span class="chess-done">✓</span>{% endif %}</h5>
+        <h5>{{ puzzle.title }}{% if puzzle.id|puzzle_done:puzzle_meta.solved_ids %} <span class="chess-done">✓</span>{% endif %}
+            <span class="muted">· {{ puzzle.theme }}</span></h5>
         <p class="muted">{{ puzzle.goal }} · {{ puzzle.level }} · ход {% if puzzle.side == 'w' %}белых{% else %}чёрных{% endif %}. Клик или перетаскивание.</p>
         {{ puzzle_legal|json_script:"chess-puzzle-legal" }}
         <div class="chess-board-wrap">
@@ -529,7 +672,7 @@
         {% endif %}
     </div>
 </div>
-{% if tab == 'game' or tab == 'puzzles' or tab == 'play' %}
+{% if tab == 'game' or tab == 'puzzles' or tab == 'play' or tab == 'learn' %}
 <script src="{% static 'js/chess-board.js' %}" defer></script>
 {% endif %}
 {% endblock %}

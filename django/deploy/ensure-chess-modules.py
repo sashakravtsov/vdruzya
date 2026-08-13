@@ -91,13 +91,18 @@ ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS puzzle_solved integer NOT NUL
 ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS puzzle_streak integer NOT NULL DEFAULT 0;
 ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS best_puzzle_streak integer NOT NULL DEFAULT 0;
 ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS last_puzzle_on date;
+ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS learn_xp integer NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS chess_lesson_progress (
   id bigserial PRIMARY KEY,
   social_user_id bigint NOT NULL,
   lesson_slug varchar(40) NOT NULL,
+  quiz_ok boolean NOT NULL DEFAULT false,
+  drill_ok boolean NOT NULL DEFAULT false,
   completed_at timestamp without time zone
 );
+ALTER TABLE chess_lesson_progress ADD COLUMN IF NOT EXISTS quiz_ok boolean NOT NULL DEFAULT false;
+ALTER TABLE chess_lesson_progress ADD COLUMN IF NOT EXISTS drill_ok boolean NOT NULL DEFAULT false;
 CREATE UNIQUE INDEX IF NOT EXISTS chess_lesson_progress_uniq
   ON chess_lesson_progress (social_user_id, lesson_slug);
 CREATE INDEX IF NOT EXISTS chess_lesson_progress_user_idx
