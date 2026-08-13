@@ -215,18 +215,27 @@ def note_create(request):
     @throttle("posts", 20, 60)
     def _go(req):
         me = profile_of(req.user)
-        form = NoteForm(req.POST)
+        form = NoteForm(req.POST, req.FILES)
         go = req.POST.get("next") or (f"{me.get_absolute_url()}?tab=notes" if me else "feed")
         if not (form.is_valid() and me):
             messages.error(req, "Укажите заголовок и текст.")
             return redirect(go)
         d = form.cleaned_data
+        media_path = None
+        upload = d.get("photo")
+        if upload:
+            from apps.social.media import save_image
+            try:
+                media_path = save_image(upload, "notes")
+            except Exception:
+                media_path = None
         Post.objects.create(
             social_user=me,
             body=d["body"],
             kind="note",
             topic="note",
             media_label=d["title"],
+            media_path=media_path,
             visibility=d["visibility"],
             created_at=_now(),
             updated_at=_now(),

@@ -33,7 +33,10 @@ def post_edit(request, post_id):
             "body": post.body or "",
             "visibility": post.visibility or "public",
         }
-        form = NoteForm(request.POST or None, initial=None if request.method == "POST" else initial)
+        form = NoteForm(
+            request.POST or None, request.FILES or None,
+            initial=None if request.method == "POST" else initial,
+        )
         if request.method == "POST" and form.is_valid():
             post.media_label = form.cleaned_data["title"]
             post.body = form.cleaned_data["body"]
@@ -41,7 +44,16 @@ def post_edit(request, post_id):
             post.kind = "note"
             post.topic = "note"
             post.updated_at = now()
-            post.save(update_fields=["media_label", "body", "visibility", "kind", "topic", "updated_at"])
+            fields = ["media_label", "body", "visibility", "kind", "topic", "updated_at"]
+            upload = form.cleaned_data.get("photo")
+            if upload:
+                from apps.social.media import save_image
+                try:
+                    post.media_path = save_image(upload, "notes")
+                    fields.append("media_path")
+                except Exception:
+                    pass
+            post.save(update_fields=fields)
             bump_news()
             messages.success(request, "Заметка сохранена.")
             return redirect(nxt)

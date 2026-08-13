@@ -331,7 +331,7 @@ class PostForm(ClassicForm, forms.ModelForm):
 
 
 class NoteForm(ClassicForm, forms.Form):
-    """FB Notes (mid-2006) — title + body."""
+    """FB Notes (mid-2006) — title + body (+ optional photo on same media disk)."""
     title = forms.CharField(max_length=120, label="Заголовок", widget=_in(style="width:100%"))
     body = forms.CharField(label="Текст", widget=_ta(8, style="width:100%"))
     visibility = forms.ChoiceField(
@@ -339,6 +339,7 @@ class NoteForm(ClassicForm, forms.Form):
         initial="public",
         widget=forms.Select(),
     )
+    photo = forms.ImageField(required=False, label="Фото", widget=_file())
 
     def clean_title(self):
         return (self.cleaned_data.get("title") or "").strip()[:120]

@@ -1230,6 +1230,13 @@ button.linkish .ico { margin-right: 2px; }
 .market-page .market-row-body { overflow: hidden; }
 .market-page .market-photo { margin: 0 0 8px; }
 .market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
+.notes-page .note-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
+.notes-page .note-row:last-child { border-bottom: 0; }
+.notes-page .note-thumb { float: left; margin: 0 8px 0 0; }
+.notes-page .note-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
+.notes-page .note-row-body { overflow: hidden; }
+.note-photo { margin: 4px 0; }
+.note-photo img { border: 1px solid #B3B3B3; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-video { margin-top: 4px; }
 .inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }

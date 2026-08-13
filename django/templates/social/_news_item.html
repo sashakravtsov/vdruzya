@@ -26,6 +26,9 @@
             написал(а) заметку
             <a href="{% url 'posts.show' item.post.id %}"><b>«{{ item.post.media_label|default:"Заметка" }}»</b></a>
             {% if item.at %}<span class="news-time muted"> · {{ item.at|fb_when }}</span>{% endif %}
+            {% if item.post.media_url %}
+            <div class="news-photo-row"><a href="{% url 'posts.show' item.post.id %}"><img src="{{ item.post.media_url }}" alt="" class="news-photo" width="75" height="75"></a></div>
+            {% endif %}
             <div class="news-snippet">
                 {% if item.post.body %}<div class="wall-body">{{ item.post.body|truncatewords:40|linebreaksbr }}</div>{% endif %}
             </div>
