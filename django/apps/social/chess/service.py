@@ -13,7 +13,8 @@ from apps.social.services import now as _now
 
 from . import engine
 from .models import (
-    ChessChampEntry, ChessChampionship, ChessGame, ChessLessonProgress, ChessMove, ChessRating,
+    ChessChampEntry, ChessChampionship, ChessGame, ChessLessonProgress, ChessMove,
+    ChessPuzzleProgress, ChessRating,
 )
 
 
@@ -61,7 +62,8 @@ def get_or_create_rating(user: SocialProfile) -> ChessRating:
     if row:
         return row
     return ChessRating.objects.create(
-        social_user=user, rating=1200, games=0, wins=0, losses=0, draws=0, updated_at=_now(),
+        social_user=user, rating=1200, games=0, wins=0, losses=0, draws=0,
+        puzzle_solved=0, puzzle_streak=0, best_puzzle_streak=0, updated_at=_now(),
     )
 
 
@@ -112,14 +114,19 @@ def remaining_ms(game: ChessGame, side: str, at=None) -> int:
 
 def clock_snapshot(game: ChessGame, at=None) -> dict:
     at = at or _now()
+    pending = game.status == "pending"
     if not clocks_enabled(game):
-        return {"enabled": False, "white_ms": 0, "black_ms": 0, "turn": game.turn, "active": False}
+        return {
+            "enabled": False, "white_ms": 0, "black_ms": 0, "turn": game.turn,
+            "active": False, "pending": pending,
+        }
     return {
         "enabled": True,
         "white_ms": remaining_ms(game, "w", at),
         "black_ms": remaining_ms(game, "b", at),
         "turn": game.turn,
-        "active": game.result == "*",
+        "active": game.result == "*" and not pending,
+        "pending": pending,
         "label": _time_control_label(game.time_control_sec),
         "increment_sec": int(game.increment_sec or 0),
     }
@@ -164,7 +171,7 @@ def flag_loss(game: ChessGame, loser_side: str) -> ChessGame:
 @transaction.atomic
 def ensure_clock(game: ChessGame) -> tuple[ChessGame, bool]:
     """If the side to move has flagged, finish the game. Returns (game, flagged)."""
-    if game.result != "*" or not clocks_enabled(game):
+    if game.result != "*" or game.status == "pending" or not clocks_enabled(game):
         return game, False
     rem = remaining_ms(game, game.turn)
     if rem > 0:
@@ -192,6 +199,8 @@ def start_game(
     in_champ: bool = True,
     time_control_sec: int = 0,
     increment_sec: int = 0,
+    invited_by: SocialProfile | None = None,
+    require_accept: bool = True,
 ) -> ChessGame:
     if white.id == black.id:
         raise ValueError("Нельзя играть с самим собой")
@@ -211,27 +220,96 @@ def start_game(
             )
     now = _now()
     bank = time_control_sec * 1000
+    pending = bool(require_accept)
     return ChessGame.objects.create(
         white=white,
         black=black,
         fen=engine.START_FEN,
-        status="active",
+        status="pending" if pending else "active",
         result="*",
         turn="w",
         championship=champ,
+        invited_by=invited_by,
         moves_count=0,
         time_control_sec=time_control_sec,
         increment_sec=increment_sec,
         white_clock_ms=bank,
         black_clock_ms=bank,
-        clock_running_since=now if time_control_sec > 0 else None,
+        clock_running_since=(None if pending or time_control_sec <= 0 else now),
         created_at=now,
         updated_at=now,
     )
 
 
+@transaction.atomic
+def accept_challenge(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if game.status != "pending" or game.result != "*":
+        raise ValueError("Это приглашение уже неактуально")
+    if user.id not in (game.white_id, game.black_id):
+        raise ValueError("Это не ваша партия")
+    if game.invited_by_id and user.id == game.invited_by_id:
+        raise ValueError("Дождитесь ответа соперника")
+    game.status = "active"
+    game.updated_at = _now()
+    if clocks_enabled(game):
+        game.clock_running_since = game.updated_at
+    game.save()
+    return game
+
+
+@transaction.atomic
+def decline_challenge(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if game.status != "pending" or game.result != "*":
+        raise ValueError("Это приглашение уже неактуально")
+    if user.id not in (game.white_id, game.black_id):
+        raise ValueError("Это не ваша партия")
+    if game.invited_by_id and user.id == game.invited_by_id:
+        raise ValueError("Отменить приглашение можно кнопкой «отозвать»")
+    game.status = "declined"
+    game.result = "0-0"
+    game.clock_running_since = None
+    game.updated_at = _now()
+    game.save()
+    return game
+
+
+@transaction.atomic
+def cancel_challenge(game: ChessGame, user: SocialProfile) -> ChessGame:
+    if game.status != "pending" or game.result != "*":
+        raise ValueError("Это приглашение уже неактуально")
+    if not game.invited_by_id or user.id != game.invited_by_id:
+        raise ValueError("Отменить может только автор приглашения")
+    game.status = "cancelled"
+    game.result = "0-0"
+    game.clock_running_since = None
+    game.updated_at = _now()
+    game.save()
+    return game
+
+
+def rematch_game(game: ChessGame, user: SocialProfile) -> ChessGame:
+    """Start a new challenge vs the same opponent (colors swapped)."""
+    if game.result == "*":
+        raise ValueError("Сначала завершите текущую партию")
+    if user.id not in (game.white_id, game.black_id):
+        raise ValueError("Это не ваша партия")
+    # swap colors for variety
+    return start_game(
+        game.black, game.white,
+        in_champ=bool(game.championship_id),
+        time_control_sec=int(game.time_control_sec or 0),
+        increment_sec=int(game.increment_sec or 0),
+        invited_by=user,
+        require_accept=True,
+    )
+
+
 def game_for(user: SocialProfile, game_id: int) -> ChessGame | None:
-    g = ChessGame.objects.select_related("white", "black", "championship").filter(pk=game_id).first()
+    g = (
+        ChessGame.objects.select_related("white", "black", "championship", "invited_by")
+        .filter(pk=game_id)
+        .first()
+    )
     if not g:
         return None
     if user.id not in (g.white_id, g.black_id):
@@ -251,6 +329,8 @@ def side_of(game: ChessGame, user: SocialProfile) -> str | None:
 def play_move(game: ChessGame, user: SocialProfile, frm: str, to: str) -> ChessGame:
     if game.result != "*":
         raise ValueError("Партия уже закончена")
+    if game.status == "pending":
+        raise ValueError("Дождитесь принятия приглашения")
     side = side_of(game, user)
     if not side:
         raise ValueError("Это не ваша партия")
@@ -307,6 +387,8 @@ def play_move(game: ChessGame, user: SocialProfile, frm: str, to: str) -> ChessG
 def resign(game: ChessGame, user: SocialProfile) -> ChessGame:
     if game.result != "*":
         raise ValueError("Партия уже закончена")
+    if game.status == "pending":
+        raise ValueError("Сначала примите или отклоните приглашение")
     side = side_of(game, user)
     if not side:
         raise ValueError("Это не ваша партия")
@@ -444,7 +526,7 @@ def decline_draw(game: ChessGame, user: SocialProfile) -> ChessGame:
 def finished_games_page(user: SocialProfile, page_num: int = 1, per_page: int = 15):
     qs = (
         ChessGame.objects.filter(Q(white=user) | Q(black=user))
-        .exclude(result="*")
+        .exclude(result__in=["*", "0-0"])
         .select_related("white", "black")
         .order_by("-id")
     )
@@ -494,19 +576,141 @@ def user_stats(user: SocialProfile) -> dict:
     r = get_or_create_rating(user)
     recent = list(
         ChessGame.objects.filter(Q(white=user) | Q(black=user))
-        .exclude(result="*")
+        .exclude(result__in=["*", "0-0"])
         .select_related("white", "black")
         .order_by("-id")[:10]
     )
     active = list(
         ChessGame.objects.filter(Q(white=user) | Q(black=user), result="*")
+        .exclude(status="pending")
         .select_related("white", "black")
         .order_by("-updated_at")[:10]
     )
     by_result = (
         ChessGame.objects.filter(Q(white=user) | Q(black=user))
-        .exclude(result="*")
+        .exclude(result__in=["*", "0-0"])
         .values("result")
         .annotate(n=Count("id"))
     )
     return {"rating": r, "recent": recent, "active": active, "by_result": list(by_result)}
+
+
+def play_hub(user: SocialProfile) -> dict:
+    """Inbox-style lists for the Play tab."""
+    open_games = list(
+        ChessGame.objects.filter(Q(white=user) | Q(black=user), result="*")
+        .select_related("white", "black", "invited_by")
+        .order_by("-updated_at")[:40]
+    )
+    your_move, waiting, incoming, outgoing = [], [], [], []
+    for g in open_games:
+        if g.status == "pending":
+            if g.invited_by_id == user.id:
+                outgoing.append(g)
+            else:
+                incoming.append(g)
+            continue
+        side = side_of(g, user)
+        if side and side == g.turn:
+            your_move.append(g)
+        else:
+            waiting.append(g)
+    return {
+        "your_move": your_move,
+        "waiting": waiting,
+        "incoming": incoming,
+        "outgoing": outgoing,
+        "your_move_n": len(your_move),
+        "incoming_n": len(incoming),
+        "waiting_n": len(waiting),
+        "outgoing_n": len(outgoing),
+    }
+
+
+def engagement_strip(user: SocialProfile, champ: ChessChampionship | None = None) -> dict:
+    hub = play_hub(user)
+    r = get_or_create_rating(user)
+    week_rank = None
+    week_points = None
+    if champ:
+        entry = (
+            ChessChampEntry.objects.filter(championship=champ, social_user=user).first()
+        )
+        if entry:
+            week_points = entry.points
+            better = ChessChampEntry.objects.filter(
+                championship=champ, points__gt=entry.points,
+            ).count()
+            week_rank = better + 1
+    return {
+        **hub,
+        "rating": r.rating,
+        "puzzle_streak": int(getattr(r, "puzzle_streak", 0) or 0),
+        "puzzle_solved": int(getattr(r, "puzzle_solved", 0) or 0),
+        "week_rank": week_rank,
+        "week_points": week_points,
+    }
+
+
+@transaction.atomic
+def record_puzzle_attempt(user: SocialProfile, puzzle_id: str, solved: bool) -> dict:
+    from datetime import date, timedelta
+
+    row, _ = ChessPuzzleProgress.objects.get_or_create(
+        social_user=user, puzzle_id=puzzle_id[:40],
+        defaults={"attempts": 0, "solved_at": None},
+    )
+    row.attempts = int(row.attempts or 0) + 1
+    first_solve = False
+    if solved and not row.solved_at:
+        row.solved_at = _now()
+        first_solve = True
+    row.save()
+
+    rating = get_or_create_rating(user)
+    today = date.today()
+    if first_solve:
+        rating.puzzle_solved = int(rating.puzzle_solved or 0) + 1
+        last = rating.last_puzzle_on
+        if last == today:
+            pass  # already counted streak today
+        elif last == today - timedelta(days=1):
+            rating.puzzle_streak = int(rating.puzzle_streak or 0) + 1
+        else:
+            rating.puzzle_streak = 1
+        rating.last_puzzle_on = today
+        rating.best_puzzle_streak = max(
+            int(rating.best_puzzle_streak or 0), int(rating.puzzle_streak or 0),
+        )
+        rating.updated_at = _now()
+        rating.save()
+    solved_ids = set(
+        ChessPuzzleProgress.objects.filter(social_user=user, solved_at__isnull=False)
+        .values_list("puzzle_id", flat=True)
+    )
+    return {
+        "first_solve": first_solve,
+        "attempts": row.attempts,
+        "streak": int(rating.puzzle_streak or 0),
+        "solved_ids": solved_ids,
+        "solved_total": int(rating.puzzle_solved or 0),
+    }
+
+
+def puzzle_stats(user: SocialProfile) -> dict:
+    from . import puzzles as chess_puzzles
+
+    rating = get_or_create_rating(user)
+    solved_ids = set(
+        ChessPuzzleProgress.objects.filter(social_user=user, solved_at__isnull=False)
+        .values_list("puzzle_id", flat=True)
+    )
+    total = len(chess_puzzles.PUZZLES)
+    return {
+        "solved_ids": solved_ids,
+        "solved": len(solved_ids),
+        "total": total,
+        "streak": int(getattr(rating, "puzzle_streak", 0) or 0),
+        "best_streak": int(getattr(rating, "best_puzzle_streak", 0) or 0),
+        "pct": int(round(100 * len(solved_ids) / total)) if total else 0,
+    }

@@ -284,6 +284,9 @@ def make_move(fen: str, frm: str, to: str) -> tuple[str, str]:
     tr, tc = sq_to_rc(to)
     board = state["board"]
     piece = board[r][c]
+    orig = piece
+    is_castle = piece.upper() == "K" and abs(tc - c) == 2
+    promoted = False
     capture = board[tr][tc] != "."
     # en passant
     if piece.upper() == "P" and c != tc and board[tr][tc] == ".":
@@ -292,7 +295,7 @@ def make_move(fen: str, frm: str, to: str) -> tuple[str, str]:
     board[tr][tc] = piece
     board[r][c] = "."
     # castling
-    if piece.upper() == "K" and abs(tc - c) == 2:
+    if is_castle:
         if tc == 6:
             board[tr][5] = board[tr][7]
             board[tr][7] = "."
@@ -303,9 +306,11 @@ def make_move(fen: str, frm: str, to: str) -> tuple[str, str]:
     if piece == "P" and tr == 0:
         board[tr][tc] = "Q"
         piece = "Q"
+        promoted = True
     if piece == "p" and tr == 7:
         board[tr][tc] = "q"
         piece = "q"
+        promoted = True
     # castling rights
     rights = list(state["castling"] if state["castling"] != "-" else "")
     def drop(ch):
@@ -335,11 +340,17 @@ def make_move(fen: str, frm: str, to: str) -> tuple[str, str]:
     if state["turn"] == "b":
         state["full"] += 1
     state["turn"] = "b" if state["turn"] == "w" else "w"
-    san = f"{frm.lower()}-{to.lower()}"
-    if capture:
-        san += "×"
+    # Algebraic-ish SAN for a professional move list
+    if is_castle:
+        san = "0-0-0" if tc < c else "0-0"
+    elif orig.upper() == "P":
+        san = f"{FILES[c]}×{to.lower()}" if capture else to.lower()
+        if promoted:
+            san += "=Q"
+    else:
+        letter = {"K": "K", "Q": "Q", "R": "R", "B": "B", "N": "N"}[orig.upper()]
+        san = f"{letter}{'×' if capture else ''}{to.lower()}"
     if in_check(board, state["turn"]):
-        # mate?
         any_legal = False
         for rr in range(8):
             for cc in range(8):
@@ -407,3 +418,74 @@ def game_status(fen: str) -> str:
     if not any_legal:
         return "checkmate" if chk else "stalemate"
     return "check" if chk else "active"
+
+
+_MATERIAL = {"Q": 9, "R": 5, "B": 3, "N": 3, "P": 1, "K": 0}
+_START_BAG = {"Q": 1, "R": 2, "B": 2, "N": 2, "P": 8, "K": 1}
+
+
+def king_square(fen: str, side: str) -> str | None:
+    try:
+        kr, kc = find_king(parse_fen(fen)["board"], side)
+        return rc_to_sq(kr, kc)
+    except Exception:
+        return None
+
+
+def material_view(fen: str) -> dict:
+    """Captured glyphs + simple material score for the side that is ahead."""
+    state = parse_fen(fen)
+    have_w = {k: 0 for k in _START_BAG}
+    have_b = {k: 0 for k in _START_BAG}
+    for r in range(8):
+        for c in range(8):
+            p = state["board"][r][c]
+            if p == ".":
+                continue
+            key = p.upper()
+            if key not in have_w:
+                continue
+            if p.isupper():
+                have_w[key] += 1
+            else:
+                have_b[key] += 1
+    order = ("Q", "R", "B", "N", "P")
+    cap_w, cap_b = [], []
+    score_w = score_b = 0
+    for k in order:
+        miss_b = max(0, _START_BAG[k] - have_b[k])  # white captured these
+        miss_w = max(0, _START_BAG[k] - have_w[k])
+        glyph_w = PIECE_UNI[k.lower()]  # black piece icon captured by white
+        glyph_b = PIECE_UNI[k]
+        cap_w.extend([glyph_w] * miss_b)
+        cap_b.extend([glyph_b] * miss_w)
+        score_w += miss_b * _MATERIAL[k]
+        score_b += miss_w * _MATERIAL[k]
+    adv = score_w - score_b
+    return {
+        "white_captured": "".join(cap_w),
+        "black_captured": "".join(cap_b),
+        "white_score": score_w,
+        "black_score": score_b,
+        "advantage": adv,
+        "advantage_label": (f"+{adv}" if adv > 0 else (str(adv) if adv < 0 else "=")),
+    }
+
+
+def pair_moves(moves) -> list[dict]:
+    """Group ply list into rows: 1. white black."""
+    pairs: list[dict] = []
+    cur = None
+    for m in moves:
+        ply = int(getattr(m, "ply", 0) or 0)
+        if ply % 2 == 1:
+            cur = {"n": (ply + 1) // 2, "w": m, "b": None}
+            pairs.append(cur)
+        else:
+            n = ply // 2
+            if cur and cur["b"] is None and cur["n"] == n:
+                cur["b"] = m
+            else:
+                cur = {"n": n, "w": None, "b": m}
+                pairs.append(cur)
+    return pairs

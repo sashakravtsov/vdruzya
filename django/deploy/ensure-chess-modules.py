@@ -80,11 +80,17 @@ CREATE TABLE IF NOT EXISTS chess_moves (
 CREATE INDEX IF NOT EXISTS chess_moves_game_idx ON chess_moves (game_id, ply);
 
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS draw_offer_by_id bigint;
+ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS invited_by_id bigint;
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS time_control_sec integer NOT NULL DEFAULT 0;
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS increment_sec integer NOT NULL DEFAULT 0;
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS white_clock_ms bigint NOT NULL DEFAULT 0;
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS black_clock_ms bigint NOT NULL DEFAULT 0;
 ALTER TABLE chess_games ADD COLUMN IF NOT EXISTS clock_running_since timestamp without time zone;
+
+ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS puzzle_solved integer NOT NULL DEFAULT 0;
+ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS puzzle_streak integer NOT NULL DEFAULT 0;
+ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS best_puzzle_streak integer NOT NULL DEFAULT 0;
+ALTER TABLE chess_ratings ADD COLUMN IF NOT EXISTS last_puzzle_on date;
 
 CREATE TABLE IF NOT EXISTS chess_lesson_progress (
   id bigserial PRIMARY KEY,
@@ -96,6 +102,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS chess_lesson_progress_uniq
   ON chess_lesson_progress (social_user_id, lesson_slug);
 CREATE INDEX IF NOT EXISTS chess_lesson_progress_user_idx
   ON chess_lesson_progress (social_user_id, completed_at DESC);
+
+CREATE TABLE IF NOT EXISTS chess_puzzle_progress (
+  id bigserial PRIMARY KEY,
+  social_user_id bigint NOT NULL,
+  puzzle_id varchar(40) NOT NULL,
+  attempts integer NOT NULL DEFAULT 0,
+  solved_at timestamp without time zone
+);
+CREATE UNIQUE INDEX IF NOT EXISTS chess_puzzle_progress_uniq
+  ON chess_puzzle_progress (social_user_id, puzzle_id);
+CREATE INDEX IF NOT EXISTS chess_puzzle_progress_user_idx
+  ON chess_puzzle_progress (social_user_id, solved_at DESC);
 """
 
 

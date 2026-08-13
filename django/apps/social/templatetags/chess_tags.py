@@ -13,6 +13,7 @@ def chess_result_label(result: str) -> str:
         "0-1": "победа чёрных",
         "1/2-1/2": "ничья",
         "*": "идёт",
+        "0-0": "отменено",
     }.get(result or "*", result or "")
 
 
@@ -32,3 +33,25 @@ def lesson_done(slug: str, done_slugs) -> bool:
         return slug in done_slugs
     except TypeError:
         return False
+
+
+@register.filter
+def puzzle_done(pid: str, done_ids) -> bool:
+    try:
+        return pid in done_ids
+    except TypeError:
+        return False
+
+
+@register.filter
+def chess_move_pairs(moves):
+    return engine.pair_moves(moves or [])
+
+
+@register.filter
+def chess_opp_name(game, me):
+    if not game or not me:
+        return ""
+    if game.white_id == me.id:
+        return game.black.name
+    return game.white.name

@@ -1,4 +1,4 @@
-/* Chess canvas: click / drag moves + live clocks (classic chrome). */
+/* Chess canvas: click/drag moves, clocks, sounds, auto-refresh. */
 (function () {
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -22,6 +22,38 @@
     return z(m) + ":" + z(s);
   }
 
+  var audioCtx = null;
+  function beep(kind) {
+    try {
+      if (!window.AudioContext && !window.webkitAudioContext) return;
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      var now = audioCtx.currentTime;
+      var map = {
+        move: [520, 0.05, 0.04],
+        capture: [220, 0.08, 0.06],
+        check: [780, 0.12, 0.05],
+        start: [440, 0.1, 0.05],
+        end: [330, 0.18, 0.08],
+        puzzle: [660, 0.12, 0.05],
+        wrong: [160, 0.14, 0.07]
+      };
+      var cfg = map[kind] || map.move;
+      o.type = kind === "capture" || kind === "wrong" ? "triangle" : "sine";
+      o.frequency.value = cfg[0];
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + cfg[1]);
+      o.start(now);
+      o.stop(now + cfg[1] + 0.02);
+      if (kind === "check" || kind === "end") {
+        setTimeout(function () { beep(kind === "end" ? "move" : "capture"); }, 90);
+      }
+    } catch (e) {}
+  }
+
   function setFields(form, fromSq, toSq) {
     var fromEl = form.querySelector('[name="from_sq"]');
     var toEl = form.querySelector('[name="to_sq"]');
@@ -32,6 +64,8 @@
   function submitMove(form, fromSq, toSq) {
     if (!form || !fromSq || !toSq) return;
     setFields(form, fromSq, toSq);
+    var app = $("#chess-app");
+    if (app) app.classList.add("chess-flash");
     if (typeof form.requestSubmit === "function") form.requestSubmit();
     else form.submit();
   }
@@ -53,9 +87,7 @@
     var selected = (board.getAttribute("data-selected") || "").toLowerCase();
     var dragFrom = "";
 
-    function legalFor(sq) {
-      return legalMap[sq] || [];
-    }
+    function legalFor(sq) { return legalMap[sq] || []; }
 
     function selectSq(sq) {
       selected = sq || "";
@@ -73,28 +105,25 @@
       if (!sq) return;
       ev.preventDefault();
       if (!canMove && board.getAttribute("data-mode") !== "puzzle") return;
-
       if (selected && legalFor(selected).indexOf(sq) >= 0) {
         submitMove(form, selected, sq);
         return;
       }
-      if (legalMap[sq]) {
-        selectSq(sq);
-        return;
-      }
+      if (legalMap[sq]) { selectSq(sq); return; }
       selectSq("");
     });
 
-    if (!canMove && board.getAttribute("data-mode") !== "puzzle") return;
+    if (!canMove && board.getAttribute("data-mode") !== "puzzle") {
+      if (board.getAttribute("data-waiting") === "1") {
+        setTimeout(function () { window.location.reload(); }, 18000);
+      }
+      return;
+    }
 
     $all("td[data-sq]", board).forEach(function (td) {
       var sq = td.getAttribute("data-sq");
-      var piece = td.getAttribute("data-piece") || "";
       var glyph = $(".chess-sq", td);
       if (!glyph) return;
-      var mine = !!legalMap[sq] || (piece && board.getAttribute("data-my-side") &&
-        ((board.getAttribute("data-my-side") === "w" && piece === piece.toUpperCase()) ||
-         (board.getAttribute("data-my-side") === "b" && piece === piece.toLowerCase() && piece !== piece.toUpperCase())));
       if (!legalMap[sq]) {
         glyph.setAttribute("draggable", "false");
         return;
@@ -117,22 +146,17 @@
 
     $all("td[data-sq]", board).forEach(function (td) {
       td.addEventListener("dragover", function (ev) {
-        if (!dragFrom && !(ev.dataTransfer && ev.dataTransfer.types)) return;
         ev.preventDefault();
         td.classList.add("drag-over");
       });
-      td.addEventListener("dragleave", function () {
-        td.classList.remove("drag-over");
-      });
+      td.addEventListener("dragleave", function () { td.classList.remove("drag-over"); });
       td.addEventListener("drop", function (ev) {
         ev.preventDefault();
         td.classList.remove("drag-over");
         var from = dragFrom || (ev.dataTransfer && ev.dataTransfer.getData("text/plain")) || selected;
         var to = (td.getAttribute("data-sq") || "").toLowerCase();
         from = (from || "").toLowerCase();
-        if (from && to && legalFor(from).indexOf(to) >= 0) {
-          submitMove(form, from, to);
-        }
+        if (from && to && legalFor(from).indexOf(to) >= 0) submitMove(form, from, to);
       });
     });
   }
@@ -172,6 +196,7 @@
       var cur = turn === "w" ? w : b;
       if (active && cur === 0 && flagForm && !claimed) {
         claimed = true;
+        beep("end");
         if (typeof flagForm.requestSubmit === "function") flagForm.requestSubmit();
         else flagForm.submit();
       }
@@ -184,6 +209,11 @@
     $all("[data-chess-live]").forEach(bindBoard);
     var clocks = $("#chess-clocks");
     if (clocks) bindClocks(clocks);
+    var app = $("#chess-app");
+    if (app) {
+      var sfx = app.getAttribute("data-sfx") || "";
+      if (sfx) beep(sfx);
+    }
   }
 
   if (document.readyState === "loading") {

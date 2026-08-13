@@ -14,6 +14,10 @@ class ChessRating(models.Model):
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
     draws = models.IntegerField(default=0)
+    puzzle_solved = models.IntegerField(default=0)
+    puzzle_streak = models.IntegerField(default=0)
+    best_puzzle_streak = models.IntegerField(default=0)
+    last_puzzle_on = models.DateField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -62,7 +66,7 @@ class ChessGame(models.Model):
         SocialProfile, on_delete=models.DO_NOTHING, db_column="black_id", related_name="+",
     )
     fen = models.CharField(max_length=100)
-    status = models.CharField(max_length=16, default="active")  # active|check|mate|draw|resign|timeout
+    status = models.CharField(max_length=16, default="active")  # pending|active|check|mate|draw|resign|timeout
     result = models.CharField(max_length=8, default="*")  # 1-0|0-1|1/2-1/2|*
     turn = models.CharField(max_length=1, default="w")
     championship = models.ForeignKey(
@@ -72,6 +76,10 @@ class ChessGame(models.Model):
     winner = models.ForeignKey(
         SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
         db_column="winner_id", related_name="+",
+    )
+    invited_by = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
+        db_column="invited_by_id", related_name="+",
     )
     draw_offer_by = models.ForeignKey(
         SocialProfile, on_delete=models.DO_NOTHING, null=True, blank=True,
@@ -129,3 +137,17 @@ class ChessLessonProgress(models.Model):
     class Meta:
         managed = False
         db_table = "chess_lesson_progress"
+
+
+class ChessPuzzleProgress(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    social_user = models.ForeignKey(
+        SocialProfile, on_delete=models.DO_NOTHING, db_column="social_user_id", related_name="+",
+    )
+    puzzle_id = models.CharField(max_length=40)
+    attempts = models.IntegerField(default=0)
+    solved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "chess_puzzle_progress"

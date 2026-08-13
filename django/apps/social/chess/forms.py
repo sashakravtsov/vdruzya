@@ -74,7 +74,7 @@ class MoveForm(ClassicForm, forms.Form):
 
 
 class GameActionForm(ClassicForm, forms.Form):
-    """resign / draw / flag"""
+    """resign / draw / flag / challenge / rematch"""
     game_id = forms.IntegerField(widget=forms.HiddenInput())
     action = forms.ChoiceField(
         choices=(
@@ -83,6 +83,10 @@ class GameActionForm(ClassicForm, forms.Form):
             ("draw_accept", "draw_accept"),
             ("draw_decline", "draw_decline"),
             ("claim_flag", "claim_flag"),
+            ("accept_challenge", "accept_challenge"),
+            ("decline_challenge", "decline_challenge"),
+            ("cancel_challenge", "cancel_challenge"),
+            ("rematch", "rematch"),
         ),
         widget=forms.HiddenInput(),
     )

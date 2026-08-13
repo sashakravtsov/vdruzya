@@ -1,28 +1,96 @@
 {% extends "social/apps/canvas_base.html" %}
 {% load static chess_tags %}
 {% block canvas_body %}
-<div class="profile-box chess-app">
+<div class="profile-box chess-app" id="chess-app" data-sfx="{{ sound_event }}">
     <h4>Шахматы</h4>
     <div class="profile-box-body">
-        <p class="chess-lead">Играйте с друзьями, следите за рейтингом, участвуйте в чемпионате недели и учитесь по подробным урокам.</p>
-        <p class="muted">Ваш рейтинг: <b>{{ my_rating.rating }}</b>
-            · партий: {{ my_rating.games }}
-            · {{ champ.title }}</p>
+        <p class="chess-lead">Профессиональные партии с друзьями: часы, рейтинг, чемпионат недели, обучение и задачи.</p>
+        <p class="chess-strip">
+            Рейтинг <b>{{ strip.rating }}</b>
+            · ваш ход <b>{{ strip.your_move_n }}</b>
+            {% if strip.incoming_n %} · приглашения <b>{{ strip.incoming_n }}</b>{% endif %}
+            · серия задач <b>{{ strip.puzzle_streak }}</b>
+            {% if strip.week_rank %} · неделя #{{ strip.week_rank }} ({{ strip.week_points }} очк.){% endif %}
+            · {{ champ.title }}
+        </p>
 
         <div class="subtabs chess-tabs">
-            <div class="{% if tab == 'play' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=play">Играть</a></div>
+            <div class="{% if tab == 'play' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'chess' %}?tab=play">Играть{% if strip.your_move_n or strip.incoming_n %} <span class="chess-badge">{{ strip.your_move_n|add:strip.incoming_n }}</span>{% endif %}</a>
+            </div>
             <div class="{% if tab == 'stats' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=stats">Статистика</a></div>
             <div class="{% if tab == 'ratings' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=ratings">Рейтинг</a></div>
             <div class="{% if tab == 'champs' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=champs">Чемпионат</a></div>
             <div class="{% if tab == 'learn' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=learn">Обучение</a></div>
-            <div class="{% if tab == 'puzzles' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles">Задачи</a></div>
+            <div class="{% if tab == 'puzzles' %}activetab{% else %}inactivetab{% endif %}"><a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles">Задачи{% if strip.puzzle_streak %}<span class="chess-badge soft">{{ strip.puzzle_streak }}</span>{% endif %}</a></div>
             {% if tab == 'game' and game %}
             <div class="activetab"><a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}">Партия</a></div>
             {% endif %}
         </div>
 
-        {% if tab == 'play' %}
-        <h5>Новая партия</h5>
+        {% if tab == 'play' and hub %}
+        {% if hub.incoming %}
+        <h5>Входящие вызовы</h5>
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead><tr><th>От кого</th><th>Часы</th><th></th></tr></thead>
+            <tbody>
+            {% for g in hub.incoming %}
+            <tr class="chess-row-hot">
+                <td>{{ g|chess_opp_name:me }}</td>
+                <td class="muted">{% if g.time_control_sec %}контроль{% else %}без лимита{% endif %}</td>
+                <td>
+                    <a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">открыть</a>
+                    ·
+                    <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=play" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="accept_challenge">
+                        <input type="hidden" name="game_id" value="{{ g.id }}">
+                        <button type="submit" class="linkish">принять</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if hub.your_move %}
+        <h5>Ваш ход</h5>
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead><tr><th>Соперник</th><th>Статус</th><th></th></tr></thead>
+            <tbody>
+            {% for g in hub.your_move %}
+            <tr class="chess-row-hot">
+                <td>{{ g|chess_opp_name:me }}
+                    <span class="muted">({% if g.white_id == me.id %}белые{% else %}чёрные{% endif %})</span></td>
+                <td>{% if g.status == 'check' %}шах{% else %}ваш ход{% endif %}</td>
+                <td><a class="inputsubmit chess-cta" href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">ходить</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if hub.waiting %}
+        <h5>Ждёте соперника</h5>
+        <ul class="chess-simple-list">
+            {% for g in hub.waiting %}
+            <li>{{ g|chess_opp_name:me }}
+                · <a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">партия #{{ g.id }}</a></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if hub.outgoing %}
+        <h5>Исходящие приглашения</h5>
+        <ul class="chess-simple-list">
+            {% for g in hub.outgoing %}
+            <li>{{ g|chess_opp_name:me }}
+                · <a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">ждём ответа</a></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <h5>Новый вызов</h5>
         <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=play">{% csrf_token %}
             <input type="hidden" name="tab" value="play">
             <input type="hidden" name="action" value="start">
@@ -42,165 +110,217 @@
                     <td class="label">Часы:</td>
                     <td>
                         {{ start_form.time_control }}
-                        <div class="muted">Время идёт только когда ход ваш. Если дошло до нуля — поражение (как флажок в турнирных шахматах).</div>
+                        <div class="muted">Время тикает только на вашем ходу. Ноль — поражение.</div>
                     </td>
                 </tr>
                 <tr>
                     <td class="label"></td>
-                    <td>
-                        <label>{{ start_form.in_champ }} {{ start_form.in_champ.label }}</label>
-                    </td>
+                    <td><label>{{ start_form.in_champ }} {{ start_form.in_champ.label }}</label></td>
                 </tr>
-                <tr><td></td><td><input type="submit" class="inputsubmit" value="Начать партию" {% if not friends %}disabled{% endif %}></td></tr>
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Вызвать на партию" {% if not friends %}disabled{% endif %}></td></tr>
             </table>
         </form>
-        <p class="muted">По умолчанию партия идёт в зачёт чемпионата недели. Для переписки удобны 24 часа или 3 дня; для игры «здесь и сейчас» — 30 минут или 1 час.</p>
-
-        {% if active_games %}
-        <h5>Ваши партии</h5>
-        <table class="mygroups-table" cellspacing="0" cellpadding="0">
-            <thead><tr><th>Соперник</th><th>Ход</th><th></th></tr></thead>
-            <tbody>
-            {% for g in active_games %}
-            <tr>
-                <td>{% if g.white_id == me.id %}{{ g.black.name }}{% else %}{{ g.white.name }}{% endif %}
-                    <span class="muted">({% if g.white_id == me.id %}белые{% else %}чёрные{% endif %})</span></td>
-                <td>{% if g.turn == 'w' %}белых{% else %}чёрных{% endif %}{% if g.status == 'check' %} · шах{% endif %}</td>
-                <td><a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">открыть</a></td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+        <p class="muted">Соперник должен принять вызов. Для переписки удобны 24 часа или 3 дня; для игры «сейчас» — 30 минут или 1 час.</p>
         {% endif %}
 
         {% if tab == 'game' and game %}
-        <p>
-            <b>{{ game.white.name }}</b> (белые) — <b>{{ game.black.name }}</b> (чёрные)
-            · {{ game.result|chess_result_label }}{% if game.result == '*' and game.status == 'check' %}, шах{% endif %}
-            {% if game.status == 'timeout' %} · время{% endif %}
-        </p>
-        {% if clock.enabled %}
-        <div id="chess-clocks" class="chess-clocks"
-             data-enabled="1"
-             data-active="{% if clock.active %}1{% else %}0{% endif %}"
-             data-turn="{{ clock.turn }}"
-             data-white-ms="{{ clock.white_ms }}"
-             data-black-ms="{{ clock.black_ms }}">
-            <div class="chess-clock-side{% if clock.turn == 'b' and clock.active %} is-running{% endif %}">
-                <span class="chess-clock-name">{{ game.black.name }} · чёрные</span>
-                <span class="chess-clock-time" data-clock-side="b">--:--</span>
-            </div>
-            <div class="chess-clock-meta muted">{{ clock.label }}{% if clock.increment_sec %} · +{{ clock.increment_sec }}с{% endif %}</div>
-            <div class="chess-clock-side{% if clock.turn == 'w' and clock.active %} is-running{% endif %}">
-                <span class="chess-clock-name">{{ game.white.name }} · белые</span>
-                <span class="chess-clock-time" data-clock-side="w">--:--</span>
-            </div>
-        </div>
-        {% if game.result == '*' %}
-        <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" id="chess-flag-form" class="hide">{% csrf_token %}
-            <input type="hidden" name="action" value="claim_flag">
-            <input type="hidden" name="game_id" value="{{ game.id }}">
-        </form>
-        {% endif %}
-        {% endif %}
-        {% if game.draw_offer_by_id %}
-        <p class="chess-draw-banner">
-            {% if game.draw_offer_by_id == me.id %}
-            Вы предложили ничью. Ждём ответа соперника.
-            {% else %}
-            Соперник предлагает ничью.
+        {% if is_pending %}
+        <div class="chess-turn-banner pending">
+            {% if game.invited_by_id == me.id %}
+            Ожидаем, пока {{ game|chess_opp_name:me }} примет вызов.
             <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
-                <input type="hidden" name="action" value="draw_accept">
+                <input type="hidden" name="action" value="cancel_challenge">
+                <input type="hidden" name="game_id" value="{{ game.id }}">
+                <button type="submit" class="linkish">отозвать</button>
+            </form>
+            {% else %}
+            {% if game.invited_by %}{{ game.invited_by.name }}{% else %}{{ game|chess_opp_name:me }}{% endif %} вызывает вас на партию.
+            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                <input type="hidden" name="action" value="accept_challenge">
                 <input type="hidden" name="game_id" value="{{ game.id }}">
                 <button type="submit" class="inputsubmit">Принять</button>
             </form>
             <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
-                <input type="hidden" name="action" value="draw_decline">
+                <input type="hidden" name="action" value="decline_challenge">
                 <input type="hidden" name="game_id" value="{{ game.id }}">
                 <button type="submit" class="linkish">Отклонить</button>
             </form>
             {% endif %}
-        </p>
-        {% endif %}
-        {{ legal_map|json_script:"chess-legal-map" }}
-        <div class="chess-board-wrap">
-            <table class="chess-board"
-                   cellspacing="0" cellpadding="0"
-                   data-chess-live="1"
-                   data-can-move="{% if can_move %}1{% else %}0{% endif %}"
-                   data-my-side="{{ my_side }}"
-                   data-form="chess-move-form"
-                   data-legal-script="chess-legal-map"
-                   data-selected="{{ from_sq }}">
-                {% for row in board_rows %}
-                <tr>
-                    {% for cell in row %}
-                    <td class="{% if cell.light %}light{% else %}dark{% endif %}{% if cell.sq == from_sq %} selected{% endif %}{% if cell.sq in legal_hint %} hint{% endif %}"
-                        data-sq="{{ cell.sq }}"
-                        data-piece="{{ cell.piece }}">
-                        <span class="chess-sq" title="{{ cell.sq }}">{{ cell.glyph|default:"&nbsp;" }}</span>
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </table>
         </div>
-        {% if game.result == '*' %}
-        <p class="muted">{% if can_move %}Ваш ход: кликните фигуру и клетку назначения — или перетащите фигуру мышкой.{% else %}Сейчас ход соперника. Часы {% if clock.enabled %}тикают у него{% else %}не включены{% endif %}.{% endif %}</p>
-        <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="chess-move-form" id="chess-move-form">{% csrf_token %}
-            <input type="hidden" name="tab" value="game">
-            <input type="hidden" name="action" value="move">
-            {{ move_form.game_id }}
-            <div class="chess-manual">
-                <input type="checkbox" id="chess-manual-move" class="chess-manual-check">
-                <label for="chess-manual-move" class="chess-manual-toggle muted">Ввести ход вручную</label>
-                <div class="chess-manual-fields">
-                    <table class="formtable" cellspacing="0">
+        {% elif game.result == '*' %}
+        <div class="chess-turn-banner{% if can_move %} yours{% endif %}">
+            {% if can_move %}Ваш ход{% if game.status == 'check' %} — вам шах!{% endif %}
+            {% else %}Ход соперника{% if game.status == 'check' %} — ему шах{% endif %}. Страница обновится сама.
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="chess-turn-banner done">
+            Результат: {{ game.result|chess_result_label }}{% if game.status == 'timeout' %} (время){% endif %}
+            {% if game.winner_id == me.id %} — победа!{% elif game.winner_id %} — поражение{% endif %}
+            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                <input type="hidden" name="action" value="rematch">
+                <input type="hidden" name="game_id" value="{{ game.id }}">
+                <button type="submit" class="inputsubmit">Реванш</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="chess-game-layout">
+            <div class="chess-game-main">
+                <div class="chess-players">
+                    <div class="chess-player top">
+                        <b>{{ game.black.name }}</b> <span class="muted">чёрные</span>
+                        {% if material.black_captured %}<span class="chess-caps">{{ material.black_captured }}</span>{% endif %}
+                        {% if material.advantage < 0 %}<span class="chess-adv muted">{{ material.advantage_label }}</span>{% endif %}
+                    </div>
+                </div>
+                {% if clock.enabled %}
+                <div id="chess-clocks" class="chess-clocks"
+                     data-enabled="1"
+                     data-active="{% if clock.active %}1{% else %}0{% endif %}"
+                     data-turn="{{ clock.turn }}"
+                     data-white-ms="{{ clock.white_ms }}"
+                     data-black-ms="{{ clock.black_ms }}">
+                    <div class="chess-clock-side{% if clock.turn == 'b' and clock.active %} is-running{% endif %}">
+                        <span class="chess-clock-name">чёрные</span>
+                        <span class="chess-clock-time" data-clock-side="b">--:--</span>
+                    </div>
+                    <div class="chess-clock-meta muted">{{ clock.label }}</div>
+                    <div class="chess-clock-side{% if clock.turn == 'w' and clock.active %} is-running{% endif %}">
+                        <span class="chess-clock-name">белые</span>
+                        <span class="chess-clock-time" data-clock-side="w">--:--</span>
+                    </div>
+                </div>
+                {% if game.result == '*' and not is_pending %}
+                <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" id="chess-flag-form" class="hide">{% csrf_token %}
+                    <input type="hidden" name="action" value="claim_flag">
+                    <input type="hidden" name="game_id" value="{{ game.id }}">
+                </form>
+                {% endif %}
+                {% endif %}
+
+                {% if game.draw_offer_by_id and game.result == '*' %}
+                <p class="chess-draw-banner">
+                    {% if game.draw_offer_by_id == me.id %}
+                    Вы предложили ничью. Ждём ответа соперника.
+                    {% else %}
+                    Соперник предлагает ничью.
+                    <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="draw_accept">
+                        <input type="hidden" name="game_id" value="{{ game.id }}">
+                        <button type="submit" class="inputsubmit">Принять</button>
+                    </form>
+                    <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="draw_decline">
+                        <input type="hidden" name="game_id" value="{{ game.id }}">
+                        <button type="submit" class="linkish">Отклонить</button>
+                    </form>
+                    {% endif %}
+                </p>
+                {% endif %}
+
+                {{ legal_map|json_script:"chess-legal-map" }}
+                <div class="chess-board-wrap{% if can_move %} can-move{% endif %}">
+                    <table class="chess-board chess-board-lg"
+                           cellspacing="0" cellpadding="0"
+                           data-chess-live="1"
+                           data-can-move="{% if can_move %}1{% else %}0{% endif %}"
+                           data-my-side="{{ my_side }}"
+                           data-form="chess-move-form"
+                           data-legal-script="chess-legal-map"
+                           data-selected="{{ from_sq }}"
+                           data-waiting="{% if waiting_refresh %}1{% else %}0{% endif %}">
+                        {% for row in board_rows %}
                         <tr>
-                            <td class="label">Откуда:</td>
-                            <td>{{ move_form.from_sq }}{% if move_form.from_sq.errors %}<div class="error">{{ move_form.from_sq.errors|striptags }}</div>{% endif %}</td>
+                            {% for cell in row %}
+                            <td class="{% if cell.light %}light{% else %}dark{% endif %}{% if cell.sq == from_sq %} selected{% endif %}{% if cell.sq in legal_hint %} hint{% endif %}{% if last_move and cell.sq == last_move.from_sq %} last-from{% endif %}{% if last_move and cell.sq == last_move.to_sq %} last-to{% endif %}{% if check_sq and cell.sq == check_sq %} in-check{% endif %}"
+                                data-sq="{{ cell.sq }}"
+                                data-piece="{{ cell.piece }}">
+                                <span class="chess-sq" title="{{ cell.sq }}">{{ cell.glyph|default:"&nbsp;" }}</span>
+                            </td>
+                            {% endfor %}
                         </tr>
-                        <tr>
-                            <td class="label">Куда:</td>
-                            <td>{{ move_form.to_sq }}{% if move_form.to_sq.errors %}<div class="error">{{ move_form.to_sq.errors|striptags }}</div>{% endif %}</td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td><input type="submit" class="inputsubmit" value="Сделать ход"></td>
-                        </tr>
+                        {% endfor %}
                     </table>
                 </div>
+
+                <div class="chess-players">
+                    <div class="chess-player bot">
+                        <b>{{ game.white.name }}</b> <span class="muted">белые</span>
+                        {% if material.white_captured %}<span class="chess-caps">{{ material.white_captured }}</span>{% endif %}
+                        {% if material.advantage > 0 %}<span class="chess-adv muted">{{ material.advantage_label }}</span>{% endif %}
+                    </div>
+                </div>
+
+                {% if game.result == '*' and not is_pending %}
+                <p class="muted">{% if can_move %}Кликните фигуру и клетку или перетащите мышкой.{% else %}Ход соперника — можно закрыть вкладку, придёт уведомление.{% endif %}</p>
+                <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="chess-move-form" id="chess-move-form">{% csrf_token %}
+                    <input type="hidden" name="tab" value="game">
+                    <input type="hidden" name="action" value="move">
+                    {{ move_form.game_id }}
+                    <div class="chess-manual">
+                        <input type="checkbox" id="chess-manual-move" class="chess-manual-check">
+                        <label for="chess-manual-move" class="chess-manual-toggle muted">Ввести ход вручную</label>
+                        <div class="chess-manual-fields">
+                            <table class="formtable" cellspacing="0">
+                                <tr>
+                                    <td class="label">Откуда:</td>
+                                    <td>{{ move_form.from_sq }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Куда:</td>
+                                    <td>{{ move_form.to_sq }}</td>
+                                </tr>
+                                <tr><td></td><td><input type="submit" class="inputsubmit" value="Сделать ход"></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+                <p class="chess-actions">
+                    {% if not game.draw_offer_by_id %}
+                    <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="draw_offer">
+                        <input type="hidden" name="game_id" value="{{ game.id }}">
+                        <button type="submit" class="linkish">предложить ничью</button>
+                    </form>
+                    ·
+                    {% endif %}
+                    <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="resign">
+                        <input type="hidden" name="game_id" value="{{ game.id }}">
+                        <button type="submit" class="linkish muted">сдаться</button>
+                    </form>
+                    {% if clock.enabled %}
+                    ·
+                    <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="claim_flag">
+                        <input type="hidden" name="game_id" value="{{ game.id }}">
+                        <button type="submit" class="linkish">заявить просрочку</button>
+                    </form>
+                    {% endif %}
+                </p>
+                {% endif %}
             </div>
-        </form>
-        <p class="chess-actions">
-            {% if not game.draw_offer_by_id %}
-            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
-                <input type="hidden" name="action" value="draw_offer">
-                <input type="hidden" name="game_id" value="{{ game.id }}">
-                <button type="submit" class="linkish">предложить ничью</button>
-            </form>
-            ·
-            {% endif %}
-            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
-                <input type="hidden" name="action" value="resign">
-                <input type="hidden" name="game_id" value="{{ game.id }}">
-                <button type="submit" class="linkish muted">сдаться</button>
-            </form>
-            {% if clock.enabled %}
-            ·
-            <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ game.id }}" class="inline">{% csrf_token %}
-                <input type="hidden" name="action" value="claim_flag">
-                <input type="hidden" name="game_id" value="{{ game.id }}">
-                <button type="submit" class="linkish">заявить просрочку</button>
-            </form>
-            {% endif %}
-        </p>
-        {% endif %}
-        {% if moves %}
-        <h5>Ходы</h5>
-        <p class="chess-moves muted">{% for m in moves %}{{ m.ply }}. {{ m.san }} {% endfor %}</p>
-        {% endif %}
+
+            <div class="chess-game-side">
+                <h5>Ходы</h5>
+                {% if move_pairs %}
+                <table class="chess-movetable" cellspacing="0" cellpadding="0">
+                    <tbody>
+                    {% for row in move_pairs %}
+                    <tr{% if forloop.last %} class="is-last"{% endif %}>
+                        <td class="n">{{ row.n }}.</td>
+                        <td class="w">{% if row.w %}{{ row.w.san }}{% else %}…{% endif %}</td>
+                        <td class="b">{% if row.b %}{{ row.b.san }}{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="muted">Ходов пока нет.</p>
+                {% endif %}
+            </div>
+        </div>
         <p><a href="{% url 'apps.canvas' 'chess' %}?tab=play">← к списку партий</a></p>
         {% endif %}
 
@@ -209,16 +329,15 @@
         <table class="infotable">
             <tr><td class="label">Рейтинг:</td><td>{{ stats.rating.rating }}</td></tr>
             <tr><td class="label">Партий:</td><td>{{ stats.rating.games }}</td></tr>
-            <tr><td class="label">Победы:</td><td>{{ stats.rating.wins }}</td></tr>
-            <tr><td class="label">Поражения:</td><td>{{ stats.rating.losses }}</td></tr>
-            <tr><td class="label">Ничьи:</td><td>{{ stats.rating.draws }}</td></tr>
+            <tr><td class="label">Победы / поражения / ничьи:</td><td>{{ stats.rating.wins }} / {{ stats.rating.losses }} / {{ stats.rating.draws }}</td></tr>
+            <tr><td class="label">Задачи (серия):</td><td>{{ stats.rating.puzzle_solved }} решено · серия {{ stats.rating.puzzle_streak }} (рекорд {{ stats.rating.best_puzzle_streak }})</td></tr>
         </table>
         {% if stats.active %}
         <h5>Незаконченные</h5>
         <ul class="chess-simple-list">
             {% for g in stats.active %}
             <li><a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">партия #{{ g.id }}</a>
-                с {% if g.white_id == me.id %}{{ g.black.name }}{% else %}{{ g.white.name }}{% endif %}</li>
+                с {{ g|chess_opp_name:me }}</li>
             {% endfor %}
         </ul>
         {% endif %}
@@ -229,7 +348,7 @@
             <li>
                 <a href="{% url 'apps.canvas' 'chess' %}?tab=game&amp;id={{ g.id }}">#{{ g.id }}</a>
                 · {{ g.result|chess_result_label }}
-                · {% if g.white_id == me.id %}{{ g.black.name }}{% else %}{{ g.white.name }}{% endif %}
+                · {{ g|chess_opp_name:me }}
             </li>
             {% empty %}
             <li class="muted">Завершённых партий пока нет.</li>
@@ -271,14 +390,12 @@
             {% if ratings_page.has_next %}<a href="{% url 'apps.canvas' 'chess' %}?tab=ratings&amp;p={{ ratings_page.next_page_number }}">→</a>{% endif %}
         </p>
         {% endif %}
-        {% else %}
-        <p class="muted">Пока никто не сыграл рейтинговую партию. Начните первую — и вы появитесь в таблице.</p>
         {% endif %}
         {% endif %}
 
         {% if tab == 'champs' %}
         <h5>{{ champ.title }}</h5>
-        <p class="muted">Чемпионат открывается сам каждый понедельник. Победа — 3 очка, ничья — 1, поражение — 0.</p>
+        <p class="muted">Каждый понедельник — новая неделя. Победа 3, ничья 1, поражение 0. Вызов друга с галочкой «чемпионат» идёт в зачёт.</p>
         {% if standings %}
         <table class="mygroups-table" cellspacing="0" cellpadding="0">
             <thead><tr><th>#</th><th>Игрок</th><th>Очки</th><th>В</th><th>П</th><th>Н</th></tr></thead>
@@ -296,7 +413,7 @@
             </tbody>
         </table>
         {% else %}
-        <p class="muted">В этом чемпионате ещё нет результатов. Сыграйте партию на вкладке «Играть».</p>
+        <p class="muted">В этом чемпионате ещё нет результатов.</p>
         {% endif %}
         {% if past_champs %}
         <h5>Недавние недели</h5>
@@ -319,16 +436,10 @@
             {% if lesson.slug|lesson_done:learn_meta.slugs %} · <b>пройден</b>{% endif %}
         </p>
         <h5>{{ lesson.title }}</h5>
-        {% for p in lesson.body %}
-        <p>{{ p }}</p>
-        {% endfor %}
+        {% for p in lesson.body %}<p>{{ p }}</p>{% endfor %}
         {% if lesson.tips %}
         <h5>На заметку</h5>
-        <ul class="chess-tip-list">
-            {% for t in lesson.tips %}
-            <li>{{ t }}</li>
-            {% endfor %}
-        </ul>
+        <ul class="chess-tip-list">{% for t in lesson.tips %}<li>{{ t }}</li>{% endfor %}</ul>
         {% endif %}
         {% if not lesson.slug|lesson_done:learn_meta.slugs %}
         <form method="post" action="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ lesson.slug }}">{% csrf_token %}
@@ -342,10 +453,9 @@
             {% if prev_lesson and next_lesson %} · {% endif %}
             {% if next_lesson %}<a href="{% url 'apps.canvas' 'chess' %}?tab=learn&amp;lesson={{ next_lesson.slug }}">{{ next_lesson.title }} →</a>{% endif %}
         </p>
-        <p class="muted"><a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles">Перейти к задачам →</a></p>
         {% else %}
         <h5>Обучение</h5>
-        <p class="muted">Подробный курс с нуля: правила, дебют, тактика, эндшпиль и практика на сайте. Отмечайте пройденные уроки.</p>
+        <p class="muted">Курс с нуля до уверенной партии. Отмечайте пройденные уроки и закрепляйте задачами.</p>
         {% for ch in chapters %}
         <div class="chess-chapter">
             <h5>{{ ch.title }} <span class="muted">({{ ch.count }})</span></h5>
@@ -365,14 +475,14 @@
         {% endif %}
 
         {% if tab == 'puzzles' and puzzle %}
-        {% if learn_meta %}
-        <p class="muted">Уроков пройдено: {{ learn_meta.done }}/{{ learn_meta.total }} · задачи ниже тренируют мат в 1 ход.</p>
+        {% if puzzle_meta %}
+        <p class="muted">Решено <b>{{ puzzle_meta.solved }}</b>/{{ puzzle_meta.total }} · серия дней <b>{{ puzzle_meta.streak }}</b> (рекорд {{ puzzle_meta.best_streak }})</p>
         {% endif %}
-        <h5>{{ puzzle.title }}</h5>
-        <p class="muted">{{ puzzle.goal }} · уровень: {{ puzzle.level }} · ход {% if puzzle.side == 'w' %}белых{% else %}чёрных{% endif %}. Клик или перетаскивание — как в партии.</p>
+        <h5>{{ puzzle.title }}{% if puzzle.id|puzzle_done:puzzle_meta.solved_ids %} <span class="chess-done">✓</span>{% endif %}</h5>
+        <p class="muted">{{ puzzle.goal }} · {{ puzzle.level }} · ход {% if puzzle.side == 'w' %}белых{% else %}чёрных{% endif %}. Клик или перетаскивание.</p>
         {{ puzzle_legal|json_script:"chess-puzzle-legal" }}
         <div class="chess-board-wrap">
-            <table class="chess-board"
+            <table class="chess-board chess-board-lg"
                    cellspacing="0" cellpadding="0"
                    data-chess-live="1"
                    data-mode="puzzle"
@@ -384,8 +494,7 @@
                 <tr>
                     {% for cell in row %}
                     <td class="{% if cell.light %}light{% else %}dark{% endif %}"
-                        data-sq="{{ cell.sq }}"
-                        data-piece="{{ cell.piece }}">
+                        data-sq="{{ cell.sq }}" data-piece="{{ cell.piece }}">
                         <span class="chess-sq" title="{{ cell.sq }}">{{ cell.glyph|default:"&nbsp;" }}</span>
                     </td>
                     {% endfor %}
@@ -401,31 +510,26 @@
                 <label for="chess-manual-puzzle" class="chess-manual-toggle muted">Ввести ответ вручную</label>
                 <div class="chess-manual-fields">
                     <table class="formtable" cellspacing="0">
-                        <tr>
-                            <td class="label">Откуда:</td>
-                            <td>{{ puzzle_form.from_sq }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Куда:</td>
-                            <td>{{ puzzle_form.to_sq }}</td>
-                        </tr>
+                        <tr><td class="label">Откуда:</td><td>{{ puzzle_form.from_sq }}</td></tr>
+                        <tr><td class="label">Куда:</td><td>{{ puzzle_form.to_sq }}</td></tr>
                         <tr><td></td><td><input type="submit" class="inputsubmit" value="Проверить"></td></tr>
                     </table>
                 </div>
             </div>
         </form>
         <p class="muted">Подсказка: {{ puzzle.hint }}</p>
-        <h5>Другие задачи</h5>
+        <h5>Все задачи</h5>
         <ul class="chess-simple-list">
             {% for pz in puzzles %}
             <li>{% if pz.id == puzzle.id %}<b>{{ pz.title }}</b>{% else %}<a href="{% url 'apps.canvas' 'chess' %}?tab=puzzles&amp;puzzle={{ pz.id }}">{{ pz.title }}</a>{% endif %}
+                {% if pz.id|puzzle_done:puzzle_meta.solved_ids %}<span class="chess-done">✓</span>{% endif %}
                 <span class="muted">· {{ pz.level }}</span></li>
             {% endfor %}
         </ul>
         {% endif %}
     </div>
 </div>
-{% if tab == 'game' or tab == 'puzzles' %}
+{% if tab == 'game' or tab == 'puzzles' or tab == 'play' %}
 <script src="{% static 'js/chess-board.js' %}" defer></script>
 {% endif %}
 {% endblock %}

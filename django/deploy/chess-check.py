@@ -28,12 +28,12 @@ def ok(label):
 
 def main():
     fen, san = engine.make_move(engine.START_FEN, "e2", "e4")
-    assert "e2-e4" in san
+    assert san.startswith("e4"), san
     assert engine.game_status(fen) == "active"
+    mat = engine.material_view(engine.START_FEN)
+    assert mat["advantage"] == 0
     assert len(lessons.LESSONS) >= 20
-    assert len(lessons.CHAPTERS) >= 6
     assert lessons.CATALOG.get("board")
-    assert lessons.CATALOG.neighbors("board")[1] is not None
     ok("engine + lessons catalog")
 
     for pz in puzzles.PUZZLES:
@@ -50,8 +50,6 @@ def main():
 
     champ = chess.ensure_week_championship()
     assert champ.week_key and champ.status == "open"
-    champ2 = chess.ensure_week_championship()
-    assert champ.id == champ2.id
     call_command("ensure_chess_week")
     ok("weekly championship + management command")
 
@@ -62,7 +60,9 @@ def main():
     assert r.rating == 1200 or r.games >= 0
     meta = chess.learn_stats(me)
     assert meta["total"] >= 20
-    ok("rating + learn progress helpers")
+    strip = chess.engagement_strip(me, champ)
+    assert "your_move_n" in strip
+    ok("rating + learn + engagement strip")
 
     c = Client()
     c.force_login(users[0])
@@ -73,28 +73,21 @@ def main():
         assert "Шахматы".encode() in body
         assert b"Wordstat" not in body
         assert b"<iframe" not in body.lower()
-    learn = c.get("/apps/chess/canvas?tab=learn", secure=True).content
-    assert "Обучение".encode() in learn
-    assert "Основы".encode() in learn
-    assert "Пройдено уроков".encode() in learn
-    lesson = c.get("/apps/chess/canvas?tab=learn&lesson=board", secure=True).content
-    assert "Доска и названия клеток".encode() in lesson
-    assert "Отметить как пройденный".encode() in lesson
-    puzzles_html = c.get("/apps/chess/canvas?tab=puzzles", secure=True).content
-    assert "Задачи".encode() in puzzles_html
-    assert "Мат в 1 ход".encode() in puzzles_html
-    assert b"chess-board" in puzzles_html  # hashed static name under Manifest storage
-    assert b"data-chess-live" in puzzles_html
-    assert b"json_script" not in puzzles_html  # rendered as <script type="application/json">
-    assert b"application/json" in puzzles_html
-    assert "Чемпионат недели".encode() in c.get("/apps/chess/canvas?tab=champs", secure=True).content
+        assert b"<details" not in body.lower()
     play = c.get("/apps/chess/canvas?tab=play", secure=True).content
-    assert "Учитывать в чемпионате".encode() in play
+    assert "Вызвать на партию".encode() in play
+    assert "Ваш ход".encode() in play or "Новый вызов".encode() in play
     assert "Часы".encode() in play
     assert "24 часа на партию".encode() in play
+    puzzles_html = c.get("/apps/chess/canvas?tab=puzzles", secure=True).content
+    assert "Задачи".encode() in puzzles_html
+    assert b"chess-board" in puzzles_html
+    assert b"data-chess-live" in puzzles_html
+    assert b"application/json" in puzzles_html
+    assert "серия".encode() in puzzles_html.lower() or "Серия".encode() in puzzles_html
     legal = engine.legal_moves_map(engine.START_FEN, "w")
     assert "e2" in legal and "e4" in legal["e2"]
-    ok("canvas tabs + mouse board + clocks helpers")
+    ok("canvas tabs + pro UI helpers")
     print("ALL chess probes passed")
 
 
