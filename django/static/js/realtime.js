@@ -56,12 +56,34 @@
     }
   }
 
+  function applyReadReceipts(iso) {
+    var box = $("inbox-thread");
+    if (!box || !iso) return;
+    box.setAttribute("data-peer-read", iso);
+    var peerMs = Date.parse(iso);
+    if (!peerMs) return;
+    var lines = box.querySelectorAll(".msg-line.is-mine");
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var created = line.getAttribute("data-created");
+      var createdMs = created ? Date.parse(created) : 0;
+      var receipt = line.querySelector(".msg-receipt");
+      if (createdMs && createdMs <= peerMs) {
+        line.classList.add("is-read");
+        if (receipt) receipt.textContent = " · прочитано";
+      }
+    }
+  }
+
   function inboxBump(lastId) {
     var box = $("inbox-thread");
     if (!box) return;
     var conv = box.getAttribute("data-conv");
     var after = parseInt(box.getAttribute("data-last") || "0", 10);
-    if (!conv || !lastId || lastId <= after) return;
+    if (!conv || !lastId || lastId <= after) {
+      if (box.getAttribute("data-peer-read")) applyReadReceipts(box.getAttribute("data-peer-read"));
+      return;
+    }
     var url = "/inbox/" + conv + "/since?after=" + after;
     fetch(url, { credentials: "same-origin", headers: { "Accept": "application/json" } })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -76,6 +98,7 @@
           setCount("nav-inbox", data.unread_messages, "Входящие");
         }
         if (data.typing) applyTyping(data.typing);
+        if (data.peer_read_at) applyReadReceipts(data.peer_read_at);
       })
       .catch(function () {});
   }
@@ -222,6 +245,7 @@
       applyBadges(d);
       if (typeof d.last_message_id === "number") inboxBump(d.last_message_id);
       if (Object.prototype.hasOwnProperty.call(d, "typing")) applyTyping(d.typing || []);
+      if (d.peer_read_at) applyReadReceipts(d.peer_read_at);
     } catch (e) {}
   };
   es.onerror = function () {

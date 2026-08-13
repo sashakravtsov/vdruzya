@@ -33,6 +33,8 @@ def _load_active(me, active_id, conversations, show_all):
     active.display_name = ch.label(active, me)
     active.peer = ch.peer(active, me)
     active.is_archived = ch.is_archived(me, active)
+    active.is_muted = ch.is_muted(me, active)
+    active.peer_read_at = ch.peer_read_at(me, active)
     members = ch.others(active, me)
     thread_messages, has_older = ch.thread(active, all_messages=show_all)
     if not active.is_archived:
@@ -76,7 +78,7 @@ def build_inbox_ctx(request, me, *, compose_form):
         "show_all": show_all,
         "me": me,
         "form": form,
-        "compose_form": compose_form(friends, to=preselect),
+        "compose_form": compose_form(friends, to=preselect, stickers=stickers),
         "compose_mode": bool(compose) or (bool(preselect) and not active_id),
         "friends": friends,
         "q": q,

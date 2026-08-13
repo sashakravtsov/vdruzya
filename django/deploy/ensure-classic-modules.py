@@ -65,6 +65,7 @@ ALTER TABLE photo_tags ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFA
 UPDATE photo_tags SET status = 'approved' WHERE status IS NULL OR status = '';
 CREATE INDEX IF NOT EXISTS photo_tags_pending_idx ON photo_tags (social_user_id, status);
 ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS photo_path varchar(255) NULL;
+ALTER TABLE conversation_members ADD COLUMN IF NOT EXISTS muted_at timestamp without time zone NULL;
 """
 
 
@@ -87,7 +88,12 @@ def main():
             "WHERE table_name='marketplace_listings' AND column_name='photo_path'"
         )
         assert cur.fetchone(), "marketplace_listings.photo_path"
-    print("OK   friend_lists + marketplace + photo_tags")
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='conversation_members' AND column_name='muted_at'"
+        )
+        assert cur.fetchone(), "conversation_members.muted_at"
+    print("OK   friend_lists + marketplace + photo_tags + inbox mute")
 
 
 if __name__ == "__main__":

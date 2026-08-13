@@ -32,6 +32,16 @@
                 {{ active.display_name|default:"Сообщение" }}
                 {% endif %}
                 <span class="edit msg-actions">
+                    {% if active.is_muted %}
+                    <form method="post" action="{% url 'inbox.unmute' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish">вкл. уведомления</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'inbox.mute' active.id %}" class="inline">{% csrf_token %}
+                        <button type="submit" class="linkish muted">без уведомлений</button>
+                    </form>
+                    {% endif %}
+                    ·
                     {% if active.is_archived %}
                     <form method="post" action="{% url 'inbox.unarchive' active.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish">вернуть во входящие</button>
@@ -44,6 +54,11 @@
                 </span>
             </h4>
             <div class="profile-box-body">
+                <form method="post" action="{% url 'inbox.title' active.id %}" class="msg-title-edit">{% csrf_token %}
+                    <label class="muted">Тема:</label>
+                    <input class="inputtext" type="text" name="title" value="{{ active.title|default:'' }}" maxlength="160" placeholder="(без темы)">
+                    <input type="submit" class="inputbutton" value="Сохранить">
+                </form>
                 {% include "social/_inbox_thread.html" %}
             </div>
         </div>
@@ -67,6 +82,12 @@
                     <a href="{% url 'inbox' %}?folder=sent{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'sent' %} class="is-on"{% endif %}>отправленные</a>
                     ·
                     <a href="{% url 'inbox' %}?folder=archive{% if q %}&amp;q={{ q|urlencode }}{% endif %}"{% if folder == 'archive' %} class="is-on"{% endif %}>архив</a>
+                    {% if folder == 'inbox' %}
+                    ·
+                    <form method="post" action="{% url 'inbox.read_all' %}" class="inline msg-read-all">{% csrf_token %}
+                        <button type="submit" class="linkish">прочитать всё</button>
+                    </form>
+                    {% endif %}
                 </p>
                 <table class="inbox-table" cellspacing="0" cellpadding="0">
                     <thead>

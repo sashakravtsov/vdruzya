@@ -58,17 +58,26 @@ class ComposeMessageForm(ClassicForm, forms.Form):
         widget=_ta(4, style="width:100%"),
     )
     photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
+    sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
 
-    def __init__(self, friends, *args, **kwargs):
+    def __init__(self, friends, *args, stickers=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["to"].choices = [("", "— выберите друга —")] + [(str(p.id), p.name) for p in friends]
+        choices = [("", "— без стикера —")]
+        for s in stickers or []:
+            choices.append((str(s.id), s.title))
+        self.fields["sticker"].choices = choices
 
     def clean(self):
         data = super().clean()
         if not data.get("to"):
             self.add_error("to", "Выберите друга.")
-        if not (data.get("body") or "").strip() and not self.files.get("photo"):
-            self.add_error("body", "Напишите текст или приложите фото / видео.")
+        if (
+            not (data.get("body") or "").strip()
+            and not self.files.get("photo")
+            and not data.get("sticker")
+        ):
+            self.add_error("body", "Напишите текст, приложите фото / видео или выберите стикер.")
         return data
 
 

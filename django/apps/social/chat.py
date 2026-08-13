@@ -113,6 +113,64 @@ def is_archived(me, conv: Conversation) -> bool:
     ).exists()
 
 
+def mute(me, conv: Conversation) -> bool:
+    """Silence message notifications for this thread (membership kept)."""
+    t = now()
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation=conv, muted_at__isnull=True,
+    ).update(muted_at=t, updated_at=t)
+    return bool(n)
+
+
+def unmute(me, conv: Conversation) -> bool:
+    t = now()
+    n = ConversationMember.objects.filter(
+        social_user=me, conversation=conv, muted_at__isnull=False,
+    ).update(muted_at=None, updated_at=t)
+    return bool(n)
+
+
+def is_muted(me, conv: Conversation) -> bool:
+    return ConversationMember.objects.filter(
+        conversation=conv, social_user=me, muted_at__isnull=False,
+    ).exists()
+
+
+def peer_read_at(me, conv: Conversation):
+    """When the 1:1 peer last opened the thread (for read receipts)."""
+    row = (
+        ConversationMember.objects.filter(conversation=conv)
+        .exclude(social_user=me)
+        .order_by("id")
+        .values_list("last_read_at", flat=True)
+        .first()
+    )
+    return row
+
+
+def mark_all_read(me) -> int:
+    """Mark every non-archived inbox thread as read (classic Message Center)."""
+    t = now()
+    conv_ids = list(
+        ConversationMember.objects.filter(
+            social_user=me, archived_at__isnull=True,
+        ).values_list("conversation_id", flat=True)
+    )
+    if not conv_ids:
+        Notification.objects.filter(social_user=me, type="message", seen=False).update(seen=True)
+        cache.delete(f"nav:{me.id}")
+        return 0
+    ConversationMember.objects.filter(
+        social_user=me, conversation_id__in=conv_ids,
+    ).update(last_read_at=t, updated_at=t)
+    Message.objects.filter(
+        conversation_id__in=conv_ids, read_at__isnull=True,
+    ).exclude(social_user=me).update(read_at=t)
+    Notification.objects.filter(social_user=me, type="message", seen=False).update(seen=True)
+    cache.delete(f"nav:{me.id}")
+    return len(conv_ids)
+
+
 def unread_count(me) -> int:
     """Nav badge — same filter as inbox(unread_only=True)."""
     last = Message.objects.filter(conversation_id=OuterRef("pk")).order_by("-id")
@@ -351,12 +409,12 @@ def start_thread(me, recipients: list[SocialProfile], subject="") -> Conversatio
 
 
 def notify_peers(me, conv: Conversation, m: Message):
-    peer_ids = list(
+    peers = list(
         ConversationMember.objects.filter(conversation=conv)
         .exclude(social_user=me)
-        .values_list("social_user_id", flat=True)
+        .values_list("social_user_id", "muted_at")
     )
-    if not peer_ids:
+    if not peers:
         return
     t = now()
     mt = (m.message_type or "")
@@ -367,7 +425,10 @@ def notify_peers(me, conv: Conversation, m: Message):
     )
     body = f"{me.name}: {snippet}"[:255]
     url = f"/inbox?c={conv.id}"
-    for pid in peer_ids:
+    for pid, muted_at in peers:
+        cache.delete(f"nav:{pid}")
+        if muted_at:
+            continue
         existing = (
             Notification.objects.filter(social_user_id=pid, type="message", url=url, seen=False)
             .order_by("-id")
@@ -381,7 +442,6 @@ def notify_peers(me, conv: Conversation, m: Message):
                 social_user_id=pid, title="Новое сообщение", body=body,
                 seen=False, type="message", url=url, created_at=t,
             )
-        cache.delete(f"nav:{pid}")
 
 
 _VIDEO_EXT = {".mp4", ".webm", ".mov", ".m4v"}

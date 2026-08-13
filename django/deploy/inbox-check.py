@@ -139,6 +139,40 @@ def main():
     assert r.status_code == 200
     ok("archive + unread folders")
 
+    # Read receipts + mute + mark-all + subject + compose stickers
+    r = c.get(f"/inbox?c={conv.id}", secure=True)
+    assert r.status_code == 200
+    assert ("отправлено".encode() in r.content) or ("прочитано".encode() in r.content)
+    assert b"msg-receipt" in r.content
+    assert b"data-peer-read=" in r.content
+    assert (b"\xd0\xb1\xd0\xb5\xd0\xb7 \xd1\x83\xd0\xb2\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbc\xd0\xbb\xd0\xb5\xd0\xbd\xd0\xb8\xd0\xb9" in r.content) or ("вкл. уведомления".encode() in r.content) or (b"без уведомлений" in r.content)
+    assert b'name="title"' in r.content
+    r = c.post(f"/inbox/{conv.id}/title", {"title": "QA тема"}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.get(f"/inbox?c={conv.id}", secure=True)
+    assert r.status_code == 200 and "QA тема".encode() in r.content
+    r = c.post(f"/inbox/{conv.id}/mute", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert ch.is_muted(me, conv)
+    r = c.get(f"/inbox?c={conv.id}", secure=True)
+    assert r.status_code == 200 and "вкл. уведомления".encode() in r.content
+    r = c.post(f"/inbox/{conv.id}/unmute", {}, secure=True)
+    assert r.status_code in (301, 302)
+    assert not ch.is_muted(me, conv)
+    r = c.get("/inbox", secure=True)
+    assert r.status_code == 200 and "прочитать всё".encode() in r.content
+    r = c.post("/inbox/read-all", {}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.get("/inbox?compose=1", secure=True)
+    assert r.status_code == 200 and "Стикер".encode() in r.content
+    snap = rt.snapshot(me, conv_id=conv.id)
+    assert "peer_read_at" in snap
+    js = (root / "static/js/realtime.js").read_text(encoding="utf-8")
+    assert "applyReadReceipts" in js
+    ok("receipts + mute + read-all + subject + compose stickers")
+    r = c.post(f"/inbox/{conv.id}/title", {"title": ""}, secure=True)
+    assert r.status_code in (301, 302)
+
     r = c.get("/birthdays", secure=True)
     assert r.status_code == 200 and "Дни рождения".encode() in r.content
     ok("birthdays page")

@@ -41,7 +41,12 @@ def main():
             "WHERE table_name='marketplace_listings' AND column_name='photo_path'"
         )
         assert cur.fetchone(), "marketplace_listings.photo_path — run ensure-classic-modules.py"
-    ok("schema lists+market+tags")
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='conversation_members' AND column_name='muted_at'"
+        )
+        assert cur.fetchone(), "conversation_members.muted_at — run ensure-classic-modules.py"
+    ok("schema lists+market+tags+mute")
 
     u = User.objects.filter(email="alexandr@vdruzya.ru").first() or User.objects.first()
     assert u
