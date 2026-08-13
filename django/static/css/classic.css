@@ -1135,6 +1135,11 @@ button.linkish .ico { margin-right: 2px; }
 }
 .events-page .event-list-row:last-child { border-bottom: 0; }
 .events-page .event-list-row .classic-inline-actions { float: right; }
+.events-page .event-thumb { float: left; margin: 0 8px 0 0; }
+.events-page .event-thumb img { display: block; border: 1px solid #B3B3B3; width: 50px; height: 50px; }
+.events-page .event-row-body { overflow: hidden; }
+.events-page .event-cover { margin: 0 0 8px; }
+.events-page .event-cover img { max-width: 100%; border: 1px solid #B3B3B3; }
 .events-page #content.events-content { padding: 10px; overflow: hidden; box-sizing: border-box; }
 .events-page .event-main { float: left; width: 400px; }
 .events-page .event-side { float: right; width: 180px; }
