@@ -44,13 +44,14 @@ def main():
     me = profile_of(user)
     c = Client()
     c.force_login(user)
-    r = c.get("/apps/calculator", secure=True)
+    r = c.get("/apps/calculator/canvas", secure=True)
     assert r.status_code == 200
     body = r.content
     assert "Калькуляторы".encode() in body or "калькулятор".encode() in body.lower()
     assert b"vacation" in body or "Отпускные".encode() in body
+    assert b"calc-suite" in body
     assert b"<iframe" not in body.lower()
-    r = c.post("/apps/calculator?tool=vat", {
+    r = c.post("/apps/calculator/canvas?tool=vat", {
         "tool": "vat", "amount": "1200", "rate": "20", "mode": "extract",
     }, secure=True)
     assert r.status_code == 200 and "200,00".encode() in r.content

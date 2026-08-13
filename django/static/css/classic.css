@@ -1452,22 +1452,25 @@ body.fb-dialog-open { overflow: hidden; }
   color: #333; font-weight: bold; font-size: 11px;
 }
 #snav a.snav-app { padding-left: 8px; }
-/* Compact secondary nav — classic blue chrome */
-#snav details.snav-more {
+/* Compact secondary nav — classic blue chrome (no HTML5 details) */
+#snav .snav-more {
   display: block; float: left; width: 114px; clear: both; margin: 0; padding: 0;
 }
-#snav details.snav-more > summary {
+#snav .snav-more-cb {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  border: 0; clip: rect(0 0 0 0); overflow: hidden;
+}
+#snav .snav-more-toggle {
   display: block; width: 114px; margin: 0; padding: 2px 3px;
   border-bottom: solid 1px var(--line); color: var(--fb);
   box-sizing: border-box; font: 11px/14px var(--font); cursor: pointer;
-  list-style: none;
 }
-#snav details.snav-more > summary::-webkit-details-marker { display: none }
-#snav details.snav-more > summary::after { content: " ▾"; color: gray; font-size: 10px; }
-#snav details.snav-more[open] > summary::after { content: " ▴"; }
-#snav details.snav-more > summary:hover { color: #fff; background: var(--fb); }
-#snav details.snav-more[open] > summary:hover::after { color: #fff; }
-#snav .snav-more-panel { display: block; float: left; width: 114px; }
+#snav .snav-more-toggle::after { content: " ▾"; color: gray; font-size: 10px; }
+#snav .snav-more-cb:checked + .snav-more-toggle::after { content: " ▴"; }
+#snav .snav-more-toggle:hover { color: #fff; background: var(--fb); }
+#snav .snav-more-cb:checked + .snav-more-toggle:hover::after { color: #fff; }
+#snav .snav-more-panel { display: none; float: left; width: 114px; }
+#snav .snav-more-cb:checked ~ .snav-more-panel { display: block; }
 #snav .snav-more-panel a { width: 114px; }
 .app-canvas-page .classic-page-lead { margin-bottom: 10px; }
 /* Calculators suite */

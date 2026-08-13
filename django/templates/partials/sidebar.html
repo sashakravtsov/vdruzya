@@ -30,8 +30,9 @@
         <a id="nav-pokes" href="{% url 'pokes' %}"{% if nav == 'pokes' %} class="is-on"{% endif %}>Подмигивания</a>
         <a href="{% url 'account' %}"{% if nav == 'account' %} class="is-on"{% endif %}>Мой аккаунт</a>
 
-        <details class="snav-more"{% if nav in snav_more_navs %} open{% endif %}>
-            <summary>Ещё разделы</summary>
+        <div class="snav-more">
+            <input type="checkbox" id="snav-more-cb" class="snav-more-cb"{% if nav in snav_more_navs %} checked{% endif %}>
+            <label for="snav-more-cb" class="snav-more-toggle">Ещё разделы</label>
             <div class="snav-more-panel">
                 <a href="{% url 'notes' %}"{% if nav == 'notes' %} class="is-on"{% endif %}>Заметки</a>
                 <a href="{% url 'links' %}"{% if nav == 'links' %} class="is-on"{% endif %}>Ссылки</a>
@@ -60,7 +61,7 @@
                 {% endfor %}
                 {% endif %}
             </div>
-        </details>
+        </div>
     </div>
     {% endcache %}
 </div>
