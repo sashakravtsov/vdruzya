@@ -1,0 +1,43 @@
+{% extends "legal/base.html" %}
+{% block legal_body %}
+<div id="faqindex" class="clearfix">
+    <div style="width:48%; float:left">
+        <h4>Доступ</h4>
+        <div class="faq-link"><a href="#q-reg">Регистрация</a></div>
+        <div class="faq-link"><a href="#q-pass">Пароль и вход</a></div>
+        <div class="faq-link"><a href="#q-reset">Сброс пароля</a></div>
+    </div>
+    <div style="width:48%; float:left">
+        <h4>Безопасность</h4>
+        <div class="faq-link"><a href="#q-sec">Как мы защищаем аккаунты</a></div>
+        <div class="faq-link"><a href="#q-abuse">Сообщить о проблеме</a></div>
+        <div class="faq-link"><a href="#q-privacy">Приватность</a></div>
+    </div>
+</div>
+
+<div id="faqanswers">
+    <a name="q-reg"></a>
+    <h4>Регистрация</h4>
+    <p>Вступление во ВДрузья — только по приглашению: откройте ссылку друга (/i/…) или введите код на странице <a href="{% url 'register' %}">регистрации</a>. Укажите имя, e-mail и пароль, примите правила. После входа можно заполнить профиль и загрузить фото.</p>
+
+    <a name="q-pass"></a>
+    <h4>Пароль и вход</h4>
+    <p>Войти можно со страницы <a href="{% url 'login' %}">входа</a> или через форму в боковой колонке. Сменить пароль — в <a href="{% url 'account' %}">аккаунте</a> после входа.</p>
+
+    <a name="q-reset"></a>
+    <h4>Сброс пароля</h4>
+    <p>Если пароль забыт, нажмите ссылку на странице входа или откройте <a href="{% url 'password_reset' %}">восстановление пароля</a>. Инструкция придёт на e-mail аккаунта.</p>
+
+    <a name="q-sec"></a>
+    <h4>Как мы защищаем аккаунты</h4>
+    <p>Пароли хранятся как bcrypt-хэши, сайт работает по HTTPS, подозрительная активность ограничивается.</p>
+
+    <a name="q-abuse"></a>
+    <h4>Сообщить о проблеме</h4>
+    <p>Пишите на <a href="mailto:{{ legal.email }}">{{ legal.email }}</a> — безопасность, жалобы на контент, доступ к аккаунту.</p>
+
+    <a name="q-privacy"></a>
+    <h4>Приватность</h4>
+    <p>См. <a href="{% url 'privacy' %}">политику конфиденциальности</a>.</p>
+</div>
+{% endblock %}

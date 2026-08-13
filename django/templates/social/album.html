@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}{{ album.title }} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="albums-page">
+    <div id="header" class="withsubtitle">
+        <h1>{{ album.title }}</h1>
+        <div class="subtitle">{% if album.visibility == 'public' %}Всем{% elif album.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}</div>
+    </div>
+    <div id="content" class="albums-content">
+        {% include "partials/flash.html" %}
+
+        <p class="classic-page-lead">
+            Альбом · {% if album.visibility == 'public' %}Всем{% elif album.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}
+            · <a href="{% url 'profile' album.social_user.id %}">{{ album.social_user.name }}</a>
+            {% if is_owner %}
+            · <a href="{% url 'albums' %}">Все альбомы</a>
+            · <a href="{% url 'albums.edit' album.id %}">ред.</a>
+            {% else %}
+            · <a href="{% url 'profile.albums' album.social_user.id %}">Все альбомы</a>
+            {% endif %}
+        </p>
+        {% if album.description %}<p class="classic-page-lead">{{ album.description }}</p>{% endif %}
+
+        {% if is_owner and upload_form %}
+        <div class="profile-box">
+            <h4>Добавить фото</h4>
+            <div class="profile-box-body">
+                <form method="post" action="{% url 'albums.photos' album.id %}" enctype="multipart/form-data">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ upload_form.title }}</td></tr>
+                        <tr>
+                            <td class="label">Файлы:</td>
+                            <td>
+                                {{ upload_form.photo }}
+                                <div class="file-hint muted">JPEG, PNG или GIF · до 10 файлов · до 3 МБ каждый · авто-обработка</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="submit" class="inputsubmit" value="Загрузить">
+                                ·
+                                <button type="submit" class="linkish" form="album-delete-form"
+                                    onclick="return confirm('Удалить альбом и все фото?');">Удалить альбом</button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+                <form id="album-delete-form" method="post" action="{% url 'albums.delete' album.id %}">{% csrf_token %}</form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="profile-box">
+            <h4>Фотографии{% if photos %} ({{ photos|length }}){% endif %}</h4>
+            <div class="profile-box-body">
+                {% if photos %}
+                <div class="photo-gallery">
+                    {% for p in photos %}
+                    <div class="photo-gallery-item">
+                        <a class="photo-thumb" href="{% url 'albums.photos.show' album.id p.id %}">
+                            {% if p.url %}
+                            <img src="{{ p.url }}" alt="{{ p.title }}">
+                            {% else %}
+                            <img src="{% static 'img/nophoto.gif' %}" alt="" width="130" height="97">
+                            {% endif %}
+                        </a>
+                        <div class="photo-cap"><a href="{% url 'albums.photos.show' album.id p.id %}">{{ p.title|truncatechars:32 }}</a></div>
+                        {% if is_owner %}
+                        <form method="post" action="{% url 'albums.photos.delete' album.id p.id %}">{% csrf_token %}
+                            <button type="submit" class="linkish" onclick="return confirm('Удалить это фото?');">Удалить</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="muted">В альбоме пока нет фотографий.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
