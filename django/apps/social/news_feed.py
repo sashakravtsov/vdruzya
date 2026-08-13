@@ -4,12 +4,15 @@ from __future__ import annotations
 from django.db.models import Q
 
 from apps.social.models import Block, CommunityMember
-from apps.social.services import (
+from apps.social.news_stories import (
     _add_anniversaries, _add_checkins, _add_created, _add_event_created,
-    _add_event_going, _add_event_posts, _add_friends, _add_gifts, _add_group_docs,
-    _add_group_posts, _add_joins, _add_likes, _add_market, _add_page_fans,
-    _add_page_posts, _add_photo_likes, _add_photo_tags, _add_photos, _add_polls,
-    _add_questions, _add_relationships, _add_reviews, _add_status_picture,
+    _add_event_going, _add_event_posts, _add_follow_public, _add_friends,
+    _add_gifts, _add_group_docs, _add_group_posts, _add_joins, _add_likes,
+    _add_market, _add_milestones, _add_og, _add_page_fans, _add_page_posts,
+    _add_photo_likes, _add_photo_tags, _add_photos, _add_polls, _add_questions,
+    _add_relationships, _add_reviews, _add_status_picture,
+)
+from apps.social.services import (
     _feed_at, attach_wall_notes, feed_queryset, friend_ids,
 )
 
@@ -87,10 +90,10 @@ def _extra_stories(items, viewer, fids, blocked, member_ids, page_ids, limit):
     _add_friends(items, blocked, fids, limit)
     _add_relationships(items, blocked, fids, limit)
     from apps.social import era2011 as e11
-    e11._add_og(items, blocked, fids, limit)
-    e11._add_milestones(items, blocked, fids, limit)
+    _add_og(items, blocked, fids, limit)
+    _add_milestones(items, blocked, fids, limit)
     follows = e11.followee_ids(viewer) - fids if viewer else set()
-    e11._add_follow_public(items, viewer, blocked, follows, limit)
+    _add_follow_public(items, viewer, blocked, follows, limit)
     from apps.social import era2012 as e12
     e12._add_page_milestones(items, viewer, page_ids, blocked, limit)
     e12._add_collections(items, blocked, fids, limit)

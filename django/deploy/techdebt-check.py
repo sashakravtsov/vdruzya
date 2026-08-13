@@ -167,6 +167,14 @@ def main():
     assert callable(cp.body_text_of) and callable(pl.birthday_display)
     assert me.birthday_display() == pl.birthday_display(me)
     ok("group_form + community_post + profile_labels slim")
+    from apps.social import news_stories as ns
+    from apps.social import mini_feed_side as mfs
+    from apps.social import story_keys as sk
+    from apps.social import feed_hide as fh
+    assert callable(ns._add_group_posts) and callable(ns._add_follow_public)
+    assert callable(mfs._side_items)
+    assert fh.story_key_for is sk.story_key_for
+    ok("news_stories + mini_feed_side + story_keys slim")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()

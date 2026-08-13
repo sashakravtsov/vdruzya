@@ -143,91 +143,18 @@ def og_label(verb: str) -> str:
 
 
 def _add_og(items, blocked, fids, limit):
-    if not fids:
-        return
-    qs = (
-        OgStory.objects.filter(social_user_id__in=fids)
-        .select_related("social_user")
-        .defer(*profile_related("social_user__"))
-        .order_by("-id")
-    )
-    if blocked:
-        qs = qs.exclude(social_user_id__in=blocked)
-    for row in qs[:limit]:
-        items.append({
-            "kind": "og", "at": row.created_at, "actor": row.social_user,
-            "og": row, "verb": row.verb, "verb_label": og_label(row.verb),
-        })
+    from apps.social.news_stories import _add_og as add
+    return add(items, blocked, fids, limit)
 
 
 def _add_milestones(items, blocked, fids, limit):
-    if not fids:
-        return
-    qs = (
-        TimelineMilestone.objects.filter(social_user_id__in=fids)
-        .select_related("social_user")
-        .defer(*profile_related("social_user__"))
-        .order_by("-occurred_on", "-id")
-    )
-    if blocked:
-        qs = qs.exclude(social_user_id__in=blocked)
-    for row in qs[:limit]:
-        items.append({
-            "kind": "milestone",
-            "at": row.created_at or datetime.combine(row.occurred_on, datetime.min.time()),
-            "actor": row.social_user, "milestone": row,
-        })
+    from apps.social.news_stories import _add_milestones as add
+    return add(items, blocked, fids, limit)
 
 
 def _add_follow_public(items, viewer, blocked, follows, limit):
-    """Public posts from people you Subscribe to (not already in friend circle)."""
-    if not viewer or not follows:
-        return
-    from apps.social.models import Post, POST_DEFER
-    from apps.social.services import attach_wall_notes
-
-    qs = (
-        Post.objects.filter(social_user_id__in=follows)
-        .filter(Q(visibility="public") | Q(visibility=""))
-        .exclude(kind__in=("gift", "poll"))
-        .exclude(topic__startswith="gift:")
-        .exclude(topic__startswith="page:")
-        .exclude(topic__startswith="event:")
-        .select_related("social_user")
-        .defer(*POST_DEFER, *profile_related("social_user__"))
-        .order_by("-id")
-    )
-    if blocked:
-        qs = qs.exclude(social_user_id__in=blocked)
-    posts = list(qs[:limit])
-    attach_wall_notes(posts)
-    for p in posts:
-        topic = p.topic or ""
-        if p.kind == "status" or topic == "status":
-            kind = "status"
-        elif topic == "picture":
-            kind = "picture"
-        elif p.kind == "note":
-            kind = "note"
-        elif p.kind in ("link", "video", "share"):
-            kind = p.kind
-        else:
-            kind = "wall"
-        items.append({"kind": kind, "at": p.created_at, "post": p, "actor": p.social_user})
-    # OG from followees
-    oqs = (
-        OgStory.objects.filter(social_user_id__in=follows)
-        .select_related("social_user")
-        .defer(*profile_related("social_user__"))
-        .order_by("-id")
-    )
-    if blocked:
-        oqs = oqs.exclude(social_user_id__in=blocked)
-    for row in oqs[:limit]:
-        items.append({
-            "kind": "og", "at": row.created_at, "actor": row.social_user,
-            "og": row, "verb": row.verb, "verb_label": og_label(row.verb),
-        })
+    from apps.social.news_stories import _add_follow_public as add
+    return add(items, viewer, blocked, follows, limit)
 
 
 def ticker_items(viewer, limit=12):
