@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Сохранённое — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody">
+    <div id="header"><h1>Сохранённое</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <p class="classic-page-lead">Отложите посты, ссылки, места и страницы — список видите только вы.</p>
+        <p class="people-top-links muted">
+            <a href="{% url 'saves' %}">все</a>
+            · <a href="{% url 'saves' %}?kind=post">посты</a>
+            · <a href="{% url 'saves' %}?kind=link">ссылки</a>
+            · <a href="{% url 'saves' %}?kind=page">страницы</a>
+            · <a href="{% url 'saves' %}?kind=place">места</a>
+            · <a href="{% url 'saves' %}?kind=event">события</a>
+        </p>
+
+        <div class="profile-box">
+            <h4>{% if kind %}{{ kind }}{% else %}Недавно{% endif %}</h4>
+            <div class="profile-box-body">
+                {% for s in items %}
+                <div class="classic-person-row">
+                    <span>
+                        <a href="{{ s.get_absolute_url }}"><b>{{ s.title|default:"Без названия" }}</b></a>
+                        <span class="muted"> · {{ s.kind }}</span>
+                        {% if s.created_at %}<span class="muted"> · {{ s.created_at|fb_when }}</span>{% endif %}
+                        {% if s.post and s.post.body %}<div class="muted">{{ s.post.body|truncatewords:20 }}</div>{% endif %}
+                        {% if s.url and not s.post_id %}<div class="muted"><a href="{{ s.url }}" rel="nofollow noopener">{{ s.url }}</a></div>{% endif %}
+                    </span>
+                    <form method="post" action="{% url 'saves.delete' s.id %}" class="inline">{% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'saves' %}{% if kind %}?kind={{ kind }}{% endif %}">
+                        <button type="submit" class="linkish muted">удалить</button>
+                    </form>
+                </div>
+                {% empty %}
+                <p class="muted">Пока пусто. На стене или в ленте нажмите «Сохранить».</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

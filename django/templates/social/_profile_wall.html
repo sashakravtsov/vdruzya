@@ -1,0 +1,117 @@
+{% load vd %}
+<div class="profile-box">
+    <h4>Мини-лента</h4>
+    <div class="profile-box-body">
+        {% for item in mini %}
+        <div class="minifeed-item">
+            {% if item.kind == 'joined' or item.kind == 'created' or item.kind == 'friend' %}
+            <span class="ico ico-group news-ico"></span>
+            {% elif item.kind == 'photo' or item.kind == 'picture' %}
+            <span class="ico ico-photo news-ico"></span>
+            {% elif item.kind == 'wall' %}
+            <span class="ico ico-wall news-ico"></span>
+            {% else %}
+            <span class="ico ico-note news-ico"></span>
+            {% endif %}
+            {% if item.kind == 'joined' %}
+            вступил(а) в <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+            {% elif item.kind == 'created' %}
+            создал(а) группу <a href="{% url 'groups.show' item.group.id %}">{{ item.group.name }}</a>
+            {% elif item.kind == 'photo' %}
+            добавил(а) фото в <a href="{% url 'albums.show' item.album.id %}">{{ item.album.title }}</a>
+            {% if item.photo %}<a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"> · смотреть</a>{% endif %}
+            {% elif item.kind == 'tagged' and item.photo and item.album %}
+            {% if item.by %}отметил(а) <a href="{% url 'profile' item.by.id %}">{{ item.by.name }}</a> на фото{% else %}отмечен(а) на фото{% endif %}
+            <a href="{% url 'albums.photos.show' item.album.id item.photo.id %}"> · смотреть</a>
+            {% elif item.kind == 'picture' %}
+            обновил(а) фото профиля
+            {% elif item.kind == 'friend' and item.other %}
+            теперь в друзьях с <a href="{% url 'profile' item.other.id %}">{{ item.other.name }}</a>
+            {% elif item.kind == 'status' %}
+            обновил(а) статус: {{ item.post.body|truncatewords:16 }}
+            {% elif item.kind == 'og' and item.og %}
+            {{ item.verb_label }} {% if item.og.object_url %}<a href="{{ item.og.object_url }}" rel="nofollow noopener">«{{ item.og.object_title }}»</a>{% else %}«{{ item.og.object_title }}»{% endif %}
+            {% elif item.kind == 'note' %}
+            написал(а) заметку <a href="{% url 'posts.show' item.post.id %}">«{{ item.post.media_label|default:"Заметка" }}»</a>
+            {% elif item.kind == 'link' %}
+            поделился ссылкой{% if item.post.link_url %} <a href="{{ item.post.link_url }}" rel="nofollow noopener">«{{ item.post.media_label|default:item.post.link_url }}»</a>{% endif %}
+            {% elif item.kind == 'video' %}
+            добавил(а) видео{% if item.post.link_url %} <a href="{{ item.post.link_url }}" rel="nofollow noopener">«{{ item.post.media_label|default:"Видео" }}»</a>{% endif %}
+            {% elif item.kind == 'wall' %}
+            написал(а) на стену{% if item.wall_name %} <a href="{% url 'profile' item.wall_id %}">{{ item.wall_name }}</a>{% endif %}: {{ item.post.body|truncatewords:12 }}
+            {% elif item.kind == 'fan' and item.page %}
+            стал(а) поклонником <a href="{% url 'pages.show' item.page.id %}">{{ item.page.name }}</a>
+            {% elif item.kind == 'gift_sent' %}
+            отправил(а) подарок{% if item.gift_to_name %} <a href="{% url 'profile' item.gift_to_id %}">{{ item.gift_to_name }}</a>{% endif %}
+            {% elif item.kind == 'gift_got' %}
+            получил(а) подарок{% if item.from %} от <a href="{% url 'profile' item.from.id %}">{{ item.from.name }}</a>{% endif %}{% if item.sticker %} «{{ item.sticker.title }}»{% endif %}
+            {% else %}
+            написал(а): {{ item.post.body|truncatewords:16 }}
+            {% endif %}
+            {% if item.at %}<span class="muted"> · {{ item.at|fb_when }}</span>{% endif %}
+        </div>
+        {% empty %}
+        <p class="muted">Пока нет событий.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% if gifts %}
+<div class="profile-box">
+    <h4>Подарки ({{ gifts|length }}){% if is_own %} <a class="edit" href="{% url 'gifts' %}?tab=received">[все]</a>{% endif %}</h4>
+    <div class="profile-box-body">
+        <div class="gift-grid gift-grid-profile">
+            {% for p in gifts %}
+            <div class="gift-recv-row">
+                {% if p.gift_sticker %}
+                <span class="gift-tile gift-tile-sm" style="background:{{ p.gift_sticker.bg }};color:{{ p.gift_sticker.fg }}" title="{{ p.gift_sticker.title }}">
+                    <span class="gift-tile-title">{{ p.gift_sticker.title }}</span>
+                </span>
+                {% endif %}
+                <div class="gift-recv-meta">
+                    <a href="{% url 'profile' p.social_user.id %}"><b>{{ p.social_user.name }}</b></a>
+                    {% if p.created_at %}<span class="muted"> · {{ p.created_at|fb_when }}</span>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if show_wall %}
+<div class="profile-box wall-box">
+    <h4>Стена</h4>
+    <div class="profile-box-body">
+        <div class="subtabs wall-filters">
+            {% with f=wall_filter|default:'all' %}
+            <div class="{% if f == 'all' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=all">Все</a></div>
+            <div class="{% if f == 'photos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=photos">Фото</a></div>
+            <div class="{% if f == 'links' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=links">Ссылки</a></div>
+            <div class="{% if f == 'videos' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=videos">Видео</a></div>
+            <div class="{% if f == 'shares' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=shares">Репосты</a></div>
+            <div class="{% if f == 'friends' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=friends">От друзей</a></div>
+            <div class="{% if f == 'mine' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=wall&amp;filter=mine">Мои</a></div>
+            {% endwith %}
+        </div>
+        {% if form %}
+        {% url 'posts.store' as compose_action %}
+        {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path wall_to=profile.id submit=is_own|yesno:"Опубликовать,Написать на стену" simple=1 %}
+        {% elif user.is_authenticated and not can_wall %}
+        <p class="muted">{% if profile.wall_write == "self" %}На стену может писать только {{ profile.name }}.{% else %}На стену могут писать только друзья.{% endif %}</p>
+        {% endif %}
+        {% for post in posts %}
+        {% include "social/_wall_post.html" with post=post me=me comment_form=comment_form next=request.path wall_owner=profile %}
+        {% empty %}
+        <p class="muted">{% if wall_filter and wall_filter != 'all' %}Нет записей в этом фильтре.{% else %}На стене пока пусто.{% endif %}</p>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="profile-box wall-box">
+    <h4>Стена</h4>
+    <div class="profile-box-body">
+        <p class="muted">Стена закрыта.</p>
+    </div>
+</div>
+{% endif %}

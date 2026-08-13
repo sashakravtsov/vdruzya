@@ -1,0 +1,14 @@
+{% extends "legal/base.html" %}
+{% block legal_body %}
+<div class="fullwidth">
+    <h4>Какие данные обрабатываем</h4>
+    <p>Данные аккаунта, профиля, сообщений и техническая информация (IP, cookies) — для работы сервиса.</p>
+
+    <h4>Цели</h4>
+    <p>Предоставление функций соцсети, безопасность, поддержка пользователей, исполнение закона.</p>
+
+    <h4>Оператор</h4>
+    <p>{{ legal.operator_name }}{% if legal.inn %}, ИНН {{ legal.inn }}{% endif %}{% if legal.address %}, {{ legal.address }}{% endif %}.</p>
+    <p>Письма: <a href="mailto:{{ legal.email }}">{{ legal.email }}</a>.</p>
+</div>
+{% endblock %}
