@@ -1735,3 +1735,168 @@ body.fb-dialog-open { overflow: hidden; }
   border-bottom: 1px solid #eee;
 }
 .osm-suggest-item:hover { background: #D8DFEA; }
+
+/* —— Знакомства (dating) —— */
+.dating-app {
+  --dt-ink: #2a3340;
+  --dt-rose: #b23c5a;
+  --dt-rose-soft: #f7e6eb;
+  --dt-leaf: #2f6b4f;
+  --dt-sky: #e8eef6;
+}
+.dating-app .dating-spark-mark {
+  color: var(--dt-rose); font-size: 12px; margin-left: 4px;
+}
+.dating-app .dating-lead { margin: 0 0 8px; color: #445; }
+.dating-app .dating-strip {
+  margin: 0 0 10px; padding: 7px 9px;
+  background: linear-gradient(180deg, #fff7f9, var(--dt-sky));
+  border: 1px solid #d5c2c8; font: 11px/15px var(--font); color: var(--dt-ink);
+}
+.dating-app .dating-badge {
+  display: inline-block; min-width: 14px; padding: 0 4px; margin-left: 3px;
+  background: var(--dt-rose); color: #fff; font: bold 10px/14px var(--font); text-align: center;
+}
+.dating-app .dating-path {
+  margin: 0 0 12px; padding: 7px 9px; background: #f5f7fb; border: 1px solid #c3cde0;
+  font: 11px/15px var(--font);
+}
+.dating-app .dating-meter {
+  height: 8px; margin: 5px 0 6px; background: #dde3ee; border: 1px solid #c3cde0; overflow: hidden;
+}
+.dating-app .dating-meter.thin { height: 6px; }
+.dating-app .dating-meter span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #d97890, var(--dt-rose));
+}
+.dating-app .dating-list { margin: 0; padding-left: 16px; }
+.dating-app .dating-done { color: var(--dt-leaf); font-weight: bold; }
+
+.dating-app .dating-stage {
+  margin: 0 0 14px; padding: 12px;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(178,60,90,.08), transparent 55%),
+    linear-gradient(180deg, #fff, #f3f6fb);
+  border: 1px solid #c9b4bb;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.dating-app .dating-stage.is-in { opacity: 1; transform: none; }
+.dating-app .dating-hero {
+  display: table; width: 100%; table-layout: fixed;
+}
+.dating-app .dating-hero-photo,
+.dating-app .dating-hero-copy {
+  display: table-cell; vertical-align: top;
+}
+.dating-app .dating-hero-photo {
+  width: 200px; padding-right: 14px; text-align: center;
+}
+.dating-app .dating-hero-photo .avatar {
+  width: 180px; height: 180px; object-fit: cover;
+  border: 1px solid #b9a4aa; background: #eee;
+  box-shadow: 0 2px 0 rgba(0,0,0,.04);
+}
+.dating-app .dating-compat {
+  margin: 8px auto 0; display: inline-block; min-width: 88px;
+  padding: 5px 8px; border: 1px solid #d4a3b0;
+  background: var(--dt-rose-soft); color: var(--dt-rose);
+  font: 10px/13px var(--font);
+}
+.dating-app .dating-compat b {
+  display: block; font: bold 18px/20px Georgia, "Times New Roman", serif; color: var(--dt-ink);
+}
+.dating-app .dating-name { margin: 0 0 4px; font: bold 16px/20px var(--font); }
+.dating-app .dating-meta { margin: 0 0 8px; color: #567; font: 11px/15px var(--font); }
+.dating-app .dating-headline {
+  margin: 0 0 6px; font: bold 12px/16px Georgia, "Times New Roman", serif; color: var(--dt-ink);
+}
+.dating-app .dating-about { margin: 0 0 8px; font: 11px/16px var(--font); color: #333; }
+.dating-app .dating-prompts { margin: 0; padding-left: 16px; font: 11px/15px var(--font); }
+.dating-app .dating-prompts li { margin: 0 0 6px; }
+.dating-app .dating-tag {
+  display: inline-block; margin-left: 4px; padding: 0 5px;
+  border: 1px solid #c3cde0; background: #edf2f8; font: 10px/14px var(--font); color: #456;
+}
+.dating-app .dating-tag.hot {
+  border-color: #d4a3b0; background: var(--dt-rose-soft); color: var(--dt-rose);
+}
+.dating-app .dating-actions {
+  margin: 12px 0 4px; padding-top: 10px; border-top: 1px solid #e0d0d5;
+}
+.dating-app .dating-actions form,
+.dating-app .dating-actions a.inputsubmit { margin-right: 6px; }
+.dating-app .dating-btn-like {
+  background: linear-gradient(180deg, #f7d6de, #e8b0bf) !important;
+  border-color: #b23c5a !important; color: #5a1528 !important;
+}
+.dating-app .dating-btn-super {
+  background: linear-gradient(180deg, #fff3c9, #f0d78c) !important;
+  border-color: #b8963a !important; color: #4a3a10 !important;
+}
+.dating-app .dating-queue { margin: 6px 0 0; }
+.dating-app .dating-empty {
+  padding: 14px; border: 1px dashed #c3cde0; background: #f7f9fc;
+}
+
+.dating-app .dating-people { list-style: none; margin: 0; padding: 0; }
+.dating-app .dating-people-item {
+  display: table; width: 100%; margin: 0 0 10px; padding: 8px;
+  border: 1px solid #d7dee8; background: #fff;
+}
+.dating-app .dating-people-item.is-super { border-color: #d4a3b0; background: #fffafb; }
+.dating-app .dating-people-item.is-new { border-color: #9db89d; background: #f4faf4; }
+.dating-app .dating-people-ava,
+.dating-app .dating-people-body { display: table-cell; vertical-align: top; }
+.dating-app .dating-people-ava { width: 58px; padding-right: 10px; }
+.dating-app .dating-people-body .inputsubmit { margin: 4px 6px 0 0; }
+.dating-app .dating-opener-line { margin: 3px 0 5px; font: 11px/15px var(--font); color: #456; }
+
+.dating-app .dating-match-banner {
+  margin: 0 0 12px; padding: 12px 14px;
+  border: 1px solid #c9a24a;
+  background: linear-gradient(180deg, #fff8e1, #f7e7b0);
+  font: 12px/16px var(--font);
+  transform: scale(.98); opacity: .01;
+  transition: transform .4s ease, opacity .4s ease;
+}
+.dating-app .dating-match-banner.is-pop { transform: none; opacity: 1; }
+.dating-app .dating-opener { margin: 6px 0; }
+
+.dating-app .dating-form .formtable th { width: 120px; vertical-align: top; padding-top: 6px; }
+.dating-app .dating-form input[type="text"],
+.dating-app .dating-form input[type="number"],
+.dating-app .dating-form textarea,
+.dating-app .dating-form select {
+  width: 92%; max-width: 420px;
+}
+.dating-app .dating-badges { margin: 0 0 10px; }
+.dating-app .dating-badge-pill {
+  display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px;
+  border: 1px solid #c3cde0; background: #edf2f8; color: #789;
+  font: 10px/14px var(--font);
+}
+.dating-app .dating-badge-pill.on {
+  border-color: #b23c5a; background: var(--dt-rose-soft); color: #5a1528; font-weight: bold;
+}
+.dating-app .dating-tip-layout { display: table; width: 100%; }
+.dating-app .dating-tip-nav,
+.dating-app .dating-tip-card { display: table-cell; vertical-align: top; }
+.dating-app .dating-tip-nav { width: 34%; padding-right: 12px; }
+.dating-app .dating-tip-card {
+  padding: 8px 10px; border: 1px solid #c3cde0; background: #f8fafc;
+}
+.dating-app .dating-quiz { list-style: none; margin: 0 0 8px; padding: 0; }
+.dating-app .dating-quiz li { margin: 0 0 4px; }
+.dating-app .dating-foot { margin-top: 14px; }
+
+@media (max-width: 720px) {
+  .dating-app .dating-hero,
+  .dating-app .dating-hero-photo,
+  .dating-app .dating-hero-copy,
+  .dating-app .dating-tip-layout,
+  .dating-app .dating-tip-nav,
+  .dating-app .dating-tip-card { display: block; width: auto; }
+  .dating-app .dating-hero-photo { margin-bottom: 10px; padding-right: 0; }
+  .dating-app .dating-hero-photo .avatar { width: 140px; height: 140px; }
+}

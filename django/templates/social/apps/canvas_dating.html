@@ -1,30 +1,290 @@
 {% extends "social/apps/canvas_base.html" %}
+{% load static %}
+{% load vd %}
 {% block canvas_body %}
-<div class="profile-box">
-    <h4>Знакомства</h4>
+<div class="profile-box dating-app" id="dating-app" data-tab="{{ tab }}">
+    <h4>Знакомства <span class="dating-spark-mark" aria-hidden="true">✦</span></h4>
     <div class="profile-box-body">
-        <p class="muted">Демо-совместимость среди друзей (без стороннего хостинга).</p>
-        <table class="mygroups-table" cellspacing="0" cellpadding="0">
-            <thead>
-                <tr>
-                    <th class="col-name">Кто</th>
-                    <th class="col-type">Совместимость</th>
-                    <th class="col-act"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in matches %}
-                <tr>
-                    <td class="col-name"><a href="{% url 'profile' m.profile.id %}"><b>{{ m.profile.name }}</b></a></td>
-                    <td class="col-type"><b>{{ m.score }}%</b> · {{ m.note }}</td>
-                    <td class="col-act"><a href="{% url 'inbox.start' m.profile.id %}">написать</a></td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="3" class="muted">Добавьте друзей — появятся совпадения.</td></tr>
+        <p class="dating-lead">Круг друзей и люди рядом: лайки, взаимные искры, айсбрейкеры и школа общения — без стороннего хостинга.</p>
+        <p class="dating-strip">
+            Серия <b>{{ strip.streak }}</b>
+            · искры <b>{{ strip.spark_points }}</b>
+            · матчи <b>{{ strip.matches_n }}</b>
+            · суперлайки сегодня <b>{{ strip.superlikes_left }}</b>
+            {% if strip.unseen_likes %} · вас лайкнули <b>{{ strip.unseen_likes }}</b>{% endif %}
+            {% if strip.new_matches %} · новые матчи <b>{{ strip.new_matches }}</b>{% endif %}
+            · анкета <b>{{ strip.completeness.pct }}%</b>
+        </p>
+
+        <div class="subtabs dating-tabs">
+            <div class="{% if tab == 'discover' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=discover">Лента</a>
+            </div>
+            <div class="{% if tab == 'likes' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=likes">Вас лайкнули{% if strip.unseen_likes %} <span class="dating-badge">{{ strip.unseen_likes }}</span>{% endif %}</a>
+            </div>
+            <div class="{% if tab == 'matches' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=matches">Матчи{% if strip.new_matches %} <span class="dating-badge">{{ strip.new_matches }}</span>{% endif %}</a>
+            </div>
+            <div class="{% if tab == 'profile' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=profile">Анкета</a>
+            </div>
+            <div class="{% if tab == 'tips' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=tips">Школа</a>
+            </div>
+            <div class="{% if tab == 'spark' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=spark">Искры города</a>
+            </div>
+        </div>
+
+        {% if strip.goals %}
+        <div class="dating-path dating-goals">
+            <b>Цели дня</b> · {{ strip.goals.done }}/{{ strip.goals.total }}
+            <div class="dating-meter"><span style="width:{{ strip.goals.pct }}%"></span></div>
+            <ul class="dating-list">
+                {% for g in strip.goals.items %}
+                <li>{% if g.done %}<span class="dating-done">✓</span>{% else %}○{% endif %} {{ g.title }}</li>
                 {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if tab == 'discover' %}
+        {% if card %}
+        <div class="dating-stage" id="dating-stage">
+            <div class="dating-hero">
+                <div class="dating-hero-photo">
+                    <a href="{% url 'profile' card.profile.id %}">{% avatar card.profile 180 %}</a>
+                    <div class="dating-compat" title="{{ card.comp.note }}">
+                        <b>{{ card.comp.score }}%</b>
+                        <span>совместимость</span>
+                    </div>
+                </div>
+                <div class="dating-hero-copy">
+                    <h5 class="dating-name">
+                        <a href="{% url 'profile' card.profile.id %}">{{ card.profile.name }}</a>
+                        {% if card.age %}<span class="muted">· {{ card.age }}</span>{% endif %}
+                        {% if card.is_friend %}<span class="dating-tag">друг</span>{% endif %}
+                    </h5>
+                    <p class="dating-meta">
+                        {% if card.city %}{{ card.city }} · {% endif %}{{ card.intent }}
+                        · {{ card.comp.note }}
+                    </p>
+                    {% if card.headline %}<p class="dating-headline">{{ card.headline }}</p>{% endif %}
+                    {% if card.about %}<p class="dating-about">{{ card.about }}</p>{% endif %}
+                    {% if card.prompts %}
+                    <ul class="dating-prompts">
+                        {% for pr in card.prompts %}
+                        <li><span class="muted">{{ pr.label }}</span><br><b>{{ pr.answer }}</b></li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="dating-actions">
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="swipe">
+                    <input type="hidden" name="target_id" value="{{ card.profile.id }}">
+                    <input type="hidden" name="swipe_action" value="pass">
+                    <button type="submit" class="linkish muted">Пропустить</button>
+                </form>
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="swipe">
+                    <input type="hidden" name="target_id" value="{{ card.profile.id }}">
+                    <input type="hidden" name="swipe_action" value="like">
+                    <button type="submit" class="inputsubmit dating-btn-like">Нравится</button>
+                </form>
+                <form method="post" class="inline">{% csrf_token %}
+                    <input type="hidden" name="action" value="swipe">
+                    <input type="hidden" name="target_id" value="{{ card.profile.id }}">
+                    <input type="hidden" name="swipe_action" value="super">
+                    <button type="submit" class="inputsubmit dating-btn-super"{% if strip.superlikes_left < 1 %} disabled{% endif %}>Суперлайк ({{ strip.superlikes_left }})</button>
+                </form>
+                <a class="inputsubmit" href="{% url 'inbox.start' card.profile.id %}">Написать</a>
+            </div>
+            <p class="muted dating-queue">Ещё в очереди примерно {{ queue_n|add:"-1" }}</p>
+        </div>
+        {% else %}
+        <div class="dating-empty">
+            <h5>Лента на сегодня спокойная</h5>
+            <p class="muted">Загляните позже, расширьте круг друзей или ослабьте фильтры в анкете. Можно ответить тем, кто уже лайкнул вас.</p>
+            <p>
+                <a class="inputsubmit" href="{% url 'apps.canvas' 'dating' %}?tab=likes">Вас лайкнули</a>
+                <a href="{% url 'apps.canvas' 'dating' %}?tab=profile">настроить анкету</a>
+            </p>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {% if tab == 'likes' %}
+        <h5>Кто проявил интерес</h5>
+        <p class="muted">Ответьте лайком — и получите матч. Суперлайк выделен.</p>
+        <ul class="dating-people">
+            {% for row in likes %}
+            <li class="dating-people-item{% if row.is_super %} is-super{% endif %}">
+                <a href="{% url 'profile' row.profile.id %}" class="dating-people-ava">{% avatar row.profile 50 %}</a>
+                <div class="dating-people-body">
+                    <a href="{% url 'profile' row.profile.id %}"><b>{{ row.profile.name }}</b></a>
+                    {% if row.age %}<span class="muted">· {{ row.age }}</span>{% endif %}
+                    {% if row.is_super %}<span class="dating-tag hot">суперлайк</span>{% endif %}
+                    <div class="muted">{{ row.comp.score }}% · {{ row.comp.note }}{% if row.city %} · {{ row.city }}{% endif %}</div>
+                    <form method="post" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="swipe">
+                        <input type="hidden" name="target_id" value="{{ row.profile.id }}">
+                        <input type="hidden" name="swipe_action" value="like">
+                        <button type="submit" class="inputsubmit">Лайкнуть в ответ</button>
+                    </form>
+                    <form method="post" class="inline">{% csrf_token %}
+                        <input type="hidden" name="action" value="swipe">
+                        <input type="hidden" name="target_id" value="{{ row.profile.id }}">
+                        <input type="hidden" name="swipe_action" value="pass">
+                        <button type="submit" class="linkish muted">скрыть</button>
+                    </form>
+                </div>
+            </li>
+            {% empty %}
+            <li class="muted">Пока тихо — будьте первыми в ленте.</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if tab == 'matches' %}
+        {% if match_flash and spark_celebrate %}
+        <div class="dating-match-banner" id="dating-match-banner">
+            <b>Это взаимно!</b> {{ match_flash.peer.name }}
+            <span class="muted">· {{ match_flash.comp.score }}%</span>
+            {% if match_flash.opener %}<p class="dating-opener">Айсбрейкер: {{ match_flash.opener }}</p>{% endif %}
+            <p><a class="inputsubmit" href="{% url 'inbox.start' match_flash.peer.id %}">Написать сейчас</a></p>
+        </div>
+        {% endif %}
+        <h5>Ваши матчи</h5>
+        <ul class="dating-people">
+            {% for row in matches %}
+            <li class="dating-people-item{% if row.is_new %} is-new{% endif %}">
+                <a href="{% url 'profile' row.peer.id %}" class="dating-people-ava">{% avatar row.peer 50 %}</a>
+                <div class="dating-people-body">
+                    <a href="{% url 'profile' row.peer.id %}"><b>{{ row.peer.name }}</b></a>
+                    {% if row.is_new %}<span class="dating-tag">новое</span>{% endif %}
+                    <div class="muted">{{ row.comp.score }}% · {{ row.comp.note }}</div>
+                    {% if row.opener %}<div class="dating-opener-line">{{ row.opener }}</div>{% endif %}
+                    <a class="inputsubmit" href="{% url 'inbox.start' row.peer.id %}">Написать</a>
+                    <a href="{% url 'profile' row.peer.id %}">профиль</a>
+                </div>
+            </li>
+            {% empty %}
+            <li class="muted">Матчей ещё нет — лайкайте в ленте и отвечайте во вкладке «Вас лайкнули».</li>
+            {% endfor %}
+        </ul>
+        {% if visitors %}
+        <h5>Недавние просмотры вашей анкеты</h5>
+        <ul class="dating-list">
+            {% for v in visitors %}
+            <li><a href="{% url 'profile' v.profile.id %}">{{ v.profile.name }}</a></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endif %}
+
+        {% if tab == 'profile' and profile_form %}
+        <h5>Ваша анкета Знакомств</h5>
+        <p class="muted">Заполненность {{ strip.completeness.pct }}% · {% if my_dating.discoverable %}видна в ленте{% else %}скрыта{% endif %}</p>
+        <div class="dating-meter thin"><span style="width:{{ strip.completeness.pct }}%"></span></div>
+        <form method="post" action="{% url 'apps.canvas' 'dating' %}?tab=profile" class="dating-form">{% csrf_token %}
+            <input type="hidden" name="action" value="save_profile">
+            <table class="formtable" cellspacing="0">
+                <tr><th>Заголовок</th><td>{{ profile_form.headline }}</td></tr>
+                <tr><th>О себе</th><td>{{ profile_form.about }}</td></tr>
+                <tr><th>Я здесь для</th><td>{{ profile_form.intent }}</td></tr>
+                <tr><th>Возраст</th><td>{{ profile_form.age_min }} — {{ profile_form.age_max }}</td></tr>
+                <tr><th>Показывать</th><td>{{ profile_form.gender_pref }}</td></tr>
+                <tr><th>В ленте</th><td><label>{{ profile_form.discoverable }} показывать меня</label></td></tr>
+                <tr><th>Вопрос 1</th><td>{{ profile_form.prompt1_key }}<br>{{ profile_form.prompt1_answer }}</td></tr>
+                <tr><th>Вопрос 2</th><td>{{ profile_form.prompt2_key }}<br>{{ profile_form.prompt2_answer }}</td></tr>
+                <tr><th>Вопрос 3</th><td>{{ profile_form.prompt3_key }}<br>{{ profile_form.prompt3_answer }}</td></tr>
+            </table>
+            <p>
+                <input type="submit" class="inputsubmit" value="Сохранить анкету">
+                <a href="{% url 'profile.edit' %}">аватар и город в профиле →</a>
+            </p>
+        </form>
+        <h5>Ачивки</h5>
+        <div class="dating-badges">
+            {% for b in strip.badges %}
+            <span class="dating-badge-pill{% if b.unlocked %} on{% endif %}" title="{{ b.hint }}">{{ b.title }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if tab == 'tips' %}
+        <h5>Школа знакомств</h5>
+        <p class="muted">Короткие советы с проверкой — чтобы первый диалог не был пустым «привет».</p>
+        <div class="dating-tip-layout">
+            <ul class="dating-list dating-tip-nav">
+                {% for ch in tip_chapters %}
+                <li>
+                    <b>{{ ch.title }}</b>
+                    <ul>
+                        {% for t in ch.tips %}
+                        <li>
+                            {% if t.slug in tip_solved %}<span class="dating-done">✓</span>{% endif %}
+                            <a href="{% url 'apps.canvas' 'dating' %}?tab=tips&amp;tip={{ t.slug }}">{{ t.title }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if tip %}
+            <div class="dating-tip-card">
+                <h5>{{ tip.title }} <span class="muted">· {{ tip.minutes }} мин</span></h5>
+                {% for line in tip.body %}<p>{{ line }}</p>{% endfor %}
+                {% if tip.slug in tip_solved %}
+                <p class="dating-done">Совет пройден. {{ tip.quiz.explain }}</p>
+                {% else %}
+                <form method="post" action="{% url 'apps.canvas' 'dating' %}?tab=tips&amp;tip={{ tip.slug }}">{% csrf_token %}
+                    <input type="hidden" name="action" value="tip_quiz">
+                    <input type="hidden" name="tip_slug" value="{{ tip.slug }}">
+                    <p><b>{{ tip.quiz.question }}</b></p>
+                    <ul class="dating-quiz">
+                        {% for val, label in tip.quiz.choices %}
+                        <li><label><input type="radio" name="choice" value="{{ val }}"> {{ label }}</label></li>
+                        {% endfor %}
+                    </ul>
+                    <input type="submit" class="inputsubmit" value="Проверить">
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if tab == 'spark' %}
+        <h5>Искры города</h5>
+        <p class="muted">Кто активнее знакомится рядом — лёгкий рейтинг вовлечённости (не деньги).</p>
+        <table class="mygroups-table" cellspacing="0" cellpadding="0">
+            <thead><tr><th>#</th><th>Кто</th><th>Искры</th><th>Матчи</th></tr></thead>
+            <tbody>
+            {% for row in leaders %}
+            <tr{% if row.profile.id == me.id %} class="is-me"{% endif %}>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    <a href="{% url 'profile' row.profile.id %}">{% avatar row.profile 32 %} {{ row.profile.name }}</a>
+                    {% if row.city %}<span class="muted">· {{ row.city }}</span>{% endif %}
+                </td>
+                <td>{{ row.points }}</td>
+                <td>{{ row.matches_n }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="muted">Будьте первыми — лайки и заполненная анкета дают искры.</td></tr>
+            {% endfor %}
             </tbody>
         </table>
-        <p class="muted">Разработчик: ВДрузья</p>
+        {% endif %}
+
+        <p class="muted dating-foot">Разработчик: ВДрузья · first-party canvas</p>
     </div>
 </div>
+{% if tab == 'discover' or tab == 'matches' %}
+<script src="{% static 'js/dating-spark.js' %}" defer></script>
+{% endif %}
 {% endblock %}

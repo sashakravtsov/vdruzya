@@ -445,11 +445,9 @@ def _canvas_horoscope(request, me, app):
 
 
 def _canvas_dating(request, me, app):
-    matches = pa.dating_matches(me)
-    return render(request, "social/apps/canvas_dating.html", {
-        "me": me, "app": app, "matches": matches,
-        "nav": "apps", "installed": True,
-    })
+    from apps.social.dating.views import render_dating_canvas
+
+    return render_dating_canvas(request, me, app)
 
 
 def _canvas_farm(request, me, app):
