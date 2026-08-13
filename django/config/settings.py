@@ -16,6 +16,7 @@ CSRF_TRUSTED_ORIGINS = [u for u in [env("CSRF_TRUSTED_ORIGIN", default="")] if u
 
 INSTALLED_APPS = [
     "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -179,6 +180,18 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": REDIS_URL,
     }
+}
+# Channels layer for poker WebSockets (same Redis host, logical DB 2).
+CHANNEL_REDIS_URL = REDIS_URL.rsplit("/", 1)[0] + "/2"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [CHANNEL_REDIS_URL],
+            "capacity": 1500,
+            "expiry": 30,
+        },
+    },
 }
 
 EMAIL_HOST = env("EMAIL_HOST", default="")
