@@ -25,8 +25,14 @@ def app_install(request, slug):
     if not app:
         messages.error(request, "Приложение не найдено.")
         return redirect("apps")
-    pa.install(me, slug)
-    messages.success(request, f"Приложение «{app['name']}» добавлено.")
+    _row, created = pa.install(me, slug)
+    if created:
+        messages.success(
+            request,
+            f"«{app['name']}» добавлено в закладки — смотрите слева в «Мои приложения».",
+        )
+    else:
+        messages.info(request, f"«{app['name']}» уже в ваших закладках.")
     next_url = request.POST.get("next") or reverse("apps.canvas", args=[slug])
     return redirect(next_url)
 
@@ -37,8 +43,8 @@ def app_uninstall(request, slug):
     me = profile_of(request.user)
     app = _require_app(slug, viewer=me)
     if app and pa.uninstall(me, slug):
-        messages.info(request, f"Приложение «{app['name']}» удалено из ваших.")
-    return redirect(request.POST.get("next") or "apps")
+        messages.info(request, f"«{app['name']}» убрано из закладок.")
+    return redirect(request.POST.get("next") or reverse("apps") + "?tab=mine")
 
 
 @login_required
@@ -51,6 +57,10 @@ def app_canvas(request, slug):
         return redirect("apps")
     if not pa.is_installed(me, slug):
         pa.install(me, slug)
+        messages.info(
+            request,
+            f"«{app['name']}» добавлено в закладки слева — «Мои приложения».",
+        )
 
     if app.get("dev_owned"):
         return _canvas_devapp(request, me, app)
@@ -121,6 +131,7 @@ def app_authorize(request, slug):
             return redirect(deny)
         if not pa.is_installed(me, slug):
             pa.install(me, slug)
+            messages.info(request, f"«{row.name}» добавлено в закладки.")
         code = oauth.create_oauth_code(row, me, redirect_uri)
         signed = oauth.make_signed_request(row, me)
         go = oauth.append_query(redirect_uri, {
@@ -155,6 +166,7 @@ def app_launch(request, slug):
     oauth.ensure_app_credentials(row)
     if not pa.is_installed(me, slug):
         pa.install(me, slug)
+        messages.info(request, f"«{row.name}» добавлено в закладки.")
     signed = oauth.make_signed_request(row, me)
     go = oauth.append_query(row.website_url, {
         "signed_request": signed,
@@ -445,38 +457,15 @@ def _canvas_horoscope(request, me, app):
 
 
 def _canvas_dating(request, me, app):
-    matches = pa.dating_matches(me)
-    return render(request, "social/apps/canvas_dating.html", {
-        "me": me, "app": app, "matches": matches,
-        "nav": "apps", "installed": True,
-    })
+    from apps.social.dating.views import render_dating_canvas
+
+    return render_dating_canvas(request, me, app)
 
 
 def _canvas_farm(request, me, app):
-    crop = None
-    planted = harvested = None
-    if request.method == "POST":
-        action = (request.POST.get("action") or "plant").strip()
-        slug = (request.POST.get("crop") or "wheat").strip()
-        crops = {c[0]: c for c in pa.FARM_CROPS}
-        crop = crops.get(slug) or pa.FARM_CROPS[0]
-        if action == "harvest":
-            harvested = crop[1]
-            Post.objects.create(
-                social_user=me,
-                body=f"собрал(а) урожай «{harvested}» в приложении Ферма",
-                kind="text", visibility="friends",
-                created_at=now(), updated_at=now(),
-            )
-            bump_news()
-            messages.success(request, f"Урожай «{harvested}» собран.")
-            return redirect("apps.canvas", slug="farm")
-        planted = crop[1]
-        messages.info(request, f"Посажено: {planted}. Загляните позже за сбором.")
-    return render(request, "social/apps/canvas_farm.html", {
-        "me": me, "app": app, "crops": pa.FARM_CROPS,
-        "planted": planted, "nav": "apps", "installed": True,
-    })
+    from apps.social.farm.views import render_farm_canvas
+
+    return render_farm_canvas(request, me, app)
 
 
 def _canvas_billiards(request, me, app):
@@ -512,12 +501,6 @@ def _canvas_tetris(request, me, app):
 
 
 def _canvas_poker(request, me, app):
-    cards = None
-    label = None
-    if request.method == "POST":
-        cards = pa.poker_deal()
-        label = pa.poker_rank_label(cards)
-    return render(request, "social/apps/canvas_poker.html", {
-        "me": me, "app": app, "cards": cards, "label": label,
-        "nav": "apps", "installed": True,
-    })
+    from apps.social.poker.views import render_poker_canvas
+
+    return render_poker_canvas(request, me, app)

@@ -17,10 +17,12 @@ def apps_home(request):
         tab = "browse"
     featured = pa.apps_grouped(featured_only=True) if tab == "browse" else []
     apps = pa.apps_grouped(category=cat or None) if tab == "browse" else []
-    mine_apps = pa.my_apps(me) if me and tab == "mine" else []
+    all_mine = pa.my_apps(me) if me else []
+    mine_apps = all_mine if tab == "mine" else []
     installed = pa.installed_slugs(me) if me else set()
     return render(request, "social/apps.html", {
         "me": me, "apps": apps, "featured": featured, "mine_apps": mine_apps,
+        "mine_count": len(all_mine),
         "categories": pa.APP_CATEGORIES, "category": cat, "tab": tab,
         "installed": installed, "nav": "apps",
     })

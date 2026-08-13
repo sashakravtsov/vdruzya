@@ -226,4 +226,5 @@ def app_show(request, slug):
         "installed": installed,
         "app_permissions": pa.permissions_for(app),
         "install_dialog_message": pa.install_dialog_message(app),
+        "bookmark_remove_message": pa.bookmark_remove_message(app),
     })

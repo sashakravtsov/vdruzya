@@ -58,7 +58,8 @@ def main():
     r = c.get("/apps", secure=True)
     assert r.status_code == 200
     assert "Приложения".encode() in r.content
-    assert "Избранные".encode() in r.content
+    assert "Рекомендуемые".encode() in r.content or "Избранные".encode() in r.content
+    assert "В закладки".encode() in r.content
     assert "Дела".encode() in r.content or "Викторины".encode() in r.content
     assert b"page-tabs" not in r.content
     assert b"display: flex" not in r.content.lower()
@@ -101,7 +102,12 @@ def main():
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
     assert b"snav-more" in r.content and "Ещё разделы".encode() in r.content
-    assert "Закладки".encode() in r.content or b"snav-app" in r.content
+    assert (
+        "Мои приложения".encode() in r.content
+        or "Закладки".encode() in r.content
+        or b"snav-app" in r.content
+    )
+    assert "В закладки".encode() in c.get("/apps", secure=True).content or b"snav-app" in r.content
     ok("sidebar compact snav + app bookmarks")
 
     r = c.get("/developers", secure=True)
