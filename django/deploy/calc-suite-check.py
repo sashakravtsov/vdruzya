@@ -50,11 +50,9 @@ def main():
     r = run_tool("ndfl", {"income": "3000000"})
     assert r["ok"] and "402 000,00" in r["primary"], r
 
-    # Contributions 2026: 3_000_000 → 2_979_000*0.30 + 21_000*0.151
+    # Contributions 2026: 3_000_000 → 2_979_000*0.30 + 21_000*0.151 = 896_871
     r = run_tool("contributions", {"payroll": "3000000", "mode": "general", "injury": "0"})
-    assert r["ok"]
-    expected = Decimal("2979000") * Decimal("0.30") + Decimal("21000") * Decimal("0.151")
-    assert f"{expected:,.2f}".replace(",", " ").replace(".", ",")[:8] in r["primary"].replace("\xa0", " ")
+    assert r["ok"] and "896 871,00" in r["primary"], r
 
     for t in TOOLS:
         out = run_tool(t["slug"], {})
