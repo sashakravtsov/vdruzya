@@ -26,7 +26,7 @@
                     </table>
                 </form>
                 {% if event.cover_url %}
-                <form method="post" action="{% url 'events.cover.clear' event.id %}" style="margin-top:6px">{% csrf_token %}
+                <form method="post" action="{% url 'events.cover.clear' event.id %}" class="stack-sm">{% csrf_token %}
                     <input type="hidden" name="next" value="{% url 'events.edit' event.id %}">
                     <button type="submit" class="linkish muted">убрать обложку</button>
                 </form>

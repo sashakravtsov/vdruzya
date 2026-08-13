@@ -51,7 +51,7 @@
             </div>
         </div>
         {% endif %}
-        <form method="post" action="{% url 'friends.lists.delete' flist.id %}" style="margin-top:10px">{% csrf_token %}
+        <form method="post" action="{% url 'friends.lists.delete' flist.id %}" class="stack-md">{% csrf_token %}
             <button type="submit" class="linkish muted" onclick="return confirm('Удалить список?');">удалить список</button>
         </form>
     </div>

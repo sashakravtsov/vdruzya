@@ -31,7 +31,7 @@
                     </table>
                 </form>
                 {% if col.cover_url %}
-                <form method="post" action="{% url 'collections.cover.clear' col.id %}" style="margin-top:6px">{% csrf_token %}
+                <form method="post" action="{% url 'collections.cover.clear' col.id %}" class="stack-sm">{% csrf_token %}
                     <input type="submit" class="inputsubmit" value="Удалить обложку">
                 </form>
                 {% endif %}

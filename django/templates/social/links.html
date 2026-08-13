@@ -39,22 +39,24 @@
             <h4>{% if mine %}Мои записи{% else %}От друзей{% endif %}</h4>
             <div class="profile-box-body">
                 {% for p in items %}
-                <div class="event-list-row">
-                    <b><a href="{% url 'posts.show' p.id %}">{{ p.media_label|default:page_title }}</a></b>
-                    <div class="muted">
-                        <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
-                        {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
-                        · <a href="{% url 'posts.show' p.id %}">открыть</a>
+                <div class="event-list-row link-row">
+                    <div class="list-row-body">
+                        <b><a href="{% url 'posts.show' p.id %}">{{ p.media_label|default:page_title }}</a></b>
+                        <div class="muted">
+                            <a href="{% url 'profile' p.social_user.id %}">{{ p.social_user.name }}</a>
+                            {% if p.created_at %} · {{ p.created_at|fb_when }}{% endif %}
+                            · <a href="{% url 'posts.show' p.id %}">открыть</a>
+                        </div>
+                        {% if kind == 'video' %}
+                        {% include "social/_post_media.html" with post=p %}
+                        {% endif %}
+                        {% if p.link_blurb %}<div>{{ p.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
+                        {% if kind != 'video' and p.link_url %}
+                        <div class="muted"><a href="{{ p.link_url }}" rel="nofollow noopener">{{ p.link_url|truncatechars:60 }}</a></div>
+                        {% elif kind == 'video' and p.video_url and not p.is_file_video %}
+                        <div class="muted"><a href="{{ p.video_url }}" rel="nofollow noopener">{{ p.video_url|truncatechars:60 }}</a></div>
+                        {% endif %}
                     </div>
-                    {% if kind == 'video' %}
-                    {% include "social/_post_media.html" with post=p %}
-                    {% endif %}
-                    {% if p.link_blurb %}<div>{{ p.link_blurb|truncatewords:40|linebreaksbr }}</div>{% endif %}
-                    {% if kind != 'video' and p.link_url %}
-                    <div class="muted"><a href="{{ p.link_url }}" rel="nofollow noopener">{{ p.link_url|truncatechars:60 }}</a></div>
-                    {% elif kind == 'video' and p.video_url and not p.is_file_video %}
-                    <div class="muted"><a href="{{ p.video_url }}" rel="nofollow noopener">{{ p.video_url|truncatechars:60 }}</a></div>
-                    {% endif %}
                 </div>
                 {% empty %}<p class="muted">Пока пусто.</p>{% endfor %}
             </div>

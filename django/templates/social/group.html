@@ -297,11 +297,13 @@
                     </form>
                     {% endif %}
                     {% for d in docs %}
-                    <div class="event-list-row">
-                        <b><a href="{% url 'groups.docs.show' group.id d.id %}">{{ d.title }}</a></b>
-                        <div class="muted">
-                            <a href="{% url 'profile' d.social_user.id %}">{{ d.social_user.name }}</a>
-                            {% if d.updated_at %} · {{ d.updated_at|fb_when }}{% endif %}
+                    <div class="event-list-row doc-row">
+                        <div class="list-row-body">
+                            <b><a href="{% url 'groups.docs.show' group.id d.id %}">{{ d.title }}</a></b>
+                            <div class="muted">
+                                <a href="{% url 'profile' d.social_user.id %}">{{ d.social_user.name }}</a>
+                                {% if d.updated_at %} · {{ d.updated_at|fb_when }}{% endif %}
+                            </div>
                         </div>
                     </div>
                     {% empty %}

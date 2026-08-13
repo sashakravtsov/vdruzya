@@ -15,7 +15,7 @@
                 {% if page.cover_url %}
                 <img src="{{ page.cover_url }}" alt="" class="profile-cover-img" width="180">
                 {% else %}
-                <div class="page-cover" style="background:{{ page.cover_color|default:'#3B5998' }};width:180px;height:180px;border:1px solid #B3B3B3"></div>
+                <div class="page-cover page-cover-fallback" style="background:{{ page.cover_color|default:'#3B5998' }}"></div>
                 {% endif %}
             </div>
             <div class="group-join-panel profile-action-links">
@@ -97,7 +97,7 @@
                         <tr><td class="label">Тип:</td><td>{{ industry_label }}</td></tr>
                         {% if page.city %}<tr><td class="label">Город:</td><td>{{ page.city }}</td></tr>{% endif %}
                     </table>
-                    {% if page.description %}<p style="margin-top:8px">{{ page.description|linebreaksbr }}</p>{% endif %}
+                    {% if page.description %}<p class="stack-sm">{{ page.description|linebreaksbr }}</p>{% endif %}
                 </div>
             </div>
             {% else %}
@@ -108,7 +108,7 @@
                         <tr><td class="label">Тип:</td><td>{{ industry_label }}</td></tr>
                         {% if page.city %}<tr><td class="label">Город:</td><td>{{ page.city }}</td></tr>{% endif %}
                     </table>
-                    {% if page.description %}<p style="margin-top:8px">{{ page.description|linebreaksbr }}</p>{% endif %}
+                    {% if page.description %}<p class="stack-sm">{{ page.description|linebreaksbr }}</p>{% endif %}
                 </div>
             </div>
 
@@ -132,11 +132,13 @@
                     {% endif %}
                     {% for e in page_events %}
                     <div class="event-list-row">
-                        <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
-                        <div class="muted">
-                            {{ e.starts_at|date:"j E Y, H:i" }}
-                            {% if e.place %} · {{ e.place }}{% endif %}
-                            · {{ e.n_going }} идут
+                        <div class="list-row-body">
+                            <b><a href="{% url 'events.show' e.id %}">{{ e.title }}</a></b>
+                            <div class="muted">
+                                {{ e.starts_at|date:"j E Y, H:i" }}
+                                {% if e.place %} · {{ e.place }}{% endif %}
+                                · {{ e.n_going }} идут
+                            </div>
                         </div>
                     </div>
                     {% empty %}

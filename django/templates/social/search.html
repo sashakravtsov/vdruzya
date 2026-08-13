@@ -12,7 +12,7 @@
                 <tr>
                     <td class="label">Запрос:</td>
                     <td>
-                        <input class="inputtext" name="q" value="{{ q }}" style="width:220px" autocomplete="off">
+                        <input class="inputtext input-search" name="q" value="{{ q }}"  autocomplete="off">
                         <input type="submit" class="inputsubmit" value="Найти">
                         {% if q %}<a href="{% url 'search' %}">сбросить</a>{% endif %}
                     </td>

@@ -1250,12 +1250,20 @@ button.linkish .ico { margin-right: 2px; }
 .notes-page .note-row,
 .questions-page .question-row,
 .questions-page .answer-row,
-.polls-page .poll-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
+.polls-page .poll-row,
+.links-page .link-row,
+.lists-page .list-row,
+.places-page .review-row,
+.group-page .doc-row { overflow: hidden; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid #D8DFEA; }
 .market-page .market-row:last-child,
 .notes-page .note-row:last-child,
 .questions-page .question-row:last-child,
 .questions-page .answer-row:last-child,
-.polls-page .poll-row:last-child { border-bottom: 0; }
+.polls-page .poll-row:last-child,
+.links-page .link-row:last-child,
+.lists-page .list-row:last-child,
+.places-page .review-row:last-child,
+.group-page .doc-row:last-child { border-bottom: 0; }
 .market-page .market-photo { margin: 0 0 8px; }
 .market-page .market-photo img { max-width: 100%; border: 1px solid #B3B3B3; }
 .note-photo { margin: 4px 0; }
@@ -1263,6 +1271,28 @@ button.linkish .ico { margin-right: 2px; }
 .polls-page .poll-options { width: 100%; }
 .polls-page .poll-options .poll-opt { width: 55%; }
 .polls-page .poll-options .poll-votes { white-space: nowrap; }
+/* classic spacing / form width helpers (replace inline styles) */
+.stack-xs { margin-top: 4px; }
+.stack-sm { margin-top: 8px; }
+.stack-md { margin-top: 10px; }
+.stack-v { margin: 8px 0; }
+.stack-below { margin-bottom: 12px; }
+.inline-gap { margin-left: 8px; }
+.input-city { width: 100px; }
+.friends-find .input-city { width: 120px; }
+.input-sort { width: auto; }
+.input-wide { width: 100%; }
+.input-search { width: 220px; }
+.input-search-wide { width: 280px; }
+.input-comment { width: 80%; }
+.checkin-form { margin-top: 10px; }
+.cover-pick { cursor: pointer; }
+.page-cover-fallback {
+  width: 180px; height: 180px; border: 1px solid #B3B3B3;
+}
+.app-open-btn { padding: 4px 10px; text-decoration: none; }
+.wall-comment-compose .input-comment,
+.wall-comment-compose input.input-comment { width: 80%; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-video { margin-top: 4px; }
 .inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }

@@ -83,7 +83,7 @@
                     </div>
                     {% endif %}
                     {% if me and post.tag_candidates %}
-                    <form method="post" action="{% url 'posts.tag' post.id %}" class="post-tag-form" style="margin-top:4px">{% csrf_token %}
+                    <form method="post" action="{% url 'posts.tag' post.id %}" class="post-tag-form stack-xs">{% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
                         <select name="person" class="inputtext">
                             {% for p in post.tag_candidates %}

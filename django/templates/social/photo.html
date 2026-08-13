@@ -36,7 +36,7 @@
                 {% if photo.title %}<p class="photo-caption">{{ photo.title }}</p>{% endif %}
                 {% if photo.created_at %}<p class="muted">Добавлено {{ photo.created_at|date:"j E Y" }}</p>{% endif %}
 
-                <div class="photo-actions" style="margin:8px 0">
+                <div class="photo-actions stack-v">
                     {% if me %}
                     <form method="post" action="{% url 'albums.photos.like' album.id photo.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish">{% if photo.liked_by_me %}Не нравится{% else %}Мне нравится{% endif %}</button>
@@ -87,7 +87,7 @@
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr>
                             <td class="label">Название:</td>
-                            <td><input class="inputtext" name="title" value="{{ photo.title }}" maxlength="120" style="width:100%"></td>
+                            <td><input class="inputtext input-wide" name="title" value="{{ photo.title }}" maxlength="120"></td>
                         </tr>
                         <tr>
                             <td></td>

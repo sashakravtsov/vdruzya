@@ -21,9 +21,11 @@
             <h4>Мои списки</h4>
             <div class="profile-box-body">
                 {% for l in lists %}
-                <div class="event-list-row">
-                    <b><a href="{% url 'friends.lists.show' l.id %}">{{ l.name }}</a></b>
-                    <span class="muted">({{ l.n }})</span>
+                <div class="event-list-row list-row">
+                    <div class="list-row-body">
+                        <b><a href="{% url 'friends.lists.show' l.id %}">{{ l.name }}</a></b>
+                        <span class="muted">({{ l.n }})</span>
+                    </div>
                 </div>
                 {% empty %}<p class="muted">Создайте список, например «Близкие» или «Работа».</p>{% endfor %}
             </div>

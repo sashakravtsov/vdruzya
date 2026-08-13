@@ -18,8 +18,8 @@
                 <tr>
                     <td class="label">Город:</td>
                     <td>
-                        <input class="inputtext" type="text" name="city" value="{{ city }}" style="width:120px" autocomplete="off">
-                        <select name="sort" class="inputtext" style="width:auto">
+                        <input class="inputtext input-city" type="text" name="city" value="{{ city }}" autocomplete="off">
+                        <select name="sort" class="inputtext input-sort">
                             <option value="name"{% if sort == 'name' %} selected{% endif %}>по имени</option>
                             <option value="recent"{% if sort == 'recent' %} selected{% endif %}>недавние</option>
                         </select>

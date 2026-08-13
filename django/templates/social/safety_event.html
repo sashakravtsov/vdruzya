@@ -2,7 +2,7 @@
 {% load vd %}
 {% block title %}{{ event.title }} — Safety Check{% endblock %}
 {% block pagebody %}
-<div id="pagebody">
+<div id="pagebody" class="safety-page">
     <div id="header">
         <h1>{{ event.title }}</h1>
         <div class="subtitle"><a href="{% url 'safety' %}">← Safety Check</a></div>
@@ -27,7 +27,7 @@
                     <input type="hidden" name="status" value="safe">
                     <input type="submit" class="inputsubmit" value="Я в безопасности">
                 </form>
-                <form method="post" class="inline" style="margin-left:8px">{% csrf_token %}
+                <form method="post" class="inline inline-gap">{% csrf_token %}
                     <input type="hidden" name="status" value="out_of_area">
                     <input type="submit" class="inputbutton" value="Меня нет в зоне">
                 </form>

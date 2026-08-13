@@ -31,7 +31,7 @@
                     {% endif %}
                 </table>
                 {% if are_friends %}
-                <p style="margin-top:8px">
+                <p class="stack-sm">
                     <a href="{% url 'profile.walltowall' other.id %}">Стена к стене</a>
                     ·
                     <a href="{% url 'gifts.send' %}?to={{ other.id }}">Подарок</a>

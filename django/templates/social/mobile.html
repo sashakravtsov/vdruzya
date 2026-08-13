@@ -10,14 +10,14 @@
             <div class="profile-box-body">
                 <p>Откройте сайт ВДрузья в браузере телефона — классический интерфейс рассчитан на узкий экран (фиксированная ширина 760px).</p>
                 <p class="muted">Отдельное приложение не требуется: войдите тем же e-mail и паролем, что и на компьютере.</p>
-                <table class="infotable" style="margin-top:10px">
+                <table class="infotable stack-md">
                     <tr><td class="label">Адрес:</td><td><b>https://vdruzya.ru</b></td></tr>
                     <tr><td class="label">Совет:</td><td>добавьте закладку на главный экран телефона</td></tr>
                 </table>
                 {% if user.is_authenticated %}
-                <p style="margin-top:10px"><a href="{% url 'feed' %}">Перейти на главную</a></p>
+                <p class="stack-md"><a href="{% url 'feed' %}">Перейти на главную</a></p>
                 {% else %}
-                <p style="margin-top:10px"><a href="{% url 'login' %}">Войти</a></p>
+                <p class="stack-md"><a href="{% url 'login' %}">Войти</a></p>
                 {% endif %}
             </div>
         </div>

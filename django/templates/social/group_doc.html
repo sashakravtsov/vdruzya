@@ -36,7 +36,7 @@
                 {% else %}
                 <div class="doc-body">{{ doc.body|linebreaksbr }}</div>
                 {% if is_admin %}
-                <p style="margin-top:8px">
+                <p class="stack-sm">
                     <form method="post" action="{% url 'groups.docs.delete' group.id doc.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish muted" onclick="return confirm('Удалить документ?');">удалить</button>
                     </form>

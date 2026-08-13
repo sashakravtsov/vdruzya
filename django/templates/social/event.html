@@ -24,10 +24,10 @@
                         {% if event.company %}<tr><td class="label">Страница:</td><td><a href="{% url 'pages.show' event.company.id %}">{{ event.company.name }}</a></td></tr>{% endif %}
                         {% if event.community %}<tr><td class="label">Группа:</td><td><a href="{% url 'groups.show' event.community.id %}">{{ event.community.name }}</a></td></tr>{% endif %}
                     </table>
-                    {% if event.description %}<p style="margin-top:8px">{{ event.description|linebreaksbr }}</p>{% endif %}
+                    {% if event.description %}<p class="stack-sm">{{ event.description|linebreaksbr }}</p>{% endif %}
 
                     {% if is_host %}
-                    <p class="muted" style="margin-top:8px">
+                    <p class="muted stack-sm">
                         <a href="{% url 'events.edit' event.id %}">ред.</a>
                         ·
                         <form method="post" action="{% url 'events.delete' event.id %}" class="inline">{% csrf_token %}
@@ -88,7 +88,7 @@
                     {% url 'events.posts' event.id as compose_action %}
                     {% include "social/_wall_compose.html" with form=form action=compose_action next=request.path|add:'?tab=photos' submit="Добавить фото" simple=1 %}
                     {% endif %}
-                    <div class="profile-photo-thumbs" style="margin-top:8px">
+                    <div class="profile-photo-thumbs stack-sm">
                         {% for p in photos %}
                         {% if p.media_url %}
                         <a href="{% url 'posts.show' p.id %}"><img src="{{ p.media_url }}" alt="" width="75" height="75"></a>
@@ -138,7 +138,7 @@
                     <form method="post" action="{% url 'events.invite' event.id %}">{% csrf_token %}
                         {% for f in invite_friends %}
                         <div class="classic-person-row classic-person-row-side">
-                            <label style="cursor:pointer">
+                            <label class="cover-pick">
                                 <input type="checkbox" name="friends" value="{{ f.id }}">
                             </label>
                             <a class="classic-person-name" href="{% url 'profile' f.id %}">
@@ -147,7 +147,7 @@
                             </a>
                         </div>
                         {% endfor %}
-                        <p style="margin-top:8px"><input type="submit" class="inputsubmit" value="Пригласить"></p>
+                        <p class="stack-sm"><input type="submit" class="inputsubmit" value="Пригласить"></p>
                     </form>
                 </div>
             </div>

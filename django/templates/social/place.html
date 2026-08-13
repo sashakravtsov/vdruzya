@@ -20,7 +20,7 @@
                     {% if place.address %}<tr><td class="label">Адрес:</td><td>{{ place.address }}</td></tr>{% endif %}
                 </table>
                 {% if form %}
-                <form method="post" enctype="multipart/form-data" style="margin-top:10px">{% csrf_token %}
+                <form method="post" enctype="multipart/form-data" class="checkin-form">{% csrf_token %}
                     <input type="hidden" name="action" value="checkin">
                     <table class="formtable" cellpadding="0" cellspacing="0">
                         <tr><td class="label">Сообщение:</td><td>{{ form.message }}</td></tr>
@@ -50,11 +50,13 @@
             <h4>Отзывы</h4>
             <div class="profile-box-body">
                 {% for r in reviews %}
-                <div class="event-list-row">
-                    <a href="{% url 'profile' r.social_user.id %}"><b>{{ r.social_user.name }}</b></a>
-                    — {{ r.stars }}/5
-                    {% if r.body %} — {{ r.body }}{% endif %}
-                    {% if r.created_at %}<span class="muted"> · {{ r.created_at|fb_when }}</span>{% endif %}
+                <div class="event-list-row review-row">
+                    <div class="list-row-body">
+                        <a href="{% url 'profile' r.social_user.id %}"><b>{{ r.social_user.name }}</b></a>
+                        — {{ r.stars }}/5
+                        {% if r.body %} — {{ r.body }}{% endif %}
+                        {% if r.created_at %}<span class="muted"> · {{ r.created_at|fb_when }}</span>{% endif %}
+                    </div>
                 </div>
                 {% empty %}<p class="muted">Пока нет отзывов.</p>{% endfor %}
             </div>

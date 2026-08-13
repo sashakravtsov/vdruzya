@@ -18,7 +18,7 @@
                 <tr>
                     <td class="label">Запрос:</td>
                     <td>
-                        <input class="inputtext" name="q" value="{{ q }}" style="width:280px" autocomplete="off">
+                        <input class="inputtext input-search-wide" name="q" value="{{ q }}"  autocomplete="off">
                         <input type="submit" class="inputsubmit" value="Найти">
                         {% if q %}<a href="{% url 'graph' %}">сбросить</a>{% endif %}
                     </td>
