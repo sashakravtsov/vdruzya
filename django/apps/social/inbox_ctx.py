@@ -67,6 +67,7 @@ def build_inbox_ctx(request, me, *, compose_form):
     )
     friends = list(friends_of(me, limit=200))
     preselect = int(to_id) if to_id and str(to_id).isdigit() else None
+    from apps.social import emoji_classic as emo
     from apps.social.gifts import catalog
     stickers = catalog()[:40]
     reply_id = request.GET.get("reply")
@@ -102,4 +103,6 @@ def build_inbox_ctx(request, me, *, compose_form):
         "nav": "inbox",
         "stickers": stickers,
         "reply_preview": reply_preview,
+        "emojis": emo.EMOJIS,
+        "text_emotes": emo.TEXT_EMOTES,
     }

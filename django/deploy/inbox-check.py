@@ -78,7 +78,9 @@ def main():
     css = (root / "static/css/classic.css").read_text()
     body_rule = re.search(r"\.inbox-pane \.msg-line \.msg-body\s*\{[^}]+\}", css)
     assert body_rule and "pre-wrap" not in body_rule.group(0)
-    assert "overflow: hidden" in re.search(r"\.inbox-pane \.msg-line\s*\{[^}]+\}", css, re.S).group(0)
+    line_rule = re.search(r"\.inbox-pane \.msg-line\s*\{[^}]+\}", css, re.S)
+    assert line_rule and "grid-template-columns" in line_rule.group(0)
+    assert "msg-main" in html and "msg-text" in html or "msg-main" in html
     ok("inbox thread layout chrome")
 
     from apps.social import realtime as rt
@@ -88,6 +90,11 @@ def main():
     assert 'id="inbox-typing"' in html
     assert 'data-typing-url="' in html
     assert 'id="inbox-voice-btn"' in html
+    assert "msg-editor" in html and "msg-emoji-grid" in html
+    assert ("msg-sticker-grid" in html) or ("Стикеры пока".encode() in r.content)
+    assert ".msg-day" in (root / "static/css/classic.css").read_text()
+    assert "wireEmojiEditors" in (root / "static/js/realtime.js").read_text(encoding="utf-8")
+    assert "grid-template-columns: 40px" in (root / "static/css/classic.css").read_text()
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "typing"}, secure=True)
     assert r.status_code == 200 and r.json().get("ok")
     r = c.post(f"/inbox/{conv.id}/typing", {"state": "voice"}, secure=True)

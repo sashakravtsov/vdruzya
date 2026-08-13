@@ -33,6 +33,11 @@ class MessageForm(ClassicForm, forms.ModelForm):
         for s in stickers or []:
             choices.append((str(s.id), s.title))
         self.fields["sticker"].choices = choices
+        # Visual picker in Inbox; keep value as hidden field
+        if stickers:
+            self.fields["sticker"].widget = forms.HiddenInput(attrs={"id": "id_sticker"})
+            self.fields["body"].widget.attrs.setdefault("id", "id_message_body")
+            self.fields["body"].widget.attrs.setdefault("class", "inputtext msg-body-input")
 
     def clean(self):
         data = super().clean()
@@ -69,6 +74,10 @@ class ComposeMessageForm(ClassicForm, forms.Form):
         for s in stickers or []:
             choices.append((str(s.id), s.title))
         self.fields["sticker"].choices = choices
+        if stickers:
+            self.fields["sticker"].widget = forms.HiddenInput(attrs={"id": "id_compose_sticker"})
+            self.fields["body"].widget.attrs.setdefault("id", "id_compose_body")
+            self.fields["body"].widget.attrs.setdefault("class", "inputtext msg-body-input")
 
     def clean(self):
         data = super().clean()

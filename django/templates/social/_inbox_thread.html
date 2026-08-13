@@ -20,7 +20,11 @@
 {% endif %}
 <div class="msg-log" id="inbox-thread" data-conv="{{ active.id }}" data-last="{% for m in thread_messages %}{% if forloop.last %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}" data-typing-url="{% url 'inbox.typing' active.id %}" data-message-url="{% url 'inbox.message' active.id %}" data-peer-read="{% if active.peer_read_at %}{{ active.peer_read_at|date:'c' }}{% endif %}" data-first="{% for m in thread_messages %}{% if forloop.first %}{{ m.id }}{% endif %}{% empty %}0{% endfor %}">
     {% for m in thread_messages %}
-    {% include "social/_inbox_line.html" %}
+    {% ifchanged m.created_at|date:"Ymd" %}
+    {% include "social/_inbox_line.html" with show_day=1 %}
+    {% else %}
+    {% include "social/_inbox_line.html" with show_day=0 %}
+    {% endifchanged %}
     {% empty %}<p class="muted">{% if tq %}Ничего не найдено.{% else %}Напишите первое сообщение.{% endif %}</p>{% endfor %}
 </div>
 <p class="msg-typing muted" id="inbox-typing" aria-live="polite" hidden></p>
@@ -32,9 +36,10 @@
 {% endif %}
 <form method="post" action="{% url 'inbox.message' active.id %}" class="msg-compose" id="inbox-compose" enctype="multipart/form-data">{% csrf_token %}
     {{ form.reply_to }}
+    {{ form.sticker }}
+    {% include "social/_inbox_emoji_bar.html" with target_id="id_message_body" sticker_input_id="id_sticker" %}
     {{ form.body }}
     <p class="wallposter-file">Фото / видео: {{ form.photo }}</p>
-    {% if form.sticker %}<p class="wallposter-file">Стикер: {{ form.sticker }}</p>{% endif %}
     {{ form.waveform }}
     {{ form.duration_ms }}
     <p class="wallposter-file msg-voice-row">

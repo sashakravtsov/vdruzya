@@ -1,0 +1,38 @@
+{# Old-school emoji + sticker picker — no external JS libraries. #}
+<div class="msg-editor" data-emoji-for="{{ target_id }}">
+    <p class="msg-editor-tabs muted">
+        <button type="button" class="linkish msg-editor-tab is-on" data-pane="emoji">смайлы</button>
+        ·
+        <button type="button" class="linkish msg-editor-tab" data-pane="stickers">стикеры</button>
+        <span class="msg-sticker-clear muted" hidden>
+            · <button type="button" class="linkish muted" data-sticker-clear="1">убрать стикер</button>
+        </span>
+    </p>
+    <div class="msg-emoji-pane" data-pane-body="emoji">
+        <div class="msg-emoji-grid" role="listbox" aria-label="Смайлы">
+            {% for e in emojis %}
+            <button type="button" class="msg-emoji-btn" data-emoji="{{ e }}" title="{{ e }}">{{ e }}</button>
+            {% endfor %}
+        </div>
+        <p class="msg-emoji-text muted">
+            текст:
+            {% for e in text_emotes %}
+            <button type="button" class="linkish msg-emoji-btn" data-emoji="{{ e }}">{{ e }}</button>
+            {% endfor %}
+        </p>
+    </div>
+    <div class="msg-sticker-pane" data-pane-body="stickers" hidden>
+        {% if stickers %}
+        <div class="msg-sticker-grid" data-sticker-input="{{ sticker_input_id }}">
+            {% for s in stickers %}
+            <button type="button" class="msg-sticker-btn gift-tile gift-tile-sm" data-sticker-id="{{ s.id }}" title="{{ s.title }}" style="--gift-bg:{{ s.bg }};--gift-fg:{{ s.fg }}">
+                {% if s.image_url %}<img src="{{ s.image_url }}" alt="{{ s.title }}">{% else %}<span class="gift-tile-title">{{ s.title }}</span>{% endif %}
+            </button>
+            {% endfor %}
+        </div>
+        <p class="file-hint muted">Стикеры: Twemoji (CC-BY 4.0)</p>
+        {% else %}
+        <p class="muted">Стикеры пока не загружены.</p>
+        {% endif %}
+    </div>
+</div>
