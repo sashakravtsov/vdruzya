@@ -86,10 +86,17 @@ def main():
     assert safety_items[0].get("story_key", "").startswith("safety:"), safety_items[0].get("story_key")
     ok("safety checkin + feed")
 
+    # Legacy App Center slugs redirect to real modules
     r = c.get("/apps/saves", secure=True)
+    assert r.status_code in (200, 301, 302)
+    if r.status_code in (301, 302):
+        r = c.get("/saves", secure=True)
     assert r.status_code == 200
     assert "Сохранённое".encode() in r.content
     r = c.get("/apps/safety", secure=True)
+    assert r.status_code in (200, 301, 302)
+    if r.status_code in (301, 302):
+        r = c.get("/safety", secure=True)
     assert r.status_code == 200
     assert "Проверка безопасности".encode() in r.content
     ok("app center entries")
