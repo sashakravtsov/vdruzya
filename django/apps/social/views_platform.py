@@ -349,16 +349,34 @@ def _canvas_truth(request, me, app):
 
 
 def _canvas_calculator(request, me, app):
+    from apps.social.calculators import get_tool, run_tool, tools_by_topic, TOOLS
+
+    tool_slug = (request.GET.get("tool") or request.POST.get("tool") or "").strip()
+    tool = get_tool(tool_slug) if tool_slug else None
     result = None
-    a = b = "0"
-    op = "+"
-    if request.method == "POST":
-        a = (request.POST.get("a") or "0")[:40]
-        b = (request.POST.get("b") or "0")[:40]
-        op = (request.POST.get("op") or "+")[:1]
-        result = pa.calc_eval(a, op, b)
+    form_fields = []
+    if tool:
+        raw = {}
+        if request.method == "POST":
+            for field in tool["fields"]:
+                raw[field["name"]] = (request.POST.get(field["name"]) or "")[:120]
+            result = run_tool(tool["slug"], raw)
+        else:
+            for field in tool["fields"]:
+                raw[field["name"]] = str(field.get("default") or "")
+        for field in tool["fields"]:
+            row = dict(field)
+            current = raw.get(field["name"], "")
+            row["value"] = current
+            if field.get("type") == "choice":
+                row["choices_marked"] = [
+                    {"value": val, "label": label, "selected": str(val) == str(current)}
+                    for val, label in field.get("choices") or []
+                ]
+            form_fields.append(row)
     return render(request, "social/apps/canvas_calculator.html", {
-        "me": me, "app": app, "a": a, "b": b, "op": op, "result": result,
+        "me": me, "app": app, "tool": tool, "tools": TOOLS,
+        "topics": tools_by_topic(), "form_fields": form_fields, "result": result,
         "nav": "apps", "installed": True,
     })
 

@@ -772,8 +772,11 @@ fi
 if ! grep -q 'name="apps.canvas"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'classic-dialog.js' "${ROOT}/django/templates/layout.html" 2>/dev/null \
   || ! grep -q 'name="albums.photos.modal"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'snav-more' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null \
   || ! grep -q 'snav-apps-label' "${ROOT}/django/templates/partials/sidebar.html" 2>/dev/null \
+  || ! grep -q 'Калькуляторы' "${ROOT}/django/apps/social/platform_apps.py" 2>/dev/null \
   || ! grep -q 'calculator' "${ROOT}/django/apps/social/platform_apps.py" 2>/dev/null \
+  || ! test -f "${ROOT}/django/apps/social/calculators/compute.py" \
   || ! grep -q 'name="developers"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'name="apps.authorize"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
   || ! grep -q 'name="api.oauth.token"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
@@ -810,5 +813,11 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/techdebt-check.py; then
   echo "OK   techdebt probes"
 else
   echo "FAIL techdebt probes"; FAIL=1
+fi
+echo "== Calculator suite + compact snav probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/calc-suite-check.py; then
+  echo "OK   calculator suite + compact snav"
+else
+  echo "FAIL calculator suite + compact snav"; FAIL=1
 fi
 exit "$FAIL"

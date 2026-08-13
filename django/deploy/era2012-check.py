@@ -82,7 +82,7 @@ def main():
     ok("platform canvas causes")
 
     for slug, needle in (
-        ("calculator", "Калькулятор"),
+        ("calculator", "Калькуляторы"),
         ("weather", "Погода"),
         ("horoscope", "Гороскоп"),
         ("dating", "Знакомства"),
@@ -100,8 +100,9 @@ def main():
 
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
-    assert "Закладки приложений".encode() in r.content or b"snav-app" in r.content
-    ok("sidebar app bookmarks")
+    assert b"snav-more" in r.content and "Ещё разделы".encode() in r.content
+    assert "Закладки".encode() in r.content or b"snav-app" in r.content
+    ok("sidebar compact snav + app bookmarks")
 
     r = c.get("/developers", secure=True)
     assert r.status_code == 200 and "Кабинет разработчика".encode() in r.content

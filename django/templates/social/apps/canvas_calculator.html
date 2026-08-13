@@ -1,30 +1,71 @@
 {% extends "social/apps/canvas_base.html" %}
 {% block canvas_body %}
-<div class="profile-box">
-    <h4>Калькулятор</h4>
+<div class="profile-box calc-suite">
+    <h4>{% if tool %}{{ tool.name }}{% else %}Калькуляторы{% endif %}</h4>
     <div class="profile-box-body">
-        <form method="post">{% csrf_token %}
+        {% if tool %}
+        <p class="calc-back"><a href="{% url 'apps.canvas' 'calculator' %}">← все калькуляторы</a></p>
+        <p class="muted">{{ tool.blurb }}</p>
+        <form method="post" action="{% url 'apps.canvas' 'calculator' %}?tool={{ tool.slug }}">
+            {% csrf_token %}
+            <input type="hidden" name="tool" value="{{ tool.slug }}">
             <table class="formtable" cellspacing="0">
+                {% for field in form_fields %}
                 <tr>
-                    <td class="label">Выражение:</td>
+                    <td class="label">{{ field.label }}:</td>
                     <td>
-                        <input class="inputtext" name="a" value="{{ a }}" size="10">
-                        <select name="op">
-                            <option value="+" {% if op == '+' %}selected{% endif %}>+</option>
-                            <option value="-" {% if op == '-' %}selected{% endif %}>−</option>
-                            <option value="*" {% if op == '*' %}selected{% endif %}>×</option>
-                            <option value="/" {% if op == '/' %}selected{% endif %}>÷</option>
+                        {% if field.type == "choice" %}
+                        <select name="{{ field.name }}">
+                            {% for opt in field.choices_marked %}
+                            <option value="{{ opt.value }}"{% if opt.selected %} selected{% endif %}>{{ opt.label }}</option>
+                            {% endfor %}
                         </select>
-                        <input class="inputtext" name="b" value="{{ b }}" size="10">
-                        <input type="submit" class="inputsubmit" value="=">
+                        {% else %}
+                        <input class="inputtext" name="{{ field.name }}" value="{{ field.value }}" size="24"{% if field.type == "date" %} placeholder="ГГГГ-ММ-ДД"{% endif %}>
+                        {% endif %}
+                        {% if field.hint %}<div class="muted">{{ field.hint }}</div>{% endif %}
                     </td>
                 </tr>
-                {% if result is not None %}
-                <tr><td class="label">Результат:</td><td><b>{{ result }}</b></td></tr>
-                {% endif %}
+                {% endfor %}
+                <tr>
+                    <td></td>
+                    <td><input type="submit" class="inputsubmit" value="Рассчитать"></td>
+                </tr>
             </table>
         </form>
-        <p class="muted">Разработчик: ВДрузья</p>
+        {% if result %}
+        <div class="calc-result">
+            {% if result.ok %}
+            <b>{{ result.title }}</b>
+            <ul class="calc-notes">
+                {% for line in result.lines %}<li>{{ line }}</li>{% endfor %}
+            </ul>
+            {% if result.notes %}
+            <ul class="calc-notes muted">
+                {% for note in result.notes %}<li>{{ note }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+            {% else %}
+            <b>{{ result.error }}</b>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="muted">50 калькуляторов по спросу Wordstat — формулы прозрачные, расчёт на стороне ВДрузья.</p>
+        <div class="calc-topics">
+            {% for topic, items in topics.items %}
+            <div class="calc-topic">
+                <h5>{{ topic }}</h5>
+                <ul class="calc-tool-list">
+                    {% for t in items %}
+                    <li><a href="{% url 'apps.canvas' 'calculator' %}?tool={{ t.slug }}">{{ t.name }}</a> — {{ t.blurb }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <p class="muted">Разработчик: ВДрузья · без стороннего iframe</p>
     </div>
 </div>
 {% endblock %}

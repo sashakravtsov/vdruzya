@@ -204,6 +204,7 @@ def main():
     from apps.social import platform_apps as pa
     assert pa.app_by_slug("calculator") and pa.app_by_slug("dating")
     assert pa.app_by_slug("calculator")["developer"] == "ВДрузья"
+    assert pa.app_by_slug("calculator")["name"] == "Калькуляторы"
     assert len(pa.PLATFORM_APPS) >= 12
     assert "Список друзей" in pa.permissions_for(pa.app_by_slug("dating"))
     r = c.get("/apps/calculator", secure=True)

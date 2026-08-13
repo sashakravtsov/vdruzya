@@ -19,11 +19,19 @@ def classic(request):
             unread_m = ch.unread_count(me)
             cache.set(key, unread_m, 30)
         sidebar_apps = pa.my_apps(me)
+    nav = (request.resolver_match.url_name if request.resolver_match else "") or ""
     return {
         "me": me,
         "unread_messages": unread_m,
         "is_home": bool(request.resolver_match and request.resolver_match.url_name == "home"),
-        "nav": (request.resolver_match.url_name if request.resolver_match else "") or "",
+        "nav": nav,
         "sidebar_apps": sidebar_apps,
         "sidebar_apps_key": ",".join(a["slug"] for a in sidebar_apps),
+        # Secondary snav items collapsed under «Ещё разделы»
+        "snav_more_navs": {
+            "notes", "links", "videos", "marketplace", "places", "questions",
+            "polls", "og", "graph", "trending", "hashtag", "nearby", "saves",
+            "safety", "networks", "gifts", "birthdays", "anniversaries",
+            "lists", "collections", "developers",
+        },
     }
