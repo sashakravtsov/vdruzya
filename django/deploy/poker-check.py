@@ -85,6 +85,29 @@ def main():
     assert room.max_seats == 6 and room.join_code
     meta = poker.room_view(room, me)
     assert meta["max_seats"] == 6 and meta["filled_n"] >= 1
+
+    c = Client()
+    c.force_login(users[0])
+
+    from django.conf import settings
+    from apps.social.poker import realtime as rt
+    from apps.social.poker.routing import websocket_urlpatterns
+
+    assert "channels" in settings.INSTALLED_APPS
+    assert getattr(settings, "CHANNEL_LAYERS", None)
+    assert websocket_urlpatterns
+    ok("channels + poker websocket routes")
+
+    # LIVE room hooks while lobby is still open (before deal redirects to table).
+    room_api = c.get(f"/apps/poker/api/room/{room.id}", secure=True)
+    assert room_api.status_code == 200
+    assert room_api.json().get("type") == "room"
+    room_html = c.get(f"/apps/poker/canvas?tab=room&id={room.id}", secure=True).content
+    assert b"poker-realtime" in room_html
+    assert b"/ws/poker/room/" in room_html
+    assert b'data-poker-rt="room"' in room_html
+    ok("poker room LIVE lobby hooks")
+
     dealt = None
     if len(users) >= 2:
         peer = profile_of(users[1])
@@ -112,8 +135,6 @@ def main():
         pass
     ok("daily bonus")
 
-    c = Client()
-    c.force_login(users[0])
     for tab in ("play", "rooms", "learn", "puzzles", "bank", "leaders", "ratings", "champs"):
         resp = c.get(f"/apps/poker/canvas?tab={tab}", secure=True)
         assert resp.status_code == 200, tab
@@ -132,24 +153,6 @@ def main():
     assert "Ачивки".encode() in bank
     ok("canvas multi + engagement UI")
 
-    from django.conf import settings
-
-    assert "channels" in settings.INSTALLED_APPS
-    assert getattr(settings, "CHANNEL_LAYERS", None)
-    from apps.social.poker.routing import websocket_urlpatterns
-
-    assert websocket_urlpatterns
-    ok("channels + poker websocket routes")
-
-    from apps.social.poker import realtime as rt
-
-    room_api = c.get(f"/apps/poker/api/room/{room.id}", secure=True)
-    assert room_api.status_code == 200
-    assert room_api.json().get("type") == "room"
-    room_html = c.get(f"/apps/poker/canvas?tab=room&id={room.id}", secure=True).content
-    assert b"poker-realtime" in room_html  # hashed static name ok
-    assert b"/ws/poker/room/" in room_html
-    assert b"data-poker-rt=\"room\"" in room_html or b"data-poker-rt='room'" in room_html
     if dealt is not None:
         snap = rt.serialize_table(dealt, me)
         assert snap["type"] == "table" and "board_slots" in snap
@@ -160,9 +163,32 @@ def main():
         assert b"poker-realtime" in table_html
         assert b"data-ws-url" in table_html
         assert b"/ws/poker/game/" in table_html
-        ok("poker JSON API + LIVE canvas hooks")
+        ok("poker JSON API + LIVE table hooks")
+
+        # Channels consumer smoke (auth via scope user).
+        import asyncio
+        from channels.testing import WebsocketCommunicator
+        from channels.routing import URLRouter
+        from django.urls import re_path
+        from apps.social.poker.consumers import PokerGameConsumer, PokerRoomConsumer
+
+        async def _ws():
+            app = URLRouter([
+                re_path(r"^ws/poker/game/(?P<game_id>\d+)/$", PokerGameConsumer.as_asgi()),
+                re_path(r"^ws/poker/room/(?P<room_id>\d+)/$", PokerRoomConsumer.as_asgi()),
+            ])
+            gcomm = WebsocketCommunicator(app, f"/ws/poker/game/{dealt.id}/")
+            gcomm.scope["user"] = users[0]
+            ok_g, _ = await gcomm.connect()
+            assert ok_g
+            msg = await gcomm.receive_json_from(timeout=5)
+            assert msg.get("type") == "table"
+            await gcomm.disconnect()
+
+        asyncio.run(_ws())
+        ok("poker websocket consumer snapshot")
     else:
-        ok("poker room LIVE hooks (deal skipped: need 2+ users)")
+        ok("poker table LIVE skipped (need 2+ users)")
 
     print("ALL poker probes passed")
 
