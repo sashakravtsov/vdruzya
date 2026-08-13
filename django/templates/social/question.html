@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Вопрос — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="questions-page">
+    <div id="header" class="withsubtitle">
+        <h1>Вопрос</h1>
+        <div class="subtitle"><a href="{% url 'questions' %}">← вопросы</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>{{ question.social_user.name }} спрашивает</h4>
+            <div class="profile-box-body">
+                <p><b>{{ question.body }}</b></p>
+                {% if question.photo_url %}
+                <p class="event-cover"><img src="{{ question.photo_url }}" alt="" class="news-photo"></p>
+                {% endif %}
+                {% if question.created_at %}<p class="muted">{{ question.created_at|fb_when }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Ответы</h4>
+            <div class="profile-box-body">
+                {% if form %}
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Ваш ответ:</td><td>{{ form.body }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Ответить"></td></tr>
+                    </table>
+                </form>
+                {% endif %}
+                {% for a in answers %}
+                <div class="event-list-row" style="margin-top:10px">
+                    <a href="{% url 'profile' a.social_user.id %}"><b>{{ a.social_user.name }}</b></a>:
+                    {{ a.body }}
+                    <div class="muted">
+                        {{ a.n_votes }} гол.
+                        {% if me %}
+                        ·
+                        <form method="post" action="{% url 'questions.vote' question.id a.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="linkish">{% if a.voted_by_me %}убрать голос{% else %}голосовать{% endif %}</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Пока нет ответов. Будьте первым.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

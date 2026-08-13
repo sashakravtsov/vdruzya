@@ -1,0 +1,9 @@
+{# Classic FB-2005 file row: label + Browse… + hint. Expects `field` and optional `hint`. #}
+<tr>
+    <td class="label">{% if label %}{{ label }}{% else %}{{ field.label }}{% endif %}:</td>
+    <td>
+        {{ field }}
+        <div class="file-hint muted">{% if hint %}{{ hint }}{% else %}JPEG, PNG или GIF · до 3 МБ{% endif %}</div>
+        {% if field.errors %}<div class="error">{{ field.errors }}</div>{% endif %}
+    </td>
+</tr>
