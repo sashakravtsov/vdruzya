@@ -31,7 +31,7 @@
                     {% endif %}
                 </table>
                 {% if are_friends %}
-                <p class="stack-sm">
+                <div class="stack-sm action-row">
                     <a href="{% url 'profile.walltowall' other.id %}">Стена к стене</a>
                     ·
                     <a href="{% url 'gifts.send' %}?to={{ other.id }}">Подарок</a>
@@ -39,7 +39,7 @@
                     <form method="post" action="{% url 'inbox.start' other.id %}" class="inline">{% csrf_token %}
                         <button type="submit" class="linkish">Написать</button>
                     </form>
-                </p>
+                </div>
                 {% endif %}
             </div>
         </div>

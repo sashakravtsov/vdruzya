@@ -2,7 +2,7 @@
 {% load vd %}
 {% block title %}Коллекции — ВДрузья{% endblock %}
 {% block pagebody %}
-<div id="pagebody" class="groups-index">
+<div id="pagebody" class="collections-page">
     <div id="header"><h1>Коллекции</h1></div>
     <div id="content">
         {% include "partials/flash.html" %}
@@ -35,11 +35,13 @@
                 {% for c in mine %}
                 <div class="classic-person-row">
                     {% include "social/_list_thumb.html" with url=c.cover_url href=c.get_absolute_url %}
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'collections.delete' c.id %}" class="inline">{% csrf_token %}
+                            <button type="submit" class="linkish muted" onclick="return confirm('Удалить коллекцию?');">удалить</button>
+                        </form>
+                    </span>
                     <a href="{% url 'collections.show' c.id %}"><b>{{ c.title }}</b></a>
                     <span class="muted"> · {% if c.visibility == 'public' %}всем{% elif c.visibility == 'friends' %}друзьям{% else %}только мне{% endif %}</span>
-                    <form method="post" action="{% url 'collections.delete' c.id %}" class="inline">{% csrf_token %}
-                        <button type="submit" class="linkish muted" onclick="return confirm('Удалить коллекцию?');">удалить</button>
-                    </form>
                     {% if c.description %}<div class="muted">{{ c.description }}</div>{% endif %}
                 </div>
                 {% empty %}<p class="muted">Пока нет коллекций.</p>{% endfor %}

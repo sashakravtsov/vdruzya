@@ -53,7 +53,7 @@
         <div class="minifeed-item">
             <span class="ico ico-note news-ico"></span>
             <b>{{ m.title }}</b>
-            <span class="muted"> · {{ m.occurred_on|date:"d.m.Y" }} · {{ m.kind }}</span>
+            <span class="muted"> · {{ m.occurred_on|date:"d.m.Y" }} · {{ m.kind|ru_label }}</span>
             {% if m.body %}<div class="wall-body">{{ m.body }}</div>{% endif %}
             {% if is_own %}
             <form method="post" action="{% url 'profile.milestones.delete' profile.id m.id %}" class="inline">{% csrf_token %}

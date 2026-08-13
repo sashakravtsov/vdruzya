@@ -44,7 +44,7 @@
 
         <div class="feed-rail">
             <div class="profile-box">
-                <h4>Ticker</h4>
+                <h4>Лента событий</h4>
                 <div class="profile-box-body">
                     {% if ticker %}
                         {% for t in ticker %}
@@ -104,7 +104,7 @@
                         {% for s in saved_rail %}
                         <div class="rail-row">
                             <a href="{{ s.get_absolute_url }}">{{ s.title|default:"Сохранено" }}</a>
-                            <span class="muted"> · {{ s.kind }}</span>
+                            <span class="muted"> · {{ s.kind|ru_label }}</span>
                         </div>
                         {% endfor %}
                     {% else %}

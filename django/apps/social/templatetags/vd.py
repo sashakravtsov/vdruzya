@@ -40,6 +40,22 @@ _LABELS = {
     "moderator": "модератор",
     "creator": "создатель",
     "member": "участник",
+    # saves / collection item kinds
+    "post": "пост",
+    "link": "ссылка",
+    "page": "страница",
+    "place": "место",
+    "event": "событие",
+    # timeline milestones (profile); page «life» overridden in template
+    "life": "Жизнь",
+    "work": "Работа",
+    "school": "Учёба",
+    "travel": "Путешествие",
+    "founded": "Основание",
+    "launch": "Запуск",
+    "award": "Награда",
+    "product": "Продукт",
+    "custom": "Другое",
     **_GROUP_LABELS,
     **_PAGE_LABELS,
 }

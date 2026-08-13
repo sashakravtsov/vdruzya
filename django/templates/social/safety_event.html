@@ -54,12 +54,17 @@
             <div class="profile-box-body">
                 {% for person in needing %}
                 <div class="classic-person-row">
-                    {% include "social/_person_row.html" with person=person %}
-                    <form method="post" class="inline">{% csrf_token %}
-                        <input type="hidden" name="status" value="safe">
-                        <input type="hidden" name="friend_id" value="{{ person.id }}">
-                        <button type="submit" class="linkish">отметить в безопасности</button>
-                    </form>
+                    <span class="classic-inline-actions">
+                        <form method="post" class="inline">{% csrf_token %}
+                            <input type="hidden" name="status" value="safe">
+                            <input type="hidden" name="friend_id" value="{{ person.id }}">
+                            <button type="submit" class="linkish">отметить в безопасности</button>
+                        </form>
+                    </span>
+                    <a class="classic-person-name" href="{% url 'profile' person.id %}">
+                        {% avatar person 50 %}
+                        <span><b>{{ person.name }}</b></span>
+                    </a>
                 </div>
                 {% endfor %}
             </div>

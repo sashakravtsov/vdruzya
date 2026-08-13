@@ -32,15 +32,17 @@
                     {% endif %}
                     <span>
                         <a href="{{ s.get_absolute_url }}"><b>{{ s.title|default:"Без названия" }}</b></a>
-                        <span class="muted"> · {{ s.kind }}</span>
+                        <span class="muted"> · {{ s.kind|ru_label }}</span>
                         {% if s.created_at %}<span class="muted"> · {{ s.created_at|fb_when }}</span>{% endif %}
                         {% if s.post and s.post.snippet_text %}<div class="muted">{{ s.post.snippet_text|truncatewords:20 }}</div>{% endif %}
                         {% if s.url and not s.post_id %}<div class="muted"><a href="{{ s.url }}" rel="nofollow noopener">{{ s.url }}</a></div>{% endif %}
                     </span>
-                    <form method="post" action="{% url 'saves.delete' s.id %}" class="inline">{% csrf_token %}
-                        <input type="hidden" name="next" value="{% url 'saves' %}{% if kind %}?kind={{ kind }}{% endif %}">
-                        <button type="submit" class="linkish muted">удалить</button>
-                    </form>
+                    <span class="classic-inline-actions">
+                        <form method="post" action="{% url 'saves.delete' s.id %}" class="inline">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'saves' %}{% if kind %}?kind={{ kind }}{% endif %}">
+                            <button type="submit" class="linkish muted">удалить</button>
+                        </form>
+                    </span>
                 </div>
                 {% empty %}
                 <p class="muted">Пока пусто. На стене или в ленте нажмите «Сохранить».</p>

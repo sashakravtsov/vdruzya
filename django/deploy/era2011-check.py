@@ -119,7 +119,7 @@ def main():
 
     r = c.get("/feed", secure=True)
     assert r.status_code == 200
-    assert b"Ticker" in r.content
+    assert "Лента событий".encode("utf-8") in r.content
     ticker = e11.ticker_items(me, 12)
     assert isinstance(ticker, list)
     ok("ticker rail")

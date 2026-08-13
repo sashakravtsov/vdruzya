@@ -195,6 +195,8 @@ img.avatar { border: 1px solid #B3B3B3; vertical-align: middle; }
   float: right; color: #777; font-weight: normal; text-decoration: none;
 }
 .profile-box > h4 .edit:hover { color: var(--fb); }
+.profile-box > h4 span.edit a { color: #777; font-weight: normal; text-decoration: none; }
+.profile-box > h4 span.edit a:hover { color: var(--fb); }
 .profile-box-body { padding: 8px; }
 .profile-box-body p { margin: 0 0 6px; }
 /* FB 2005–06 status under picture (not in blue #header) */
@@ -939,6 +941,7 @@ button.linkish .ico { margin-right: 2px; }
   color: #000;
 }
 .about #faqindex { line-height: 16px; padding: 0 0 10px; overflow: hidden; }
+.about #faqindex .faq-col { width: 48%; float: left; }
 .about #faqindex .faq-link { margin: 4px 0; }
 .about #faqanswers { line-height: 16px; padding: 0 0 10px; }
 .about #faqanswers p { margin: 0 0 12px; padding-right: 40px; }
@@ -1169,6 +1172,7 @@ button.linkish .ico { margin-right: 2px; }
   display: block; float: left; width: 90px; height: 90px; margin: 0 8px 8px 0;
   border: solid 1px #B3B3B3; text-align: center; text-decoration: none;
   box-sizing: border-box; position: relative; overflow: hidden;
+  background: var(--gift-bg, #eee); color: var(--gift-fg, #333);
 }
 .gift-tile img { display: block; width: 100%; height: 100%; border: 0; }
 .places-page .place-row { overflow: hidden; }
@@ -1275,6 +1279,7 @@ button.linkish .ico { margin-right: 2px; }
 .stack-xs { margin-top: 4px; }
 .stack-sm { margin-top: 8px; }
 .stack-md { margin-top: 10px; }
+.stack-lg { margin-top: 16px; }
 .stack-v { margin: 8px 0; }
 .stack-below { margin-bottom: 12px; }
 .inline-gap { margin-left: 8px; }
@@ -1289,6 +1294,7 @@ button.linkish .ico { margin-right: 2px; }
 .cover-pick { cursor: pointer; }
 .page-cover-fallback {
   width: 180px; height: 180px; border: 1px solid #B3B3B3;
+  background: var(--page-cover, #3B5998);
 }
 .app-open-btn { padding: 4px 10px; text-decoration: none; }
 .wall-comment-compose .input-comment,
@@ -1309,7 +1315,21 @@ button.linkish .ico { margin-right: 2px; }
 .safety-page #content,
 .trending-page #content,
 .hashtag-page #content,
-.mobile-page #content { padding: 10px; }
+.mobile-page #content,
+.collections-page #content,
+.apps-index #content,
+.page-edit-page #content { padding: 10px 12px 14px; }
+.collections-page .formtable,
+.apps-index .formtable,
+.page-edit-page .formtable { width: 100%; max-width: 480px; }
+.collections-page .formtable .label,
+.apps-index .formtable .label,
+.page-edit-page .formtable .label {
+  width: 120px; color: #666; vertical-align: top; padding-right: 8px;
+}
+.collections-page .formtable td,
+.apps-index .formtable td,
+.page-edit-page .formtable td { padding: 3px 0; vertical-align: top; }
 .inbox-pane .msg-photo { max-width: 100%; border: 1px solid #B3B3B3; margin-top: 4px; }
 .inbox-pane .msg-video { margin-top: 4px; }
 .inbox-pane .msg-video video.msg-photo { display: block; max-height: 280px; background: #000; }

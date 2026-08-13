@@ -53,7 +53,7 @@
         <div class="minifeed-item">
             <span class="ico ico-note news-ico"></span>
             <b>{{ m.title }}</b>
-            <span class="muted"> · {{ m.occurred_on|date:"d.m.Y" }} · {{ m.kind }}</span>
+            <span class="muted"> · {{ m.occurred_on|date:"d.m.Y" }} · {% if m.kind == 'life' %}История{% else %}{{ m.kind|ru_label }}{% endif %}</span>
             {% if m.body %}<div class="wall-body">{{ m.body }}</div>{% endif %}
             {% if is_admin %}
             <form method="post" action="{% url 'pages.milestones.delete' page.id m.id %}" class="inline">{% csrf_token %}

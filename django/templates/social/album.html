@@ -11,8 +11,7 @@
         {% include "partials/flash.html" %}
 
         <p class="classic-page-lead">
-            Альбом · {% if album.visibility == 'public' %}Всем{% elif album.visibility == 'private' %}Только мне{% else %}Друзьям{% endif %}
-            · <a href="{% url 'profile' album.social_user.id %}">{{ album.social_user.name }}</a>
+            <a href="{% url 'profile' album.social_user.id %}">{{ album.social_user.name }}</a>
             {% if is_owner %}
             · <a href="{% url 'albums' %}">Все альбомы</a>
             · <a href="{% url 'albums.edit' album.id %}">ред.</a>

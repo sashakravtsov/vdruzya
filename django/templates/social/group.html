@@ -3,7 +3,7 @@
 {% block title %}{{ group.name }} — ВДрузья{% endblock %}
 {% block pagebody %}
 <div id="pagebody" class="group-page">
-    <div id="header" class="withsubtitle">
+    <div id="header"{% if group.category %} class="withsubtitle"{% endif %}>
         <h1>{{ group.name }}</h1>
         {% if group.category %}<div class="subtitle">{{ group.category|ru_label }}</div>{% endif %}
     </div>

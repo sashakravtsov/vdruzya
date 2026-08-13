@@ -15,7 +15,7 @@
                 {% if page.cover_url %}
                 <img src="{{ page.cover_url }}" alt="" class="profile-cover-img" width="180">
                 {% else %}
-                <div class="page-cover page-cover-fallback" style="background:{{ page.cover_color|default:'#3B5998' }}"></div>
+                <div class="page-cover page-cover-fallback" style="--page-cover:{{ page.cover_color|default:'#3B5998' }}"></div>
                 {% endif %}
             </div>
             <div class="group-join-panel profile-action-links">

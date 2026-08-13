@@ -23,7 +23,7 @@
             <div class="profile-box-body">
                 <table class="infotable">
                     <tr><td class="label">Код:</td><td><b>{{ invite_code }}</b> · <a href="{% url 'invite.mine' %}">страница приглашения</a></td></tr>
-                    <tr><td class="label">Ссылка:</td><td><input class="inputtext" readonly value="{{ invite_url }}" onclick="this.select()" style="width:100%;max-width:360px"></td></tr>
+                    <tr><td class="label">Ссылка:</td><td><input class="inputtext" readonly value="{{ invite_url }}" onclick="this.select()"></td></tr>
                 </table>
             </div>
         </div>
