@@ -39,7 +39,8 @@ def main():
     assert r.status_code == 200 and "Приложения".encode() in r.content
     # Platform App Center (first-party canvas) — not site-module directory
     assert "Дела".encode() in r.content or "Викторины".encode() in r.content
-    assert "Избранные".encode() in r.content
+    assert "Рекомендуемые".encode() in r.content or "Избранные".encode() in r.content
+    assert "В закладки".encode() in r.content or "Мои приложения".encode() in r.content
     ok("apps catalog")
 
     r = c.get("/pages", secure=True)
