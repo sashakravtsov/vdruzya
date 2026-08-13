@@ -83,8 +83,10 @@ def main():
     puzzles_html = c.get("/apps/chess/canvas?tab=puzzles", secure=True).content
     assert "Задачи".encode() in puzzles_html
     assert "Мат в 1 ход".encode() in puzzles_html
-    assert b"chess-board.js" in puzzles_html
+    assert b"chess-board" in puzzles_html  # hashed static name under Manifest storage
     assert b"data-chess-live" in puzzles_html
+    assert b"json_script" not in puzzles_html  # rendered as <script type="application/json">
+    assert b"application/json" in puzzles_html
     assert "Чемпионат недели".encode() in c.get("/apps/chess/canvas?tab=champs", secure=True).content
     play = c.get("/apps/chess/canvas?tab=play", secure=True).content
     assert "Учитывать в чемпионате".encode() in play
