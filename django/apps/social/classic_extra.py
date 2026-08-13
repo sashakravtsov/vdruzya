@@ -2,11 +2,10 @@
 import re
 from urllib.parse import urlparse
 
-from django.db.models import Count, Q
+from django.db.models import Count
 
 from apps.social.models import (
-    Education, Experience, FriendList, FriendListMember, MarketplaceListing,
-    Post, SocialProfile, POST_DEFER, profile_related,
+    Education, Experience, Post, SocialProfile, POST_DEFER, profile_related,
 )
 from apps.social.services import friend_ids, now, post_visible_q
 
@@ -165,118 +164,7 @@ def notes_feed(viewer, *, mine=False, limit=40):
     return list(qs[:limit])
 
 
-def market_list(q="", place="", *, mine=False, viewer=None, limit=40):
-    qs = MarketplaceListing.objects.select_related("social_user").order_by("-id")
-    if mine and viewer:
-        qs = qs.filter(social_user=viewer)
-    if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-    if place:
-        qs = qs.filter(place__icontains=place)
-    return list(qs[:limit])
-
-
-def market_create(me, *, title, price="", place="", description="", photo=None):
-    from apps.social.media import try_save_image
-    title = (title or "").strip()[:160]
-    if not me or not title:
-        return None
-    t = now()
-    path = try_save_image(photo, "market")
-    row = MarketplaceListing.objects.create(
-        social_user=me,
-        title=title,
-        price=(price or "").strip()[:40],
-        place=(place or "").strip()[:120],
-        description=(description or "").strip()[:4000],
-        photo_path=path,
-        created_at=t,
-        updated_at=t,
-    )
-    from apps.social.services import bump_news
-    bump_news()
-    return row
-
-
-def market_update(me, item, *, title, price="", place="", description="", photo=None):
-    if not me or not item or item.social_user_id != me.id:
-        return None
-    title = (title or "").strip()[:160]
-    if not title:
-        return None
-    item.title = title
-    item.price = (price or "").strip()[:40]
-    item.place = (place or "").strip()[:120]
-    item.description = (description or "").strip()[:4000]
-    item.updated_at = now()
-    from apps.social.media import try_save_image
-    fields = ["title", "price", "place", "description", "updated_at"]
-    path = try_save_image(photo, "market")
-    if path:
-        item.photo_path = path
-        fields.append("photo_path")
-    item.save(update_fields=fields)
-    return item
-
-
-def lists_for(me):
-    if not me:
-        return []
-    return list(
-        FriendList.objects.filter(social_user=me)
-        .annotate(n=Count("memberships"))
-        .order_by("name")
-    )
-
-
-def owned_list(me, list_id):
-    try:
-        lid = int(list_id)
-    except (TypeError, ValueError):
-        return None
-    if not me or not lid:
-        return None
-    return FriendList.objects.filter(pk=lid, social_user=me).first()
-
-
-def list_member_ids(flist) -> set:
-    if not flist:
-        return set()
-    return set(
-        FriendListMember.objects.filter(friend_list=flist).values_list("social_user_id", flat=True)
-    )
-
-
-def list_create(me, name: str):
-    name = (name or "").strip()[:120]
-    if not me or not name:
-        return None
-    t = now()
-    return FriendList.objects.create(social_user=me, name=name, created_at=t, updated_at=t)
-
-
-def list_members(flist, limit=200):
-    return list(
-        SocialProfile.objects.filter(list_memberships__friend_list=flist)
-        .order_by("name")[:limit]
-    )
-
-
-def list_add(me, flist, friend_id: int) -> bool:
-    if not me or flist.social_user_id != me.id:
-        return False
-    if friend_id not in friend_ids(me):
-        return False
-    if FriendListMember.objects.filter(friend_list=flist, social_user_id=friend_id).exists():
-        return True
-    FriendListMember.objects.create(
-        friend_list=flist, social_user_id=friend_id, created_at=now(),
-    )
-    return True
-
-
-def list_remove(me, flist, friend_id: int) -> bool:
-    if not me or flist.social_user_id != me.id:
-        return False
-    FriendListMember.objects.filter(friend_list=flist, social_user_id=friend_id).delete()
-    return True
+from apps.social.market import market_create, market_list, market_update  # noqa: E402
+from apps.social.friend_lists import (  # noqa: E402
+    list_add, list_create, list_member_ids, list_members, list_remove, lists_for, owned_list,
+)

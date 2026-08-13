@@ -2,7 +2,7 @@ from django import forms
 from django.forms.widgets import SelectDateWidget
 from django.utils import timezone
 from apps.social.models import (
-    Album, Education, Experience, Message, Post, SocialProfile,
+    Album, Education, Experience, Post,
 )
 
 
@@ -178,58 +178,6 @@ class GroupDocForm(ClassicForm, forms.Form):
         return (self.cleaned_data.get("body") or "").strip()
 
 
-class MessageForm(ClassicForm, forms.ModelForm):
-    photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
-    reply_to = forms.IntegerField(required=False, widget=forms.HiddenInput())
-    sticker = forms.ChoiceField(required=False, choices=(), widget=forms.Select(attrs={"class": "inputtext"}))
-
-    class Meta:
-        model = Message
-        fields = ("body",)
-        widgets = {"body": _ta(2, style="width:80%")}
-
-    def __init__(self, *args, stickers=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        choices = [("", "— без стикера —")]
-        for s in stickers or []:
-            choices.append((str(s.id), s.title))
-        self.fields["sticker"].choices = choices
-
-    def clean(self):
-        data = super().clean()
-        if not (data.get("body") or "").strip() and not self.files.get("photo") and not data.get("sticker"):
-            self.add_error("body", "Напишите текст, приложите фото / видео или выберите стикер.")
-        return data
-
-
-class ComposeMessageForm(ClassicForm, forms.Form):
-    to = forms.ChoiceField(
-        choices=(),
-        widget=forms.Select(attrs={"class": "inputtext", "style": "width:100%;max-width:420px"}),
-    )
-    subject = forms.CharField(
-        required=False, max_length=160, label="Тема",
-        widget=_in(style="width:100%"),
-    )
-    body = forms.CharField(
-        required=False,
-        widget=_ta(4, style="width:100%"),
-    )
-    photo = forms.FileField(required=False, label="Фото / видео", widget=_media_file())
-
-    def __init__(self, friends, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["to"].choices = [("", "— выберите друга —")] + [(str(p.id), p.name) for p in friends]
-
-    def clean(self):
-        data = super().clean()
-        if not data.get("to"):
-            self.add_error("to", "Выберите друга.")
-        if not (data.get("body") or "").strip() and not self.files.get("photo"):
-            self.add_error("body", "Напишите текст или приложите фото / видео.")
-        return data
-
-
 class AlbumForm(ClassicForm, forms.ModelForm):
     cover = forms.ImageField(required=False, label="Обложка", widget=_file())
 
@@ -294,53 +242,6 @@ class StatusForm(ClassicForm, forms.Form):
             return None
 
 
-class EventForm(ClassicForm, forms.Form):
-    """Classic Events create — text date, no datetime-local (+ optional cover)."""
-    title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
-    place = forms.CharField(max_length=160, required=False, widget=_in(style="width:100%"))
-    starts_at = forms.CharField(
-        max_length=32,
-        widget=_in(style="width:160px"),
-        help_text="ДД.ММ.ГГГГ ЧЧ:ММ",
-    )
-    description = forms.CharField(required=False, widget=_ta(3, style="width:100%"))
-    cover = forms.ImageField(required=False, label="Обложка", widget=_file())
-
-    def clean_starts_at(self):
-        from apps.social.events import parse_starts
-        starts = parse_starts(self.cleaned_data.get("starts_at"))
-        if not starts:
-            raise forms.ValidationError("Укажите дату, например 15.09.2006 19:00")
-        return starts
-
-    def clean_title(self):
-        return (self.cleaned_data.get("title") or "").strip()[:160]
-
-    def clean_place(self):
-        return (self.cleaned_data.get("place") or "").strip()[:160]
-
-
-class GiftSendForm(ClassicForm, forms.Form):
-    """Send a classic Gift (sticker) to a friend."""
-    to = forms.ModelChoiceField(
-        queryset=SocialProfile.objects.none(),
-        empty_label="— выберите друга —",
-        widget=forms.Select(attrs={"class": "inputtext"}),
-    )
-    gift = forms.CharField(max_length=80, widget=forms.HiddenInput())
-    message = forms.CharField(
-        max_length=500, required=False,
-        widget=_ta(2, style="width:100%"),
-    )
-
-    def clean_gift(self):
-        slug = (self.cleaned_data.get("gift") or "").strip()
-        if not slug:
-            raise forms.ValidationError("Выберите подарок")
-        return slug
-
-
-
 class PasswordForm(ClassicForm, forms.Form):
     old = forms.CharField(label="Текущий пароль", widget=forms.PasswordInput(attrs={"class": "inputtext"}))
     new1 = forms.CharField(label="Новый пароль", widget=forms.PasswordInput(attrs={"class": "inputtext"}))
@@ -388,171 +289,11 @@ class ExperienceForm(ClassicForm, forms.ModelForm):
             self.fields[name].required = False
 
 
-class PageForm(ClassicForm, forms.Form):
-    """Create / edit a public Page (Страница)."""
-    name = forms.CharField(max_length=160, widget=_in(style="width:100%"))
-    industry = forms.ChoiceField(choices=[], widget=forms.Select())
-    city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
-    description = forms.CharField(required=False, widget=_ta(4, style="width:100%"))
-    cover = forms.ImageField(required=False, label="Обложка", widget=_file())
-
-    def __init__(self, *args, **kwargs):
-        from apps.social.page_categories import CHOICES
-        super().__init__(*args, **kwargs)
-        self.fields["industry"].choices = CHOICES
-
-    def clean_name(self):
-        return (self.cleaned_data.get("name") or "").strip()[:160]
-
-    def clean_city(self):
-        return (self.cleaned_data.get("city") or "").strip()[:120]
-
-    def clean_description(self):
-        return (self.cleaned_data.get("description") or "").strip()
-
-
-class PagePostForm(ClassicForm, forms.Form):
-    """Admin update on a Page wall."""
-    body = forms.CharField(required=False, widget=_ta(3, style="width:100%"))
-    photo = MultiFileField(required=False, label="Фото / видео", widget=_files())
-
-    def clean(self):
-        data = super().clean()
-        if not (data.get("body") or "").strip() and not self.files.get("photo"):
-            self.add_error("body", "Напишите текст или выберите фото / видео.")
-        return data
-
-
-class PostedItemForm(ClassicForm, forms.Form):
-    """Links / Videos — URL and/or uploaded video file (classic Posted Items)."""
-    title = forms.CharField(max_length=160, required=False, widget=_in(style="width:100%"))
-    url = forms.CharField(max_length=500, required=False, widget=_in(style="width:100%"), label="Адрес")
-    video = forms.FileField(
-        required=False, label="Файл",
-        widget=forms.FileInput(attrs={
-            "class": "inputfile",
-            "accept": "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov",
-        }),
-    )
-    blurb = forms.CharField(required=False, widget=_ta(3, style="width:100%"), label="Описание")
-    visibility = forms.ChoiceField(
-        choices=(("friends", "Друзья"), ("public", "Все")),
-        widget=forms.Select(attrs={"class": "inputtext"}),
-    )
-
-    def __init__(self, *args, allow_upload=False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.allow_upload = allow_upload
-        if not allow_upload:
-            self.fields.pop("video", None)
-
-    def clean_url(self):
-        from apps.social.classic_extra import normalize_url
-        return normalize_url(self.cleaned_data.get("url") or "")
-
-    def clean_title(self):
-        return (self.cleaned_data.get("title") or "").strip()[:160]
-
-    def clean(self):
-        data = super().clean()
-        url = data.get("url") or ""
-        video = data.get("video") if self.allow_upload else None
-        if self.allow_upload:
-            if not url and not video:
-                raise forms.ValidationError("Укажите ссылку или загрузите файл видео.")
-        elif not url:
-            self.add_error("url", "Укажите ссылку, например http://example.com")
-        return data
-
-
-class MarketForm(ClassicForm, forms.Form):
-    title = forms.CharField(max_length=160, widget=_in(style="width:100%"))
-    price = forms.CharField(max_length=40, required=False, widget=_in(style="width:120px"))
-    place = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
-    description = forms.CharField(required=False, widget=_ta(4, style="width:100%"))
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
-
-    def clean_title(self):
-        return (self.cleaned_data.get("title") or "").strip()[:160]
-
-
-class FriendListForm(ClassicForm, forms.Form):
-    name = forms.CharField(max_length=120, widget=_in(style="width:100%"))
-
-    def clean_name(self):
-        return (self.cleaned_data.get("name") or "").strip()[:120]
-
-
-class PlaceForm(ClassicForm, forms.Form):
-    name = forms.CharField(max_length=160, widget=_in(style="width:100%"))
-    city = forms.CharField(max_length=120, required=False, widget=_in(style="width:100%"))
-    address = forms.CharField(max_length=255, required=False, widget=_in(style="width:100%"))
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
-
-    def clean_name(self):
-        return (self.cleaned_data.get("name") or "").strip()[:160]
-
-
-class CheckinForm(ClassicForm, forms.Form):
-    message = forms.CharField(max_length=500, required=False, widget=_ta(2, style="width:100%"))
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
-
-
-class QuestionForm(ClassicForm, forms.Form):
-    body = forms.CharField(max_length=500, widget=_ta(3, style="width:100%"))
-    photo = forms.ImageField(required=False, label="Фото", widget=_file())
-
-    def clean_body(self):
-        body = (self.cleaned_data.get("body") or "").strip()
-        if not body:
-            raise forms.ValidationError("Напишите вопрос.")
-        return body[:500]
-
-
-class QuestionAnswerForm(ClassicForm, forms.Form):
-    body = forms.CharField(max_length=500, widget=_ta(2, style="width:100%"))
-
-    def clean_body(self):
-        body = (self.cleaned_data.get("body") or "").strip()
-        if not body:
-            raise forms.ValidationError("Напишите ответ.")
-        return body[:500]
-
-
-class PlaceReviewForm(ClassicForm, forms.Form):
-    stars = forms.TypedChoiceField(
-        coerce=int,
-        choices=[(i, f"{i}") for i in range(1, 6)],
-        initial=5,
-        widget=forms.Select(attrs={"class": "inputtext"}),
-    )
-    body = forms.CharField(max_length=500, required=False, widget=_ta(2, style="width:100%"))
-
-    def clean_body(self):
-        return (self.cleaned_data.get("body") or "").strip()[:500]
-
-
-class PollForm(ClassicForm, forms.Form):
-    question = forms.CharField(max_length=500, widget=_ta(2, style="width:100%"))
-    options = forms.CharField(
-        widget=_ta(4, style="width:100%"),
-        help_text="По одному варианту на строку (минимум 2).",
-    )
-
-    def clean_question(self):
-        q = (self.cleaned_data.get("question") or "").strip()
-        if not q:
-            raise forms.ValidationError("Напишите вопрос опроса.")
-        return q[:500]
-
-    def clean_options(self):
-        raw = self.cleaned_data.get("options") or ""
-        opts = []
-        for line in raw.splitlines():
-            body = line.strip()[:255]
-            if body and body not in opts:
-                opts.append(body)
-        if len(opts) < 2:
-            raise forms.ValidationError("Нужно минимум два варианта ответа.")
-        return opts[:8]
-
+from apps.social.message_form import ComposeMessageForm, MessageForm  # noqa: E402
+from apps.social.event_form import EventForm, GiftSendForm  # noqa: E402
+from apps.social.page_form import PageForm, PagePostForm  # noqa: E402
+from apps.social.classic_forms import FriendListForm, MarketForm, PostedItemForm  # noqa: E402
+from apps.social.era2010_forms import (  # noqa: E402
+    CheckinForm, PlaceForm, PlaceReviewForm, PollForm,
+    QuestionAnswerForm, QuestionForm,
+)

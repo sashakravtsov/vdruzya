@@ -174,6 +174,26 @@ def main():
     assert callable(mfs._side_items)
     assert fh.story_key_for is sk.story_key_for
     ok("news_stories + mini_feed_side + story_keys slim")
+    from apps.social.forms import (
+        EventForm, MessageForm, PageForm, PostedItemForm, PlaceForm, MarketForm,
+    )
+    from apps.social import message_form as mf
+    from apps.social import event_form as ef
+    from apps.social import page_form as pf2
+    from apps.social import classic_forms as cf
+    from apps.social import era2010_forms as e10f
+    from apps.social import market as mk
+    from apps.social import friend_lists as fl
+    from apps.social import friendship_invite as fi
+    from apps.social import friendship_extra as fex
+    from apps.social import friendship as fr
+    assert MessageForm is mf.MessageForm and EventForm is ef.EventForm
+    assert PageForm is pf2.PageForm and PostedItemForm is cf.PostedItemForm
+    assert PlaceForm is e10f.PlaceForm and MarketForm is cf.MarketForm
+    assert callable(mk.market_list) and callable(fl.list_member_ids)
+    assert fr.upcoming_anniversaries is fex.upcoming_anniversaries
+    assert fr.apply_invite is fi.apply_invite
+    ok("forms/market/lists/friendship slim modules")
 
     PlaceCheckin.objects.filter(pk=cin.id).delete()
     Post.objects.filter(social_user=me, kind="checkin", topic=f"place:{place_row.id}").delete()
