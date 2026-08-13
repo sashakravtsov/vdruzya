@@ -58,10 +58,6 @@ class BaseLiveConsumer(AsyncJsonWebsocketConsumer):
     async def handle_action(self, action: str, content: dict[str, Any]):
         await self.send_json({"type": "error", "error": "unknown_action", "action": action})
 
-    @database_sync_to_async
-    def _profile(self):
-        return profile_of(self.user)
-
 
 class FarmLiveConsumer(BaseLiveConsumer):
     def scope_name(self) -> str:
@@ -78,6 +74,7 @@ class FarmLiveConsumer(BaseLiveConsumer):
         return farm_state(me) if me else {"ok": False, "error": "auth"}
 
     async def farm_push(self, event):
+        # External updates (neighbor help/steal, other tabs) — refresh snapshot.
         snapshot = await self.build_snapshot()
         await self.send_json({
             "type": "state",
@@ -94,6 +91,7 @@ class FarmLiveConsumer(BaseLiveConsumer):
         me = profile_of(self.user)
         if not me:
             return {"ok": False, "error": "auth"}
+        notify_ids: list[int] = []
         try:
             if action == "plant":
                 farm.plant(me, int(payload.get("plot_id") or 0), str(payload.get("crop") or payload.get("crop_key") or ""))
@@ -122,26 +120,30 @@ class FarmLiveConsumer(BaseLiveConsumer):
             elif action == "help":
                 owner_id = int(payload.get("owner_id") or payload.get("neighbor_id") or 0)
                 farm.help_neighbor(me, owner_id, int(payload.get("plot_id") or 0))
-                broadcast.notify_farm(owner_id, "neighbor_help", {"by": int(me.id)})
+                notify_ids.append(owner_id)
             elif action == "steal":
                 owner_id = int(payload.get("owner_id") or payload.get("neighbor_id") or 0)
                 farm.steal_neighbor(me, owner_id, int(payload.get("plot_id") or 0))
-                broadcast.notify_farm(owner_id, "neighbor_steal", {"by": int(me.id)})
+                notify_ids.append(owner_id)
             else:
                 return {"ok": False, "error": "unknown_action"}
         except ValueError as exc:
             return {"ok": False, "error": str(exc)}
         except Exception:
             return {"ok": False, "error": "fail"}
-        state = farm_state(me)
-        broadcast.notify_farm(me.id, "state")
-        return {"ok": True, "state": state}
+        return {"ok": True, "state": farm_state(me), "notify_ids": notify_ids, "event": action}
 
     async def handle_action(self, action: str, content: dict[str, Any]):
         result = await self._act(action, content)
+        notify_ids = result.pop("notify_ids", []) if isinstance(result, dict) else []
+        event = result.pop("event", action) if isinstance(result, dict) else action
         await self.send_json({"type": "action_result", "action": action, "payload": result})
         if result.get("ok") and result.get("state"):
             await self.send_json({"type": "state", "payload": result["state"]})
+        # Broadcast to others only (avoid sync group_send re-entrancy on this consumer).
+        for uid in notify_ids or []:
+            if uid and int(uid) != int(self.user.id):
+                broadcast.notify_farm(int(uid), event, {"by": int(self.user.id)})
 
 
 class DatingLiveConsumer(BaseLiveConsumer):
@@ -178,29 +180,27 @@ class DatingLiveConsumer(BaseLiveConsumer):
         me = profile_of(self.user)
         if not me:
             return {"ok": False, "error": "auth"}
+        peer_id = None
+        matched = False
+        match_id = None
+        peer_name = ""
         try:
             if action == "swipe":
                 swipe_action = str(payload.get("swipe_action") or payload.get("kind") or "like")
                 if swipe_action == "superlike":
                     swipe_action = "super"
-                result = dating.swipe(me, int(payload.get("target_id") or payload.get("to_user_id") or 0), swipe_action)
+                result = dating.swipe(
+                    me,
+                    int(payload.get("target_id") or payload.get("to_user_id") or 0),
+                    swipe_action,
+                )
                 peer = result.get("peer")
-                matched = result.get("match")
-                if peer:
-                    broadcast.notify_dating(peer.id, "inbound", {"from_user_id": int(me.id), "action": swipe_action})
-                    if matched:
-                        broadcast.notify_dating(peer.id, "match", {"with_user_id": int(me.id), "match_id": matched.id})
-                        broadcast.notify_user(peer.id, "dating_match", {"with_user_id": int(me.id), "match_id": matched.id})
-                out = {
-                    "ok": True,
-                    "matched": bool(matched),
-                    "match_id": matched.id if matched else None,
-                    "peer_name": peer.name if peer else "",
-                    "state": dating_state(me),
-                }
-                broadcast.notify_dating(me.id, "state")
-                return out
-            if action == "save_profile":
+                match = result.get("match")
+                peer_id = peer.id if peer else None
+                peer_name = peer.name if peer else ""
+                matched = bool(match)
+                match_id = match.id if match else None
+            elif action == "save_profile":
                 dating.save_profile(me, {
                     "headline": str(payload.get("headline") or ""),
                     "about": str(payload.get("about") or ""),
@@ -208,7 +208,13 @@ class DatingLiveConsumer(BaseLiveConsumer):
                     "age_min": int(payload.get("age_min") or 18),
                     "age_max": int(payload.get("age_max") or 99),
                     "gender_pref": str(payload.get("gender_pref") or "any"),
-                    "prompts_json": str(payload.get("prompts_json") or "[]"),
+                    "discoverable": bool(payload.get("discoverable", True)),
+                    "prompt1_key": str(payload.get("prompt1_key") or ""),
+                    "prompt1_answer": str(payload.get("prompt1_answer") or ""),
+                    "prompt2_key": str(payload.get("prompt2_key") or ""),
+                    "prompt2_answer": str(payload.get("prompt2_answer") or ""),
+                    "prompt3_key": str(payload.get("prompt3_key") or ""),
+                    "prompt3_answer": str(payload.get("prompt3_answer") or ""),
                 })
             else:
                 return {"ok": False, "error": "unknown_action"}
@@ -216,15 +222,41 @@ class DatingLiveConsumer(BaseLiveConsumer):
             return {"ok": False, "error": str(exc)}
         except Exception:
             return {"ok": False, "error": "fail"}
-        state = dating_state(me)
-        broadcast.notify_dating(me.id, "state")
-        return {"ok": True, "state": state}
+        return {
+            "ok": True,
+            "matched": matched,
+            "match_id": match_id,
+            "peer_id": peer_id,
+            "peer_name": peer_name,
+            "state": dating_state(me),
+        }
 
     async def handle_action(self, action: str, content: dict[str, Any]):
         result = await self._act(action, content)
         await self.send_json({"type": "action_result", "action": action, "payload": result})
         if result.get("ok") and result.get("state"):
             await self.send_json({"type": "state", "payload": result["state"]})
+        peer_id = result.get("peer_id")
+        if result.get("ok") and peer_id:
+            if result.get("matched"):
+                broadcast.notify_dating(
+                    int(peer_id),
+                    "match",
+                    {"with_user_id": int(self.user.id), "match_id": result.get("match_id")},
+                )
+                broadcast.notify_user(
+                    int(peer_id),
+                    "dating_match",
+                    {"with_user_id": int(self.user.id), "match_id": result.get("match_id")},
+                )
+            else:
+                swipe_action = str(content.get("swipe_action") or "like")
+                if swipe_action in ("like", "super", "superlike"):
+                    broadcast.notify_dating(
+                        int(peer_id),
+                        "inbound",
+                        {"from_user_id": int(self.user.id), "action": swipe_action},
+                    )
 
 
 class ChessLiveConsumer(BaseLiveConsumer):
@@ -315,15 +347,20 @@ class ChessLiveConsumer(BaseLiveConsumer):
             return {"ok": False, "error": str(exc)}
         except Exception:
             return {"ok": False, "error": "fail"}
-        state = chess_state(game, me)
-        broadcast.notify_chess(game.id, "state")
-        return {"ok": True, "state": state}
+        opp_id = game.black_id if me.id == game.white_id else game.white_id
+        return {"ok": True, "state": chess_state(game, me), "opp_id": opp_id, "game_id": game.id}
 
     async def handle_action(self, action: str, content: dict[str, Any]):
         result = await self._act(action, content)
+        opp_id = result.pop("opp_id", None) if isinstance(result, dict) else None
+        game_id = result.pop("game_id", self.game_id) if isinstance(result, dict) else self.game_id
         await self.send_json({"type": "action_result", "action": action, "payload": result})
         if result.get("ok") and result.get("state"):
             await self.send_json({"type": "state", "payload": result["state"]})
+            # Notify peer via group (other socket), not self-echo from sync path.
+            broadcast.notify_chess(int(game_id), action)
+            if opp_id:
+                broadcast.notify_user(int(opp_id), "chess_update", {"game_id": int(game_id), "action": action})
 
 
 class UserLiveConsumer(BaseLiveConsumer):

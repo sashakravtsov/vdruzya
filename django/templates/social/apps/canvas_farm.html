@@ -2,10 +2,10 @@
 {% load static %}
 {% load vd %}
 {% block canvas_body %}
-<div class="profile-box farm-app" id="farm-app" data-tab="{{ tab }}" data-ws-url="/ws/farm/">
+<div class="profile-box farm-app" id="farm-app" data-tab="{{ tab }}" data-ws-url="/ws/farm/" data-user-live="/ws/live/user/">
     <h4>Ферма <span class="farm-mark" aria-hidden="true">◈</span> <span class="app-live" data-app-live hidden>…</span></h4>
     <div class="profile-box-body">
-        <p class="farm-toast" data-farm-toast hidden></p>
+        <p class="farm-toast" data-farm-toast data-user-live-toast hidden></p>
         <p class="farm-lead">Поле, хлев, соседи и лавка — соцферма ВДрузья с живым балансом фишек и агрошколой.</p>
         <p class="farm-strip">
             Фишки <b>{{ strip.chips_fmt }}</b>
@@ -335,4 +335,5 @@
 <script src="{% static 'js/live-client.js' %}" defer></script>
 <script src="{% static 'js/farm-field.js' %}" defer></script>
 <script src="{% static 'js/farm-live.js' %}" defer></script>
+<script src="{% static 'js/user-live.js' %}" defer></script>
 {% endblock %}

@@ -94,6 +94,12 @@ def render_chess_canvas(request, me, app):
                     type="message",
                     url=reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}",
                 )
+                try:
+                    notify_chess(g.id, "challenge")
+                    from apps.social.live.broadcast import notify_user
+                    notify_user(peer.id, "chess_update", {"game_id": g.id, "action": "challenge"})
+                except Exception:
+                    pass
                 messages.success(request, f"Приглашение отправлено {peer.name}. Ждём ответа.")
                 return redirect(reverse("apps.canvas", args=["chess"]) + f"?tab=game&id={g.id}")
 

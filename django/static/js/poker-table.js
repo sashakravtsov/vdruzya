@@ -74,30 +74,7 @@
     });
   });
 
-  // Prefer Channels LIVE; HTTP poll only as fallback while waiting.
-  var waiting = root.getAttribute("data-waiting") === "1";
-  var pollUrl = root.getAttribute("data-poll-url") || "";
-  var hasRt = root.getAttribute("data-poker-rt") === "game";
-  if (waiting && pollUrl && !hasRt) {
-    var tries = 0;
-    var timer = window.setInterval(function () {
-      tries += 1;
-      if (tries > 45) {
-        window.clearInterval(timer);
-        return;
-      }
-      fetch(pollUrl, { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
-        .then(function (r) { return r.text(); })
-        .then(function (html) {
-          if (!html) return;
-          if (html.indexOf("data-can-act=\"1\"") !== -1 || html.indexOf("data-status=\"done\"") !== -1) {
-            window.clearInterval(timer);
-            window.location.reload();
-          }
-        })
-        .catch(function () {});
-    }, 4000);
-  }
+  // Waiting seats sync via Channels LIVE (poker-realtime.js). No page reload.
 
   root.addEventListener("poker:state", function (ev) {
     var st = ev.detail || {};

@@ -2,10 +2,10 @@
 {% load static %}
 {% load vd %}
 {% block canvas_body %}
-<div class="profile-box dating-app" id="dating-app" data-tab="{{ tab }}" data-ws-url="/ws/dating/">
+<div class="profile-box dating-app" id="dating-app" data-tab="{{ tab }}" data-ws-url="/ws/dating/" data-user-live="/ws/live/user/">
     <h4>Знакомства <span class="dating-spark-mark" aria-hidden="true">✦</span> <span class="app-live" data-app-live hidden>…</span></h4>
     <div class="profile-box-body">
-        <p class="dating-toast" data-dating-toast hidden></p>
+        <p class="dating-toast" data-dating-toast data-user-live-toast hidden></p>
         <p class="dating-lead">Круг друзей и люди рядом: лайки, взаимные искры, айсбрейкеры и школа общения — без стороннего хостинга.</p>
         <p class="dating-strip">
             Серия <b>{{ strip.streak }}</b>
@@ -289,5 +289,6 @@
 <script src="{% static 'js/live-client.js' %}" defer></script>
 <script src="{% static 'js/dating-spark.js' %}" defer></script>
 <script src="{% static 'js/dating-live.js' %}" defer></script>
+<script src="{% static 'js/user-live.js' %}" defer></script>
 {% endif %}
 {% endblock %}

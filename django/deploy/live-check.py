@@ -2,6 +2,7 @@
 """Probe first-party LIVE WebSocket wiring (farm/dating/chess + shared client)."""
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 
@@ -19,7 +20,14 @@ def ok(msg: str) -> None:
 
 def main() -> int:
     from django.conf import settings
+    from django.contrib.auth import get_user_model
+    from django.urls import re_path
+    from channels.routing import URLRouter
+    from channels.testing import WebsocketCommunicator
+
     from apps.social.live.routing import websocket_urlpatterns
+    from apps.social.live.consumers import FarmLiveConsumer, DatingLiveConsumer
+    from apps.social.services import profile_of
 
     assert "channels" in settings.INSTALLED_APPS
     assert getattr(settings, "CHANNEL_LAYERS", None)
@@ -45,19 +53,18 @@ def main() -> int:
         "static/js/live-client.js",
         "static/js/farm-live.js",
         "static/js/dating-live.js",
+        "static/js/user-live.js",
         "static/js/chess-board.js",
         "static/js/poker-realtime.js",
+        "static/js/poker-table.js",
     ):
         path = os.path.join(ROOT, rel)
         assert os.path.isfile(path), rel
         data = open(path, encoding="utf-8").read()
-        if "chess-board" in rel:
-            assert "location.reload" not in data
-        if "farm-field" not in rel and "farm-live" in rel:
-            assert "VdLive" in data
+        assert "location.reload" not in data, rel
         if "live-client" in rel:
             assert "WebSocket" in data
-    ok("live JS clients present (no chess reload)")
+    ok("live JS clients present (no reload)")
 
     farm_field = open(os.path.join(ROOT, "static/js/farm-field.js"), encoding="utf-8").read()
     assert "location.reload" not in farm_field
@@ -77,6 +84,59 @@ def main() -> int:
     asgi = open(os.path.join(ROOT, "config/asgi.py"), encoding="utf-8").read()
     assert "apps.social.live.routing" in asgi
     ok("ASGI uses live.routing")
+
+    User = get_user_model()
+    user = User.objects.order_by("id").first()
+    assert user is not None
+    me = profile_of(user)
+    assert me is not None
+
+    async def _ws_farm():
+        app = URLRouter([re_path(r"^ws/farm/$", FarmLiveConsumer.as_asgi())])
+        c = WebsocketCommunicator(app, "/ws/farm/")
+        c.scope["user"] = user
+        connected, _ = await c.connect()
+        assert connected
+        hello = await c.receive_json_from(timeout=5)
+        state = await c.receive_json_from(timeout=5)
+        assert hello.get("type") == "hello"
+        assert state.get("type") == "state"
+        assert state.get("payload", {}).get("ok")
+        await c.send_json_to({"action": "ping"})
+        pong = await c.receive_json_from(timeout=5)
+        assert pong.get("type") == "pong"
+        await c.send_json_to({"action": "refresh"})
+        refreshed = await c.receive_json_from(timeout=5)
+        assert refreshed.get("type") == "state"
+        plots = (state.get("payload") or {}).get("plots") or []
+        empty = next((p for p in plots if p.get("state") == "empty"), None)
+        if empty:
+            await c.send_json_to({"action": "plant", "plot_id": empty["id"], "crop": "wheat"})
+            result = await c.receive_json_from(timeout=5)
+            assert result.get("type") == "action_result"
+            # may fail if bankrupt / locked crop — still must not crash socket
+            if result.get("payload", {}).get("ok"):
+                follow = await c.receive_json_from(timeout=5)
+                assert follow.get("type") == "state"
+        await c.disconnect()
+
+    async def _ws_dating():
+        app = URLRouter([re_path(r"^ws/dating/$", DatingLiveConsumer.as_asgi())])
+        c = WebsocketCommunicator(app, "/ws/dating/")
+        c.scope["user"] = user
+        connected, _ = await c.connect()
+        assert connected
+        await c.receive_json_from(timeout=5)  # hello
+        state = await c.receive_json_from(timeout=5)
+        assert state.get("type") == "state"
+        await c.send_json_to({"action": "ping"})
+        assert (await c.receive_json_from(timeout=5)).get("type") == "pong"
+        await c.disconnect()
+
+    asyncio.run(_ws_farm())
+    ok("farm consumer hello/state/ping")
+    asyncio.run(_ws_dating())
+    ok("dating consumer hello/state/ping")
 
     print("ALL live probes passed")
     return 0

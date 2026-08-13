@@ -2104,7 +2104,7 @@ body.fb-dialog-open { overflow: hidden; }
   0%, 100% { opacity: 1; }
   50% { opacity: .72; }
 }
-.farm-toast, .dating-toast {
+.farm-toast, .dating-toast, .chess-toast {
   margin: 0 0 8px; padding: 6px 9px; border: 1px solid #e6c48a; background: #fff8e8;
   font: 11px/15px var(--font); color: #643;
 }
