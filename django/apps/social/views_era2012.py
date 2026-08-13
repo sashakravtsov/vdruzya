@@ -203,12 +203,25 @@ def collection_item_delete(request, pk, item_id):
 @login_not_required
 @require_GET
 def app_show(request, slug):
-    app = e12.app_by_slug(slug)
+    from apps.social import platform_apps as pa
+    from django.urls import reverse
+
+    # Legacy App Center links (site modules) → real routes
+    legacy = pa.legacy_redirect_name(slug)
+    if legacy and not pa.app_by_slug(slug):
+        try:
+            return redirect(reverse(legacy))
+        except Exception:
+            return redirect(f"/{legacy}")
+
+    app = pa.app_by_slug(slug)
     if not app:
         messages.error(request, "Приложение не найдено.")
         return redirect("apps")
     me = profile_of(request.user) if request.user.is_authenticated else None
+    installed = bool(me and pa.is_installed(me, slug))
     return render(request, "social/app_detail.html", {
         "me": me, "app": app, "nav": "apps",
-        "categories": e12.APP_CATEGORIES,
+        "categories": pa.APP_CATEGORIES,
+        "installed": installed,
     })

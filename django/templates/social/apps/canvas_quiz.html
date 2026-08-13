@@ -1,0 +1,40 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+{% if result %}
+<div class="profile-box">
+    <h4>Результат</h4>
+    <div class="profile-box-body">
+        <p><b>{{ result.title }}</b></p>
+        <p class="muted">{{ result.blurb }}</p>
+        <form method="post">{% csrf_token %}
+            <input type="hidden" name="share_title" value="{{ result.title }}">
+            <input type="hidden" name="share_blurb" value="{{ result.blurb }}">
+            <input type="submit" class="inputsubmit" value="Опубликовать на стене">
+            · <a href="{% url 'apps.canvas' 'quiz' %}">пройти снова</a>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="profile-box">
+    <h4>Викторина</h4>
+    <div class="profile-box-body">
+        <form method="post">{% csrf_token %}
+            <table class="formtable" cellspacing="0">
+                {% for q in questions %}
+                <tr>
+                    <td class="label">{{ forloop.counter }}.</td>
+                    <td>
+                        <b>{{ q.text }}</b>
+                        {% for val, lab in q.options %}
+                        <div><label><input type="radio" name="{{ q.id }}" value="{{ val }}"{% if forloop.first %} checked{% endif %}> {{ lab }}</label></div>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr><td></td><td><input type="submit" class="inputsubmit" value="Узнать результат"></td></tr>
+            </table>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

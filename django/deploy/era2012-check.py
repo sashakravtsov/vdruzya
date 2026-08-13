@@ -58,16 +58,28 @@ def main():
     r = c.get("/apps", secure=True)
     assert r.status_code == 200
     assert "Приложения".encode() in r.content
-    assert "Приложения".encode() in r.content
     assert "Избранные".encode() in r.content
+    assert "Дела".encode() in r.content or "Викторины".encode() in r.content
     assert b"page-tabs" not in r.content
     assert b"display: flex" not in r.content.lower()
     ok("app center catalog")
 
+    # Legacy module slug still redirects to real route
     r = c.get("/apps/collections", secure=True)
+    assert r.status_code in (200, 301, 302)
+    ok("legacy app slug")
+
+    r = c.get("/apps/causes", secure=True)
     assert r.status_code == 200
-    assert "Коллекции".encode() in r.content
+    assert "Дела".encode() in r.content
     ok("app detail")
+
+    r = c.post("/apps/causes/install", {}, secure=True)
+    assert r.status_code in (301, 302)
+    r = c.get("/apps/causes/canvas", secure=True)
+    assert r.status_code == 200
+    assert "Выберите дело".encode() in r.content or "дело".encode() in r.content
+    ok("platform canvas causes")
 
     r = c.get("/collections", secure=True)
     assert r.status_code == 200

@@ -23,89 +23,15 @@ PAGE_MILESTONE_KINDS = (
 ITEM_KINDS = frozenset({"post", "link", "page"})
 VIS = frozenset({"public", "friends", "private"})
 
-APP_CATEGORIES = (
-    ("social", "Общение"),
-    ("media", "Медиа"),
-    ("places", "Места и события"),
-    ("tools", "Инструменты"),
+# Platform / App Center — first-party canvas apps (see platform_apps.py).
+# Soft ban: no third-party hosted platform.
+from apps.social.platform_apps import (  # noqa: E402
+    APP_CATEGORIES,
+    PLATFORM_APPS as APP_CENTER,
+    app_by_slug,
+    apps_grouped,
+    legacy_redirect_name,
 )
-
-# Built-in App Center catalog — no third-party platform.
-APP_CENTER = (
-    {"slug": "photos", "name": "Фото", "category": "media", "featured": True,
-     "blurb": "Альбомы и фотографии друзей.", "detail": "Загружайте альбомы, отмечайте друзей и листайте фото в классическом виде.", "url_name": "albums"},
-    {"slug": "groups", "name": "Группы", "category": "social", "featured": True,
-     "blurb": "Сообщества по интересам.", "detail": "Открытые и закрытые группы, документы и стена обсуждений.", "url_name": "groups"},
-    {"slug": "events", "name": "События", "category": "places", "featured": True,
-     "blurb": "Встречи и приглашения.", "detail": "Создавайте события, приглашайте друзей и отмечайте «пойду».", "url_name": "events"},
-    {"slug": "pages", "name": "Страницы", "category": "social", "featured": True,
-     "blurb": "Публичные страницы брендов и личностей.", "detail": "Страницы с лентой, обложкой и этапами — для брендов и публичных фигур.", "url_name": "pages"},
-    {"slug": "collections", "name": "Коллекции", "category": "media", "featured": True,
-     "blurb": "Собирайте посты, ссылки и страницы.", "detail": "Тематические подборки ссылок, записей и страниц — для себя и друзей.", "url_name": "collections"},
-    {"slug": "notes", "name": "Заметки", "category": "media", "featured": False,
-     "blurb": "Длинные записи.", "detail": "Классические заметки — статьи на стене и в ленте.", "url_name": "notes"},
-    {"slug": "links", "name": "Ссылки", "category": "media", "featured": False,
-     "blurb": "Поделитесь ссылкой.", "detail": "Каталог ссылок друзей в классическом интерфейсе.", "url_name": "links"},
-    {"slug": "videos", "name": "Видео", "category": "media", "featured": True,
-     "blurb": "Загрузите ролик или ссылку.", "detail": "Видеофайл (MP4/WebM) или URL на том же медиа-диске, что и фото; просмотр встроенным плеером.", "url_name": "videos"},
-    {"slug": "marketplace", "name": "Барахолка", "category": "tools", "featured": False,
-     "blurb": "Купить и продать рядом.", "detail": "Объявления друзей: вещи, услуги, локальный обмен.", "url_name": "marketplace"},
-    {"slug": "places", "name": "Места", "category": "places", "featured": True,
-     "blurb": "Отмечайтесь в местах.", "detail": "Отметки и отзывы о местах на карте OpenStreetMap — подсказки Nominatim и фильтр «рядом».", "url_name": "places"},
-    {"slug": "questions", "name": "Вопросы", "category": "social", "featured": False,
-     "blurb": "Спросите друзей.", "detail": "Вопросы с ответами и голосами друзей.", "url_name": "questions"},
-    {"slug": "polls", "name": "Опросы", "category": "social", "featured": False,
-     "blurb": "Классические опросы.", "detail": "Создайте опрос и соберите голоса друзей.", "url_name": "polls"},
-    {"slug": "og", "name": "Активность", "category": "media", "featured": True,
-     "blurb": "Слушаете, читаете, смотрите.", "detail": "Публикуйте истории активности: музыка, книги, фильмы — в ленте и ленте событий.", "url_name": "og"},
-    {"slug": "gifts", "name": "Подарки", "category": "social", "featured": False,
-     "blurb": "Виртуальные подарки.", "detail": "Каталог стикеров-подарков для друзей.", "url_name": "gifts"},
-    {"slug": "messages", "name": "Сообщения", "category": "social", "featured": False,
-     "blurb": "Входящие письма.", "detail": "Классический центр сообщений: ответы и стикеры без живого чата.", "url_name": "inbox"},
-    {"slug": "lists", "name": "Списки друзей", "category": "tools", "featured": False,
-     "blurb": "Группируйте друзей.", "detail": "Списки для фильтра ленты (приватность постов по спискам — в разработке).", "url_name": "friends.lists"},
-    {"slug": "networks", "name": "Сети", "category": "tools", "featured": False,
-     "blurb": "Города, школы, работа.", "detail": "Найдите людей по сетям и фильтрам.", "url_name": "networks"},
-    {"slug": "birthdays", "name": "Дни рождения", "category": "tools", "featured": False,
-     "blurb": "Не пропустите ДР друзей.", "detail": "Календарь ближайших дней рождения.", "url_name": "birthdays"},
-    {"slug": "anniversaries", "name": "Годовщины", "category": "tools", "featured": False,
-     "blurb": "Сколько лет вы дружите.", "detail": "Годовщины дружбы в классическом списке.", "url_name": "anniversaries"},
-    {"slug": "pokes", "name": "Подмигивания", "category": "social", "featured": False,
-     "blurb": "Лёгкий «привет».", "detail": "Классические подмигивания во входящих.", "url_name": "pokes"},
-    {"slug": "mobile", "name": "Мобильная версия", "category": "tools", "featured": False,
-     "blurb": "ВДрузья с телефона.", "detail": "Подсказки по мобильному доступу.", "url_name": "mobile"},
-    {"slug": "search", "name": "Поиск", "category": "tools", "featured": False,
-     "blurb": "Найти людей и группы.", "detail": "Глобальный поиск по людям, группам и страницам.", "url_name": "search"},
-    {"slug": "graph", "name": "Поиск по графу", "category": "tools", "featured": True,
-     "blurb": "Друзья по сети: город и хэштеги.", "detail": "Поиск по графу: «друзья в городе», «кто любит #тег» — без рекламы и без сторонних приложений.", "url_name": "graph"},
-    {"slug": "trending", "name": "В тренде", "category": "social", "featured": True,
-     "blurb": "Популярные хэштеги друзей.", "detail": "Популярные хэштеги в круге друзей — колонка в ленте и отдельная страница.", "url_name": "trending"},
-    {"slug": "nearby", "name": "Друзья рядом", "category": "places", "featured": True,
-     "blurb": "Друзья в вашем городе.", "detail": "Друзья рядом без GPS: город в профиле + расстояние по OpenStreetMap.", "url_name": "nearby"},
-    {"slug": "hashtags", "name": "Хэштеги", "category": "social", "featured": False,
-     "blurb": "Посты по #тегам.", "detail": "Каталог трендовых хэштегов и страницы по имени тега — из статусов и стены.", "url_name": "trending"},
-    {"slug": "saves", "name": "Сохранённое", "category": "tools", "featured": True,
-     "blurb": "Отложите на потом.", "detail": "Сохраняйте посты, ссылки, места и страницы — список только для вас.", "url_name": "saves"},
-    {"slug": "safety", "name": "Проверка безопасности", "category": "tools", "featured": True,
-     "blurb": "Отметьтесь: я в безопасности.", "detail": "Проверка безопасности: зона на карте OpenStreetMap, отметка себя или друга — статус в ленте.", "url_name": "safety"},
-)
-
-
-def app_by_slug(slug: str) -> dict | None:
-    slug = (slug or "").strip().lower()
-    for a in APP_CENTER:
-        if a["slug"] == slug:
-            return a
-    return None
-
-
-def apps_grouped(*, category=None, featured_only=False):
-    rows = list(APP_CENTER)
-    if featured_only:
-        rows = [a for a in rows if a.get("featured")]
-    if category:
-        rows = [a for a in rows if a.get("category") == category]
-    return rows
 
 
 def page_milestones_for(page, *, year=None, limit=40):

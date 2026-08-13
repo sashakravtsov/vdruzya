@@ -42,6 +42,7 @@
 
     {% block footer %}{% include "partials/footer.html" %}{% endblock %}
 </div>
+<script src="{% static 'js/classic-dialog.js' %}" defer></script>
 {% if user.is_authenticated %}
 <script src="{% static 'js/realtime.js' %}" defer></script>
 {% endif %}

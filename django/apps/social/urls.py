@@ -20,6 +20,7 @@ from . import views_era2012 as era12
 from . import views_era2013 as era13
 from . import views_era2014 as era14
 from . import views_osm as osm_views
+from . import views_platform as platform
 from . import realtime as rt
 
 urlpatterns = [
@@ -48,6 +49,9 @@ urlpatterns = [
     path("pages/<int:pk>", pages.page_show, name="pages.show"),
     path("pages/<slug:slug>", pages.page_slug_redirect, name="pages.slug"),
     path("apps", apps.apps_home, name="apps"),
+    path("apps/<slug:slug>/install", platform.app_install, name="apps.install"),
+    path("apps/<slug:slug>/uninstall", platform.app_uninstall, name="apps.uninstall"),
+    path("apps/<slug:slug>/canvas", platform.app_canvas, name="apps.canvas"),
     path("apps/<slug:slug>", era12.app_show, name="apps.show"),
     path("applications", meta.redirect_permanent, {"to": "/apps"}, name="applications.legacy"),
     path("collections", era12.collections_home, name="collections"),

@@ -763,6 +763,18 @@ if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2011-modules.py \
 else
   echo "FAIL 2011 classic modules features"; FAIL=1
 fi
+echo "== Platform apps schema probe =="
+if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-platform-apps.py; then
+  echo "OK   platform apps schema"
+else
+  echo "FAIL platform apps schema"; FAIL=1
+fi
+if ! grep -q 'name="apps.canvas"' "${ROOT}/django/apps/social/urls.py" 2>/dev/null \
+  || ! grep -q 'classic-dialog.js' "${ROOT}/django/templates/layout.html" 2>/dev/null; then
+  echo "FAIL platform canvas / dialog missing"; FAIL=1
+else
+  echo "OK   platform canvas + classic dialog"
+fi
 echo "== FB 2012 classic modules probe =="
 if cd "${ROOT}/django" && .venv/bin/python deploy/ensure-2012-modules.py \
   && .venv/bin/python deploy/era2012-check.py; then
