@@ -215,6 +215,7 @@ def graph_search(me, *, q="", city="", like="", tag="", limit=40):
 def _add_hashtag_stories(items, blocked, fids, limit):
     if not fids:
         return
+    from apps.social.classic_extra import hydrate_posted
     qs = (
         PostHashtag.objects.filter(post__social_user_id__in=fids)
         .select_related("post", "post__social_user", "hashtag")
@@ -227,9 +228,12 @@ def _add_hashtag_stories(items, blocked, fids, limit):
         if row.post_id in seen_posts:
             continue
         seen_posts.add(row.post_id)
+        post = row.post
+        if getattr(post, "kind", None) in ("link", "video"):
+            hydrate_posted(post)
         items.append({
-            "kind": "hashtag", "at": row.created_at or row.post.created_at,
-            "actor": row.post.social_user, "post": row.post, "tag": row.hashtag,
+            "kind": "hashtag", "at": row.created_at or post.created_at,
+            "actor": post.social_user, "post": post, "tag": row.hashtag,
         })
         if len(seen_posts) >= limit:
             break
