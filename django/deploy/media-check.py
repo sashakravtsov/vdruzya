@@ -238,6 +238,22 @@ def main():
     else:
         ok("inbox video skipped (no friend)")
 
+    # Notes photo (same media disk; keeps kind=note).
+    ntitle = f"QA NoteMedia {uuid.uuid4().hex[:5]}"
+    r = c.post("/notes", {
+        "title": ntitle,
+        "body": "media note probe",
+        "visibility": "friends",
+        "photo": SimpleUploadedFile("note.png", PNG, content_type="image/png"),
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    npost = Post.objects.filter(social_user=me, kind="note", media_label=ntitle).first()
+    assert npost and npost.media_path and npost.media_path.startswith("notes/"), npost
+    r = c.get(f"/posts/{npost.id}", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content
+    npost.delete()
+    ok("notes photo attach")
+
     # Marketplace listing photo (same media disk as wall photos).
     mtitle = f"QA MarketMedia {uuid.uuid4().hex[:5]}"
     r = c.post("/marketplace", {

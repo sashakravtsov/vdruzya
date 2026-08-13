@@ -92,6 +92,25 @@ def main():
     assert note
     ok("notes directory create")
 
+    # notes photo on same media disk
+    ntitle = f"QA NotePhoto {uuid.uuid4().hex[:5]}"
+    r = c.post("/notes", {
+        "title": ntitle,
+        "body": "note with photo",
+        "visibility": "friends",
+        "photo": SimpleUploadedFile("note.png", PNG, content_type="image/png"),
+    }, secure=True)
+    assert r.status_code in (301, 302), r.status_code
+    nphoto = Post.objects.filter(social_user=me, kind="note", media_label=ntitle).first()
+    assert nphoto and nphoto.media_path and nphoto.media_path.startswith("notes/"), nphoto
+    assert nphoto.media_url
+    r = c.get(f"/posts/{nphoto.id}", secure=True)
+    assert r.status_code == 200 and b"<img" in r.content
+    r = c.get("/notes?mine=1", secure=True)
+    assert r.status_code == 200 and b"note-thumb" in r.content
+    nphoto.delete()
+    ok("notes photo attach")
+
     # marketplace
     r = c.post("/marketplace", {
         "title": f"QA Bike {uuid.uuid4().hex[:5]}",
