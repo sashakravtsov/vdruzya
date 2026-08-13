@@ -1,0 +1,13 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>Бильярд</h4>
+    <div class="profile-box-body">
+        <p class="muted">Один удар — случайный счёт партии (демо).</p>
+        <form method="post">{% csrf_token %}
+            <input type="submit" class="inputsubmit" value="Ударить">
+        </form>
+        {% if score is not None %}<p>Забито шаров: <b>{{ score }}</b></p>{% endif %}
+    </div>
+</div>
+{% endblock %}

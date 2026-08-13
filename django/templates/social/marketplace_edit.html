@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% load static vd %}
+{% block title %}Редактирование — {{ item.title }} — Барахолка{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="market-page">
+    <div id="header" class="withsubtitle">
+        <h1>Редактирование объявления</h1>
+        <div class="subtitle"><a href="{% url 'marketplace.show' item.id %}">← {{ item.title }}</a></div>
+    </div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Объявление</h4>
+            <div class="profile-box-body">
+                <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                    {{ form.lat }}{{ form.lon }}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.title }}</td></tr>
+                        <tr><td class="label">Цена:</td><td>{{ form.price }}</td></tr>
+                        <tr><td class="label">Город:</td><td>{{ form.place }}</td></tr>
+                        <tr><td class="label">Описание:</td><td>{{ form.description }}</td></tr>
+                        <tr><td class="label">Фото:</td><td>
+                            {% if item.photo_url %}<p class="market-photo"><img src="{{ item.photo_url }}" alt="" width="120"></p>{% endif %}
+                            {{ form.photo }}
+                        </td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Сохранить"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{% static 'js/osm-suggest.js' %}" defer></script>
+{% endblock %}

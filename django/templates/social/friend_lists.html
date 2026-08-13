@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Списки друзей — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="lists-page">
+    <div id="header"><h1>Списки друзей</h1></div>
+    <div id="content">
+        {% include "partials/flash.html" %}
+        <div class="profile-box">
+            <h4>Новый список</h4>
+            <div class="profile-box-body">
+                <form method="post">{% csrf_token %}
+                    <table class="formtable" cellpadding="0" cellspacing="0">
+                        <tr><td class="label">Название:</td><td>{{ form.name }}</td></tr>
+                        <tr><td></td><td><input type="submit" class="inputsubmit" value="Создать"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+        <div class="profile-box">
+            <h4>Мои списки</h4>
+            <div class="profile-box-body">
+                {% for l in lists %}
+                <div class="event-list-row list-row">
+                    <div class="list-row-body">
+                        <b><a href="{% url 'friends.lists.show' l.id %}">{{ l.name }}</a></b>
+                        <span class="muted">({{ l.n }})</span>
+                    </div>
+                </div>
+                {% empty %}<p class="muted">Создайте список, например «Близкие» или «Работа».</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}Лента новостей — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="feed-page">
+    <div id="header"><h1>Лента новостей</h1></div>
+    <div id="content" class="feed-content">
+        {% include "partials/flash.html" %}
+
+        <div class="subtabs feed-filters">
+            {% with f=feed_filter|default:'all' %}
+            {% for key, lab in feed_tabs %}
+            <div class="{% if f == key %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?filter={{ key }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}">{{ lab }}</a>
+            </div>
+            {% endfor %}
+            {% endwith %}
+        </div>
+        {% if friend_lists %}
+        <p class="feed-list-links muted">
+            список:
+            <a href="?filter={{ feed_filter|default:'all' }}"{% if not active_list %} class="is-on"{% endif %}>все друзья</a>
+            {% for l in friend_lists %}
+            · <a href="?filter={{ feed_filter|default:'all' }}&amp;list={{ l.id }}"{% if active_list and active_list.id == l.id %} class="is-on"{% endif %}>{{ l.name }}</a>
+            {% endfor %}
+        </p>
+        {% endif %}
+
+        <div class="feed-main">
+            {% for item in items %}
+            {% include "social/_news_item.html" %}
+            {% empty %}
+            <p class="muted">{% if feed_filter and feed_filter != 'all' or active_list %}Нет записей в этом фильтре.{% else %}Пока тихо. <a href="{% url 'people' %}?tab=search">Найдите друзей</a> или напишите на чью-нибудь стену.{% endif %}</p>
+            {% endfor %}
+
+            {% if page and page.paginator.num_pages > 1 %}
+            <p class="pager">
+                {% if page.has_previous %}<a href="?filter={{ feed_filter|default:'all' }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}&amp;p={{ page.previous_page_number }}">← назад</a>{% endif %}
+                стр. {{ page.number }}/{{ page.paginator.num_pages }}
+                {% if page.has_next %}<a href="?filter={{ feed_filter|default:'all' }}{% if active_list %}&amp;list={{ active_list.id }}{% endif %}&amp;p={{ page.next_page_number }}">вперёд →</a>{% endif %}
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="feed-rail">
+            <div class="profile-box">
+                <h4>Лента событий</h4>
+                <div class="profile-box-body">
+                    {% if ticker %}
+                        {% for t in ticker %}
+                        <div class="ticker-row">
+                            <a href="{% url 'profile' t.actor.id %}"><b>{{ t.actor.name }}</b></a>
+                            {% if t.url %}<a href="{{ t.url }}">{{ t.text }}</a>{% else %}{{ t.text }}{% endif %}
+                            {% if t.at %}<span class="muted"> · {{ t.at|fb_when }}</span>{% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока тихо.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>В тренде{% if trending %}<a class="edit" href="{% url 'trending' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if trending %}
+                        {% for t in trending %}
+                        <div class="rail-row">
+                            <a href="{% url 'hashtag' name=t.name %}">#{{ t.name }}</a>
+                            <span class="muted">({{ t.count }})</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока тихо. <a href="{% url 'trending' %}">Хэштеги</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Друзья рядом{% if nearby_rail %}<a class="edit" href="{% url 'nearby' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if nearby_rail %}
+                        {% for p in nearby_rail %}
+                        <div class="classic-person-row classic-person-row-side">
+                            <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                                {% avatar p 32 %}
+                                <span>
+                                    <b>{{ p.name }}</b>
+                                    {% if p.city %}<span class="classic-person-sub">{{ p.city }}</span>{% endif %}
+                                </span>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted"><a href="{% url 'nearby' %}">Друзья рядом</a> · укажите город в профиле</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Сохранённое{% if saved_rail %}<a class="edit" href="{% url 'saves' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if saved_rail %}
+                        {% for s in saved_rail %}
+                        <div class="rail-row">
+                            <a href="{{ s.get_absolute_url }}">{{ s.title|default:"Сохранено" }}</a>
+                            <span class="muted"> · {{ s.kind|ru_label }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted"><a href="{% url 'saves' %}">Сохранённое</a> — отложите посты на потом</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if safety_rail %}
+            <div class="profile-box">
+                <h4>Проверка безопасности<a class="edit" href="{% url 'safety' %}">все</a></h4>
+                <div class="profile-box-body">
+                    {% for ev in safety_rail %}
+                    <div class="rail-row">
+                        <a href="{% url 'safety.show' ev.id %}">{{ ev.title }}</a>
+                        {% if ev.city %}<div class="muted">{{ ev.city }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>Заявки</h4>
+                <div class="profile-box-body">
+                    {% if requests %}
+                        {% for r in requests %}
+                        <div class="classic-person-row classic-person-row-side">
+                            <a class="classic-person-name" href="{% url 'profile' r.user.id %}">
+                                {% avatar r.user 32 %}
+                                <span>
+                                    <b>{{ r.user.name }}</b>
+                                    {% if r.mutual %}<span class="classic-person-sub">{{ r.mutual }}</span>{% endif %}
+                                </span>
+                            </a>
+                            <span class="classic-inline-actions classic-inline-actions-stack">
+                                <form method="post" action="{% url 'friends.accept' r.user.id %}" class="inline">{% csrf_token %}
+                                    <button type="submit" class="linkish">принять</button>
+                                </form>
+                                <form method="post" action="{% url 'friends.reject' r.user.id %}" class="inline">{% csrf_token %}
+                                    <button type="submit" class="linkish muted">отклонить</button>
+                                </form>
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Нет новых заявок.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Подмигивания{% if pokes %}<a class="edit" href="{% url 'pokes' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if pokes %}
+                        {% for n in pokes %}
+                        <div class="classic-person-row classic-person-row-side">
+                            {% if n.poker %}
+                            <a class="classic-person-name" href="{% url 'profile' n.poker.id %}">
+                                {% avatar n.poker 32 %}
+                                <span><b>{{ n.poker.name }}</b></span>
+                            </a>
+                            {% else %}
+                            <span class="classic-person-name">{% if n.url %}<a href="{{ n.url }}">{{ n.body|default:n.title }}</a>{% else %}{{ n.body|default:n.title }}{% endif %}</span>
+                            {% endif %}
+                            {% if n.poker_id %}
+                            <span class="classic-inline-actions">
+                                <form method="post" action="{% url 'profile.poke' n.poker_id %}" class="inline">{% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'feed' %}">
+                                    <button type="submit" class="linkish">в ответ</button>
+                                </form>
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Никто не подмигивал. <a href="{% url 'pokes' %}">Подмигивания</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if pending_photo_tags %}
+            <div class="profile-box">
+                <h4>Отметки на фото ({{ pending_photo_tags|length }})</h4>
+                <div class="profile-box-body">
+                    {% for t in pending_photo_tags %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'albums.photos.show' t.photo.album_id t.photo.id %}">
+                            {% if t.tagged_by %}{% avatar t.tagged_by 32 %}{% endif %}
+                            <span>
+                                <b>{% if t.tagged_by %}{{ t.tagged_by.name }}{% else %}Кто-то{% endif %}</b>
+                                <span class="classic-person-sub">отметил(а) вас на фото</span>
+                            </span>
+                        </a>
+                        <span class="classic-inline-actions classic-inline-actions-stack">
+                            <form method="post" action="{% url 'albums.photos.tag.approve' t.photo.album_id t.photo.id t.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="inputsubmit">Подтвердить</button>
+                            </form>
+                            <form method="post" action="{% url 'albums.photos.tag.decline' t.photo.album_id t.photo.id t.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="linkish">Отклонить</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if feed_hidden_people %}
+            <div class="profile-box">
+                <h4>Скрыты из ленты</h4>
+                <div class="profile-box-body">
+                    {% for p in feed_hidden_people %}
+                    <div class="classic-person-row classic-person-row-side">
+                        <a class="classic-person-name" href="{% url 'profile' p.id %}">
+                            {% avatar p 32 %}
+                            <span><b>{{ p.name }}</b></span>
+                        </a>
+                        <span class="classic-inline-actions">
+                            <form method="post" action="{% url 'feed.unhide.actor' p.id %}">{% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'feed' %}">
+                                <button type="submit" class="linkish">показать</button>
+                            </form>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="profile-box">
+                <h4>События<a class="edit" href="{% url 'events' %}">все</a></h4>
+                <div class="profile-box-body">
+                    {% if event_invites %}
+                    <p class="req-row"><a href="{% url 'events' %}?tab=invited">Приглашения ({{ event_invites }})</a></p>
+                    {% endif %}
+                    {% if rail_events %}
+                        {% for e in rail_events %}
+                        <div class="rail-row">
+                            <a href="{% url 'events.show' e.id %}">{{ e.title }}</a>
+                            <div class="muted">{{ e.starts_at|date:"j E, H:i" }}{% if e.place %} · {{ e.place }}{% endif %}</div>
+                        </div>
+                        {% endfor %}
+                    {% elif not event_invites %}
+                        <p class="muted">Ближайших нет. <a href="{% url 'events' %}">Создать</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Популярные группы{% if popular_groups %}<a class="edit" href="{% url 'groups' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if popular_groups %}
+                        {% for g in popular_groups %}
+                        <div><a href="{% url 'groups.show' g.id %}">{{ g.name }}</a> <span class="muted">({{ g.n }})</span></div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока нет.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Популярные страницы{% if popular_pages %}<a class="edit" href="{% url 'pages' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if popular_pages %}
+                        {% for p in popular_pages %}
+                        <div><a href="{% url 'pages.show' p.id %}">{{ p.name }}</a> <span class="muted">({{ p.n }})</span></div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока нет.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Из групп{% if group_posts %}<a class="edit" href="{% url 'groups' %}?mine=1">мои</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if group_posts %}
+                        {% for s in group_posts %}
+                        <div class="rail-row">
+                            <a href="{% url 'profile' s.social_user.id %}">{{ s.social_user.name }}</a>
+                            в <a href="{{ s.get_absolute_url }}">{{ s.community.name }}</a>
+                            <div class="muted">{{ s.title_line }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Пока ничего.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Из страниц{% if page_posts %}<a class="edit" href="{% url 'pages' %}?mine=1">мои</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if page_posts %}
+                        {% for s in page_posts %}
+                        <div class="rail-row">
+                            <a href="{% url 'pages.show' s.page.id %}">{{ s.page.name }}</a>
+                            <div class="muted">{{ s.rail_text|default:s.body|truncatewords:12 }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Станьте поклонником страниц.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Дни рождения{% if birthdays %}<a class="edit" href="{% url 'birthdays' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if birthdays %}
+                        {% for day, person in birthdays %}
+                        <div><a href="{% url 'profile' person.id %}">{{ person.name }}</a> <span class="muted">· {{ day|date:"j E" }}</span></div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Скоро ни у кого. <a href="{% url 'birthdays' %}">Смотреть</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-box">
+                <h4>Годовщины{% if anniversaries %}<a class="edit" href="{% url 'anniversaries' %}">все</a>{% endif %}</h4>
+                <div class="profile-box-body">
+                    {% if anniversaries %}
+                        {% for day, years, person, since in anniversaries %}
+                        <div>
+                            <a href="{% url 'profile.friendship' person.id %}">{{ person.name }}</a>
+                            <span class="muted">· {{ years }} г. · {{ day|date:"j E" }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted"><a href="{% url 'anniversaries' %}">Годовщины дружбы</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="clear"></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+{% load vd %}
+{% block title %}{% if tab == 'requests' %}Заявки{% else %}Поиск людей{% endif %} — ВДрузья{% endblock %}
+{% block pagebody %}
+<div id="pagebody" class="people-page">
+    <div id="header"><h1>{% if tab == 'requests' %}Заявки{% else %}Поиск людей{% endif %}</h1></div>
+    <div id="content" class="people-content">
+        {% include "partials/flash.html" %}
+
+        <p class="people-top-links">
+            <a href="{% url 'friends' %}">Мои друзья</a>
+            ·
+            <a href="{% url 'invite.mine' %}">Пригласить друга</a>
+        </p>
+
+        <div id="tabs">
+            <div class="{% if tab == 'search' %}activetab{% else %}inactivetab{% endif %}"><a href="?tab=search{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Поиск</a></div>
+            <div class="{% if tab == 'requests' %}activetab{% else %}inactivetab{% endif %}">
+                <a href="?tab=requests">Заявки{% if pending %} ({{ pending|length }}){% endif %}</a>
+            </div>
+        </div>
+
+        {% if tab == 'requests' %}
+        <h4 class="dir-heading">Заявки в друзья{% if pending %} ({{ pending|length }}){% endif %}</h4>
+        <div class="dir-list">
+            {% for r in pending %}
+            <div class="classic-person-row">
+                <a class="classic-person-name" href="{% url 'profile' r.user.id %}">
+                    {% avatar r.user 50 %}
+                    <span>
+                        <b>{{ r.user.name }}</b>
+                        {% if r.mutual %}<span class="classic-person-sub">{{ r.mutual }}</span>
+                        {% elif r.user.headline %}<span class="classic-person-sub">{{ r.user.headline }}</span>
+                        {% elif r.user.city %}<span class="classic-person-sub">{{ r.user.city }}</span>{% endif %}
+                    </span>
+                </a>
+                <span class="classic-inline-actions">
+                    <form method="post" action="{% url 'friends.accept' r.user.id %}">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="inputsubmit">Принять</button>
+                    </form>
+                    ·
+                    <form method="post" action="{% url 'friends.reject' r.user.id %}">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="linkish">Отклонить</button>
+                    </form>
+                </span>
+            </div>
+            {% empty %}
+            <p class="muted">Нет новых заявок.</p>
+            {% endfor %}
+        </div>
+        {% if outgoing %}
+        <h4 class="dir-heading">Исходящие заявки ({{ outgoing|length }})</h4>
+        <div class="dir-list">
+            {% for r in outgoing %}
+            <div class="classic-person-row">
+                <a class="classic-person-name" href="{% url 'profile' r.friend.id %}">
+                    {% avatar r.friend 50 %}
+                    <span><b>{{ r.friend.name }}</b></span>
+                </a>
+                <span class="classic-inline-actions">
+                    <form method="post" action="{% url 'friends.cancel' r.friend.id %}">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="linkish">Отменить заявку</button>
+                    </form>
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <form class="people-search-form" method="get" action="{% url 'people' %}">
+            <input type="hidden" name="tab" value="search">
+            <table class="formtable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="label">Имя:</td>
+                    <td><input class="inputtext" type="text" name="q" value="{{ q }}" autocomplete="off"></td>
+                </tr>
+                <tr>
+                    <td class="label">Город:</td>
+                    <td><input class="inputtext" type="text" name="city" value="{{ city }}" autocomplete="off"></td>
+                </tr>
+                <tr>
+                    <td class="label">Школа:</td>
+                    <td><input class="inputtext" type="text" name="school" value="{{ school }}" autocomplete="off"></td>
+                </tr>
+                <tr>
+                    <td class="label">Работа:</td>
+                    <td><input class="inputtext" type="text" name="workplace" value="{{ workplace }}" autocomplete="off"></td>
+                </tr>
+                <tr>
+                    <td class="label">Пол:</td>
+                    <td>
+                        <select name="gender" class="inputtext input-sort">
+                            <option value="">любой</option>
+                            <option value="male"{% if gender == 'male' %} selected{% endif %}>мужской</option>
+                            <option value="female"{% if gender == 'female' %} selected{% endif %}>женский</option>
+                        </select>
+                        <input class="inputsubmit" type="submit" value="Найти">
+                        {% if searching %}<a href="?tab=search">сбросить</a>{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </form>
+        {% if not searching %}
+        <p class="muted">Укажите имя, город, школу или работу.</p>
+        {% elif results %}
+        <h4 class="dir-heading">Результаты</h4>
+        <div class="dir-list">
+            {% for p in results %}
+            {% include "social/_person_row.html" with person=p with_friend_actions=1 %}
+            {% empty %}
+            <p class="muted">Никого не найдено.</p>
+            {% endfor %}
+        </div>
+        {% if results.has_other_pages %}
+        <p class="people-top-links">
+            {% if results.has_previous %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;school={{ school|urlencode }}&amp;workplace={{ workplace|urlencode }}&amp;gender={{ gender|urlencode }}&amp;p={{ results.previous_page_number }}">« назад</a>{% endif %}
+            стр. {{ results.number }} / {{ results.paginator.num_pages }}
+            {% if results.has_next %}<a href="?tab=search&amp;q={{ q|urlencode }}&amp;city={{ city|urlencode }}&amp;school={{ school|urlencode }}&amp;workplace={{ workplace|urlencode }}&amp;gender={{ gender|urlencode }}&amp;p={{ results.next_page_number }}">вперёд »</a>{% endif %}
+        </p>
+        {% endif %}
+        {% else %}
+        <p class="muted">Никого не найдено.</p>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "social/apps/canvas_base.html" %}
+{% block canvas_body %}
+<div class="profile-box">
+    <h4>{{ app.name }}</h4>
+    <div class="profile-box-body">
+        <p>{{ app.detail|default:app.blurb }}</p>
+        <p class="muted">Разработчик: {{ app.developer }}</p>
+        {% if website_url %}
+        <p class="action-row">
+            <a class="inputsubmit" href="{{ website_url }}" rel="nofollow noopener" target="_blank">Открыть сайт приложения</a>
+            · <a href="{% url 'apps.show' app.slug %}">о приложении</a>
+        </p>
+        <p class="muted">Сайт открывается отдельно. Сторонний canvas/iframe на ВДрузья не подключается.</p>
+        {% else %}
+        <p class="muted">Сайт приложения ещё не указан. Настройте его в <a href="{% url 'developers' %}">кабинете разработчика</a>.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
